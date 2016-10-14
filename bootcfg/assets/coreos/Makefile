@@ -2,21 +2,30 @@ VERSION=current
 STABLE=https://stable.release.core-os.net/amd64-usr
 
 
-KERNEL=$(VERSION)/coreos_production_pxe.vmlinuz
-INITRD=$(VERSION)/coreos_production_pxe_image.cpio.gz
-ASC=$(VERSION)/CoreOS_Image_Signing_Key.asc
+VMLINUZ=coreos_production_pxe.vmlinuz
+CPIO=coreos_production_pxe_image.cpio.gz
+
+
+KERNEL=$(addprefix $(VERSION)/, $(VMLINUZ))
+INITRD=$(addprefix $(VERSION)/, $(CPIO))
+
+ASC=CoreOS_Image_Signing_Key.asc
+
+KEY=$(addprefix $(VERSION)/, $(ASC))
 GPG=gpg
 
-default: $(ASC) $(KERNEL) $(INITRD)
+default: $(KEY) $(KERNEL) $(INITRD)
 
-$(KERNEL): $(ASC)
+$(VERSION):
+	test $(VERSION)
 	mkdir -pv $(VERSION)
+
+$(KERNEL): $(KEY) $(VERSION)
 	curl -fs $(STABLE)/$(KERNEL) -o $(KERNEL)
 	curl -fs $(STABLE)/$(KERNEL).sig -o $(KERNEL).sig
 	$(GPG) --verify $(PWD)/$(KERNEL).sig
 
-$(INITRD): $(PGP)
-	mkdir -pv $(VERSION)
+$(INITRD): $(KEY) $(VERSION)
 	curl -fs $(STABLE)/$(INITRD) -o $(INITRD)
 	curl -fs $(STABLE)/$(INITRD).sig -o $(INITRD)
 	$(GPG) --verify $(PWD)/$(KERNEL).sig
@@ -24,9 +33,8 @@ $(INITRD): $(PGP)
 clean:
 	@rm -rfv $(VERSION) || true
 
-$(ASC):
-	mkdir -pv $(VERSION)
-	curl -fs https://coreos.com/security/image-signing-key/$(PGP) -o $(ASC)
-	$(GPG) --import < $(ASC) || true
+$(KEY): $(VERSION)
+	curl -fs https://coreos.com/security/image-signing-key/$(ASC) -o $(KEY)
+	$(GPG) --import < $(KEY)
 
 re: clean default
