@@ -1,0 +1,3 @@
+[submodule "chain/ipxe"]
+	path = chain/ipxe
+	url = git://git.ipxe.org/ipxe.git
