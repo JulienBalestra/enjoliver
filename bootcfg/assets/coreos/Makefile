@@ -1,33 +1,32 @@
-STABLE=https://stable.release.core-os.net/amd64-usr/current
+VERSION=current
+STABLE=https://stable.release.core-os.net/amd64-usr
 
-KERNEL=coreos_production_pxe.vmlinuz
-INITRD=coreos_production_pxe_image.cpio.gz
-PGP=CoreOS_Image_Signing_Key.asc
 
-default: $(PGP) $(KERNEL) $(INITRD)
+KERNEL=$(VERSION)/coreos_production_pxe.vmlinuz
+INITRD=$(VERSION)/coreos_production_pxe_image.cpio.gz
+ASC=$(VERSION)/CoreOS_Image_Signing_Key.asc
+GPG=gpg
 
-$(KERNEL): $(PGP)
-	curl -Ofs $(STABLE)/$(KERNEL)
-	curl -Ofs $(STABLE)/$(KERNEL).sig
-	gpg2 --status-fd 1 --no-default-keyring --keyring $(PWD)/$(PGP).gpg \
-		--trust-model always --verify $(KERNEL).sig
+default: $(ASC) $(KERNEL) $(INITRD)
+
+$(KERNEL): $(ASC)
+	mkdir -pv $(VERSION)
+	curl -fs $(STABLE)/$(KERNEL) -o $(KERNEL)
+	curl -fs $(STABLE)/$(KERNEL).sig -o $(KERNEL).sig
+	$(GPG) --verify $(PWD)/$(KERNEL).sig
 
 $(INITRD): $(PGP)
-	curl -Ofs $(STABLE)/$(INITRD)
-	curl -Ofs $(STABLE)/$(INITRD).sig
-	gpg2 --status-fd 1 --no-default-keyring --keyring $(PWD)/$(PGP).gpg \
-		--trust-model always --verify $(INITRD).sig
+	mkdir -pv $(VERSION)
+	curl -fs $(STABLE)/$(INITRD) -o $(INITRD)
+	curl -fs $(STABLE)/$(INITRD).sig -o $(INITRD)
+	$(GPG) --verify $(PWD)/$(KERNEL).sig
 
 clean:
-	@rm -v $(KERNEL) || true
-	@rm -v $(KERNEL).sig || true
-	@rm -v $(INITRD) || true
-	@rm -v $(INITRD).sig || true
-	@rm -v $(PGP) || true
-	@rm -v $(PGP).gpg || true
+	@rm -rfv $(VERSION) || true
 
-$(PGP):
-	curl -Ofs https://coreos.com/security/image-signing-key/$(PGP)
-	gpg2 -o $(PGP).gpg --dearmor $(PGP)
+$(ASC):
+	mkdir -pv $(VERSION)
+	curl -fs https://coreos.com/security/image-signing-key/$(PGP) -o $(ASC)
+	$(GPG) --import < $(ASC) || true
 
 re: clean default
