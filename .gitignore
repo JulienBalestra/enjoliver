@@ -6,3 +6,4 @@ coreos_production_pxe.vmlinuz
 /.idea/
 /bootcfg/assets/setup-network-environment/1.0.1/setup-network-environment
 /bootcfg/assets/setup-network-environment/1.0.1/setup-network-environment.sha512
+serve
