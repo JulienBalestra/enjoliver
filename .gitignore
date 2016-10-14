@@ -1,7 +1,5 @@
-# Created by .ignore support plugin (hsz.mobi)
-/bootcfg/assets/coreos/coreos_production_pxe_image.cpio.gz
-/bootcfg/assets/coreos/coreos_production_pxe_image.cpio.gz.sig
-/bootcfg/assets/coreos/coreos_production_pxe.vmlinuz.sig
-/bootcfg/assets/coreos/CoreOS_Image_Signing_Key.asc
-/bootcfg/assets/coreos/coreos_production_pxe.vmlinuz
-/bootcfg/assets/coreos/CoreOS_Image_Signing_Key.asc.gpg
+coreos_production_pxe_image.cpio.gz
+coreos_production_pxe_image.cpio.gz.sig
+coreos_production_pxe.vmlinuz.sig
+CoreOS_Image_Signing_Key.asc
+coreos_production_pxe.vmlinuz
