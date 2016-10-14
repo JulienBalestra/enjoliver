@@ -1,6 +1,7 @@
 VERSION=current
+SERVE=serve
 
-STABLE=https://stable.release.core-os.net/amd64-usr
+CHANNEL=https://stable.release.core-os.net/amd64-usr
 VMLINUZ=coreos_production_pxe.vmlinuz
 CPIO=coreos_production_pxe_image.cpio.gz
 
@@ -23,16 +24,22 @@ $(KEY): $(VERSION)
 	$(GPG) --import < $(KEY)
 
 $(KERNEL): $(KEY) $(VERSION)
-	curl -fs $(STABLE)/$(KERNEL) -o $(KERNEL)
-	curl -fs $(STABLE)/$(KERNEL).sig -o $(KERNEL).sig
+	curl -fs $(CHANNEL)/$(KERNEL) -o $(KERNEL)
+	curl -fs $(CHANNEL)/$(KERNEL).sig -o $(KERNEL).sig
 	$(GPG) --verify $(PWD)/$(KERNEL).sig
 
 $(INITRD): $(KEY) $(VERSION)
-	curl -fs $(STABLE)/$(INITRD) -o $(INITRD)
-	curl -fs $(STABLE)/$(INITRD).sig -o $(INITRD).sig
+	curl -fs $(CHANNEL)/$(INITRD) -o $(INITRD)
+	curl -fs $(CHANNEL)/$(INITRD).sig -o $(INITRD).sig
 	$(GPG) --verify $(PWD)/$(KERNEL).sig
 
 clean:
 	@rm -rfv $(VERSION) || true
+
+$(SERVE):
+	ln -vs $(VERSION) $(SERVE)
+
+fclean: clean
+	@rm -v $(SERVE) || true
 
 re: clean default
