@@ -1,21 +1,6 @@
+import json
 import os
 import subprocess
-
-base = {
-    "id": "etcd-proxy",
-    "name": "etcd-proxy",
-    "boot": {
-        "kernel": "/assets/coreos/serve/coreos_production_pxe.vmlinuz",
-        "initrd": ["/assets/coreos/serve/coreos_production_pxe_image.cpio.gz"],
-        "cmdline": {
-            "coreos.config.url": "http://localhost:8080/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}",
-            "coreos.autologin": "",
-            "coreos.first_boot": ""
-        }
-    },
-    "cloud_id": "",
-    "ignition_id": "etcd.yaml"
-}
 
 
 class GenerateProfiles(object):
@@ -23,10 +8,15 @@ class GenerateProfiles(object):
     project_path = os.path.split(app_path)[0]
     bootcfg_path = "%s/bootcfg" % project_path
 
-    def __init__(self):
-        print self.project_path
+    def __init__(self, _id, name, ignition_id):
         self._ip_address = None
-        self.profile = {}
+        self.profile = {
+            "id": "%s" % _id,
+            "name": "%s" % name,
+            "boot": {},
+            "cloud_id": "",
+            "ignition_id": "%s" % ignition_id
+        }
 
     @property
     def ip_address(self):
@@ -43,7 +33,7 @@ class GenerateProfiles(object):
                     return self._ip_address
         raise ImportError("Error in module %s" % out)
 
-    def boot(self):
+    def _boot(self):
         self.profile["boot"] = {
             "kernel": "/assets/coreos/serve/coreos_production_pxe.vmlinuz",
             "initrd": ["/assets/coreos/serve/coreos_production_pxe_image.cpio.gz"],
@@ -55,7 +45,10 @@ class GenerateProfiles(object):
             }
         }
 
+    def generate(self):
+        self._boot()
+        return self.profile
 
-if __name__ == "__main__":
-    gen = GenerateProfiles()
-    gen.boot()
+    def render(self, indent=4):
+        self.generate()
+        return json.dumps(self.profile, indent=indent)
