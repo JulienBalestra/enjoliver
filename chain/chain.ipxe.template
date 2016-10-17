@@ -1,0 +1,7 @@
+#!ipxe
+
+dhcp
+
+set coreos-baremetal # IP:PORT
+
+chain http://${coreos-baremetal}/boot.ipxe
