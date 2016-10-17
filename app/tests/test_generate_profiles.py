@@ -1,4 +1,5 @@
 import os
+import subprocess
 from unittest import TestCase
 
 import re
@@ -12,6 +13,7 @@ class TestGenerateProfiles(TestCase):
 
     @classmethod
     def setUpClass(cls):
+        subprocess.check_output(["make", "-C", cls.gen.project_path])
         cls.gen = generate_profiles.GenerateProfiles()
         if os.path.isfile("%s" % cls.network_environment):
             os.remove("%s" % cls.network_environment)
