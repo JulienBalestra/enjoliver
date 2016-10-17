@@ -5,4 +5,4 @@ default:
 	make -C bootcfg/assets/setup-network-environment serve
 
 check:
-	make -C tests/ check
+	make -C app/tests/ check

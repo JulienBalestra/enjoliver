@@ -5,7 +5,8 @@ from unittest import TestCase
 
 class TestAssetsCoreOS(TestCase):
     tests_path = "%s" % os.path.dirname(__file__)
-    project_path = os.path.split(tests_path)[0]
+    app_path = os.path.split(tests_path)[0]
+    project_path = os.path.split(app_path)[0]
     assets_path = "%s/bootcfg/assets" % project_path
     asset_test = "%s/coreos" % assets_path
     default_files = ["Makefile"]
@@ -51,7 +52,8 @@ class TestAssetsCoreOS(TestCase):
 
 class TestAssetsSetupNetworkEnvironment(TestCase):
     tests_path = "%s" % os.path.dirname(__file__)
-    project_path = os.path.split(tests_path)[0]
+    app_path = os.path.split(tests_path)[0]
+    project_path = os.path.split(app_path)[0]
     assets_path = "%s/bootcfg/assets" % project_path
     asset_test = "%s/setup-network-environment" % assets_path
     default_files = ["Makefile", "1.0.1-setup-network-environment.sha512"]

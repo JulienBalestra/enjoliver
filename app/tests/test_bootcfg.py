@@ -12,7 +12,8 @@ class TestBootCFG(TestCase):
     p_bootcfg = Process
 
     tests_path = "%s" % os.path.dirname(__file__)
-    project_path = os.path.split(tests_path)[0]
+    app_path = os.path.split(tests_path)[0]
+    project_path = os.path.split(app_path)[0]
     bootcfg_path = "%s/bootcfg" % project_path
     assets_path = "%s/bootcfg/assets" % project_path
 

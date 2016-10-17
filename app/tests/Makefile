@@ -17,6 +17,6 @@ fclean:
 	@rm -Rf $(BIN)
 
 check: $(TARGET)
-	python -m unittest discover .
+	PYTHONPATH=$(PWD)/../.. python -m unittest discover .
 
 re: fclean default
