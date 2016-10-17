@@ -26,12 +26,12 @@ $(KEY): $(VERSION)
 $(KERNEL): $(KEY) $(VERSION)
 	curl -fs $(CHANNEL)/$(KERNEL) -o $(KERNEL)
 	curl -fs $(CHANNEL)/$(KERNEL).sig -o $(KERNEL).sig
-	$(GPG) --verify $(PWD)/$(KERNEL).sig
+	$(GPG) --verify $(KERNEL).sig
 
 $(INITRD): $(KEY) $(VERSION)
 	curl -fs $(CHANNEL)/$(INITRD) -o $(INITRD)
 	curl -fs $(CHANNEL)/$(INITRD).sig -o $(INITRD).sig
-	$(GPG) --verify $(PWD)/$(KERNEL).sig
+	$(GPG) --verify $(KERNEL).sig
 
 clean:
 	@rm -rfv $(VERSION) || true
