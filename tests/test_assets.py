@@ -1,0 +1,97 @@
+import os
+import subprocess
+from unittest import TestCase
+
+
+class TestAssetsCoreOS(TestCase):
+    tests_path = "%s" % os.path.dirname(__file__)
+    project_path = os.path.split(tests_path)[0]
+    assets_path = "%s/bootcfg/assets" % project_path
+    asset_test = "%s/coreos" % assets_path
+    default_files = ["Makefile"]
+
+    def test_00_fclean(self):
+        expect = self.default_files
+        expect.sort()
+        subprocess.check_output(["make", "-C", self.asset_test, "fclean"])
+        real = os.listdir(self.asset_test)
+        real.sort()
+        self.assertEqual(expect, real)
+
+    def test_01_default(self):
+        expect = self.default_files + ["1192.1.0"]
+        expect.sort()
+        subprocess.check_output(["make", "-C", self.asset_test])
+        real = os.listdir(self.asset_test)
+        real.sort()
+        self.assertEqual(expect, real)
+
+    def test_02_serve(self):
+        expect = self.default_files + ["1192.1.0", "serve"]
+        expect.sort()
+        subprocess.check_output(["make", "-C", self.asset_test, "serve"])
+        real = os.listdir(self.asset_test)
+        real.sort()
+        self.assertEqual(expect, real)
+
+    def test_03_clean(self):
+        expect = self.default_files + ["serve"]
+        expect.sort()
+        subprocess.check_output(["make", "-C", self.asset_test, "clean"])
+        real = os.listdir(self.asset_test)
+        real.sort()
+        self.assertEqual(expect, real)
+
+    def test_04_fclean(self):
+        subprocess.check_output(["make", "-C", self.asset_test, "fclean"])
+        real = os.listdir(self.asset_test)
+        real.sort()
+        self.assertEqual(self.default_files, real)
+
+
+class TestAssetsSetupNetworkEnvironment(TestCase):
+    tests_path = "%s" % os.path.dirname(__file__)
+    project_path = os.path.split(tests_path)[0]
+    assets_path = "%s/bootcfg/assets" % project_path
+    asset_test = "%s/setup-network-environment" % assets_path
+    default_files = ["Makefile", "1.0.1-setup-network-environment.sha512"]
+
+    def test_00_fclean(self):
+        expect = self.default_files
+        expect.sort()
+        subprocess.check_output(["make", "-C", self.asset_test, "fclean"])
+        real = os.listdir(self.asset_test)
+        real.sort()
+        self.assertEqual(expect, real)
+
+    def test_01_default(self):
+        expect = self.default_files + ["1.0.1"]
+        expect.sort()
+        subprocess.check_output(["make", "-C", self.asset_test])
+        real = os.listdir(self.asset_test)
+        real.sort()
+        self.assertEqual(expect, real)
+
+    def test_02_serve(self):
+        expect = self.default_files + ["1.0.1", "serve"]
+        expect.sort()
+        subprocess.check_output(["make", "-C", self.asset_test, "serve"])
+        real = os.listdir(self.asset_test)
+        real.sort()
+        self.assertEqual(expect, real)
+
+    def test_03_clean(self):
+        expect = self.default_files + ["serve"]
+        expect.sort()
+        subprocess.check_output(["make", "-C", self.asset_test, "clean"])
+        real = os.listdir(self.asset_test)
+        real.sort()
+        self.assertEqual(expect, real)
+
+    def test_04_fclean(self):
+        expect = self.default_files
+        expect.sort()
+        subprocess.check_output(["make", "-C", self.asset_test, "fclean"])
+        real = os.listdir(self.asset_test)
+        real.sort()
+        self.assertEqual(expect, real)
