@@ -10,3 +10,4 @@ serve
 /app/tests/bin/
 /bootcfg/misc/network-environment
 /chain/chain.ipxe
+/app/tests/test_resources/etcd-test.json

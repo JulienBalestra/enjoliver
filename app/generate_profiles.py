@@ -7,6 +7,7 @@ class GenerateProfiles(object):
     app_path = "%s" % os.path.dirname(__file__)
     project_path = os.path.split(app_path)[0]
     bootcfg_path = "%s/bootcfg" % project_path
+    profiles_path = "%s/profiles" % bootcfg_path
 
     def __init__(self, _id, name, ignition_id):
         self._ip_address = None
@@ -52,3 +53,7 @@ class GenerateProfiles(object):
     def render(self, indent=4):
         self.generate()
         return json.dumps(self.profile, indent=indent)
+
+    def dump(self):
+        with open("%s/%s.json" % (self.profiles_path, self.profile["id"]), "w") as fd:
+            fd.write(self.render())

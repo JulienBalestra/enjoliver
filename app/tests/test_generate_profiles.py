@@ -10,12 +10,14 @@ from app import generate_profiles
 class TestGenerateProfiles(TestCase):
     gen = generate_profiles.GenerateProfiles
     network_environment = "%s/misc/network-environment" % gen.bootcfg_path
+    tests_path = "%s" % os.path.dirname(__file__)
 
     @classmethod
     def setUpClass(cls):
         subprocess.check_output(["make", "-C", cls.gen.project_path])
         cls.gen = generate_profiles.GenerateProfiles(
             _id="etcd-proxy", name="etcd-proxy", ignition_id="etcd-proxy.yaml")
+        cls.gen.profiles_path = "%s/test_resources" % cls.tests_path
         if os.path.isfile("%s" % cls.network_environment):
             os.remove("%s" % cls.network_environment)
 
@@ -45,7 +47,7 @@ class TestGenerateProfiles(TestCase):
         self.gen._boot()
         self.assertEqual(expect, self.gen.profile["boot"])
 
-    def test_99_generate(self):
+    def test_990_generate(self):
         expect = {
             "cloud_id": "",
             "boot": {
@@ -67,3 +69,12 @@ class TestGenerateProfiles(TestCase):
             _id="etcd-proxy", name="etcd-proxy", ignition_id="etcd-proxy.yaml")
         result = new.generate()
         self.assertEqual(expect, result)
+
+    def test_991_dump(self):
+        _id = "etcd-test-%s" % self.test_991_dump.__name__
+        new = generate_profiles.GenerateProfiles(
+            _id="%s" % _id, name="etcd-test", ignition_id="etcd-test.yaml")
+        new.profiles_path = "%s/test_resources" % self.tests_path
+        new.dump()
+        self.assertTrue(os.path.isfile("%s/test_resources/%s.json" % (self.tests_path, _id)))
+        os.remove("%s/test_resources/%s.json" % (self.tests_path, _id))
