@@ -21,20 +21,20 @@ $(VERSION):
 
 $(KEY): $(VERSION)
 	curl -fs https://coreos.com/security/image-signing-key/$(ASC) -o $(KEY)
-	$(GPG) --import < $(KEY)
+	$(GPG) --logger-fd 1 --import < $(KEY)
 
 $(KERNEL): $(KEY) $(VERSION)
 	curl -fs $(CHANNEL)/$(KERNEL) -o $(KERNEL)
 	curl -fs $(CHANNEL)/$(KERNEL).sig -o $(KERNEL).sig
-	$(GPG) --verify $(KERNEL).sig
+	$(GPG) --logger-fd 1 --verify $(KERNEL).sig
 
 $(INITRD): $(KEY) $(VERSION)
 	curl -fs $(CHANNEL)/$(INITRD) -o $(INITRD)
 	curl -fs $(CHANNEL)/$(INITRD).sig -o $(INITRD).sig
-	$(GPG) --verify $(KERNEL).sig
+	$(GPG)  --logger-fd 1 --verify $(KERNEL).sig
 
 clean:
-	@rm -rfv $(VERSION) || true
+	@rm -rfv $(VERSION) 2>&1 || true
 
 $(SERVE):
 	@ls -dF $(VERSION)
@@ -42,6 +42,6 @@ $(SERVE):
 
 fclean: clean
 	@find * -maxdepth 1 -type d -exec rm -Rfv {} \;
-	@rm -v $(SERVE) || true
+	@rm -v $(SERVE) 2>&1 || true
 
 re: fclean default

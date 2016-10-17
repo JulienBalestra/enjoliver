@@ -18,7 +18,7 @@ $(TARGET): $(VERSION)
 	diff $(VERSION)-$(SHA) $(VERSION)/$(SHA)
 
 clean:
-	@rm -rfv $(VERSION) || true
+	@rm -rfv $(VERSION) 2>&1 || true
 
 $(SERVE):
 	@ls -dF $(VERSION)
@@ -26,6 +26,6 @@ $(SERVE):
 
 fclean: clean
 	@find * -maxdepth 1 -type d -exec rm -Rfv {} \;
-	@rm -v $(SERVE) || true
+	@rm -v $(SERVE) 2>&1 || true
 
 re: fclean default
