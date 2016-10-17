@@ -5,4 +5,4 @@ default:
 	make -C bootcfg/assets/setup-network-environment serve
 
 check:
-	python -m unittest discover tests/
+	make -C tests/ check
