@@ -15,7 +15,7 @@ class TestGenerateProfiles(TestCase):
     def setUpClass(cls):
         subprocess.check_output(["make", "-C", cls.gen.project_path])
         cls.gen = generate_profiles.GenerateProfiles(
-            _id="etcd-proxy", name="etcd-proxy", ignition_id="etcd-proxy")
+            _id="etcd-proxy", name="etcd-proxy", ignition_id="etcd-proxy.yaml")
         if os.path.isfile("%s" % cls.network_environment):
             os.remove("%s" % cls.network_environment)
 
@@ -60,10 +60,10 @@ class TestGenerateProfiles(TestCase):
                 }
             },
             "id": "etcd-proxy",
-            "ignition_id": "etcd-proxy",
+            "ignition_id": "etcd-proxy.yaml",
             "name": "etcd-proxy"
         }
         new = generate_profiles.GenerateProfiles(
-            _id="etcd-proxy", name="etcd-proxy", ignition_id="etcd-proxy")
+            _id="etcd-proxy", name="etcd-proxy", ignition_id="etcd-proxy.yaml")
         result = new.generate()
         self.assertEqual(expect, result)
