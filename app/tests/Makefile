@@ -17,6 +17,7 @@ fclean:
 	@rm -Rf $(BIN)
 
 check: $(TARGET)
-	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover .
+	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover unit/
+	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover func/
 
 re: fclean default

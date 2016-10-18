@@ -11,7 +11,8 @@ import time
 class TestBootCFG(TestCase):
     p_bootcfg = Process
 
-    tests_path = "%s" % os.path.dirname(__file__)
+    func_path = "%s" % os.path.dirname(__file__)
+    tests_path = "%s" % os.path.split(func_path)[0]
     app_path = os.path.split(tests_path)[0]
     project_path = os.path.split(app_path)[0]
     bootcfg_path = "%s/bootcfg" % project_path
@@ -35,7 +36,7 @@ class TestBootCFG(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        subprocess.check_output(["make"], cwd=cls.tests_path)
+        subprocess.check_output(["make"], cwd=cls.project_path)
         cls.p_bootcfg = Process(target=TestBootCFG.run_bootcfg)
         cls.p_bootcfg.start()
         time.sleep(0.5)
@@ -61,14 +62,15 @@ class TestBootCFG(TestCase):
         self.assertEqual("bootcfg\n", response)
 
     def test_01_bootcfg_ipxe(self):
-        from app import generate_profiles
+        from app import generator
 
-        name = "%s" % self.test_01_bootcfg_ipxe.__name__
+        marker = "%s" % self.test_01_bootcfg_ipxe.__name__
 
-        profiles = generate_profiles.GenerateProfiles(_id=name, name=name, ignition_id=name)
-        profiles.bootcfg_path = self.test_bootcfg_path
-        profiles.profiles_path = "%s/profiles" % self.test_bootcfg_path
-        profiles.dump()
+        gen = generator.Generator(_id="id-%s" % marker,
+                                  name="name-%s" % marker,
+                                  ignition_id="ign-%s" % marker,
+                                  bootcfg_path=self.test_bootcfg_path)
+        gen.dumps()
 
         response = urllib2.urlopen("%s/ipxe" % self.bootcfg_endpoint).read()
         response = response.split("\n")

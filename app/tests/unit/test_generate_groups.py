@@ -10,7 +10,8 @@ from app import generate_groups
 class TestGenerateGroups(TestCase):
     gen = generate_groups.GenerateGroup
     network_environment = "%s/misc/network-environment" % gen.bootcfg_path
-    tests_path = "%s" % os.path.dirname(__file__)
+    unit_path = "%s" % os.path.dirname(__file__)
+    tests_path = "%s" % os.path.split(unit_path)[0]
     test_bootcfg_path = "%s/test_bootcfg" % tests_path
 
     @classmethod

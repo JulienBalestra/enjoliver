@@ -1,7 +1,7 @@
 from generate_common import GenerateCommon
 
 
-class GenerateProfiles(GenerateCommon):
+class GenerateProfile(GenerateCommon):
     def __init__(self, _id, name, ignition_id,
                  bootcfg_path=GenerateCommon.bootcfg_path):
         self.target_path = "%s/profiles" % bootcfg_path
