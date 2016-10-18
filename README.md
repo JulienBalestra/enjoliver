@@ -2,6 +2,16 @@
 
 ## Linux checkout
 
+Requirements:
+
+* coreutils
+* make
+* curl
+* gpg
+* python2.7
+    * until now no python requirements
+    
+
 
     git clone ${REPOSITORY} CaaS
     cd CaaS
