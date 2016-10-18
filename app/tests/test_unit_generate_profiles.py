@@ -46,7 +46,7 @@ class TestGenerateProfiles(TestCase):
                 }
         }
         self.gen._boot()
-        self.assertEqual(expect, self.gen.profile["boot"])
+        self.assertEqual(expect, self.gen.target_data["boot"])
 
     def test_990_generate(self):
         expect = {
@@ -74,8 +74,7 @@ class TestGenerateProfiles(TestCase):
     def test_991_dump(self):
         _id = "etcd-test-%s" % self.test_991_dump.__name__
         new = generate_profiles.GenerateProfiles(
-            _id="%s" % _id, name="etcd-test", ignition_id="etcd-test.yaml")
-        new.profiles_path = "%s/profiles" % self.test_bootcfg_path
+            _id="%s" % _id, name="etcd-test", ignition_id="etcd-test.yaml", bootcfg_path=self.test_bootcfg_path)
         new.dump()
         self.assertTrue(os.path.isfile("%s/profiles/%s.json" % (self.test_bootcfg_path, _id)))
         os.remove("%s/profiles/%s.json" % (self.test_bootcfg_path, _id))

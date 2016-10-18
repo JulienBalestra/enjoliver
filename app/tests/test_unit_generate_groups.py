@@ -37,7 +37,7 @@ class TestGenerateGroups(TestCase):
     def test_01_metadata(self):
         expect = {'etcd_initial_cluster': '', 'seed': 'http://%s:8080' % self.gen.ip_address}
         self.gen._metadata()
-        self.assertEqual(expect, self.gen.group["metadata"])
+        self.assertEqual(expect, self.gen.target_data["metadata"])
 
     def test_990_generate(self):
         expect = {
@@ -52,14 +52,13 @@ class TestGenerateGroups(TestCase):
         new = generate_groups.GenerateGroup(
             _id="etcd-proxy", name="etcd-proxy", profile="etcd-proxy.yaml")
         result = new.generate()
-        print result
         self.assertEqual(expect, result)
 
     def test_991_dump(self):
         _id = "etcd-test-%s" % self.test_991_dump.__name__
         new = generate_groups.GenerateGroup(
-            _id="%s" % _id, name="etcd-test", profile="etcd-test.yaml")
-        new.profiles_path = "%s/groups" % self.test_bootcfg_path
+            _id="%s" % _id, name="etcd-test", profile="etcd-test.yaml",
+            bootcfg_path=self.test_bootcfg_path)
         new.dump()
         self.assertTrue(os.path.isfile("%s/groups/%s.json" % (self.test_bootcfg_path, _id)))
         os.remove("%s/groups/%s.json" % (self.test_bootcfg_path, _id))
