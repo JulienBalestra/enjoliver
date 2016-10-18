@@ -56,7 +56,6 @@ class TestAssetsSetupNetworkEnvironment(TestCase):
     tests_path = os.path.split(func_path)[0]
     app_path = os.path.split(tests_path)[0]
     project_path = os.path.split(app_path)[0]
-    print "project_path ==", project_path
     assets_path = "%s/bootcfg/assets" % project_path
     asset_test = "%s/setup-network-environment" % assets_path
     default_files = ["Makefile", "1.0.1-setup-network-environment.sha512"]
