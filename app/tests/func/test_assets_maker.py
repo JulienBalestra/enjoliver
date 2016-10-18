@@ -62,40 +62,30 @@ class TestAssetsSetupNetworkEnvironment(TestCase):
 
     def test_00_fclean(self):
         expect = self.default_files
-        expect.sort()
         subprocess.check_output(["make", "-C", self.asset_test, "fclean"])
         real = os.listdir(self.asset_test)
-        real.sort()
-        self.assertEqual(expect, real)
+        self.assertItemsEqual(expect, real)
 
     def test_01_default(self):
         expect = self.default_files + ["1.0.1"]
-        expect.sort()
         subprocess.check_output(["make", "-C", self.asset_test])
         real = os.listdir(self.asset_test)
-        real.sort()
-        self.assertEqual(expect, real)
+        self.assertItemsEqual(expect, real)
 
     def test_02_serve(self):
         expect = self.default_files + ["1.0.1", "serve"]
-        expect.sort()
         subprocess.check_output(["make", "-C", self.asset_test, "serve"])
         real = os.listdir(self.asset_test)
-        real.sort()
-        self.assertEqual(expect, real)
+        self.assertItemsEqual(expect, real)
 
     def test_03_clean(self):
         expect = self.default_files + ["serve"]
-        expect.sort()
         subprocess.check_output(["make", "-C", self.asset_test, "clean"])
         real = os.listdir(self.asset_test)
-        real.sort()
-        self.assertEqual(expect, real)
+        self.assertItemsEqual(expect, real)
 
     def test_04_fclean(self):
         expect = self.default_files
-        expect.sort()
         subprocess.check_output(["make", "-C", self.asset_test, "fclean"])
         real = os.listdir(self.asset_test)
-        real.sort()
-        self.assertEqual(expect, real)
+        self.assertItemsEqual(expect, real)
