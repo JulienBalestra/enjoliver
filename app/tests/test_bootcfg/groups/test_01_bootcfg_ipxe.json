@@ -1,0 +1,9 @@
+{
+  "id": "test_01_bootcfg_ipxe",
+  "name": "test_01_bootcfg_ipxe",
+  "profile": "test_01_bootcfg_ipxe",
+  "metadata": {
+    "seed": "http://localhost:8080",
+    "etcd_initial_cluster": "static0=http://static0:2380"
+  }
+}

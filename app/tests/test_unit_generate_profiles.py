@@ -11,6 +11,7 @@ class TestGenerateProfiles(TestCase):
     gen = generate_profiles.GenerateProfiles
     network_environment = "%s/misc/network-environment" % gen.bootcfg_path
     tests_path = "%s" % os.path.dirname(__file__)
+    test_bootcfg_path = "%s/test_bootcfg" % tests_path
 
     @classmethod
     def setUpClass(cls):
@@ -74,7 +75,7 @@ class TestGenerateProfiles(TestCase):
         _id = "etcd-test-%s" % self.test_991_dump.__name__
         new = generate_profiles.GenerateProfiles(
             _id="%s" % _id, name="etcd-test", ignition_id="etcd-test.yaml")
-        new.profiles_path = "%s/test_resources" % self.tests_path
+        new.profiles_path = "%s/profiles" % self.test_bootcfg_path
         new.dump()
-        self.assertTrue(os.path.isfile("%s/test_resources/%s.json" % (self.tests_path, _id)))
-        os.remove("%s/test_resources/%s.json" % (self.tests_path, _id))
+        self.assertTrue(os.path.isfile("%s/profiles/%s.json" % (self.test_bootcfg_path, _id)))
+        os.remove("%s/profiles/%s.json" % (self.test_bootcfg_path, _id))

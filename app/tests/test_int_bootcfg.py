@@ -17,6 +17,8 @@ class TestBootCFG(TestCase):
     bootcfg_path = "%s/bootcfg" % project_path
     assets_path = "%s/bootcfg/assets" % project_path
 
+    test_bootcfg_path = "%s/test_bootcfg" % tests_path
+
     bootcfg_address = "127.0.0.1:8080"
     bootcfg_endpoint = "http://%s" % bootcfg_address
 
@@ -24,7 +26,7 @@ class TestBootCFG(TestCase):
     def run_bootcfg():
         cmd = [
             "%s/bin/bootcfg" % TestBootCFG.tests_path,
-            "-data-path", "%s" % TestBootCFG.bootcfg_path,
+            "-data-path", "%s" % TestBootCFG.test_bootcfg_path,
             "-assets-path", "%s" % TestBootCFG.assets_path,
             "-address", "%s" % TestBootCFG.bootcfg_address
         ]
@@ -59,6 +61,15 @@ class TestBootCFG(TestCase):
         self.assertEqual("bootcfg\n", response)
 
     def test_01_bootcfg_ipxe(self):
+        from app import generate_profiles
+
+        name = "%s" % self.test_01_bootcfg_ipxe.__name__
+
+        profiles = generate_profiles.GenerateProfiles(_id=name, name=name, ignition_id=name)
+        profiles.bootcfg_path = self.test_bootcfg_path
+        profiles.profiles_path = "%s/profiles" % self.test_bootcfg_path
+        profiles.dump()
+
         response = urllib2.urlopen("%s/ipxe" % self.bootcfg_endpoint).read()
         response = response.split("\n")
         self.assertIn("#!ipxe", response[0])
