@@ -1,0 +1,9 @@
+---
+storage:
+  files:
+    - filesystem: root
+      path: /tmp/hello
+      mode: 420
+      contents:
+        inline: |
+          Hello World

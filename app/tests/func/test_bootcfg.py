@@ -1,4 +1,5 @@
 import httplib
+import json
 import os
 import urllib2
 from unittest import TestCase
@@ -6,6 +7,8 @@ from multiprocessing import Process
 import subprocess
 
 import time
+
+from app import generator
 
 
 class TestBootCFG(TestCase):
@@ -20,7 +23,7 @@ class TestBootCFG(TestCase):
 
     test_bootcfg_path = "%s/test_bootcfg" % tests_path
 
-    bootcfg_address = "127.0.0.1:8080"
+    bootcfg_address = "0.0.0.0:8080"
     bootcfg_endpoint = "http://%s" % bootcfg_address
 
     @staticmethod
@@ -40,6 +43,13 @@ class TestBootCFG(TestCase):
         cls.p_bootcfg = Process(target=TestBootCFG.run_bootcfg)
         cls.p_bootcfg.start()
         time.sleep(0.5)
+        marker = "%s" % TestBootCFG.__name__.lower()
+
+        gen = generator.Generator(_id="id-%s" % marker,
+                                  name="name-%s" % marker,
+                                  ignition_id="func-%s.yaml" % marker,
+                                  bootcfg_path=cls.test_bootcfg_path)
+        gen.dumps()
 
     @classmethod
     def tearDownClass(cls):
@@ -62,16 +72,30 @@ class TestBootCFG(TestCase):
         self.assertEqual("bootcfg\n", response)
 
     def test_01_bootcfg_ipxe(self):
-        from app import generator
-
-        marker = "%s" % self.test_01_bootcfg_ipxe.__name__
-
-        gen = generator.Generator(_id="id-%s" % marker,
-                                  name="name-%s" % marker,
-                                  ignition_id="ign-%s" % marker,
-                                  bootcfg_path=self.test_bootcfg_path)
-        gen.dumps()
-
         response = urllib2.urlopen("%s/ipxe" % self.bootcfg_endpoint).read()
         response = response.split("\n")
         self.assertIn("#!ipxe", response[0])
+
+    def test_02_bootcfg_ignition(self):
+        response = urllib2.urlopen("%s/ignition" % self.bootcfg_endpoint).read()
+        ign_resp = json.loads(response)
+        expect = {
+            u'networkd': {},
+            u'passwd': {},
+            u'systemd': {},
+            u'storage': {
+                u'files': [{
+                    u'group': {},
+                    u'user': {},
+                    u'filesystem':
+                        u'root',
+                    u'path': u'/tmp/hello',
+                    u'contents': {
+                        u'source': u'data:,Hello%20World%0A',
+                        u'verification': {}
+                    },
+                    u'mode': 420}
+                ]
+            },
+            u'ignition': {u'version': u'2.0.0', u'config': {}}}
+        self.assertEqual(ign_resp, expect)
