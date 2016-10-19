@@ -254,7 +254,7 @@ class TestBootConfigSelector(TestBootConfigCommon):
 
     def test_a2_ipxe_raise(self):
         with self.assertRaises(urllib2.HTTPError):
-            urllib2.urlopen("%s/ignition?mac=%s" % (self.bootcfg_endpoint, "01:01:01:01:01"))
+            urllib2.urlopen("%s/ignition?mac=%s" % (self.bootcfg_endpoint, "01:01:01:01:01:01"))
 
     def test_a0_ignition(self):
         request = urllib2.urlopen("%s/ignition?mac=%s" % (self.bootcfg_endpoint, self.mac))
