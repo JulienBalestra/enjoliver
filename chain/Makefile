@@ -19,7 +19,12 @@ re: fclean $(ISO_RULE)
 $(IPXE):
 	git submodule init $(IPXE)
 
-$(ISO_RULE): $(IPXE)
+$(EMBED_SCRIPT):
+	@echo "BOOTCFG_IP_PORT=$(BOOTCFG_IP_PORT)"
+	@test $(BOOTCFG_IP_PORT)
+	sed s/BOOTCFG_IP_PORT/$(BOOTCFG_IP_PORT)/g chain.ipxe.template > $(EMBED_SCRIPT)
+
+$(ISO_RULE): $(IPXE) $(EMBED_SCRIPT)
 	@file $(EMBED_SCRIPT)
 	make -j$(CPU_USAGE) -C $(IPXE)/src bin/${ISO_RULE} EMBED=${EMBED_SCRIPT}
 	@file $(shell pwd)/$(ISO)

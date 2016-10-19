@@ -2,6 +2,6 @@
 
 dhcp
 
-set coreos-baremetal # IP:PORT
+set coreos-baremetal __IP__:__PORT__
 
 chain http://${coreos-baremetal}/boot.ipxe
