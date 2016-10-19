@@ -43,13 +43,13 @@ class TestBootCFG(TestCase):
         subprocess.check_output(["make"], cwd=cls.project_path)
         cls.p_bootcfg = Process(target=TestBootCFG.run_bootcfg)
         cls.p_bootcfg.start()
-        time.sleep(0.5)
+        time.sleep(0.01)
         marker = "%s" % TestBootCFG.__name__.lower()
 
         cls.gen = generator.Generator(_id="id-%s" % marker,
-                                  name="name-%s" % marker,
-                                  ignition_id="func-%s.yaml" % marker,
-                                  bootcfg_path=cls.test_bootcfg_path)
+                                      name="name-%s" % marker,
+                                      ignition_id="func-%s.yaml" % marker,
+                                      bootcfg_path=cls.test_bootcfg_path)
         cls.gen.dumps()
 
     @classmethod
@@ -64,14 +64,21 @@ class TestBootCFG(TestCase):
         self.assertEqual(self.gen.group.ip_address, self.gen.profile.ip_address)
 
     def test_00_bootcfg_running(self):
-        response = ""
+        response_body = ""
+        response_code = 404
         for i in xrange(10):
             try:
-                response = urllib2.urlopen(self.bootcfg_endpoint).read()
+                request = urllib2.urlopen(self.bootcfg_endpoint)
+                response_body = request.read()
+                response_code = request.code
+                request.close()
                 break
+
             except httplib.BadStatusLine:
                 time.sleep(0.1)
-        self.assertEqual("bootcfg\n", response)
+
+        self.assertEqual("bootcfg\n", response_body)
+        self.assertEqual(200, response_code)
 
     def test_01_bootcfg_ipxe(self):
 
@@ -102,7 +109,10 @@ class TestBootCFG(TestCase):
         self.assertEqual(boot, "boot")
 
     def test_02_bootcfg_ignition(self):
-        response = urllib2.urlopen("%s/ignition" % self.bootcfg_endpoint).read()
+        request = urllib2.urlopen("%s/ignition" % self.bootcfg_endpoint)
+        response = request.read()
+        request.close()
+
         ign_resp = json.loads(response)
         expect = {
             u'networkd': {},
