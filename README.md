@@ -2,15 +2,22 @@
 
 ## Linux checkout
 
-Requirements:
+#### Requirements
+
 
 * coreutils
+* git
 * make
 * curl
 * gpg
 * python2.7
     * until now no python requirements
     
+* ipxe chain loading build
+    * liblzma-dev 
+    * mkisofs 
+    * isolinux    
+
 
 
     git clone ${REPOSITORY} CaaS
