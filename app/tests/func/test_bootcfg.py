@@ -79,6 +79,7 @@ class TestBootCFG(TestCase):
         response = request.read()
         request.close()
 
+        response = response.replace(" \n", "\n")
         lines = response.split("\n")
 
         shebang = lines[0]
@@ -94,7 +95,7 @@ class TestBootCFG(TestCase):
         self.assertEqual(kernel, kernel_expect)
 
         init_rd = lines[2].split(" ")
-        init_rd_expect = ['initrd', '/assets/coreos/serve/coreos_production_pxe_image.cpio.gz', '']
+        init_rd_expect = ['initrd', '/assets/coreos/serve/coreos_production_pxe_image.cpio.gz']
         self.assertEqual(init_rd, init_rd_expect)
 
         boot = lines[3]
