@@ -39,6 +39,16 @@ class TestBootConfigCommon(TestCase):
         os.execv(cmd[0], cmd)
 
     @classmethod
+    def generator(cls):
+        marker = "%s" % cls.__name__.lower()
+        ignition_file = "inte-%s.yaml" % marker
+        cls.gen = generator.Generator(_id="id-%s" % marker,
+                                      name="name-%s" % marker,
+                                      ignition_id=ignition_file,
+                                      bootcfg_path=cls.test_bootcfg_path)
+        cls.gen.dumps()
+
+    @classmethod
     def setUpClass(cls):
 
         cls.clean_sandbox()
@@ -48,13 +58,7 @@ class TestBootConfigCommon(TestCase):
         cls.p_bootcfg.start()
         assert cls.p_bootcfg.is_alive() is True
 
-        marker = "%s" % cls.__name__.lower()
-        ignition_file = "inte-%s.yaml" % marker
-        cls.gen = generator.Generator(_id="id-%s" % marker,
-                                      name="name-%s" % marker,
-                                      ignition_id=ignition_file,
-                                      bootcfg_path=cls.test_bootcfg_path)
-        cls.gen.dumps()
+        cls.generator()
 
     @classmethod
     def tearDownClass(cls):
@@ -95,7 +99,21 @@ class TestBootConfigCommon(TestCase):
         self.assertEqual("bootcfg\n", response_body)
         self.assertEqual(200, response_code)
 
-    def test_01_bootcfg_ipxe(self):
+    def test_01_bootcfg_boot_dot_ipxe(self):
+        request = urllib2.urlopen("%s/boot.ipxe" % self.bootcfg_endpoint)
+        response = request.read()
+        request.close()
+        self.assertEqual(
+            response,
+            "#!ipxe\n"
+            "chain "
+            "ipxe?uuid=${uuid}"
+            "&mac=${net0/mac:hexhyp}"
+            "&domain=${domain}"
+            "&hostname=${hostname}"
+            "&serial=${serial}\n")
+
+    def test_02_bootcfg_ipxe(self):
         request = urllib2.urlopen("%s/ipxe" % self.bootcfg_endpoint)
         response = request.read()
         request.close()
@@ -126,7 +144,7 @@ class TestBootConfigCommon(TestCase):
 
 
 class TestBootConfigHelloWorld(TestBootConfigCommon):
-    def test_02_bootcfg_ignition(self):
+    def test_a0_bootcfg_ignition(self):
         request = urllib2.urlopen("%s/ignition" % self.bootcfg_endpoint)
         response = request.read()
         request.close()
@@ -154,3 +172,78 @@ class TestBootConfigHelloWorld(TestBootConfigCommon):
         self.assertEqual(ign_resp, expect)
 
 
+class TestBootConfigSelector(TestBootConfigCommon):
+    mac = "00:00:00:00:00:00"
+
+    @classmethod
+    def generator(cls):
+        marker = "%s" % cls.__name__.lower()
+        ignition_file = "inte-%s.yaml" % marker
+        cls.gen = generator.Generator(_id="id-%s" % marker,
+                                      name="name-%s" % marker,
+                                      ignition_id=ignition_file,
+                                      selector={"mac": cls.mac},
+                                      bootcfg_path=cls.test_bootcfg_path)
+        cls.gen.dumps()
+
+    def test_02_bootcfg_ipxe(self):
+        request = urllib2.urlopen("%s/ipxe?mac=%s" % (self.bootcfg_endpoint, self.mac))
+        response = request.read()
+        request.close()
+
+        response = response.replace(" \n", "\n")
+        lines = response.split("\n")
+        lines = [k for k in lines if k]
+
+        shebang = lines[0]
+        self.assertEqual(shebang, "#!ipxe")
+
+        kernel = lines[1].split(" ")
+        kernel_expect = [
+            'kernel',
+            '/assets/coreos/serve/coreos_production_pxe.vmlinuz',
+            'coreos.autologin',
+            'coreos.config.url=http://%s:8080/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % self.gen.group.ip_address,
+            'coreos.first_boot']
+        self.assertEqual(kernel, kernel_expect)
+
+        init_rd = lines[2].split(" ")
+        init_rd_expect = ['initrd', '/assets/coreos/serve/coreos_production_pxe_image.cpio.gz']
+        self.assertEqual(init_rd, init_rd_expect)
+
+        boot = lines[3]
+        self.assertEqual(boot, "boot")
+        self.assertEqual(len(lines), 4)
+
+    def test_a1_bootcfg_ipxe_raise(self):
+        with self.assertRaises(urllib2.HTTPError):
+            urllib2.urlopen("%s/ipxe" % self.bootcfg_endpoint)
+
+    def test_a2_bootcfg_ipxe_raise(self):
+        with self.assertRaises(urllib2.HTTPError):
+            urllib2.urlopen("%s/ignition?mac=%s" % (self.bootcfg_endpoint, "01:01:01:01:01"))
+
+    def test_a0_bootcfg_ignition(self):
+        request = urllib2.urlopen("%s/ignition?mac=%s" % (self.bootcfg_endpoint, self.mac))
+        response = request.read()
+        request.close()
+
+        ign_resp = json.loads(response)
+        expect = {
+            u'networkd': {},
+            u'passwd': {},
+            u'systemd': {},
+            u'storage': {
+                u'files': [
+                    {
+                        u'group': {},
+                        u'user': {},
+                        u'filesystem': u'root',
+                        u'path': u'/tmp/selector',
+                        u'contents': {
+                            u'source': u'data:,BySelector%0A', u'verification': {}
+                        },
+                        u'mode': 420}]
+            },
+            u'ignition': {u'version': u'2.0.0', u'config': {}}}
+        self.assertEqual(ign_resp, expect)
