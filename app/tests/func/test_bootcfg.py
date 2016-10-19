@@ -11,7 +11,7 @@ import time
 from app import generator
 
 
-class TestBootCFG(TestCase):
+class TestBootConfigBasic(TestCase):
     p_bootcfg = Process
     gen = generator.Generator
 
@@ -25,39 +25,51 @@ class TestBootCFG(TestCase):
     test_bootcfg_path = "%s/test_bootcfg" % tests_path
 
     bootcfg_address = "0.0.0.0:8080"
-    bootcfg_endpoint = "http://%s" % bootcfg_address
+    bootcfg_endpoint = "http://localhost:8080"
 
     @staticmethod
-    def run_bootcfg():
+    def process_target():
         cmd = [
-            "%s/bin/bootcfg" % TestBootCFG.tests_path,
-            "-data-path", "%s" % TestBootCFG.test_bootcfg_path,
-            "-assets-path", "%s" % TestBootCFG.assets_path,
-            "-address", "%s" % TestBootCFG.bootcfg_address
+            "%s/bin/bootcfg" % TestBootConfigBasic.tests_path,
+            "-data-path", "%s" % TestBootConfigBasic.test_bootcfg_path,
+            "-assets-path", "%s" % TestBootConfigBasic.assets_path,
+            "-address", "%s" % TestBootConfigBasic.bootcfg_address
         ]
         print " ".join(cmd)
         os.execv(cmd[0], cmd)
 
     @classmethod
     def setUpClass(cls):
+
+        cls.clean_sandbox()
+
         subprocess.check_output(["make"], cwd=cls.project_path)
-        cls.p_bootcfg = Process(target=TestBootCFG.run_bootcfg)
+        cls.p_bootcfg = Process(target=TestBootConfigBasic.process_target)
         cls.p_bootcfg.start()
         assert cls.p_bootcfg.is_alive() is True
 
-        marker = "%s" % TestBootCFG.__name__.lower()
+        marker = "%s" % cls.__name__.lower()
+        ignition_file = "func-%s.yaml" % marker
         cls.gen = generator.Generator(_id="id-%s" % marker,
                                       name="name-%s" % marker,
-                                      ignition_id="func-%s.yaml" % marker,
+                                      ignition_id=ignition_file,
                                       bootcfg_path=cls.test_bootcfg_path)
         cls.gen.dumps()
 
     @classmethod
     def tearDownClass(cls):
         print "\nSIGTERM -> %d" % cls.p_bootcfg.pid
-
         cls.p_bootcfg.terminate()
         cls.p_bootcfg.join(timeout=5)
+        cls.clean_sandbox()
+
+    @staticmethod
+    def clean_sandbox():
+        dirs = ["%s/%s" % (TestBootConfigBasic.test_bootcfg_path, k) for k in ("profiles", "groups")]
+        for d in dirs:
+            for f in os.listdir(d):
+                if ".json" in f:
+                    os.remove("%s/%s" % (d, f))
 
     def setUp(self):
         self.assertTrue(self.p_bootcfg.is_alive())
