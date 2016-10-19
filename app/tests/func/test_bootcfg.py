@@ -75,7 +75,10 @@ class TestBootCFG(TestCase):
 
     def test_01_bootcfg_ipxe(self):
 
-        response = urllib2.urlopen("%s/ipxe" % self.bootcfg_endpoint).read()
+        request = urllib2.urlopen("%s/ipxe" % self.bootcfg_endpoint)
+        response = request.read()
+        request.close()
+
         lines = response.split("\n")
 
         shebang = lines[0]
