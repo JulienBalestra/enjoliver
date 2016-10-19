@@ -44,12 +44,12 @@ class TestBootConfigCommon(TestCase):
         cls.clean_sandbox()
 
         subprocess.check_output(["make"], cwd=cls.project_path)
-        cls.p_bootcfg = Process(target=TestBootConfigBasic.process_target)
+        cls.p_bootcfg = Process(target=TestBootConfigHelloWorld.process_target)
         cls.p_bootcfg.start()
         assert cls.p_bootcfg.is_alive() is True
 
         marker = "%s" % cls.__name__.lower()
-        ignition_file = "func-%s.yaml" % marker
+        ignition_file = "inte-%s.yaml" % marker
         cls.gen = generator.Generator(_id="id-%s" % marker,
                                       name="name-%s" % marker,
                                       ignition_id=ignition_file,
@@ -65,7 +65,7 @@ class TestBootConfigCommon(TestCase):
 
     @staticmethod
     def clean_sandbox():
-        dirs = ["%s/%s" % (TestBootConfigBasic.test_bootcfg_path, k) for k in ("profiles", "groups")]
+        dirs = ["%s/%s" % (TestBootConfigHelloWorld.test_bootcfg_path, k) for k in ("profiles", "groups")]
         for d in dirs:
             for f in os.listdir(d):
                 if ".json" in f:
@@ -125,7 +125,7 @@ class TestBootConfigCommon(TestCase):
         self.assertEqual(len(lines), 4)
 
 
-class TestBootConfigBasic(TestBootConfigCommon):
+class TestBootConfigHelloWorld(TestBootConfigCommon):
     def test_02_bootcfg_ignition(self):
         request = urllib2.urlopen("%s/ignition" % self.bootcfg_endpoint)
         response = request.read()
@@ -152,3 +152,5 @@ class TestBootConfigBasic(TestBootConfigCommon):
             },
             u'ignition': {u'version': u'2.0.0', u'config': {}}}
         self.assertEqual(ign_resp, expect)
+
+
