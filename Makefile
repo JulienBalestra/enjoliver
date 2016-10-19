@@ -16,3 +16,7 @@ $(CHECK):
 
 $(CHECK_FAST):
 	make -C app/tests/ $(CHECK_FAST)
+
+submodules:
+	git submodule init
+	git submodule update

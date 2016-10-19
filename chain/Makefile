@@ -1,6 +1,6 @@
 
 SHELL=/bin/bash
-IPXE=ipxe
+IPXE=ipxe/src/Makefile
 CPU_NUM=$(shell grep -c '^processor' /proc/cpuinfo)
 CPU_DIV=2
 CPU_USAGE=$$(( $(CPU_NUM) / $(CPU_DIV) ))
@@ -17,7 +17,7 @@ default: $(ISO_RULE)
 re: fclean $(ISO_RULE)
 
 $(IPXE):
-	git submodule init $(IPXE)
+	make -C ../ submodules
 
 $(EMBED_SCRIPT):
 	@echo "BOOTCFG_IP_PORT=$(BOOTCFG_IP_PORT)"
