@@ -7,7 +7,7 @@ default: $(TARGET)
 $(TARGET):
 	mkdir -pv $(BIN)
 	curl -Lf $(RELEASE) -o $(TARGET).tar.gz
-	tar -C $(BIN) -xzvf $(TARGET).tar.gz --strip-components=1
+	tar -C $(BIN) -xzf $(TARGET).tar.gz --strip-components=1
 	file $(TARGET)
 
 clean:
