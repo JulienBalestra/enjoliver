@@ -43,9 +43,9 @@ class TestBootCFG(TestCase):
         subprocess.check_output(["make"], cwd=cls.project_path)
         cls.p_bootcfg = Process(target=TestBootCFG.run_bootcfg)
         cls.p_bootcfg.start()
-        time.sleep(0.01)
-        marker = "%s" % TestBootCFG.__name__.lower()
+        assert cls.p_bootcfg.is_alive() is True
 
+        marker = "%s" % TestBootCFG.__name__.lower()
         cls.gen = generator.Generator(_id="id-%s" % marker,
                                       name="name-%s" % marker,
                                       ignition_id="func-%s.yaml" % marker,
@@ -66,7 +66,7 @@ class TestBootCFG(TestCase):
     def test_00_bootcfg_running(self):
         response_body = ""
         response_code = 404
-        for i in xrange(10):
+        for i in xrange(100):
             try:
                 request = urllib2.urlopen(self.bootcfg_endpoint)
                 response_body = request.read()
@@ -75,7 +75,10 @@ class TestBootCFG(TestCase):
                 break
 
             except httplib.BadStatusLine:
-                time.sleep(0.1)
+                time.sleep(0.01)
+
+            except urllib2.URLError:
+                time.sleep(0.01)
 
         self.assertEqual("bootcfg\n", response_body)
         self.assertEqual(200, response_code)
