@@ -11,7 +11,7 @@ import time
 from app import generator
 
 
-class TestBootConfigBasic(TestCase):
+class TestBootConfigCommon(TestCase):
     p_bootcfg = Process
     gen = generator.Generator
 
@@ -30,10 +30,10 @@ class TestBootConfigBasic(TestCase):
     @staticmethod
     def process_target():
         cmd = [
-            "%s/bin/bootcfg" % TestBootConfigBasic.tests_path,
-            "-data-path", "%s" % TestBootConfigBasic.test_bootcfg_path,
-            "-assets-path", "%s" % TestBootConfigBasic.assets_path,
-            "-address", "%s" % TestBootConfigBasic.bootcfg_address
+            "%s/bin/bootcfg" % TestBootConfigCommon.tests_path,
+            "-data-path", "%s" % TestBootConfigCommon.test_bootcfg_path,
+            "-assets-path", "%s" % TestBootConfigCommon.assets_path,
+            "-address", "%s" % TestBootConfigCommon.bootcfg_address
         ]
         print " ".join(cmd)
         os.execv(cmd[0], cmd)
@@ -96,7 +96,6 @@ class TestBootConfigBasic(TestCase):
         self.assertEqual(200, response_code)
 
     def test_01_bootcfg_ipxe(self):
-
         request = urllib2.urlopen("%s/ipxe" % self.bootcfg_endpoint)
         response = request.read()
         request.close()
@@ -123,6 +122,8 @@ class TestBootConfigBasic(TestCase):
         boot = lines[3]
         self.assertEqual(boot, "boot")
 
+
+class TestBootConfigBasic(TestBootConfigCommon):
     def test_02_bootcfg_ignition(self):
         request = urllib2.urlopen("%s/ignition" % self.bootcfg_endpoint)
         response = request.read()
