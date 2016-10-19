@@ -19,6 +19,10 @@ fclean:
 check: $(TARGET)
 	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover unit/
 	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover inte/
-	#PYTHONPATH=$(shell pwd)/../.. python -m unittest discover func/
+	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover func/
+
+check_fast: $(TARGET)
+	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover unit/
+	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover inte/
 
 re: fclean default

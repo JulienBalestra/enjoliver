@@ -44,7 +44,7 @@ class TestBootConfigCommon(TestCase):
     def generator(cls):
         marker = "%s" % cls.__name__.lower()
         ignition_file = "inte-%s.yaml" % marker
-        cls.gen = generator.Generator(_id="id-%s" % marker,
+        cls.gen = generator.Generator(profile_id="id-%s" % marker,
                                       name="name-%s" % marker,
                                       ignition_id=ignition_file,
                                       bootcfg_path=cls.test_bootcfg_path)
@@ -217,7 +217,7 @@ class TestBootConfigSelector(TestBootConfigCommon):
     def generator(cls):
         marker = "%s" % cls.__name__.lower()
         ignition_file = "inte-%s.yaml" % marker
-        cls.gen = generator.Generator(_id="id-%s" % marker,
+        cls.gen = generator.Generator(profile_id="id-%s" % marker,
                                       name="name-%s" % marker,
                                       ignition_id=ignition_file,
                                       selector={"mac": cls.mac},
@@ -301,7 +301,7 @@ class TestBootConfigSelectors(TestBootConfigCommon):
     def generator(cls):
         marker_one = "%s-one" % cls.__name__.lower()
         ignition_file = "inte-%s.yaml" % marker_one
-        gen_one = generator.Generator(_id="id-%s" % marker_one,
+        gen_one = generator.Generator(profile_id="id-%s" % marker_one,
                                       name="name-%s" % marker_one,
                                       ignition_id=ignition_file,
                                       selector={"mac": cls.mac_one},
@@ -310,7 +310,7 @@ class TestBootConfigSelectors(TestBootConfigCommon):
 
         marker_two = "%s-two" % cls.__name__.lower()
         ignition_file = "inte-%s.yaml" % marker_two
-        gen_one = generator.Generator(_id="id-%s" % marker_two,
+        gen_one = generator.Generator(profile_id="id-%s" % marker_two,
                                       name="name-%s" % marker_two,
                                       ignition_id=ignition_file,
                                       selector={"mac": cls.mac_two},
@@ -319,7 +319,7 @@ class TestBootConfigSelectors(TestBootConfigCommon):
 
         marker_three = "%s-three" % cls.__name__.lower()
         ignition_file = "inte-testbootconfigselectors-default.yaml"
-        gen_one = generator.Generator(_id="id-%s" % marker_three,
+        gen_one = generator.Generator(profile_id="id-%s" % marker_three,
                                       name="name-%s" % marker_three,
                                       ignition_id=ignition_file,
                                       bootcfg_path=cls.test_bootcfg_path)

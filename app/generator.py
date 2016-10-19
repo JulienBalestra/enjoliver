@@ -3,17 +3,18 @@ from generate_profiles import GenerateProfile
 
 
 class Generator(object):
-    def __init__(self, _id, name, ignition_id, bootcfg_path, selector=None):
+    def __init__(self, profile_id, name, ignition_id, bootcfg_path,
+                 selector=None, group_id=None):
         self.profile = GenerateProfile(
-            _id=_id,
+            _id=profile_id,
             name=name,
             ignition_id=ignition_id,
             bootcfg_path=bootcfg_path)
 
         self.group = GenerateGroup(
-            _id=_id,
+            _id=group_id if group_id else profile_id,
             name=name,
-            profile=_id,  # TODO
+            profile=profile_id,  # TODO
             selector=selector,
             bootcfg_path=bootcfg_path)
 

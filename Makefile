@@ -1,8 +1,18 @@
+CHECK=check
+CHECK_FAST=check_fast
+
 default:
 	make -C bootcfg/assets/coreos
 	make -C bootcfg/assets/coreos serve
 	make -C bootcfg/assets/setup-network-environment
 	make -C bootcfg/assets/setup-network-environment serve
 
-check:
-	make -C app/tests/ check
+clean:
+	make -C bootcfg/assets/coreos fclean
+	make -C bootcfg/assets/setup-network-environment fclean
+
+$(CHECK):
+	make -C app/tests/ $(CHECK)
+
+$(CHECK_FAST):
+	make -C app/tests/ $(CHECK_FAST)
