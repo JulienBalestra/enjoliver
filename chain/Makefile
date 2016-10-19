@@ -1,6 +1,6 @@
 
 SHELL=/bin/bash
-IPXE=ipxe/src/Makefile
+IPXE=ipxe/src
 CPU_NUM=$(shell grep -c '^processor' /proc/cpuinfo)
 CPU_DIV=2
 CPU_USAGE=$$(( $(CPU_NUM) / $(CPU_DIV) ))
@@ -26,7 +26,7 @@ $(EMBED_SCRIPT):
 
 $(ISO_RULE): $(IPXE) $(EMBED_SCRIPT)
 	@file $(EMBED_SCRIPT)
-	make -j$(CPU_USAGE) -C $(IPXE)/src bin/${ISO_RULE} EMBED=${EMBED_SCRIPT}
+	make -j$(CPU_USAGE) -C $(IPXE) bin/${ISO_RULE} EMBED=${EMBED_SCRIPT}
 	@file $(shell pwd)/$(ISO)
 
 clean: $(IPXE)
