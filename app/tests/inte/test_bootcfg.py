@@ -24,8 +24,10 @@ class TestBootConfigCommon(TestCase):
 
     test_bootcfg_path = "%s/test_bootcfg" % tests_path
 
-    bootcfg_address = "0.0.0.0:8080"
-    bootcfg_endpoint = "http://localhost:8080"
+    bootcfg_port = int(os.getenv("BOOTCFG_PORT", "8888"))
+
+    bootcfg_address = "0.0.0.0:%d" % bootcfg_port
+    bootcfg_endpoint = "http://localhost:%d" % bootcfg_port
 
     @staticmethod
     def process_target():
@@ -174,6 +176,9 @@ class TestBootConfigCommon(TestCase):
     def test_03_assets_coreos_serve_404(self):
         with self.assertRaises(urllib2.HTTPError):
             urllib2.urlopen("%s/assets/coreos/serve/404_request.not-here" % self.bootcfg_endpoint)
+
+    # def test_04_metadata(self):
+    #     urllib2.urlopen("%s/metadata" % self.bootcfg_endpoint)
 
 
 class TestBootConfigHelloWorld(TestBootConfigCommon):
