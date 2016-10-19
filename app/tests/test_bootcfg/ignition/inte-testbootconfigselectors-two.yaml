@@ -1,0 +1,9 @@
+---
+storage:
+  files:
+    - filesystem: root
+      path: /tmp/selector
+      mode: 420
+      contents:
+        inline: |
+          BySelectorTwo

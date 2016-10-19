@@ -1,6 +1,7 @@
 import httplib
 import json
 import os
+import unittest
 import urllib2
 from unittest import TestCase
 from multiprocessing import Process
@@ -77,7 +78,11 @@ class TestBootConfigCommon(TestCase):
 
     def setUp(self):
         self.assertTrue(self.p_bootcfg.is_alive())
-        self.assertEqual(self.gen.group.ip_address, self.gen.profile.ip_address)
+        try:
+            self.assertEqual(self.gen.group.ip_address, self.gen.profile.ip_address)
+        except AttributeError:
+            # gen not declared
+            pass
 
     def test_00_bootcfg_running(self):
         response_body = ""
@@ -242,6 +247,124 @@ class TestBootConfigSelector(TestBootConfigCommon):
                         u'path': u'/tmp/selector',
                         u'contents': {
                             u'source': u'data:,BySelector%0A', u'verification': {}
+                        },
+                        u'mode': 420}]
+            },
+            u'ignition': {u'version': u'2.0.0', u'config': {}}}
+        self.assertEqual(ign_resp, expect)
+
+
+class TestBootConfigSelectors(TestBootConfigCommon):
+    mac_one = "00:00:00:00:00:01"
+    mac_two = "00:00:00:00:00:02"
+    mac_three = "00:00:00:00:00:03"
+
+    # @staticmethod
+    # def clean_sandbox():
+    #     # Don't clean
+    #     pass
+
+    @classmethod
+    def generator(cls):
+        marker_one = "%s-one" % cls.__name__.lower()
+        ignition_file = "inte-%s.yaml" % marker_one
+        gen_one = generator.Generator(_id="id-%s" % marker_one,
+                                      name="name-%s" % marker_one,
+                                      ignition_id=ignition_file,
+                                      selector={"mac": cls.mac_one},
+                                      bootcfg_path=cls.test_bootcfg_path)
+        gen_one.dumps()
+
+        marker_two = "%s-two" % cls.__name__.lower()
+        ignition_file = "inte-%s.yaml" % marker_two
+        gen_one = generator.Generator(_id="id-%s" % marker_two,
+                                      name="name-%s" % marker_two,
+                                      ignition_id=ignition_file,
+                                      selector={"mac": cls.mac_two},
+                                      bootcfg_path=cls.test_bootcfg_path)
+        gen_one.dumps()
+
+        marker_three = "%s-three" % cls.__name__.lower()
+        ignition_file = "inte-testbootconfigselectors-default.yaml"
+        gen_one = generator.Generator(_id="id-%s" % marker_three,
+                                      name="name-%s" % marker_three,
+                                      ignition_id=ignition_file,
+                                      bootcfg_path=cls.test_bootcfg_path)
+        gen_one.dumps()
+
+    @unittest.skip("Coverage outside")
+    def test_02_bootcfg_ipxe(self):
+        self.fail("Skip")
+
+    def test_bootcfg_ignition_1(self):
+        request = urllib2.urlopen("%s/ignition?mac=%s" % (self.bootcfg_endpoint, self.mac_one))
+        response = request.read()
+        request.close()
+
+        ign_resp = json.loads(response)
+        expect = {
+            u'networkd': {},
+            u'passwd': {},
+            u'systemd': {},
+            u'storage': {
+                u'files': [
+                    {
+                        u'group': {},
+                        u'user': {},
+                        u'filesystem': u'root',
+                        u'path': u'/tmp/selector',
+                        u'contents': {
+                            u'source': u'data:,BySelectorOne%0A', u'verification': {}
+                        },
+                        u'mode': 420}]
+            },
+            u'ignition': {u'version': u'2.0.0', u'config': {}}}
+        self.assertEqual(ign_resp, expect)
+
+    def test_bootcfg_ignition_2(self):
+        request = urllib2.urlopen("%s/ignition?mac=%s" % (self.bootcfg_endpoint, self.mac_two))
+        response = request.read()
+        request.close()
+
+        ign_resp = json.loads(response)
+        expect = {
+            u'networkd': {},
+            u'passwd': {},
+            u'systemd': {},
+            u'storage': {
+                u'files': [
+                    {
+                        u'group': {},
+                        u'user': {},
+                        u'filesystem': u'root',
+                        u'path': u'/tmp/selector',
+                        u'contents': {
+                            u'source': u'data:,BySelectorTwo%0A', u'verification': {}
+                        },
+                        u'mode': 420}]
+            },
+            u'ignition': {u'version': u'2.0.0', u'config': {}}}
+        self.assertEqual(ign_resp, expect)
+
+    def test_bootcfg_ignition_3(self):
+        request = urllib2.urlopen("%s/ignition?mac=%s" % (self.bootcfg_endpoint, self.mac_three))
+        response = request.read()
+        request.close()
+
+        ign_resp = json.loads(response)
+        expect = {
+            u'networkd': {},
+            u'passwd': {},
+            u'systemd': {},
+            u'storage': {
+                u'files': [
+                    {
+                        u'group': {},
+                        u'user': {},
+                        u'filesystem': u'root',
+                        u'path': u'/tmp/selector',
+                        u'contents': {
+                            u'source': u'data:,NoSelector%0A', u'verification': {}
                         },
                         u'mode': 420}]
             },
