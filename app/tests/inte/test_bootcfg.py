@@ -320,10 +320,6 @@ class TestBootConfigSelectors(TestBootConfigCommon):
                                       bootcfg_path=cls.test_bootcfg_path)
         gen_one.dumps()
 
-    # @unittest.skip("Coverage outside")
-    # def test_02_bootcfg_ipxe(self):
-    #     self.fail("Skip")
-
     def test_ignition_1(self):
         request = urllib2.urlopen("%s/ignition?mac=%s" % (self.bootcfg_endpoint, self.mac_one))
         response = request.read()
