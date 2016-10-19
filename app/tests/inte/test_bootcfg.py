@@ -1,7 +1,6 @@
 import httplib
 import json
 import os
-import unittest
 import urllib2
 from unittest import TestCase
 from multiprocessing import Process
@@ -70,7 +69,7 @@ class TestBootConfigCommon(TestCase):
 
     @staticmethod
     def clean_sandbox():
-        dirs = ["%s/%s" % (TestBootConfigHelloWorld.test_bootcfg_path, k) for k in ("profiles", "groups")]
+        dirs = ["%s/%s" % (TestBootConfigCommon.test_bootcfg_path, k) for k in ("profiles", "groups")]
         for d in dirs:
             for f in os.listdir(d):
                 if ".json" in f:
@@ -84,7 +83,7 @@ class TestBootConfigCommon(TestCase):
             # gen not declared
             pass
 
-    def test_00_bootcfg_running(self):
+    def test_00_running(self):
         response_body = ""
         response_code = 404
         for i in xrange(100):
@@ -104,7 +103,7 @@ class TestBootConfigCommon(TestCase):
         self.assertEqual("bootcfg\n", response_body)
         self.assertEqual(200, response_code)
 
-    def test_01_bootcfg_boot_dot_ipxe(self):
+    def test_01_boot_dot_ipxe(self):
         request = urllib2.urlopen("%s/boot.ipxe" % self.bootcfg_endpoint)
         response = request.read()
         request.close()
@@ -118,7 +117,7 @@ class TestBootConfigCommon(TestCase):
             "&hostname=${hostname}"
             "&serial=${serial}\n")
 
-    def test_02_bootcfg_ipxe(self):
+    def test_02_ipxe(self):
         request = urllib2.urlopen("%s/ipxe" % self.bootcfg_endpoint)
         response = request.read()
         request.close()
@@ -147,9 +146,38 @@ class TestBootConfigCommon(TestCase):
         self.assertEqual(boot, "boot")
         self.assertEqual(len(lines), 4)
 
+    def test_03_assets(self):
+        request = urllib2.urlopen("%s/assets" % self.bootcfg_endpoint)
+        request.close()
+        self.assertEqual(200, request.code)
+
+    def test_03_assets_coreos(self):
+        request = urllib2.urlopen("%s/assets/coreos" % self.bootcfg_endpoint)
+        request.close()
+        self.assertEqual(200, request.code)
+
+    def test_03_assets_coreos_serve(self):
+        request = urllib2.urlopen("%s/assets/coreos/serve" % self.bootcfg_endpoint)
+        request.close()
+        self.assertEqual(200, request.code)
+
+    def test_03_assets_coreos_serve_kernel(self):
+        request = urllib2.urlopen("%s/assets/coreos/serve/coreos_production_pxe.vmlinuz" % self.bootcfg_endpoint)
+        request.close()
+        self.assertEqual(200, request.code)
+
+    def test_03_assets_coreos_serve_initrd(self):
+        request = urllib2.urlopen("%s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz" % self.bootcfg_endpoint)
+        request.close()
+        self.assertEqual(200, request.code)
+
+    def test_03_assets_coreos_serve_404(self):
+        with self.assertRaises(urllib2.HTTPError):
+            urllib2.urlopen("%s/assets/coreos/serve/404_request.not-here" % self.bootcfg_endpoint)
+
 
 class TestBootConfigHelloWorld(TestBootConfigCommon):
-    def test_a0_bootcfg_ignition(self):
+    def test_a0_ignition(self):
         request = urllib2.urlopen("%s/ignition" % self.bootcfg_endpoint)
         response = request.read()
         request.close()
@@ -191,7 +219,7 @@ class TestBootConfigSelector(TestBootConfigCommon):
                                       bootcfg_path=cls.test_bootcfg_path)
         cls.gen.dumps()
 
-    def test_02_bootcfg_ipxe(self):
+    def test_02_ipxe(self):
         request = urllib2.urlopen("%s/ipxe?mac=%s" % (self.bootcfg_endpoint, self.mac))
         response = request.read()
         request.close()
@@ -220,15 +248,15 @@ class TestBootConfigSelector(TestBootConfigCommon):
         self.assertEqual(boot, "boot")
         self.assertEqual(len(lines), 4)
 
-    def test_a1_bootcfg_ipxe_raise(self):
+    def test_a1_ipxe_raise(self):
         with self.assertRaises(urllib2.HTTPError):
             urllib2.urlopen("%s/ipxe" % self.bootcfg_endpoint)
 
-    def test_a2_bootcfg_ipxe_raise(self):
+    def test_a2_ipxe_raise(self):
         with self.assertRaises(urllib2.HTTPError):
             urllib2.urlopen("%s/ignition?mac=%s" % (self.bootcfg_endpoint, "01:01:01:01:01"))
 
-    def test_a0_bootcfg_ignition(self):
+    def test_a0_ignition(self):
         request = urllib2.urlopen("%s/ignition?mac=%s" % (self.bootcfg_endpoint, self.mac))
         response = request.read()
         request.close()
@@ -292,11 +320,11 @@ class TestBootConfigSelectors(TestBootConfigCommon):
                                       bootcfg_path=cls.test_bootcfg_path)
         gen_one.dumps()
 
-    @unittest.skip("Coverage outside")
-    def test_02_bootcfg_ipxe(self):
-        self.fail("Skip")
+    # @unittest.skip("Coverage outside")
+    # def test_02_bootcfg_ipxe(self):
+    #     self.fail("Skip")
 
-    def test_bootcfg_ignition_1(self):
+    def test_ignition_1(self):
         request = urllib2.urlopen("%s/ignition?mac=%s" % (self.bootcfg_endpoint, self.mac_one))
         response = request.read()
         request.close()
@@ -321,7 +349,7 @@ class TestBootConfigSelectors(TestBootConfigCommon):
             u'ignition': {u'version': u'2.0.0', u'config': {}}}
         self.assertEqual(ign_resp, expect)
 
-    def test_bootcfg_ignition_2(self):
+    def test_ignition_2(self):
         request = urllib2.urlopen("%s/ignition?mac=%s" % (self.bootcfg_endpoint, self.mac_two))
         response = request.read()
         request.close()
@@ -346,7 +374,7 @@ class TestBootConfigSelectors(TestBootConfigCommon):
             u'ignition': {u'version': u'2.0.0', u'config': {}}}
         self.assertEqual(ign_resp, expect)
 
-    def test_bootcfg_ignition_3(self):
+    def test_ignition_3(self):
         request = urllib2.urlopen("%s/ignition?mac=%s" % (self.bootcfg_endpoint, self.mac_three))
         response = request.read()
         request.close()
