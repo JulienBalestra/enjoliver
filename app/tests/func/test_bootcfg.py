@@ -102,6 +102,7 @@ class TestBootConfigCommon(TestCase):
 
         response = response.replace(" \n", "\n")
         lines = response.split("\n")
+        lines = [k for k in lines if k]
 
         shebang = lines[0]
         self.assertEqual(shebang, "#!ipxe")
@@ -121,6 +122,7 @@ class TestBootConfigCommon(TestCase):
 
         boot = lines[3]
         self.assertEqual(boot, "boot")
+        self.assertEqual(len(lines), 4)
 
 
 class TestBootConfigBasic(TestBootConfigCommon):
