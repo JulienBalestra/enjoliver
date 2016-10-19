@@ -1,4 +1,3 @@
-
 SHELL=/bin/bash
 IPXE=ipxe/src
 CPU_NUM=$(shell grep -c '^processor' /proc/cpuinfo)
@@ -7,8 +6,6 @@ CPU_USAGE=$$(( $(CPU_NUM) / $(CPU_DIV) ))
 
 ISO_RULE=ipxe.iso
 ISO=ipxe/src/bin/$(ISO_RULE)
-
-BUCKET=bbccoreos
 
 EMBED_SCRIPT=$(shell pwd)/chain.ipxe
 
