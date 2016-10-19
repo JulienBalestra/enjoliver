@@ -13,6 +13,7 @@ from app import generator
 
 class TestBootCFG(TestCase):
     p_bootcfg = Process
+    gen = generator.Generator
 
     func_path = "%s" % os.path.dirname(__file__)
     tests_path = "%s" % os.path.split(func_path)[0]
@@ -45,11 +46,11 @@ class TestBootCFG(TestCase):
         time.sleep(0.5)
         marker = "%s" % TestBootCFG.__name__.lower()
 
-        gen = generator.Generator(_id="id-%s" % marker,
+        cls.gen = generator.Generator(_id="id-%s" % marker,
                                   name="name-%s" % marker,
                                   ignition_id="func-%s.yaml" % marker,
                                   bootcfg_path=cls.test_bootcfg_path)
-        gen.dumps()
+        cls.gen.dumps()
 
     @classmethod
     def tearDownClass(cls):
@@ -60,6 +61,7 @@ class TestBootCFG(TestCase):
 
     def setUp(self):
         self.assertTrue(self.p_bootcfg.is_alive())
+        self.assertEqual(self.gen.group.ip_address, self.gen.profile.ip_address)
 
     def test_00_bootcfg_running(self):
         response = ""
@@ -72,9 +74,28 @@ class TestBootCFG(TestCase):
         self.assertEqual("bootcfg\n", response)
 
     def test_01_bootcfg_ipxe(self):
+
         response = urllib2.urlopen("%s/ipxe" % self.bootcfg_endpoint).read()
-        response = response.split("\n")
-        self.assertIn("#!ipxe", response[0])
+        lines = response.split("\n")
+
+        shebang = lines[0]
+        self.assertEqual(shebang, "#!ipxe")
+
+        kernel = lines[1].split(" ")
+        kernel_expect = [
+            'kernel',
+            '/assets/coreos/serve/coreos_production_pxe.vmlinuz',
+            'coreos.autologin',
+            'coreos.config.url=http://%s:8080/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % self.gen.group.ip_address,
+            'coreos.first_boot']
+        self.assertEqual(kernel, kernel_expect)
+
+        init_rd = lines[2].split(" ")
+        init_rd_expect = ['initrd', '/assets/coreos/serve/coreos_production_pxe_image.cpio.gz', '']
+        self.assertEqual(init_rd, init_rd_expect)
+
+        boot = lines[3]
+        self.assertEqual(boot, "boot")
 
     def test_02_bootcfg_ignition(self):
         response = urllib2.urlopen("%s/ignition" % self.bootcfg_endpoint).read()
