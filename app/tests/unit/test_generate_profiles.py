@@ -4,7 +4,7 @@ from unittest import TestCase
 
 import re
 
-from app import generate_profiles
+from app import generate_profiles, generate_common
 
 
 class TestGenerateProfiles(TestCase):
@@ -17,6 +17,7 @@ class TestGenerateProfiles(TestCase):
     @classmethod
     def setUpClass(cls):
         subprocess.check_output(["make", "-C", cls.gen.project_path])
+        generate_common.GenerateCommon._raise_enof = Warning  # Skip the ignition isfile
         cls.gen = generate_profiles.GenerateProfile(
             _id="etcd-proxy", name="etcd-proxy", ignition_id="etcd-proxy.yaml")
         cls.gen.profiles_path = "%s/test_resources" % cls.tests_path
