@@ -6,8 +6,10 @@ from generate_common import GenerateCommon
 class GenerateGroup(GenerateCommon):
     def __init__(self, _id, name, profile, selector=None,
                  bootcfg_path=GenerateCommon.bootcfg_path):
-        self.target_path = "%s/groups" % bootcfg_path
-        self.selector = selector
+
+        self.ensure_directory(bootcfg_path)
+        self.target_path = self.ensure_directory("%s/groups" % bootcfg_path)
+        self.selector = None if not selector else dict(selector)
 
         self._ip_address = None
         self._target_data = {

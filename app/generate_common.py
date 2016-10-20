@@ -11,6 +11,8 @@ class GenerateCommon(object):
     _target_data = None
     _ip_address = None
 
+    _raise_enof = IOError
+
     @property
     def target_data(self):
         if self._target_data is not None:
@@ -43,3 +45,14 @@ class GenerateCommon(object):
     def dump(self):
         with open("%s/%s.json" % (self.target_path, self.target_data["id"]), "w") as fd:
             fd.write(self.render())
+
+    @staticmethod
+    def ensure_directory(path):
+        if os.path.isdir(path) is False:
+            raise IOError("%s not a valid as directory" % path)
+        return path
+
+    def ensure_file(self, path):
+        if os.path.isfile(path) is False:
+            raise self._raise_enof("%s not a valid as file" % path)
+        return path

@@ -8,10 +8,18 @@ import subprocess
 
 import time
 
-from app import generator
+import sys
+
+from app import generator, generate_common
+
+
+class CountWarning(object):
+    i = 0
 
 
 class TestBootConfigCommon(TestCase):
+    cw = CountWarning()
+
     p_bootcfg = Process
     gen = generator.Generator
 
@@ -35,19 +43,30 @@ class TestBootConfigCommon(TestCase):
             "%s/bin/bootcfg" % TestBootConfigCommon.tests_path,
             "-data-path", "%s" % TestBootConfigCommon.test_bootcfg_path,
             "-assets-path", "%s" % TestBootConfigCommon.assets_path,
-            "-address", "%s" % TestBootConfigCommon.bootcfg_address
+            "-address", "%s" % TestBootConfigCommon.bootcfg_address,
+            "-log-level", "debug"
         ]
-        print " ".join(cmd)
+        os.write(1, "PID  -> %s\nexec -> %s\n" % (os.getpid(), " ".join(cmd)))
+        sys.stdout.flush()
         os.execv(cmd[0], cmd)
 
     @classmethod
     def generator(cls):
         marker = "%s" % cls.__name__.lower()
         ignition_file = "inte-%s.yaml" % marker
-        cls.gen = generator.Generator(profile_id="id-%s" % marker,
-                                      name="name-%s" % marker,
-                                      ignition_id=ignition_file,
-                                      bootcfg_path=cls.test_bootcfg_path)
+
+        try:
+            cls.gen = generator.Generator(
+                profile_id="id-%s" % marker,
+                name="name-%s" % marker,
+                ignition_id=ignition_file,
+                bootcfg_path=cls.test_bootcfg_path)
+        except IOError:
+            if cls.cw.i < 1:
+                cls.cw.i += 1
+                generate_common.GenerateCommon._raise_enof = Warning
+            cls.generator()
+
         cls.gen.dumps()
 
     @classmethod
@@ -57,6 +76,7 @@ class TestBootConfigCommon(TestCase):
 
         subprocess.check_output(["make"], cwd=cls.project_path)
         cls.p_bootcfg = Process(target=TestBootConfigHelloWorld.process_target)
+        os.write(1, "PPID -> %s\n" % os.getpid())
         cls.p_bootcfg.start()
         assert cls.p_bootcfg.is_alive() is True
 
@@ -64,7 +84,8 @@ class TestBootConfigCommon(TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        print "\nSIGTERM -> %d" % cls.p_bootcfg.pid
+        os.write(1, "TERM -> %d\n" % cls.p_bootcfg.pid)
+        sys.stdout.flush()
         cls.p_bootcfg.terminate()
         cls.p_bootcfg.join(timeout=5)
         cls.clean_sandbox()
@@ -177,8 +198,8 @@ class TestBootConfigCommon(TestCase):
         with self.assertRaises(urllib2.HTTPError):
             urllib2.urlopen("%s/assets/coreos/serve/404_request.not-here" % self.bootcfg_endpoint)
 
-    # def test_04_metadata(self):
-    #     urllib2.urlopen("%s/metadata" % self.bootcfg_endpoint)
+            # def test_04_metadata(self):
+            #     urllib2.urlopen("%s/metadata" % self.bootcfg_endpoint)
 
 
 class TestBootConfigHelloWorld(TestBootConfigCommon):
