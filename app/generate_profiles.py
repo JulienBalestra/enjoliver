@@ -4,9 +4,10 @@ from generate_common import GenerateCommon
 class GenerateProfile(GenerateCommon):
     def __init__(self, _id, name, ignition_id,
                  bootcfg_path=GenerateCommon.bootcfg_path):
+
         self.target_path = "%s/profiles" % bootcfg_path
         self._ip_address = None
-        self.target_data = {
+        self._target_data = {
             "id": "%s" % _id,
             "name": "%s" % name,
             "boot": {},
@@ -15,7 +16,7 @@ class GenerateProfile(GenerateCommon):
         }
 
     def _boot(self):
-        self.target_data["boot"] = {
+        self._target_data["boot"] = {
             "kernel": "/assets/coreos/serve/coreos_production_pxe.vmlinuz",
             "initrd": ["/assets/coreos/serve/coreos_production_pxe_image.cpio.gz"],
             "cmdline": {

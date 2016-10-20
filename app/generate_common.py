@@ -8,10 +8,14 @@ class GenerateCommon(object):
     project_path = os.path.split(app_path)[0]
     bootcfg_path = "%s/bootcfg" % project_path
 
-    target_data = {
-        "id": "",
-        "name": ""
-    }
+    _target_data = None
+    _ip_address = None
+
+    @property
+    def target_data(self):
+        if self._target_data is not None:
+            return self._target_data
+        return self.generate()
 
     @property
     def ip_address(self):
@@ -32,9 +36,9 @@ class GenerateCommon(object):
     def generate(self):
         raise NotImplementedError
 
-    def render(self, indent=4):
+    def render(self, indent=2):
         self.generate()
-        return json.dumps(self.target_data, indent=indent)
+        return json.dumps(self._target_data, indent=indent)
 
     def dump(self):
         with open("%s/%s.json" % (self.target_path, self.target_data["id"]), "w") as fd:

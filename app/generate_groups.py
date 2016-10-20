@@ -10,7 +10,7 @@ class GenerateGroup(GenerateCommon):
         self.selector = selector
 
         self._ip_address = None
-        self.target_data = {
+        self._target_data = {
             "id": _id,
             "name": name,
             "profile": profile,
@@ -21,8 +21,8 @@ class GenerateGroup(GenerateCommon):
         }
 
     def _metadata(self):
-        self.target_data["metadata"]["seed"] = "http://%s:8080" % self.ip_address
-        self.target_data["metadata"]["etcd_initial_cluster"] = ""
+        self._target_data["metadata"]["seed"] = "http://%s:8080" % self.ip_address
+        self._target_data["metadata"]["etcd_initial_cluster"] = ""
 
     def _selector(self):
         if self.selector is None:
@@ -32,14 +32,15 @@ class GenerateGroup(GenerateCommon):
             raise TypeError("selector is not a dict")
 
         try:
-            match = re.match(r"^([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})$",
-                             self.selector["mac"].lower())
+            self.selector["mac"] = self.selector["mac"].lower()
+            match = re.match(r"^([0-9a-f]{2}[:]){5}([0-9a-f]{2})$",
+                             self.selector["mac"])
             if match is None:
                 raise TypeError("%s is not a valid MAC address" % self.selector["mac"].lower())
         except KeyError:
             pass
 
-        self.target_data["selector"] = self.selector
+        self._target_data["selector"] = self.selector
 
     def generate(self):
         self._metadata()

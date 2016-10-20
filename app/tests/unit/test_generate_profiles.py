@@ -47,7 +47,7 @@ class TestGenerateProfiles(TestCase):
                 }
         }
         self.gen._boot()
-        self.assertEqual(expect, self.gen.target_data["boot"])
+        self.assertEqual(expect, self.gen._target_data["boot"])
 
     def test_990_generate(self):
         expect = {
