@@ -1,7 +1,10 @@
 CHECK=check
 CHECK_FAST=check_fast
 
-default:
+default: submodules assets
+
+
+assets:
 	make -C bootcfg/assets/coreos
 	make -C bootcfg/assets/coreos serve
 	make -C bootcfg/assets/setup-network-environment
