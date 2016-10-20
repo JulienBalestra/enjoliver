@@ -34,7 +34,7 @@ class TestBootConfigCommon(TestCase):
 
     test_bootcfg_path = "%s/test_bootcfg" % tests_path
 
-    bootcfg_port = int(os.getenv("BOOTCFG_PORT", "8888"))
+    bootcfg_port = int(os.getenv("BOOTCFG_PORT", "8080"))
 
     bootcfg_address = "0.0.0.0:%d" % bootcfg_port
     bootcfg_endpoint = "http://localhost:%d" % bootcfg_port
@@ -164,7 +164,7 @@ class TestBootConfigCommon(TestCase):
             'kernel',
             '/assets/coreos/serve/coreos_production_pxe.vmlinuz',
             'coreos.autologin',
-            'coreos.config.url=http://%s:8080/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % self.gen.group.ip_address,
+            'coreos.config.url=http://%s:%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % (self.gen.group.ip_address, self.bootcfg_port),
             'coreos.first_boot']
         self.assertEqual(kernel, kernel_expect)
 
@@ -269,7 +269,7 @@ class TestBootConfigSelector(TestBootConfigCommon):
             'kernel',
             '/assets/coreos/serve/coreos_production_pxe.vmlinuz',
             'coreos.autologin',
-            'coreos.config.url=http://%s:8080/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % self.gen.group.ip_address,
+            'coreos.config.url=http://%s:%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % (self.gen.group.ip_address, self.bootcfg_port),
             'coreos.first_boot']
         self.assertEqual(kernel, kernel_expect)
 

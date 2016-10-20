@@ -22,6 +22,8 @@ class TestGenerateProfiles(TestCase):
     tests_path = "%s" % os.path.split(unit_path)[0]
     test_bootcfg_path = "%s/test_bootcfg" % tests_path
 
+    bootcfg_port = os.getenv("BOOTCFG_PORT", "8080")
+
     @classmethod
     def setUpClass(cls):
         subprocess.check_output(["make", "-C", cls.gen.project_path])
@@ -54,7 +56,8 @@ class TestGenerateProfiles(TestCase):
                 {
                     'coreos.autologin': '',
                     'coreos.first_boot': '',
-                    'coreos.config.url': 'http://%s:8080/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % self.gen.ip_address
+                    'coreos.config.url': 'http://%s:%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' %
+                                         (self.gen.ip_address, self.bootcfg_port)
                 }
         }
         self.gen._boot()
@@ -71,7 +74,8 @@ class TestGenerateProfiles(TestCase):
                 "cmdline": {
                     "coreos.autologin": "",
                     "coreos.first_boot": "",
-                    "coreos.config.url": "http://%s:8080/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}" % self.gen.ip_address
+                    "coreos.config.url": "http://%s:%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}" %
+                                         (self.gen.ip_address, self.bootcfg_port)
                 }
             },
             "id": "etcd-proxy",

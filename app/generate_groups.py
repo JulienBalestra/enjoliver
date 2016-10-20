@@ -1,3 +1,4 @@
+import os
 import re
 
 from generate_common import GenerateCommon
@@ -23,7 +24,7 @@ class GenerateGroup(GenerateCommon):
         }
 
     def _metadata(self):
-        self._target_data["metadata"]["seed"] = "http://%s:8080" % self.ip_address
+        self._target_data["metadata"]["seed"] = "http://%s:%s" % (self.ip_address, os.getenv("BOOTCFG_PORT", "8080"))
         self._target_data["metadata"]["etcd_initial_cluster"] = ""
 
     def _selector(self):

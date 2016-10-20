@@ -14,6 +14,8 @@ class TestGenerateGroups(TestCase):
     tests_path = "%s" % os.path.split(unit_path)[0]
     test_bootcfg_path = "%s/test_bootcfg" % tests_path
 
+    bootcfg_port = os.getenv("BOOTCFG_PORT", "8080")
+
     @classmethod
     def setUpClass(cls):
         subprocess.check_output(["make", "-C", cls.gen.project_path])
@@ -36,7 +38,7 @@ class TestGenerateGroups(TestCase):
         self.assertTrue(os.path.isfile("%s" % self.network_environment))
 
     def test_01_metadata(self):
-        expect = {'etcd_initial_cluster': '', 'seed': 'http://%s:8080' % self.gen.ip_address}
+        expect = {'etcd_initial_cluster': '', 'seed': 'http://%s:%s' % (self.gen.ip_address, self.bootcfg_port)}
         self.gen._metadata()
         self.assertEqual(expect, self.gen._target_data["metadata"])
 
@@ -45,7 +47,7 @@ class TestGenerateGroups(TestCase):
             'profile': 'etcd-proxy.yaml',
             'metadata': {
                 'etcd_initial_cluster': '',
-                'seed': 'http://%s:8080' % self.gen.ip_address
+                'seed': 'http://%s:%s' % (self.gen.ip_address, self.bootcfg_port)
             },
             'id': 'etcd-proxy',
             'name': 'etcd-proxy'
@@ -71,6 +73,8 @@ class TestGenerateGroupsSelectorLower(TestCase):
     unit_path = "%s" % os.path.dirname(__file__)
     tests_path = "%s" % os.path.split(unit_path)[0]
     test_bootcfg_path = "%s/test_bootcfg" % tests_path
+
+    bootcfg_port = os.getenv("BOOTCFG_PORT", "8080")
 
     @classmethod
     def setUpClass(cls):
@@ -98,7 +102,7 @@ class TestGenerateGroupsSelectorLower(TestCase):
         self.assertTrue(os.path.isfile("%s" % self.network_environment))
 
     def test_01_metadata(self):
-        expect = {'etcd_initial_cluster': '', 'seed': 'http://%s:8080' % self.gen.ip_address}
+        expect = {'etcd_initial_cluster': '', 'seed': 'http://%s:%s' % (self.gen.ip_address, self.bootcfg_port)}
         self.gen._metadata()
         self.assertEqual(expect, self.gen._target_data["metadata"])
 
@@ -112,7 +116,7 @@ class TestGenerateGroupsSelectorLower(TestCase):
             'profile': 'etcd-proxy.yaml',
             'metadata': {
                 'etcd_initial_cluster': '',
-                'seed': 'http://%s:8080' % self.gen.ip_address
+                'seed': 'http://%s:%s' % (self.gen.ip_address, self.bootcfg_port)
             },
             'id': 'etcd-proxy',
             'name': 'etcd-proxy',
@@ -143,6 +147,8 @@ class TestGenerateGroupsSelectorUpper(TestCase):
     tests_path = "%s" % os.path.split(unit_path)[0]
     test_bootcfg_path = "%s/test_bootcfg" % tests_path
 
+    bootcfg_port = os.getenv("BOOTCFG_PORT", "8080")
+
     @classmethod
     def setUpClass(cls):
         subprocess.check_output(["make", "-C", cls.gen.project_path])
@@ -169,7 +175,7 @@ class TestGenerateGroupsSelectorUpper(TestCase):
         self.assertTrue(os.path.isfile("%s" % self.network_environment))
 
     def test_01_metadata(self):
-        expect = {'etcd_initial_cluster': '', 'seed': 'http://%s:8080' % self.gen.ip_address}
+        expect = {'etcd_initial_cluster': '', 'seed': 'http://%s:%s' % (self.gen.ip_address, self.bootcfg_port)}
         self.gen._metadata()
         self.assertEqual(expect, self.gen._target_data["metadata"])
 
@@ -183,7 +189,7 @@ class TestGenerateGroupsSelectorUpper(TestCase):
             'profile': 'etcd-proxy.yaml',
             'metadata': {
                 'etcd_initial_cluster': '',
-                'seed': 'http://%s:8080' % self.gen.ip_address
+                'seed': 'http://%s:%s' % (self.gen.ip_address, self.bootcfg_port)
             },
             'id': 'etcd-proxy',
             'name': 'etcd-proxy',

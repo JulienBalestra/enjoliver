@@ -30,7 +30,8 @@ class GenerateProfile(GenerateCommon):
             "initrd": ["/assets/coreos/serve/coreos_production_pxe_image.cpio.gz"],
             "cmdline": {
                 "coreos.config.url":
-                    "http://%s:8080/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}" % self.ip_address,
+                    "http://%s:%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}" % (
+                        self.ip_address, os.getenv("BOOTCFG_PORT", "8080")),
                 "coreos.autologin": "",
                 "coreos.first_boot": ""
             }
