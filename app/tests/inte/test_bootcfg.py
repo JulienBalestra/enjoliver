@@ -13,13 +13,15 @@ import sys
 from app import generator, generate_common
 
 
-class CountWarning(object):
-    i = 0
+class IOErrorToWarning(object):
+    def __enter__(self):
+        generate_common.GenerateCommon._raise_enof = Warning
+
+    def __exit__(self, ext, exv, trb):
+        generate_common.GenerateCommon._raise_enof = IOError
 
 
 class TestBootConfigCommon(TestCase):
-    cw = CountWarning()
-
     p_bootcfg = Process
     gen = generator.Generator
 
@@ -54,7 +56,6 @@ class TestBootConfigCommon(TestCase):
     def generator(cls):
         marker = "%s" % cls.__name__.lower()
         ignition_file = "inte-%s.yaml" % marker
-
         try:
             cls.gen = generator.Generator(
                 profile_id="id-%s" % marker,
@@ -62,12 +63,16 @@ class TestBootConfigCommon(TestCase):
                 ignition_id=ignition_file,
                 bootcfg_path=cls.test_bootcfg_path)
         except IOError:
-            # Singleton to avoid too much bypass
-            if cls.cw.i < 1:
-                cls.cw.i += 1
-                # Skip the ignition isfile
-                generate_common.GenerateCommon._raise_enof = Warning
-            cls.generator()
+            os.write(2,
+                     "\nWARNING %s override %s in %s\n" %
+                     (cls.__name__, generate_common.GenerateCommon._raise_enof, Warning))
+            sys.stderr.flush()
+            with IOErrorToWarning():
+                cls.gen = generator.Generator(
+                    profile_id="id-%s" % marker,
+                    name="name-%s" % marker,
+                    ignition_id=ignition_file,
+                    bootcfg_path=cls.test_bootcfg_path)
 
         cls.gen.dumps()
 

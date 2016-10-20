@@ -7,6 +7,14 @@ import re
 from app import generate_profiles, generate_common
 
 
+class IOErrorToWarning(object):
+    def __enter__(self):
+        generate_common.GenerateCommon._raise_enof = Warning
+
+    def __exit__(self, ext, exv, trb):
+        generate_common.GenerateCommon._raise_enof = IOError
+
+
 class TestGenerateProfiles(TestCase):
     gen = generate_profiles.GenerateProfile
     network_environment = "%s/misc/network-environment" % gen.bootcfg_path
@@ -17,9 +25,11 @@ class TestGenerateProfiles(TestCase):
     @classmethod
     def setUpClass(cls):
         subprocess.check_output(["make", "-C", cls.gen.project_path])
-        generate_common.GenerateCommon._raise_enof = Warning  # Skip the ignition isfile
-        cls.gen = generate_profiles.GenerateProfile(
-            _id="etcd-proxy", name="etcd-proxy", ignition_id="etcd-proxy.yaml")
+        # generate_common.GenerateCommon._raise_enof = Warning  # Skip the ignition isfile
+        with IOErrorToWarning():
+            cls.gen = generate_profiles.GenerateProfile(
+                _id="etcd-proxy", name="etcd-proxy", ignition_id="etcd-proxy.yaml")
+        # generate_common.GenerateCommon._raise_enof = IOError
         cls.gen.profiles_path = "%s/test_resources" % cls.tests_path
         if os.path.isfile("%s" % cls.network_environment):
             os.remove("%s" % cls.network_environment)
@@ -68,15 +78,17 @@ class TestGenerateProfiles(TestCase):
             "ignition_id": "etcd-proxy.yaml",
             "name": "etcd-proxy"
         }
-        new = generate_profiles.GenerateProfile(
-            _id="etcd-proxy", name="etcd-proxy", ignition_id="etcd-proxy.yaml")
+        with IOErrorToWarning():
+            new = generate_profiles.GenerateProfile(
+                _id="etcd-proxy", name="etcd-proxy", ignition_id="etcd-proxy.yaml")
         result = new.generate()
         self.assertEqual(expect, result)
 
     def test_991_dump(self):
         _id = "etcd-test-%s" % self.test_991_dump.__name__
-        new = generate_profiles.GenerateProfile(
-            _id="%s" % _id, name="etcd-test", ignition_id="etcd-test.yaml", bootcfg_path=self.test_bootcfg_path)
+        with IOErrorToWarning():
+            new = generate_profiles.GenerateProfile(
+                _id="%s" % _id, name="etcd-test", ignition_id="etcd-test.yaml", bootcfg_path=self.test_bootcfg_path)
         new.dump()
         self.assertTrue(os.path.isfile("%s/profiles/%s.json" % (self.test_bootcfg_path, _id)))
         os.remove("%s/profiles/%s.json" % (self.test_bootcfg_path, _id))
