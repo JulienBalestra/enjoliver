@@ -62,8 +62,10 @@ class TestBootConfigCommon(TestCase):
                 ignition_id=ignition_file,
                 bootcfg_path=cls.test_bootcfg_path)
         except IOError:
+            # Singleton to avoid too much bypass
             if cls.cw.i < 1:
                 cls.cw.i += 1
+                # Skip the ignition isfile
                 generate_common.GenerateCommon._raise_enof = Warning
             cls.generator()
 
