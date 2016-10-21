@@ -13,4 +13,5 @@ serve
 /app/tests/test_bootcfg/profiles/*.json
 /app/tests/test_bootcfg/groups/*.json
 /*.iml
-/app/tests/bootcfg_bin/
+/app/tests/rkt_dir/
+/app/tests/bootcfg_dir/
