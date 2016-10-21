@@ -1,6 +1,7 @@
 #!ipxe
 
-dhcp
+:retry_dhcp
+dhcp || goto retry_dhcp
 
 set coreos-baremetal BOOTCFG_IP_PORT
 

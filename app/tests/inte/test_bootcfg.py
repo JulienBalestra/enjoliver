@@ -42,13 +42,15 @@ class TestBootConfigCommon(TestCase):
     @staticmethod
     def process_target():
         cmd = [
-            "%s/bin/bootcfg" % TestBootConfigCommon.tests_path,
+            "%s/bootcfg_dir/bootcfg" % TestBootConfigCommon.tests_path,
             "-data-path", "%s" % TestBootConfigCommon.test_bootcfg_path,
             "-assets-path", "%s" % TestBootConfigCommon.assets_path,
             "-address", "%s" % TestBootConfigCommon.bootcfg_address,
             "-log-level", "debug"
         ]
-        os.write(1, "PID  -> %s\nexec -> %s\n" % (os.getpid(), " ".join(cmd)))
+        os.write(1, "PID  -> %s\n"
+                    "exec -> %s\n" % (
+                     os.getpid(), " ".join(cmd)))
         sys.stdout.flush()
         os.execv(cmd[0], cmd)
 
@@ -65,7 +67,9 @@ class TestBootConfigCommon(TestCase):
         except IOError:
             os.write(2,
                      "\nWARNING %s override %s in %s\n" %
-                     (cls.__name__, generate_common.GenerateCommon._raise_enof, Warning))
+                     (cls.__name__,
+                      generate_common.GenerateCommon._raise_enof,
+                      Warning))
             sys.stderr.flush()
             with IOErrorToWarning():
                 cls.gen = generator.Generator(
@@ -99,7 +103,9 @@ class TestBootConfigCommon(TestCase):
 
     @staticmethod
     def clean_sandbox():
-        dirs = ["%s/%s" % (TestBootConfigCommon.test_bootcfg_path, k) for k in ("profiles", "groups")]
+        dirs = ["%s/%s" % (
+            TestBootConfigCommon.test_bootcfg_path, k) for k in (
+                    "profiles", "groups")]
         for d in dirs:
             for f in os.listdir(d):
                 if ".json" in f:
@@ -205,9 +211,6 @@ class TestBootConfigCommon(TestCase):
     def test_03_assets_coreos_serve_404(self):
         with self.assertRaises(urllib2.HTTPError):
             urllib2.urlopen("%s/assets/coreos/serve/404_request.not-here" % self.bootcfg_endpoint)
-
-            # def test_04_metadata(self):
-            #     urllib2.urlopen("%s/metadata" % self.bootcfg_endpoint)
 
 
 class TestBootConfigHelloWorld(TestBootConfigCommon):
