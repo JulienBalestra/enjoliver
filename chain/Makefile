@@ -20,6 +20,7 @@ $(EMBED_SCRIPT):
 	@echo "BOOTCFG_IP_PORT=$(BOOTCFG_IP_PORT)"
 	@test $(BOOTCFG_IP_PORT)
 	sed s/BOOTCFG_IP_PORT/$(BOOTCFG_IP_PORT)/g chain.ipxe.template > $(EMBED_SCRIPT)
+	@rm -v $(ISO) || true
 
 $(ISO_RULE): $(IPXE) $(EMBED_SCRIPT)
 	@file $(EMBED_SCRIPT)
@@ -27,7 +28,8 @@ $(ISO_RULE): $(IPXE) $(EMBED_SCRIPT)
 	@file $(shell pwd)/$(ISO)
 
 clean: $(IPXE)
-	rm -v $(ISO) || true
+	@rm -v $(EMBED_SCRIPT) || true
+	@rm -v $(ISO) || true
 
 fclean: $(IPXE) clean
 	rm -rf $(IPXE)/src/bin/*
