@@ -53,7 +53,7 @@ fclean: gc
 	rm -Rfv $(BOOTCFG_DIR)
 	rm -Rfv $(RKT_DIR)
 
-check: $(TARGET)
+check: default
 	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover unit/
 	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover inte/
 	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover func/
