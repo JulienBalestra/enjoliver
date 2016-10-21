@@ -1,10 +1,12 @@
-import os
 import re
 
 from generate_common import GenerateCommon
 
 
 class GenerateGroup(GenerateCommon):
+    def __repr__(self):
+        return "GenGroup[%s]" % self._target_data["id"]
+
     def __init__(self, _id, name, profile, selector=None,
                  bootcfg_path=GenerateCommon.bootcfg_path):
 
@@ -12,7 +14,7 @@ class GenerateGroup(GenerateCommon):
         self.target_path = self.ensure_directory("%s/groups" % bootcfg_path)
         self.selector = None if not selector else dict(selector)
 
-        self._ip_address = None
+        self._bootcfg_ip = None
         self._target_data = {
             "id": _id,
             "name": name,
@@ -24,7 +26,7 @@ class GenerateGroup(GenerateCommon):
         }
 
     def _metadata(self):
-        self._target_data["metadata"]["seed"] = "http://%s:%s" % (self.ip_address, os.getenv("BOOTCFG_PORT", "8080"))
+        self._target_data["metadata"]["seed"] = self.bootcfg_uri
         self._target_data["metadata"]["etcd_initial_cluster"] = ""
 
     def _selector(self):
@@ -48,4 +50,5 @@ class GenerateGroup(GenerateCommon):
     def generate(self):
         self._metadata()
         self._selector()
+        self.log_stderr("generate")
         return self.target_data

@@ -2,6 +2,10 @@ import json
 import os
 import subprocess
 
+import re
+
+import sys
+
 
 class GenerateCommon(object):
     app_path = "%s" % os.path.dirname(__file__)
@@ -9,9 +13,14 @@ class GenerateCommon(object):
     bootcfg_path = "%s/bootcfg" % project_path
 
     _target_data = None
-    _ip_address = None
+    _bootcfg_ip = None if not os.getenv("BOOTCFG_IP") else os.getenv("BOOTCFG_IP")
+    _bootcfg_port = int(os.getenv("BOOTCFG_PORT", "8080"))
 
     _raise_enof = IOError
+
+    def log_stderr(self, message):
+        os.write(2, "%s %s\n" % (self, message))
+        sys.stderr.flush()
 
     @property
     def target_data(self):
@@ -20,20 +29,35 @@ class GenerateCommon(object):
         return self.generate()
 
     @property
-    def ip_address(self):
-        if self._ip_address:
-            return self._ip_address
+    def bootcfg_ip(self):
+        """
+        :rtype: str
+        :return: IP address
+        """
+        if self._bootcfg_ip:
+            self.log_stderr("return %s" % self._bootcfg_ip)
+            return self._bootcfg_ip
 
+        # This only work on Linux
         out = "%s/misc/network-environment" % self.bootcfg_path
         subprocess.check_call(
-            ["%s/assets/setup-network-environment/serve/setup-network-environment" % self.bootcfg_path,
-             "-o", "%s" % out])
+            ["%s/assets/setup-network-environment/serve/setup-network-environment" %
+             self.bootcfg_path, "-o", "%s" % out])
         with open("%s" % out, mode='r') as fd:
             for l in fd:
                 if "DEFAULT_IPV4=" in l:
-                    self._ip_address = l.split("DEFAULT_IPV4=")[1].replace("\n", "")
-                    return self._ip_address
+                    ip = l.split("DEFAULT_IPV4=")[1].replace("\n", "")
+                    match = re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip)
+                    if match is not None:
+                        self._bootcfg_ip = ip
+                        self.log_stderr("correct IP address")
+                        return self._bootcfg_ip
+                    self.log_stderr("ERROR incorrect IP address")
         raise ImportError("Error in module %s" % out)
+
+    @property
+    def bootcfg_uri(self):
+        return "http://%s:%s" % (self.bootcfg_ip, self._bootcfg_port)
 
     def generate(self):
         raise NotImplementedError

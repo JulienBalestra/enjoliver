@@ -108,7 +108,7 @@ class TestBootConfigCommon(TestCase):
     def setUp(self):
         self.assertTrue(self.p_bootcfg.is_alive())
         try:
-            self.assertEqual(self.gen.group.ip_address, self.gen.profile.ip_address)
+            self.assertEqual(self.gen.group.bootcfg_ip, self.gen.profile.bootcfg_ip)
         except AttributeError:
             # gen not declared
             pass
@@ -165,7 +165,7 @@ class TestBootConfigCommon(TestCase):
             '/assets/coreos/serve/coreos_production_pxe.vmlinuz',
             'coreos.autologin',
             'coreos.config.url=http://%s:%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % (
-                self.gen.group.ip_address, self.bootcfg_port),
+                self.gen.group.bootcfg_ip, self.bootcfg_port),
             'coreos.first_boot']
         self.assertEqual(kernel, kernel_expect)
 
@@ -271,7 +271,7 @@ class TestBootConfigSelector(TestBootConfigCommon):
             '/assets/coreos/serve/coreos_production_pxe.vmlinuz',
             'coreos.autologin',
             'coreos.config.url=http://%s:%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % (
-            self.gen.group.ip_address, self.bootcfg_port),
+                self.gen.group.bootcfg_ip, self.bootcfg_port),
             'coreos.first_boot']
         self.assertEqual(kernel, kernel_expect)
 

@@ -43,7 +43,7 @@ class TestGenerateProfiles(TestCase):
 
     def test_00_ip_address(self):
         self.assertFalse(os.path.isfile("%s" % self.network_environment))
-        ip = self.gen.ip_address
+        ip = self.gen.bootcfg_ip
         match = re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip)
         self.assertIsNotNone(match)
         self.assertTrue(os.path.isfile("%s" % self.network_environment))
@@ -57,7 +57,7 @@ class TestGenerateProfiles(TestCase):
                     'coreos.autologin': '',
                     'coreos.first_boot': '',
                     'coreos.config.url': 'http://%s:%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' %
-                                         (self.gen.ip_address, self.bootcfg_port)
+                                         (self.gen.bootcfg_ip, self.bootcfg_port)
                 }
         }
         self.gen._boot()
@@ -75,7 +75,7 @@ class TestGenerateProfiles(TestCase):
                     "coreos.autologin": "",
                     "coreos.first_boot": "",
                     "coreos.config.url": "http://%s:%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}" %
-                                         (self.gen.ip_address, self.bootcfg_port)
+                                         (self.gen.bootcfg_ip, self.bootcfg_port)
                 }
             },
             "id": "etcd-proxy",
