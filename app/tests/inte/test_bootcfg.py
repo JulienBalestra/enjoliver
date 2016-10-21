@@ -82,7 +82,7 @@ class TestBootConfigCommon(TestCase):
         cls.clean_sandbox()
 
         subprocess.check_output(["make"], cwd=cls.project_path)
-        cls.p_bootcfg = Process(target=TestBootConfigHelloWorld.process_target)
+        cls.p_bootcfg = Process(target=TestBootConfigCommon.process_target)
         os.write(1, "PPID -> %s\n" % os.getpid())
         cls.p_bootcfg.start()
         assert cls.p_bootcfg.is_alive() is True
@@ -164,7 +164,8 @@ class TestBootConfigCommon(TestCase):
             'kernel',
             '/assets/coreos/serve/coreos_production_pxe.vmlinuz',
             'coreos.autologin',
-            'coreos.config.url=http://%s:%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % (self.gen.group.ip_address, self.bootcfg_port),
+            'coreos.config.url=http://%s:%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % (
+                self.gen.group.ip_address, self.bootcfg_port),
             'coreos.first_boot']
         self.assertEqual(kernel, kernel_expect)
 
@@ -269,7 +270,8 @@ class TestBootConfigSelector(TestBootConfigCommon):
             'kernel',
             '/assets/coreos/serve/coreos_production_pxe.vmlinuz',
             'coreos.autologin',
-            'coreos.config.url=http://%s:%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % (self.gen.group.ip_address, self.bootcfg_port),
+            'coreos.config.url=http://%s:%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % (
+            self.gen.group.ip_address, self.bootcfg_port),
             'coreos.first_boot']
         self.assertEqual(kernel, kernel_expect)
 
