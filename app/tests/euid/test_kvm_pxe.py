@@ -141,7 +141,7 @@ class TestKVM(TestCase):
 
         if os.path.isfile("%s/rkt_dir/rkt" % TestKVM.tests_path) is False or \
                         os.path.isfile("%s/bootcfg_dir/bootcfg" % TestKVM.tests_path) is False:
-            os.write(2, "Call make as user for:\n"
+            os.write(2, "Call 'make' as user for:\n"
                         "- %s/rkt_dir/rkt\n" % TestKVM.tests_path +
                      "- %s/bootcfg_dir/bootcfg\n" % TestKVM.tests_path)
             exit(2)
