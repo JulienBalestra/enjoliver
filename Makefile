@@ -1,5 +1,4 @@
 CHECK=check
-CHECK_FAST=check_fast
 CHECK_EUID=check_euid
 
 default: submodules assets
@@ -17,9 +16,6 @@ clean:
 
 $(CHECK):
 	make -C app/tests/ $(CHECK)
-
-$(CHECK_FAST):
-	make -C app/tests/ $(CHECK_FAST)
 
 $(CHECK_EUID):
 	make -C app/tests/ $(CHECK_EUID)
