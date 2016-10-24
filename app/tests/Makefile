@@ -46,9 +46,11 @@ dnsmasq:
 
 gc:
 	$(CWD)/$(RKT) --dir=$(CWD)/$(RKT_DIR)/data gc --grace-period=0s
+
+gci:
 	$(CWD)/$(RKT) --dir=$(CWD)/$(RKT_DIR)/data image gc --grace-period=0s
 
-fclean: gc
+fclean: gci gc
 	rm -Rfv $(BOOTCFG_DIR)
 	rm -Rfv $(RKT_DIR)
 
@@ -61,7 +63,7 @@ check_fast: default
 	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover unit/
 	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover inte/
 
-check_sudo: default
-	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover sudo/
+check_euid: default
+	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover euid/
 
 re: fclean default

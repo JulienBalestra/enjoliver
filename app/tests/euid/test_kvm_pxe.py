@@ -66,6 +66,26 @@ class TestKVM(TestCase):
                     "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
         sys.stdout.flush()
         os.execv(cmd[0], cmd)
+        os._exit(2)
+
+    @staticmethod
+    def process_target_create_metal0():
+        cmd = [
+            "%s/rkt_dir/rkt" % TestKVM.tests_path,
+            "--debug",
+            "--dir=%s/rkt_dir/data" % TestKVM.tests_path,
+            "--local-config=%s" % TestKVM.tests_path,
+            "run",
+            "quay.io/coreos/dnsmasq:v0.3.0",
+            "--insecure-options=all",
+            "--net=metal0",
+            "--interactive",
+            "--exec",
+            "/bin/true"]
+        os.write(1, "PID  -> %s\n"
+                    "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
+        sys.stdout.flush()
+        os.execv(cmd[0], cmd)
         os._exit(2)  # Should not happen
 
     @classmethod
@@ -83,6 +103,8 @@ class TestKVM(TestCase):
 
     @classmethod
     def setUpClass(cls):
+        if os.geteuid() != 0:
+            raise RuntimeError("Need to be root EUID==%d" % os.geteuid())
 
         cls.clean_sandbox()
 
@@ -92,10 +114,21 @@ class TestKVM(TestCase):
         cls.p_bootcfg.start()
         assert cls.p_bootcfg.is_alive() is True
 
+        if subprocess.call(["ip", "link", "show", "metal0"]) != 0:
+            p_create_metal0 = Process(
+                target=TestKVM.process_target_create_metal0)
+            p_create_metal0.start()
+            for i in xrange(60):
+                if p_create_metal0.exitcode == 0:
+                    os.write(1, "Bridge done\n\r")
+                    break
+                os.write(1, "Bridge not ready\n\r")
+                time.sleep(0.5)
+        assert subprocess.call(["ip", "link", "show", "metal0"]) == 0
+
         cls.p_dnsmasq = Process(target=TestKVM.process_target_dnsmasq)
         cls.p_dnsmasq.start()
         assert cls.p_dnsmasq.is_alive() is True
-
         # cls.generator()
 
     @classmethod
@@ -107,10 +140,18 @@ class TestKVM(TestCase):
         cls.p_dnsmasq.terminate()
         cls.p_dnsmasq.join(timeout=5)
         cls.clean_sandbox()
+        subprocess.call([
+            "%s/rkt_dir/rkt" % TestKVM.tests_path,
+            "--debug",
+            "--dir=%s/rkt_dir/data" % TestKVM.tests_path,
+            "--local-config=%s" % TestKVM.tests_path,
+            "gc",
+            "--grace-period=0s"])
 
     @staticmethod
     def clean_sandbox():
-        dirs = ["%s/%s" % (TestKVM.test_bootcfg_path, k) for k in ("profiles", "groups")]
+        dirs = ["%s/%s" % (TestKVM.test_bootcfg_path, k)
+                for k in ("profiles", "groups")]
         for d in dirs:
             for f in os.listdir(d):
                 if ".json" in f:
@@ -133,7 +174,7 @@ class TestKVM(TestCase):
         sys.stdout.flush()
 
     def test_01(self):
-        time.sleep(60)
+        # time.sleep(5)
         pass
 
 
