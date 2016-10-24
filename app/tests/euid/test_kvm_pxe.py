@@ -88,6 +88,35 @@ class TestKVM(TestCase):
         os.execv(cmd[0], cmd)
         os._exit(2)  # Should not happen
 
+    @staticmethod
+    def dns_masq_running():
+        """
+        net.d/10-metal0.conf
+        {
+            "name": "metal0",
+            "type": "bridge",
+            "bridge": "metal0",
+            "isGateway": true,
+            "ipMasq": true,
+            "ipam": {
+                "type": "host-local",
+                "subnet": "172.15.0.0/16",
+                "routes" : [ { "dst" : "0.0.0.0/0" } ]
+            }
+        }
+        :return:
+        """
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        result = 1
+        for i in xrange(120):
+            result = sock.connect_ex(('172.15.0.1', 53))
+            if result == 0:
+                break
+            time.sleep(0.5)
+        assert result == 0
+        os.write(1, "DNSMASQ ready\n\r")
+        sys.stdout.flush()
+
     @classmethod
     def generator(cls):
         marker = "%s" % cls.__name__.lower()
@@ -129,6 +158,7 @@ class TestKVM(TestCase):
         cls.p_dnsmasq = Process(target=TestKVM.process_target_dnsmasq)
         cls.p_dnsmasq.start()
         assert cls.p_dnsmasq.is_alive() is True
+        TestKVM.dns_masq_running()
         # cls.generator()
 
     @classmethod
@@ -162,18 +192,6 @@ class TestKVM(TestCase):
         self.assertTrue(self.p_dnsmasq.is_alive())
 
     def test_00(self):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        result = 1
-        for i in xrange(120):
-            result = sock.connect_ex(('172.15.0.1', 53))
-            if result == 0:
-                break
-            time.sleep(0.5)
-        self.assertEqual(result, 0)
-        os.write(1, "DNSMASQ ready\n\r")
-        sys.stdout.flush()
-
-    def test_01(self):
         # time.sleep(5)
         pass
 
