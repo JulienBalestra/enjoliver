@@ -139,7 +139,12 @@ class TestKVM(TestCase):
 
         cls.clean_sandbox()
 
-        subprocess.check_output(["make"], cwd=cls.tests_path)
+        if os.path.isfile("%s/rkt_dir/rkt" % TestKVM.tests_path) is False or \
+                        os.path.isfile("%s/bootcfg_dir/bootcfg" % TestKVM.tests_path) is False:
+            os.write(2, "Call make as user for:\n"
+                        "- %s/rkt_dir/rkt\n" % TestKVM.tests_path +
+                     "- %s/bootcfg_dir/bootcfg\n" % TestKVM.tests_path)
+            exit(2)
         os.write(1, "PPID -> %s\n" % os.getpid())
         cls.p_bootcfg = Process(target=TestKVM.process_target_bootcfg)
         cls.p_bootcfg.start()

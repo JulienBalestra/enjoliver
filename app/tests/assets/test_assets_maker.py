@@ -1,9 +1,9 @@
 import os
 import subprocess
-from unittest import TestCase
+import unittest
 
 
-class TestAssetsCoreOS(TestCase):
+class TestAssetsCoreOS(unittest.TestCase):
     func_path = "%s" % os.path.dirname(__file__)
     tests_path = "%s" % os.path.split(func_path)[0]
     app_path = os.path.split(tests_path)[0]
@@ -43,7 +43,7 @@ class TestAssetsCoreOS(TestCase):
         self.assertItemsEqual(self.default_files, real)
 
 
-class TestAssetsSetupNetworkEnvironment(TestCase):
+class TestAssetsSetupNetworkEnvironment(unittest.TestCase):
     func_path = "%s" % os.path.dirname(__file__)
     tests_path = os.path.split(func_path)[0]
     app_path = os.path.split(tests_path)[0]

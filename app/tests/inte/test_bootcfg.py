@@ -86,12 +86,15 @@ class TestBootConfigCommon(TestCase):
         cls.clean_sandbox()
 
         subprocess.check_output(["make"], cwd=cls.project_path)
+        if os.path.isfile("%s/bootcfg_dir/bootcfg" % TestBootConfigCommon.tests_path) is False:
+            subprocess.check_output(["make"], cwd=cls.tests_path)
         cls.p_bootcfg = Process(target=TestBootConfigCommon.process_target)
         os.write(1, "PPID -> %s\n" % os.getpid())
         cls.p_bootcfg.start()
         assert cls.p_bootcfg.is_alive() is True
 
         cls.generator()
+        cls.bootcfg_running(cls.bootcfg_endpoint, cls.p_bootcfg)
 
     @classmethod
     def tearDownClass(cls):
@@ -119,25 +122,27 @@ class TestBootConfigCommon(TestCase):
             # gen not declared
             pass
 
-    def test_00_running(self):
+    @staticmethod
+    def bootcfg_running(bootcfg_endpoint, p_bootcfg):
         response_body = ""
         response_code = 404
         for i in xrange(100):
+            assert p_bootcfg.is_alive() is True
             try:
-                request = urllib2.urlopen(self.bootcfg_endpoint)
+                request = urllib2.urlopen(bootcfg_endpoint)
                 response_body = request.read()
                 response_code = request.code
                 request.close()
                 break
 
             except httplib.BadStatusLine:
-                time.sleep(0.01)
+                time.sleep(0.5)
 
             except urllib2.URLError:
-                time.sleep(0.01)
+                time.sleep(0.5)
 
-        self.assertEqual("bootcfg\n", response_body)
-        self.assertEqual(200, response_code)
+        assert "bootcfg\n" == response_body
+        assert 200 == response_code
 
     def test_01_boot_dot_ipxe(self):
         request = urllib2.urlopen("%s/boot.ipxe" % self.bootcfg_endpoint)

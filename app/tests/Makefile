@@ -9,15 +9,24 @@ RKT_DIR_DATA=$(RKT_DIR)/data
 RKT=$(RKT_DIR)/rkt
 RKT_RELEASE=https://github.com/coreos/rkt/releases/download/v1.17.0/rkt-v1.17.0.tar.gz
 
+EUID= $(shell id -u -r)
+ifneq ($(EUID), 0)
+	ROOT=1
+endif
+
 default: $(BOOTCFG) $(RKT)
 
 $(BOOTCFG):
+	@echo Run as USER
+	test $(ROOT)
 	mkdir -pv $(BOOTCFG_DIR)
 	curl -Lf $(BOOTCFG_RELEASE) -o $(BOOTCFG).tar.gz
 	tar -C $(BOOTCFG_DIR) -xzf $(BOOTCFG).tar.gz --strip-components=1
 	file $(BOOTCFG)
 
 $(RKT):
+	@echo Run as USER
+	test $(ROOT)
 	mkdir -pv $(RKT_DIR)
 	mkdir -pv $(RKT_DIR_DATA)
 	curl -Lf $(RKT_RELEASE) -o $(RKT).tar.gz
@@ -59,13 +68,11 @@ fclean: clean gci gc
 check: default
 	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover unit/
 	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover inte/
-	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover func/
 
-check_fast: default
-	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover unit/
-	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover inte/
+check_assets: default
+	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover assets/
 
-check_euid: default
+check_euid:
 	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover euid/
 
 re: clean default
