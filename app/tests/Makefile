@@ -45,14 +45,16 @@ dnsmasq:
 		--volume config,kind=host,source=$(CWD)/dnsmasq-metal0.conf
 
 gc:
-	$(CWD)/$(RKT) --dir=$(CWD)/$(RKT_DIR)/data gc --grace-period=0s
+	test ! -e $(CWD)/$(RKT) || $(CWD)/$(RKT) --dir=$(CWD)/$(RKT_DIR)/data gc --grace-period=0s
 
 gci:
-	$(CWD)/$(RKT) --dir=$(CWD)/$(RKT_DIR)/data image gc --grace-period=0s
+	test ! -e $(CWD)/$(RKT) || $(CWD)/$(RKT) --dir=$(CWD)/$(RKT_DIR)/data image gc --grace-period=0s
 
-fclean: gci gc
+clean:
 	rm -Rfv $(BOOTCFG_DIR)
 	rm -Rfv $(RKT_DIR)
+
+fclean: clean gci gc
 
 check: default
 	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover unit/
@@ -66,4 +68,4 @@ check_fast: default
 check_euid: default
 	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover euid/
 
-re: fclean default
+re: clean default

@@ -12,6 +12,8 @@ import time
 from app import generator
 
 
+@unittest.skipIf(os.geteuid() != 0,
+                 "TestKVM need privilege")
 class TestKVM(TestCase):
     p_bootcfg = Process
     p_dnsmasq = Process
@@ -143,7 +145,7 @@ class TestKVM(TestCase):
         cls.p_bootcfg.start()
         assert cls.p_bootcfg.is_alive() is True
 
-        if subprocess.call(["ip", "link", "show", "metal0"]) != 0:
+        if subprocess.call(["ip", "link", "show", "metal0"], stdout=None) != 0:
             p_create_metal0 = Process(
                 target=TestKVM.process_target_create_metal0)
             p_create_metal0.start()
