@@ -137,7 +137,7 @@ class TestKVM(TestCase):
 
         cls.clean_sandbox()
 
-        subprocess.check_output(["make"], cwd=cls.project_path)
+        subprocess.check_output(["make"], cwd=cls.tests_path)
         os.write(1, "PPID -> %s\n" % os.getpid())
         cls.p_bootcfg = Process(target=TestKVM.process_target_bootcfg)
         cls.p_bootcfg.start()
