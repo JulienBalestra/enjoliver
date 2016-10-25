@@ -13,7 +13,7 @@ class GenerateCommon(object):
     bootcfg_path = "%s/bootcfg" % project_path
 
     _target_data = None
-    _bootcfg_ip = None if not os.getenv("BOOTCFG_IP") else os.getenv("BOOTCFG_IP")
+    _bootcfg_ip = None
     _bootcfg_port = int(os.getenv("BOOTCFG_PORT", "8080"))
 
     _raise_enof = IOError
@@ -38,7 +38,12 @@ class GenerateCommon(object):
             self.log_stderr("return %s" % self._bootcfg_ip)
             return self._bootcfg_ip
 
-        # This only work on Linux
+        if os.getenv("BOOTCFG_IP") and re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", os.getenv("BOOTCFG_IP")):
+            self._bootcfg_ip = os.getenv("BOOTCFG_IP")
+            self.log_stderr("env -> BOOTCFG_IP=%s" % self._bootcfg_ip)
+            return self._bootcfg_ip
+
+        # This only work on Linux and if the DEFAULT_IPV4 is listening bootcfg address
         out = "%s/misc/network-environment" % self.bootcfg_path
         subprocess.check_call(
             ["%s/assets/setup-network-environment/serve/setup-network-environment" %

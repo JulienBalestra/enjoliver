@@ -14,7 +14,6 @@ class GenerateGroup(GenerateCommon):
         self.target_path = self.ensure_directory("%s/groups" % bootcfg_path)
         self.selector = None if not selector else dict(selector)
 
-        self._bootcfg_ip = None
         self._target_data = {
             "id": _id,
             "name": name,

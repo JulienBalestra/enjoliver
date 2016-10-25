@@ -19,25 +19,34 @@
     * isolinux    
 
 
-* rkt KVM-QEMU LKVM from ubuntu 16.04
-    * git
-    * dh-autoreconf
-    * cpio
-    * squashfs-tools 
-    * wget
-    * libssl-dev
-    * libacl1-dev
-    * libtspi-dev
-    * libsystemd-dev
-    * golang
-    * bc
-
+* rkt KVM-QEMU from ubuntu 16.04 
+    
+    
+    apt-get update
+    apt-get install \
+        git \
+        dh-autoreconf \
+        cpio \
+        squashfs-tools \
+        wget \
+        libssl-dev \
+        libacl1-dev \
+        libtspi-dev \
+        libsystemd-dev \
+        golang \
+        bc \
+        realpath \
+        build-essential \    
+        gcc-aarch64-linux-gnu
     
     git clone https://github.com/coreos/rkt.git
+     
+    cd rkt
+    
     ./autogen.sh && \
         ./configure \
             --with-stage1-flavors=kvm \
-            --with-stage1-kvm-hypervisors=lkvm,qemu && \
+            --with-stage1-kvm-hypervisors=qemu && \
         make    
     # and that doesn't works
 

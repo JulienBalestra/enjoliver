@@ -61,6 +61,7 @@ class TestKVM(TestCase):
             "--insecure-options=all",
             "--net=host",
             "--interactive",
+            "--uuid-file-save=/tmp/dnsmasq.uuid",
             "--volume",
             "config,kind=host,source=%s/dnsmasq-metal0.conf" % TestKVM.tests_path
         ]
@@ -115,6 +116,8 @@ class TestKVM(TestCase):
             if result == 0:
                 break
             time.sleep(0.5)
+            if i % 10 == 0:
+                os.write(1, "DNSMASQ still NOT ready\n\r")
         assert result == 0
         os.write(1, "DNSMASQ ready\n\r")
         sys.stdout.flush()
@@ -170,13 +173,13 @@ class TestKVM(TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        os.write(1, "TERM -> %d\n\r" % cls.p_bootcfg.pid)
+        os.write(1, "\n\rTERM -> %d\n\r" % cls.p_bootcfg.pid)
         sys.stdout.flush()
         cls.p_bootcfg.terminate()
         cls.p_bootcfg.join(timeout=5)
         cls.p_dnsmasq.terminate()
         cls.p_dnsmasq.join(timeout=5)
-        cls.clean_sandbox()
+        # cls.clean_sandbox()
         subprocess.call([
             "%s/rkt_dir/rkt" % TestKVM.tests_path,
             "--debug",
@@ -198,9 +201,74 @@ class TestKVM(TestCase):
         self.assertTrue(self.p_bootcfg.is_alive())
         self.assertTrue(self.p_dnsmasq.is_alive())
 
+    @staticmethod
+    def virsh(cmd, assertion=False):
+        os.write(1, "\n\r-> " + " ".join(cmd) + "\n\r")
+        sys.stdout.flush()
+        ret = subprocess.call(cmd)
+        if assertion:
+            assert ret == 0
+
     def test_00(self):
-        # time.sleep(5)
-        pass
+        marker = "euid-%s-%s" % (TestKVM.__name__.lower(), self.test_00.__name__)
+        os.environ["BOOTCFG_IP"] = "172.15.0.1"
+        gen = generator.Generator(
+            profile_id="%s" % marker,
+            name="%s" % marker,
+            ignition_id="%s.yaml" % marker,
+            bootcfg_path=self.test_bootcfg_path,
+            selector={"mac": "52:54:00:d0:b6:81"}
+        )
+        gen.dumps()
+        try:
+            virt_install = [
+                "virt-install",
+                "--name",
+                "test0",
+                "--network=bridge:metal0,mac=52:54:00:d0:b6:81",
+                "--memory=1024",
+                "--vcpus=1",
+                "--pxe",
+                "--disk",
+                "pool=default,size=6",
+                "--os-type=linux",
+                "--os-variant=generic",
+                "--noautoconsole",
+                "--boot=network"
+            ]
+
+            self.virsh(virt_install, assertion=True)
+            time.sleep(200)
+        finally:
+            # time.sleep(3)
+
+            destroy = [
+                "virsh",
+                "destroy",
+                "test0"]
+            self.virsh(destroy)
+
+            undefine = [
+                "virsh",
+                "undefine",
+                "test0"]
+            self.virsh(undefine)
+
+            pool_refresh = [
+                "virsh",
+                "pool-refresh",
+                "default"
+            ]
+            self.virsh(pool_refresh)
+
+            vol_delete = [
+                "virsh",
+                "vol-delete",
+                "--pool",
+                "default",
+                "test0.qcow2"
+            ]
+            self.virsh(vol_delete)
 
 
 if __name__ == "__main__":

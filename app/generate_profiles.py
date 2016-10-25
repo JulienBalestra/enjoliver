@@ -18,7 +18,6 @@ class GenerateProfile(GenerateCommon):
             os.write(2, "Warning: not here %s/ignition/%s\n" % (bootcfg_path, ignition_id))
 
         self.target_path = self.ensure_directory("%s/profiles" % bootcfg_path)
-        self._bootcfg_ip = None
         self._target_data = {
             "id": "%s" % _id,
             "name": "%s" % name,
