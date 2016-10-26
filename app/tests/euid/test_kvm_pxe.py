@@ -42,6 +42,8 @@ class TestKVM(TestCase):
     bootcfg_address = "0.0.0.0:%d" % bootcfg_port
     bootcfg_endpoint = "http://localhost:%d" % bootcfg_port
 
+    dev_null = None
+
     @staticmethod
     def process_target_bootcfg():
         cmd = [
@@ -60,7 +62,7 @@ class TestKVM(TestCase):
     def process_target_dnsmasq():
         cmd = [
             "%s/rkt_dir/rkt" % TestKVM.tests_path,
-            "--debug",
+            # "--debug",
             "--dir=%s/rkt_dir/data" % TestKVM.tests_path,
             "--local-config=%s" % TestKVM.tests_path,
             "--mount",
@@ -84,7 +86,7 @@ class TestKVM(TestCase):
     def process_target_create_metal0():
         cmd = [
             "%s/rkt_dir/rkt" % TestKVM.tests_path,
-            "--debug",
+            # "--debug",
             "--dir=%s/rkt_dir/data" % TestKVM.tests_path,
             "--local-config=%s" % TestKVM.tests_path,
             "run",
@@ -116,7 +118,6 @@ class TestKVM(TestCase):
                 "routes" : [ { "dst" : "0.0.0.0/0" } ]
             }
         }
-        :return:
         """
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         result = 1
@@ -178,7 +179,7 @@ class TestKVM(TestCase):
         cls.p_dnsmasq.start()
         assert cls.p_dnsmasq.is_alive() is True
         TestKVM.dns_masq_running()
-        # cls.generator()
+        cls.dev_null = open("/dev/null", "w")
 
     @classmethod
     def tearDownClass(cls):
@@ -196,6 +197,7 @@ class TestKVM(TestCase):
             "--local-config=%s" % TestKVM.tests_path,
             "gc",
             "--grace-period=0s"])
+        cls.dev_null.close()
 
     @staticmethod
     def clean_sandbox():
@@ -204,17 +206,19 @@ class TestKVM(TestCase):
         for d in dirs:
             for f in os.listdir(d):
                 if ".json" in f:
+                    os.write(1, "\n\r-> remove %s\n\r" % f)
                     os.remove("%s/%s" % (d, f))
 
     def setUp(self):
         self.assertTrue(self.p_bootcfg.is_alive())
         self.assertTrue(self.p_dnsmasq.is_alive())
+        self.clean_sandbox()
 
-    @staticmethod
-    def virsh(cmd, assertion=False):
-        os.write(1, "\n\r-> " + " ".join(cmd) + "\n\r")
-        sys.stdout.flush()
-        ret = subprocess.call(cmd)
+    def virsh(self, cmd, assertion=False, v=None):
+        if v is not None:
+            os.write(1, "\n\r-> " + " ".join(cmd) + "\n\r")
+            sys.stdout.flush()
+        ret = subprocess.call(cmd, stdout=v, stderr=v)
         if assertion is True and ret != 0:
             raise RuntimeError("\"%s\"" % " ".join(cmd))
 
@@ -236,10 +240,10 @@ class TestKVM(TestCase):
         def root():
             resp.append(request.form)
             request.environ.get('werkzeug.server.shutdown')()
-            return ""
+            return "roger"
 
         destroy, undefine = ["virsh", "destroy", "%s" % marker], ["virsh", "undefine", "%s" % marker]
-        self.virsh(destroy), self.virsh(undefine)
+        self.virsh(destroy, v=self.dev_null), self.virsh(undefine, v=self.dev_null)
 
         try:
             virt_install = [
@@ -260,11 +264,73 @@ class TestKVM(TestCase):
             self.virsh(virt_install, assertion=True)
             app.run(
                 host="172.15.0.1", port=5000, debug=False, use_reloader=False)
+            os.write(1, "\r -> Flask stop\n\r")
 
         finally:
-            self.virsh(destroy)
-            self.virsh(undefine)
+            self.virsh(destroy), os.write(1, "\r")
+            self.virsh(undefine), os.write(1, "\r")
         self.assertEqual(resp, [ImmutableMultiDict([('euid-testkvm-test_00', u'')])])
+
+    def test_01(self):
+        marker = "euid-%s-%s" % (TestKVM.__name__.lower(), self.test_01.__name__)
+        os.environ["BOOTCFG_IP"] = "172.15.0.1"
+        gen = generator.Generator(
+            profile_id="%s" % marker,
+            name="%s" % marker,
+            ignition_id="%s.yaml" % marker,
+            bootcfg_path=self.test_bootcfg_path
+        )
+        gen.dumps()
+
+        app = Flask(marker)
+        resp = []
+
+        @app.route('/discovery', methods=['POST'])
+        def root():
+            resp.append(request.form)
+            if len(resp) == 3:
+                request.environ.get('werkzeug.server.shutdown')()
+            return "roger"
+
+        try:
+            for i in xrange(4):
+                machine_marker = "%s-%d" % (marker, i)
+                destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
+                                    ["virsh", "undefine", "%s" % machine_marker]
+                self.virsh(destroy, v=self.dev_null), self.virsh(undefine, v=self.dev_null)
+                virt_install = [
+                    "virt-install",
+                    "--name",
+                    "%s" % machine_marker,
+                    "--network=bridge:metal0",
+                    "--memory=1024",
+                    "--vcpus=1",
+                    "--pxe",
+                    "--disk",
+                    "none",
+                    "--os-type=linux",
+                    "--os-variant=generic",
+                    "--noautoconsole",
+                    "--boot=network"
+                ]
+                self.virsh(virt_install, assertion=True)
+
+            app.run(
+                host="172.15.0.1", port=5000, debug=False, use_reloader=False)
+            os.write(1, "\r -> Flask stop\n\r")
+
+        finally:
+            for i in xrange(4):
+                machine_marker = "%s-%d" % (marker, i)
+                destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
+                                    ["virsh", "undefine", "%s" % machine_marker]
+                self.virsh(destroy), os.write(1, "\r")
+                self.virsh(undefine), os.write(1, "\r")
+        self.assertEqual(resp, [
+            ImmutableMultiDict([('euid-testkvm-test_01', u'')]),
+            ImmutableMultiDict([('euid-testkvm-test_01', u'')]),
+            ImmutableMultiDict([('euid-testkvm-test_01', u'')])
+        ])
 
 
 if __name__ == "__main__":
