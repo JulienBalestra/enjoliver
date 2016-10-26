@@ -1,7 +1,8 @@
-VERSION=1192.1.0
+VERSION=1122.3.0
+
 SERVE=serve
 
-CHANNEL=https://alpha.release.core-os.net/amd64-usr
+CHANNEL=https://stable.release.core-os.net/amd64-usr
 VMLINUZ=coreos_production_pxe.vmlinuz
 CPIO=coreos_production_pxe_image.cpio.gz
 

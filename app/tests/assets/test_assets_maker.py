@@ -19,13 +19,13 @@ class TestAssetsCoreOS(unittest.TestCase):
         self.assertItemsEqual(expect, real)
 
     def test_01_default(self):
-        expect = self.default_files + ["1192.1.0"]
+        expect = self.default_files + ["1122.3.0"]
         subprocess.check_output(["make", "-C", self.asset_test])
         real = os.listdir(self.asset_test)
         self.assertItemsEqual(expect, real)
 
     def test_02_serve(self):
-        expect = self.default_files + ["1192.1.0", "serve"]
+        expect = self.default_files + ["1122.3.0", "serve"]
         subprocess.check_output(["make", "-C", self.asset_test, "serve"])
         real = os.listdir(self.asset_test)
         self.assertItemsEqual(expect, real)
