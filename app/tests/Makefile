@@ -14,7 +14,19 @@ ifneq ($(EUID), 0)
 	ROOT=1
 endif
 
-default: $(BOOTCFG) $(RKT)
+PROJECT=$(CWD)/../..
+ENV_NAME=env
+PYTHON=$(PROJECT)/$(ENV_NAME)/bin/python
+
+default: $(BOOTCFG) $(RKT) $(PYTHON)
+
+$(PYTHON):
+	@echo Run as USER
+	test $(ROOT)
+	ls $(PROJECT)/$(ENV_NAME) || virtualenv $(PROJECT)/$(ENV_NAME)
+	$(PROJECT)/$(ENV_NAME)/bin/pip install -r $(PROJECT)/requirements.txt
+	$(PYTHON) --version
+
 
 $(BOOTCFG):
 	@echo Run as USER
@@ -65,14 +77,14 @@ clean:
 
 fclean: clean gci gc
 
-check: default
-	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover unit/
-	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover inte/
+check: default $(PYTHON)
+	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover unit/
+	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover inte/
 
-check_assets: default
-	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover assets/
+check_assets: default $(PYTHON)
+	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover assets/
 
-check_euid:
-	PYTHONPATH=$(shell pwd)/../.. python -m unittest discover euid/
+check_euid: $(PYTHON)
+	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover euid/
 
 re: clean default

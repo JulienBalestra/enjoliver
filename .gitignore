@@ -15,3 +15,5 @@ serve
 /*.iml
 /app/tests/rkt_dir/
 /app/tests/bootcfg_dir/
+*.pyc
+/env/

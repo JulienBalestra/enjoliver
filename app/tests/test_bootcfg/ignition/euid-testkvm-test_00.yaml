@@ -9,16 +9,6 @@ systemd:
         After=network-online.target
         [Service]
         Type=simple
-        ExecStart=/usr/bin/curl http://172.15.0.1:8080
+        ExecStart=/usr/bin/curl -XPOST http://172.15.0.1:5000/discovery -d "euid-testkvm-test_00"
         [Install]
         WantedBy=multi-user.target
-
-{{ if index . "ssh_authorized_keys" }}
-passwd:
-  users:
-    - name: core
-      ssh_authorized_keys:
-        {{ range $element := .ssh_authorized_keys }}
-        - {{$element}}
-        {{end}}
-{{end}}

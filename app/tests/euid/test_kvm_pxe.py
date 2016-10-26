@@ -9,7 +9,16 @@ import sys
 
 import time
 
+from flask import Flask
+from flask import request
+from werkzeug.datastructures import ImmutableMultiDict
+
 from app import generator
+
+
+# from app import weback
+
+
 
 
 @unittest.skipIf(os.geteuid() != 0,
@@ -206,8 +215,8 @@ class TestKVM(TestCase):
         os.write(1, "\n\r-> " + " ".join(cmd) + "\n\r")
         sys.stdout.flush()
         ret = subprocess.call(cmd)
-        if assertion:
-            assert ret == 0
+        if assertion is True and ret != 0:
+            raise RuntimeError("\"%s\"" % " ".join(cmd))
 
     def test_00(self):
         marker = "euid-%s-%s" % (TestKVM.__name__.lower(), self.test_00.__name__)
@@ -216,59 +225,46 @@ class TestKVM(TestCase):
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
-            bootcfg_path=self.test_bootcfg_path,
-            selector={"mac": "52:54:00:d0:b6:81"}
+            bootcfg_path=self.test_bootcfg_path
         )
         gen.dumps()
+
+        app = Flask(marker)
+        resp = []
+
+        @app.route('/discovery', methods=['POST'])
+        def root():
+            resp.append(request.form)
+            request.environ.get('werkzeug.server.shutdown')()
+            return ""
+
+        destroy, undefine = ["virsh", "destroy", "%s" % marker], ["virsh", "undefine", "%s" % marker]
+        self.virsh(destroy), self.virsh(undefine)
+
         try:
             virt_install = [
                 "virt-install",
                 "--name",
-                "test0",
-                "--network=bridge:metal0,mac=52:54:00:d0:b6:81",
+                "%s" % marker,
+                "--network=bridge:metal0",
                 "--memory=1024",
                 "--vcpus=1",
                 "--pxe",
                 "--disk",
-                "pool=default,size=6",
+                "none",
                 "--os-type=linux",
                 "--os-variant=generic",
                 "--noautoconsole",
                 "--boot=network"
             ]
-
             self.virsh(virt_install, assertion=True)
-            time.sleep(200)
+            app.run(
+                host="172.15.0.1", port=5000, debug=False, use_reloader=False)
+
         finally:
-            # time.sleep(3)
-
-            destroy = [
-                "virsh",
-                "destroy",
-                "test0"]
             self.virsh(destroy)
-
-            undefine = [
-                "virsh",
-                "undefine",
-                "test0"]
             self.virsh(undefine)
-
-            pool_refresh = [
-                "virsh",
-                "pool-refresh",
-                "default"
-            ]
-            self.virsh(pool_refresh)
-
-            vol_delete = [
-                "virsh",
-                "vol-delete",
-                "--pool",
-                "default",
-                "test0.qcow2"
-            ]
-            self.virsh(vol_delete)
+        self.assertEqual(resp, [ImmutableMultiDict([('euid-testkvm-test_00', u'')])])
 
 
 if __name__ == "__main__":
