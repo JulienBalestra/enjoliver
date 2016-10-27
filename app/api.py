@@ -2,7 +2,6 @@ import os
 import urllib2
 
 from flask import Flask, request, json
-from flask import url_for
 
 app = application = Flask(__name__)
 
@@ -11,7 +10,8 @@ application.config["BOOTCFG_URI"] = os.getenv(
 
 application.config["BOOTCFG_URLS"] = [
     "/",
-    "/boot.ipxe"
+    "/boot.ipxe",
+    "/assets"
 ]
 
 
@@ -56,7 +56,20 @@ def healthz():
 @application.route('/discovery', methods=['POST'])
 def discovery():
     request.form.to_dict()
-    return "thank you"
+    return "thank-you"
+
+
+def insert_dhcp_retry(resp_list):
+    """
+    :param resp_list: the iPXE readlines response from bootcfg
+    :return: the response with the dhcp retry
+    """
+    if len(resp_list) == 2 or len(resp_list) == 4:
+        resp_list.insert(1, ":retry_dhcp\n")
+        resp_list.insert(2, "dhcp || goto retry_dhcp\n")
+    else:
+        app.logger.warning("iPXE response is not coherent")
+    return "".join(resp_list), 200
 
 
 @application.route('/boot.ipxe', methods=['GET'])
@@ -69,11 +82,26 @@ def boot_ipxe():
         "%s/boot.ipxe" % app.config["BOOTCFG_URI"])
     resp_list = bootcfg_resp.readlines()
     bootcfg_resp.close()
+    return insert_dhcp_retry(resp_list)
 
-    resp_list.insert(1, ":retry_dhcp\n")
-    resp_list.insert(2, "dhcp || goto retry_dhcp\n")
 
-    return "".join(resp_list)
+@application.route('/ipxe', methods=['GET'])
+def ipxe():
+    """
+    Fetch the bootcfg/ipxe?<key>=<value> and insert retry for dhcp
+    :return: str
+    """
+    try:
+        bootcfg_resp = urllib2.urlopen(
+            "%s%s" % (
+                app.config["BOOTCFG_URI"],
+                request.full_path))
+        resp_list = bootcfg_resp.readlines()
+        bootcfg_resp.close()
+        return insert_dhcp_retry(resp_list)
+
+    except urllib2.URLError:
+        return "404", 404
 
 
 if __name__ == "__main__":

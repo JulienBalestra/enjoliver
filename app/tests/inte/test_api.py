@@ -12,6 +12,8 @@ import time
 from app import api
 import unittest
 
+from app import generator
+
 
 class TestAPI(unittest.TestCase):
     p_bootcfg = Process
@@ -66,7 +68,6 @@ class TestAPI(unittest.TestCase):
         sys.stdout.flush()
         cls.p_bootcfg.terminate()
         cls.p_bootcfg.join(timeout=5)
-        # cls.clean_sandbox()
 
     @staticmethod
     def bootcfg_running(bootcfg_endpoint, p_bootcfg):
@@ -90,8 +91,29 @@ class TestAPI(unittest.TestCase):
         assert "bootcfg\n" == response_body
         assert 200 == response_code
 
+    @staticmethod
+    def clean_sandbox():
+        dirs = ["%s/%s" % (
+            TestAPI.test_bootcfg_path, k) for k in (
+                    "profiles", "groups")]
+        for d in dirs:
+            for f in os.listdir(d):
+                if ".json" in f:
+                    os.remove("%s/%s" % (d, f))
+
+    def setUp(self):
+        self.assertTrue(self.p_bootcfg.is_alive())
+        self.clean_sandbox()
+
     def test_00_healthz(self):
-        expect = {u'flask': True, u'global': True, u'bootcfg': {u'/': True, u'/boot.ipxe': True}}
+        expect = {
+            u'flask': True,
+            u'global': True,
+            u'bootcfg': {
+                u'/': True,
+                u'/boot.ipxe': True,
+                u'/assets': True
+            }}
         result = self.app.get('/healthz')
         self.assertEqual(result.status_code, 200)
         content = json.loads(result.data)
@@ -108,8 +130,57 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(result.data, expect)
 
     def test_02_root(self):
-        expect = [u'/discovery', u'/boot.ipxe', u'/healthz', u'/']
+        expect = [u'/discovery', u'/boot.ipxe', u'/healthz', u'/', u'/ipxe']
         result = self.app.get('/')
         content = json.loads(result.data)
         self.assertEqual(result.status_code, 200)
-        self.assertEqual(content, expect)
+        self.assertItemsEqual(content, expect)
+
+    def test_03_ipxe_404(self):
+        result = self.app.get('/ipxe')
+        self.assertEqual(result.data, "404")
+        self.assertEqual(result.status_code, 404)
+
+    def test_04_ipxe(self):
+        marker = "%s-%s" % (TestAPI.__name__.lower(), self.test_04_ipxe.__name__)
+        ignition_file = "inte-%s.yaml" % marker
+        gen = generator.Generator(
+            profile_id="id-%s" % marker,
+            name="name-%s" % marker,
+            ignition_id=ignition_file,
+            bootcfg_path=self.test_bootcfg_path)
+        gen.dumps()
+        result = self.app.get('/ipxe')
+        expect = "#!ipxe\n" \
+                 ":retry_dhcp\n" \
+                 "dhcp || goto retry_dhcp\n" \
+                 "kernel /assets/coreos/serve/coreos_production_pxe.vmlinuz coreos.autologin coreos.config.url=http://192.168.192.234:8080/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp} coreos.first_boot\n" \
+                 "initrd /assets/coreos/serve/coreos_production_pxe_image.cpio.gz \n" \
+                 "boot\n"
+        self.assertEqual(result.data, expect)
+        self.assertEqual(result.status_code, 200)
+
+    def test_05_ipxe_selector(self):
+        mac = "00:00:00:00:00:00"
+        marker = "%s-%s" % (TestAPI.__name__.lower(), self.test_05_ipxe_selector.__name__)
+        ignition_file = "inte-%s.yaml" % marker
+        gen = generator.Generator(
+            profile_id="id-%s" % marker,
+            name="name-%s" % marker,
+            ignition_id=ignition_file,
+            selector={"mac": mac},
+            bootcfg_path=self.test_bootcfg_path)
+        gen.dumps()
+        result = self.app.get('/ipxe')
+        self.assertEqual(result.data, "404")
+        self.assertEqual(result.status_code, 404)
+
+        result = self.app.get('/ipxe?mac=%s' % mac)
+        expect = "#!ipxe\n" \
+                 ":retry_dhcp\n" \
+                 "dhcp || goto retry_dhcp\n" \
+                 "kernel /assets/coreos/serve/coreos_production_pxe.vmlinuz coreos.autologin coreos.config.url=http://192.168.192.234:8080/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp} coreos.first_boot\n" \
+                 "initrd /assets/coreos/serve/coreos_production_pxe_image.cpio.gz \n" \
+                 "boot\n"
+        self.assertEqual(result.data, expect)
+        self.assertEqual(result.status_code, 200)

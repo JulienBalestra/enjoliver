@@ -15,7 +15,16 @@ class TestAPI(unittest.TestCase):
         pass
 
     def test_healthz_00(self):
+        expect = {
+            u'flask': True,
+            u'global': False,
+            u'bootcfg': {
+                u'/boot.ipxe': False,
+                u'/': False,
+                u'/assets': False
+            }}
+
         result = self.app.get('/healthz')
         self.assertEqual(result.status_code, 200)
         content = json.loads(result.data)
-        self.assertEqual(content, {u'bootcfg': {u'boot.ipxe': False}, u'flask': True, u'global': False})
+        self.assertEqual(content, expect)
