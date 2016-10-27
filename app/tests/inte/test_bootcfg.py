@@ -117,7 +117,7 @@ class TestBootConfigCommon(TestCase):
     def setUp(self):
         self.assertTrue(self.p_bootcfg.is_alive())
         try:
-            self.assertEqual(self.gen.group.bootcfg_ip, self.gen.profile.bootcfg_ip)
+            self.assertEqual(self.gen.group.api_ip, self.gen.profile.api_ip)
         except AttributeError:
             # gen not declared
             pass
@@ -173,15 +173,15 @@ class TestBootConfigCommon(TestCase):
         kernel = lines[1].split(" ")
         kernel_expect = [
             'kernel',
-            '/assets/coreos/serve/coreos_production_pxe.vmlinuz',
+            '%s/assets/coreos/serve/coreos_production_pxe.vmlinuz' % self.gen.profile.bootcfg_uri,
             'coreos.autologin',
-            'coreos.config.url=http://%s:%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % (
-                self.gen.group.bootcfg_ip, self.bootcfg_port),
+            'coreos.config.url=%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % self.gen.profile.bootcfg_uri,
             'coreos.first_boot']
         self.assertEqual(kernel, kernel_expect)
 
         init_rd = lines[2].split(" ")
-        init_rd_expect = ['initrd', '/assets/coreos/serve/coreos_production_pxe_image.cpio.gz']
+        init_rd_expect = ['initrd',
+                          '%s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz' % self.gen.profile.bootcfg_uri]
         self.assertEqual(init_rd, init_rd_expect)
 
         boot = lines[3]
@@ -276,15 +276,15 @@ class TestBootConfigSelector(TestBootConfigCommon):
         kernel = lines[1].split(" ")
         kernel_expect = [
             'kernel',
-            '/assets/coreos/serve/coreos_production_pxe.vmlinuz',
+            '%s/assets/coreos/serve/coreos_production_pxe.vmlinuz' % self.gen.profile.bootcfg_uri,
             'coreos.autologin',
-            'coreos.config.url=http://%s:%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % (
-                self.gen.group.bootcfg_ip, self.bootcfg_port),
+            'coreos.config.url=%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % self.gen.profile.bootcfg_uri,
             'coreos.first_boot']
         self.assertEqual(kernel, kernel_expect)
 
         init_rd = lines[2].split(" ")
-        init_rd_expect = ['initrd', '/assets/coreos/serve/coreos_production_pxe_image.cpio.gz']
+        init_rd_expect = ['initrd',
+                          '%s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz' % self.gen.profile.bootcfg_uri]
         self.assertEqual(init_rd, init_rd_expect)
 
         boot = lines[3]

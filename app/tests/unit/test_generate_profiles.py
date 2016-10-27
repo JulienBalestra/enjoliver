@@ -43,39 +43,39 @@ class TestGenerateProfiles(TestCase):
 
     def test_00_ip_address(self):
         self.assertFalse(os.path.isfile("%s" % self.network_environment))
-        ip = self.gen.bootcfg_ip
+        ip = self.gen.api_ip
         match = re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip)
         self.assertIsNotNone(match)
         self.assertTrue(os.path.isfile("%s" % self.network_environment))
 
     def test_01_boot(self):
         expect = {
-            'kernel': '/assets/coreos/serve/coreos_production_pxe.vmlinuz',
-            'initrd': ['/assets/coreos/serve/coreos_production_pxe_image.cpio.gz'],
+            'kernel': '%s/assets/coreos/serve/coreos_production_pxe.vmlinuz' % self.gen.bootcfg_uri,
+            'initrd': ['%s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz' % self.gen.bootcfg_uri],
             'cmdline':
                 {
                     'coreos.autologin': '',
                     'coreos.first_boot': '',
-                    'coreos.config.url': 'http://%s:%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' %
-                                         (self.gen.bootcfg_ip, self.bootcfg_port)
+                    'coreos.config.url': '%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % self.gen.bootcfg_uri
                 }
         }
         self.gen._boot()
+
         self.assertEqual(expect, self.gen._target_data["boot"])
 
     def test_990_generate(self):
         expect = {
             "cloud_id": "",
             "boot": {
-                "kernel": "/assets/coreos/serve/coreos_production_pxe.vmlinuz",
+                "kernel": "%s/assets/coreos/serve/coreos_production_pxe.vmlinuz" % self.gen.bootcfg_uri,
                 "initrd": [
-                    "/assets/coreos/serve/coreos_production_pxe_image.cpio.gz"
+                    "%s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz" % self.gen.bootcfg_uri
                 ],
                 "cmdline": {
                     "coreos.autologin": "",
                     "coreos.first_boot": "",
-                    "coreos.config.url": "http://%s:%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}" %
-                                         (self.gen.bootcfg_ip, self.bootcfg_port)
+                    "coreos.config.url": "%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}" %
+                                         self.gen.bootcfg_uri
                 }
             },
             "id": "etcd-proxy",

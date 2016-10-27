@@ -32,13 +32,13 @@ class TestGenerateGroups(TestCase):
 
     def test_00_ip_address(self):
         self.assertFalse(os.path.isfile("%s" % self.network_environment))
-        ip = self.gen.bootcfg_ip
+        ip = self.gen.api_ip
         match = re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip)
         self.assertIsNotNone(match)
         self.assertTrue(os.path.isfile("%s" % self.network_environment))
 
     def test_01_metadata(self):
-        expect = {'etcd_initial_cluster': '', 'seed': 'http://%s:%s' % (self.gen.bootcfg_ip, self.bootcfg_port)}
+        expect = {'etcd_initial_cluster': '', 'seed': '%s' % self.gen.api_uri}
         self.gen._metadata()
         self.assertEqual(expect, self.gen._target_data["metadata"])
 
@@ -47,7 +47,7 @@ class TestGenerateGroups(TestCase):
             'profile': 'etcd-proxy.yaml',
             'metadata': {
                 'etcd_initial_cluster': '',
-                'seed': 'http://%s:%s' % (self.gen.bootcfg_ip, self.bootcfg_port)
+                'seed': '%s' % self.gen.api_uri
             },
             'id': 'etcd-proxy',
             'name': 'etcd-proxy'
@@ -96,13 +96,13 @@ class TestGenerateGroupsSelectorLower(TestCase):
 
     def test_00_ip_address(self):
         self.assertFalse(os.path.isfile("%s" % self.network_environment))
-        ip = self.gen.bootcfg_ip
+        ip = self.gen.api_ip
         match = re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip)
         self.assertIsNotNone(match)
         self.assertTrue(os.path.isfile("%s" % self.network_environment))
 
     def test_01_metadata(self):
-        expect = {'etcd_initial_cluster': '', 'seed': 'http://%s:%s' % (self.gen.bootcfg_ip, self.bootcfg_port)}
+        expect = {'etcd_initial_cluster': '', 'seed': "%s" % self.gen.api_uri}
         self.gen._metadata()
         self.assertEqual(expect, self.gen._target_data["metadata"])
 
@@ -116,7 +116,7 @@ class TestGenerateGroupsSelectorLower(TestCase):
             'profile': 'etcd-proxy.yaml',
             'metadata': {
                 'etcd_initial_cluster': '',
-                'seed': 'http://%s:%s' % (self.gen.bootcfg_ip, self.bootcfg_port),
+                'seed': self.gen.api_uri,
                 'selector': {'mac': '08:00:27:37:28:2e'}
             },
             'id': 'etcd-proxy',
@@ -170,13 +170,13 @@ class TestGenerateGroupsSelectorUpper(TestCase):
 
     def test_00_ip_address(self):
         self.assertFalse(os.path.isfile("%s" % self.network_environment))
-        ip = self.gen.bootcfg_ip
+        ip = self.gen.api_ip
         match = re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip)
         self.assertIsNotNone(match)
         self.assertTrue(os.path.isfile("%s" % self.network_environment))
 
     def test_01_metadata(self):
-        expect = {'etcd_initial_cluster': '', 'seed': 'http://%s:%s' % (self.gen.bootcfg_ip, self.bootcfg_port)}
+        expect = {'etcd_initial_cluster': '', 'seed': "%s" % self.gen.api_uri}
         self.gen._metadata()
         self.assertEqual(expect, self.gen._target_data["metadata"])
 
@@ -190,7 +190,7 @@ class TestGenerateGroupsSelectorUpper(TestCase):
             'profile': 'etcd-proxy.yaml',
             'metadata': {
                 'etcd_initial_cluster': '',
-                'seed': 'http://%s:%s' % (self.gen.bootcfg_ip, self.bootcfg_port),
+                'seed': "%s" % self.gen.api_uri,
                 'selector': {'mac': '08:00:27:37:28:2e'}
             },
             'id': 'etcd-proxy',

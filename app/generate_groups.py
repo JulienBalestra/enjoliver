@@ -25,7 +25,7 @@ class GenerateGroup(GenerateCommon):
         }
 
     def _metadata(self):
-        self._target_data["metadata"]["seed"] = self.bootcfg_uri
+        self._target_data["metadata"]["seed"] = self.api_uri
         self._target_data["metadata"]["etcd_initial_cluster"] = ""
 
     def _selector(self):

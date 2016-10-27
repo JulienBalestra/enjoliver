@@ -28,8 +28,8 @@ class GenerateProfile(GenerateCommon):
 
     def _boot(self):
         self._target_data["boot"] = {
-            "kernel": "/assets/coreos/serve/coreos_production_pxe.vmlinuz",
-            "initrd": ["/assets/coreos/serve/coreos_production_pxe_image.cpio.gz"],
+            "kernel": "%s/assets/coreos/serve/coreos_production_pxe.vmlinuz" % self.bootcfg_uri,
+            "initrd": ["%s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz" % self.bootcfg_uri],
             "cmdline": {
                 "coreos.config.url":
                     "%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}" % self.bootcfg_uri,

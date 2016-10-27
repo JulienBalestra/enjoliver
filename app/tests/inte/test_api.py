@@ -124,7 +124,7 @@ class TestAPI(unittest.TestCase):
             "#!ipxe\n" \
             ":retry_dhcp\n" \
             "dhcp || goto retry_dhcp\n" \
-            "chain ipxe?uuid=${uuid}&mac=${net0/mac:hexhyp}&domain=${domain}&hostname=${hostname}&serial=${serial}\n"
+            "chain http://localhost/ipxe?uuid=${uuid}&mac=${net0/mac:hexhyp}&domain=${domain}&hostname=${hostname}&serial=${serial}\n"
         result = self.app.get('/boot.ipxe')
         self.assertEqual(result.status_code, 200)
         self.assertEqual(result.data, expect)
@@ -154,9 +154,13 @@ class TestAPI(unittest.TestCase):
         expect = "#!ipxe\n" \
                  ":retry_dhcp\n" \
                  "dhcp || goto retry_dhcp\n" \
-                 "kernel /assets/coreos/serve/coreos_production_pxe.vmlinuz coreos.autologin coreos.config.url=http://192.168.192.234:8080/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp} coreos.first_boot\n" \
-                 "initrd /assets/coreos/serve/coreos_production_pxe_image.cpio.gz \n" \
-                 "boot\n"
+                 "kernel " \
+                 "%s/assets/coreos/serve/coreos_production_pxe.vmlinuz " \
+                 "coreos.autologin " \
+                 "coreos.config.url=%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp} " \
+                 "coreos.first_boot\n" \
+                "initrd %s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz \n" \
+                "boot\n" % (gen.profile.bootcfg_uri, gen.profile.bootcfg_uri, gen.profile.bootcfg_uri)
         self.assertEqual(result.data, expect)
         self.assertEqual(result.status_code, 200)
 
@@ -179,8 +183,8 @@ class TestAPI(unittest.TestCase):
         expect = "#!ipxe\n" \
                  ":retry_dhcp\n" \
                  "dhcp || goto retry_dhcp\n" \
-                 "kernel /assets/coreos/serve/coreos_production_pxe.vmlinuz coreos.autologin coreos.config.url=http://192.168.192.234:8080/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp} coreos.first_boot\n" \
-                 "initrd /assets/coreos/serve/coreos_production_pxe_image.cpio.gz \n" \
-                 "boot\n"
+                 "kernel %s/assets/coreos/serve/coreos_production_pxe.vmlinuz coreos.autologin coreos.config.url=http://192.168.192.234:8080/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp} coreos.first_boot\n" \
+                 "initrd %s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz \n" \
+                 "boot\n" % (gen.profile.bootcfg_uri, gen.profile.bootcfg_uri)
         self.assertEqual(result.data, expect)
         self.assertEqual(result.status_code, 200)

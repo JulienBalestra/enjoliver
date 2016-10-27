@@ -16,6 +16,9 @@ class GenerateCommon(object):
     _bootcfg_ip = None
     _bootcfg_port = int(os.getenv("BOOTCFG_PORT", "8080"))
 
+    _api_ip = None
+    _api_port = int(os.getenv("API_PORT", "5000"))
+
     _raise_enof = IOError
 
     def log_stderr(self, message):
@@ -29,19 +32,19 @@ class GenerateCommon(object):
         return self.generate()
 
     @property
-    def bootcfg_ip(self):
+    def api_ip(self):
         """
         :rtype: str
         :return: IP address
         """
-        if self._bootcfg_ip:
-            self.log_stderr("return %s" % self._bootcfg_ip)
-            return self._bootcfg_ip
-
-        if os.getenv("BOOTCFG_IP") and re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", os.getenv("BOOTCFG_IP")):
-            self._bootcfg_ip = os.getenv("BOOTCFG_IP")
-            self.log_stderr("env -> BOOTCFG_IP=%s" % self._bootcfg_ip)
-            return self._bootcfg_ip
+        if self._api_ip:
+            self.log_stderr("return %s" % self._api_ip)
+            return self._api_ip
+        api_ip = os.getenv("API_IP")
+        if api_ip and re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", api_ip):
+            self._api_ip = api_ip
+            self.log_stderr("env -> API_IP=%s" % self._api_ip)
+            return self._api_ip
 
         # This only work on Linux and if the DEFAULT_IPV4 is listening bootcfg address
         out = "%s/misc/network-environment" % self.bootcfg_path
@@ -54,11 +57,47 @@ class GenerateCommon(object):
                     ip = l.split("DEFAULT_IPV4=")[1].replace("\n", "")
                     match = re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip)
                     if match is not None:
-                        self._bootcfg_ip = ip
+                        self._api_ip = ip
                         self.log_stderr("correct IP address")
-                        return self._bootcfg_ip
+                        return self._api_ip
                     self.log_stderr("ERROR incorrect IP address")
         raise ImportError("Error in module %s" % out)
+
+    @property
+    def bootcfg_ip(self):
+        """
+        :rtype: str
+        :return: IP address
+        """
+        if self._api_ip:
+            self.log_stderr("return %s" % self._api_ip)
+            return self._api_ip
+        api_ip = os.getenv("BOOTCFG_IP")
+        if api_ip and re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", api_ip):
+            self._api_ip = api_ip
+            self.log_stderr("env -> BOOTCFG_IP=%s" % self._api_ip)
+            return self._api_ip
+
+        # This only work on Linux and if the DEFAULT_IPV4 is listening bootcfg address
+        out = "%s/misc/network-environment" % self.bootcfg_path
+        subprocess.check_call(
+            ["%s/assets/setup-network-environment/serve/setup-network-environment" %
+             self.bootcfg_path, "-o", "%s" % out])
+        with open("%s" % out, mode='r') as fd:
+            for l in fd:
+                if "DEFAULT_IPV4=" in l:
+                    ip = l.split("DEFAULT_IPV4=")[1].replace("\n", "")
+                    match = re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip)
+                    if match is not None:
+                        self._api_ip = ip
+                        self.log_stderr("correct IP address")
+                        return self._api_ip
+                    self.log_stderr("ERROR incorrect IP address")
+        raise ImportError("Error in module %s" % out)
+
+    @property
+    def api_uri(self):
+        return "http://%s:%s" % (self.api_ip, self._api_port)
 
     @property
     def bootcfg_uri(self):

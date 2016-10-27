@@ -2,6 +2,8 @@ import os
 import urllib2
 
 from flask import Flask, request, json
+from flask import redirect
+from flask import url_for
 
 app = application = Flask(__name__)
 
@@ -64,25 +66,39 @@ def insert_dhcp_retry(resp_list):
     :param resp_list: the iPXE readlines response from bootcfg
     :return: the response with the dhcp retry
     """
-    if len(resp_list) == 2 or len(resp_list) == 4:
+    if len(resp_list) == 4:
         resp_list.insert(1, ":retry_dhcp\n")
         resp_list.insert(2, "dhcp || goto retry_dhcp\n")
     else:
         app.logger.warning("iPXE response is not coherent")
+    # print "".join(resp_list)
     return "".join(resp_list), 200
 
 
 @application.route('/boot.ipxe', methods=['GET'])
 def boot_ipxe():
     """
-    Fetch the bootcfg/boot.ipxe and insert retry for dhcp
+    Replace the bootcfg/boot.ipxe by insert retry for dhcp and full URL for the chain
     :return: str
     """
-    bootcfg_resp = urllib2.urlopen(
-        "%s/boot.ipxe" % app.config["BOOTCFG_URI"])
-    resp_list = bootcfg_resp.readlines()
-    bootcfg_resp.close()
-    return insert_dhcp_retry(resp_list)
+    try:
+        flask_uri = "%s://%s" % (
+            request.environ.get('wsgi.url_scheme'),
+            request.environ.get('HTTP_HOST'))
+    except Exception:
+        flask_uri = application.config["BOOTCFG_URI"]
+
+    response = \
+        "#!ipxe\n" \
+        ":retry_dhcp\n" \
+        "dhcp || goto retry_dhcp\n" \
+        "chain %s/ipxe?" \
+        "uuid=${uuid}&" \
+        "mac=${net0/mac:hexhyp}&" \
+        "domain=${domain}&" \
+        "hostname=${hostname}&" \
+        "serial=${serial}\n" % flask_uri
+    return response
 
 
 @application.route('/ipxe', methods=['GET'])
@@ -98,6 +114,7 @@ def ipxe():
                 request.full_path))
         resp_list = bootcfg_resp.readlines()
         bootcfg_resp.close()
+        # print insert_dhcp_retry(resp_list)
         return insert_dhcp_retry(resp_list)
 
     except urllib2.URLError:
