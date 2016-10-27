@@ -90,11 +90,26 @@ class TestAPI(unittest.TestCase):
         assert "bootcfg\n" == response_body
         assert 200 == response_code
 
-    def test_healthz_00(self):
+    def test_00_healthz(self):
+        expect = {u'flask': True, u'global': True, u'bootcfg': {u'/': True, u'/boot.ipxe': True}}
         result = self.app.get('/healthz')
         self.assertEqual(result.status_code, 200)
         content = json.loads(result.data)
-        self.assertEqual(content, {
-            u'bootcfg': {u'boot.ipxe': True},
-            u'flask': True,
-            u'global': True})
+        self.assertEqual(expect, content)
+
+    def test_01_boot_ipxe(self):
+        expect = \
+            "#!ipxe\n" \
+            ":retry_dhcp\n" \
+            "dhcp || goto retry_dhcp\n" \
+            "chain ipxe?uuid=${uuid}&mac=${net0/mac:hexhyp}&domain=${domain}&hostname=${hostname}&serial=${serial}\n"
+        result = self.app.get('/boot.ipxe')
+        self.assertEqual(result.status_code, 200)
+        self.assertEqual(result.data, expect)
+
+    def test_02_root(self):
+        expect = [u'/discovery', u'/boot.ipxe', u'/healthz', u'/']
+        result = self.app.get('/')
+        content = json.loads(result.data)
+        self.assertEqual(result.status_code, 200)
+        self.assertEqual(content, expect)

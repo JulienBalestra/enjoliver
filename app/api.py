@@ -2,6 +2,7 @@ import os
 import urllib2
 
 from flask import Flask, request, json
+from flask import url_for
 
 app = application = Flask(__name__)
 
@@ -9,8 +10,21 @@ application.config["BOOTCFG_URI"] = os.getenv(
     "BOOTCFG_URI", "http://127.0.0.1:8080")
 
 application.config["BOOTCFG_URLS"] = [
-    "boot.ipxe"
+    "/",
+    "/boot.ipxe"
 ]
+
+
+@application.route('/', methods=['GET'])
+def root():
+    """
+    Map the API
+    :return: available routes
+    """
+    links = [k.rule for k in app.url_map.iter_rules()
+             if "/static/" != k.rule[:8]]
+
+    return json.jsonify(links)
 
 
 @application.route('/healthz', methods=['GET'])
@@ -28,10 +42,11 @@ def healthz():
     for k in status["bootcfg"]:
         try:
             bootcfg_resp = urllib2.urlopen(
-                "%s/%s" % (app.config["BOOTCFG_URI"], k))
+                "%s%s" % (app.config["BOOTCFG_URI"], k))
             assert bootcfg_resp.code == 200
             status["bootcfg"][k] = True
         except Exception as e:
+            # app.log_exception(e.message)
             status["bootcfg"][k] = False
             status["global"] = False
 
