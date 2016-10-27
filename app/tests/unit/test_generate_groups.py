@@ -116,7 +116,8 @@ class TestGenerateGroupsSelectorLower(TestCase):
             'profile': 'etcd-proxy.yaml',
             'metadata': {
                 'etcd_initial_cluster': '',
-                'seed': 'http://%s:%s' % (self.gen.bootcfg_ip, self.bootcfg_port)
+                'seed': 'http://%s:%s' % (self.gen.bootcfg_ip, self.bootcfg_port),
+                'selector': {'mac': '08:00:27:37:28:2e'}
             },
             'id': 'etcd-proxy',
             'name': 'etcd-proxy',
@@ -189,7 +190,8 @@ class TestGenerateGroupsSelectorUpper(TestCase):
             'profile': 'etcd-proxy.yaml',
             'metadata': {
                 'etcd_initial_cluster': '',
-                'seed': 'http://%s:%s' % (self.gen.bootcfg_ip, self.bootcfg_port)
+                'seed': 'http://%s:%s' % (self.gen.bootcfg_ip, self.bootcfg_port),
+                'selector': {'mac': '08:00:27:37:28:2e'}
             },
             'id': 'etcd-proxy',
             'name': 'etcd-proxy',

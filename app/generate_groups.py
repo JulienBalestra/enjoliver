@@ -45,6 +45,7 @@ class GenerateGroup(GenerateCommon):
             pass
 
         self._target_data["selector"] = self.selector
+        self._target_data["metadata"]["selector"] = self.selector
 
     def generate(self):
         self._metadata()
