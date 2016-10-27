@@ -11,7 +11,7 @@
 * curl
 * gpg
 * python2.7
-    * until now no python requirements
+* virtualenv
     
 * ipxe chain loading build
     * liblzma-dev 
