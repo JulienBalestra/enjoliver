@@ -206,7 +206,7 @@ class TestKVM(TestCase):
         for d in dirs:
             for f in os.listdir(d):
                 if ".json" in f:
-                    os.write(1, "\n\r-> remove %s\n\r" % f)
+                    os.write(1, "\r-> remove %s\n\r" % f)
                     os.remove("%s/%s" % (d, f))
 
     def setUp(self):
@@ -216,7 +216,7 @@ class TestKVM(TestCase):
 
     def virsh(self, cmd, assertion=False, v=None):
         if v is not None:
-            os.write(1, "\n\r-> " + " ".join(cmd) + "\n\r")
+            os.write(1, "\r-> " + " ".join(cmd) + "\n\r")
             sys.stdout.flush()
         ret = subprocess.call(cmd, stdout=v, stderr=v)
         if assertion is True and ret != 0:
@@ -238,7 +238,7 @@ class TestKVM(TestCase):
 
         @app.route('/discovery', methods=['POST'])
         def root():
-            resp.append(request.form)
+            resp.append(request.form.to_dict())
             request.environ.get('werkzeug.server.shutdown')()
             return "roger"
 
@@ -250,7 +250,7 @@ class TestKVM(TestCase):
                 "virt-install",
                 "--name",
                 "%s" % marker,
-                "--network=bridge:metal0",
+                "--network=bridge:metal0,model=virtio",
                 "--memory=1024",
                 "--vcpus=1",
                 "--pxe",
@@ -262,16 +262,19 @@ class TestKVM(TestCase):
                 "--boot=network"
             ]
             self.virsh(virt_install, assertion=True)
+
+            os.write(2, "\r\n")
             app.run(
                 host="172.15.0.1", port=5000, debug=False, use_reloader=False)
-            os.write(1, "\r -> Flask stop\n\r")
+            os.write(2, "\r -> Flask stop\n\r")
 
         finally:
             self.virsh(destroy), os.write(1, "\r")
             self.virsh(undefine), os.write(1, "\r")
-        self.assertEqual(resp, [ImmutableMultiDict([('euid-testkvm-test_00', u'')])])
+        self.assertEqual(resp, [{'euid-testkvm-test_00': u''}])
 
     def test_01(self):
+        nb_node = 3
         marker = "euid-%s-%s" % (TestKVM.__name__.lower(), self.test_01.__name__)
         os.environ["BOOTCFG_IP"] = "172.15.0.1"
         gen = generator.Generator(
@@ -287,13 +290,13 @@ class TestKVM(TestCase):
 
         @app.route('/discovery', methods=['POST'])
         def root():
-            resp.append(request.form)
-            if len(resp) == 3:
+            resp.append(request.form.to_dict())
+            if len(resp) == nb_node:
                 request.environ.get('werkzeug.server.shutdown')()
             return "roger"
 
         try:
-            for i in xrange(4):
+            for i in xrange(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
                                     ["virsh", "undefine", "%s" % machine_marker]
@@ -302,7 +305,7 @@ class TestKVM(TestCase):
                     "virt-install",
                     "--name",
                     "%s" % machine_marker,
-                    "--network=bridge:metal0",
+                    "--network=bridge:metal0,model=virtio",
                     "--memory=1024",
                     "--vcpus=1",
                     "--pxe",
@@ -315,22 +318,88 @@ class TestKVM(TestCase):
                 ]
                 self.virsh(virt_install, assertion=True)
 
+            os.write(2, "\r\n")
             app.run(
                 host="172.15.0.1", port=5000, debug=False, use_reloader=False)
-            os.write(1, "\r -> Flask stop\n\r")
+            os.write(2, "\r -> Flask stop\n\r")
 
         finally:
-            for i in xrange(4):
+            for i in xrange(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
                                     ["virsh", "undefine", "%s" % machine_marker]
                 self.virsh(destroy), os.write(1, "\r")
                 self.virsh(undefine), os.write(1, "\r")
-        self.assertEqual(resp, [
-            ImmutableMultiDict([('euid-testkvm-test_01', u'')]),
-            ImmutableMultiDict([('euid-testkvm-test_01', u'')]),
-            ImmutableMultiDict([('euid-testkvm-test_01', u'')])
-        ])
+        self.assertEqual(nb_node, len(resp))
+        self.assertItemsEqual(resp, [
+            {'euid-testkvm-test_01': u''},
+            {'euid-testkvm-test_01': u''},
+            {'euid-testkvm-test_01': u''}])
+
+    def test_02(self):
+        nb_node = 3
+        marker = "euid-%s-%s" % (TestKVM.__name__.lower(), self.test_02.__name__)
+        os.environ["BOOTCFG_IP"] = "172.15.0.1"
+
+        app = Flask(marker)
+        resp = []
+
+        @app.route('/discovery', methods=['POST'])
+        def root():
+            resp.append(request.form.to_dict())
+            if len(resp) == nb_node:
+                request.environ.get('werkzeug.server.shutdown')()
+            return "roger"
+
+        base_mac = "52:54:00:78:83:0"
+        try:
+            for i in xrange(nb_node):
+                machine_marker = "%s-%d" % (marker, i)
+                gen = generator.Generator(
+                    profile_id="%s" % machine_marker,
+                    name="%s" % machine_marker,
+                    ignition_id="%s.yaml" % machine_marker,
+                    bootcfg_path=self.test_bootcfg_path,
+                    selector={"mac": "%s%d" % (base_mac, i)}
+                )
+                gen.dumps()
+                destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
+                                    ["virsh", "undefine", "%s" % machine_marker]
+                self.virsh(destroy, v=self.dev_null), self.virsh(undefine, v=self.dev_null)
+                virt_install = [
+                    "virt-install",
+                    "--name",
+                    "%s" % machine_marker,
+                    "--network=bridge:metal0,model=virtio,mac=%s%d" % (base_mac, i),
+                    "--memory=1024",
+                    "--vcpus=1",
+                    "--pxe",
+                    "--disk",
+                    "none",
+                    "--os-type=linux",
+                    "--os-variant=generic",
+                    "--noautoconsole",
+                    "--boot=network"
+                ]
+                self.virsh(virt_install, assertion=True)
+
+            os.write(2, "\r\n")
+            app.run(
+                host="172.15.0.1", port=5000, debug=False, use_reloader=False)
+            os.write(2, "\r -> Flask stop\n\r")
+
+        finally:
+            for i in xrange(nb_node):
+                machine_marker = "%s-%d" % (marker, i)
+                destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
+                                    ["virsh", "undefine", "%s" % machine_marker]
+                self.virsh(destroy), os.write(1, "\r")
+                self.virsh(undefine), os.write(1, "\r")
+        self.assertEqual(nb_node, len(resp))
+        self.assertItemsEqual(resp, [
+            {'euid-testkvm-test_02-0': u''},
+            {'euid-testkvm-test_02-2': u''},
+            {'euid-testkvm-test_02-1': u''}])
 
 
 if __name__ == "__main__":
