@@ -3,6 +3,10 @@ from generate_profiles import GenerateProfile
 
 
 class Generator(object):
+    """
+    Generator ensure the coherence from group -> profile -> ignition
+    """
+
     def __init__(self, profile_id, name, ignition_id, bootcfg_path,
                  selector=None, group_id=None):
         self.profile = GenerateProfile(
