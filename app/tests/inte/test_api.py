@@ -112,6 +112,7 @@ class TestAPI(unittest.TestCase):
             u'bootcfg': {
                 u'/': True,
                 u'/boot.ipxe': True,
+                u'/boot.ipxe.0': True,
                 u'/assets': True
             }}
         result = self.app.get('/healthz')
@@ -122,6 +123,7 @@ class TestAPI(unittest.TestCase):
     def test_01_boot_ipxe(self):
         expect = \
             "#!ipxe\n" \
+            "echo start /boot.ipxe\n" \
             ":retry_dhcp\n" \
             "dhcp || goto retry_dhcp\n" \
             "chain http://localhost/ipxe?uuid=${uuid}&mac=${net0/mac:hexhyp}&domain=${domain}&hostname=${hostname}&serial=${serial}\n"
@@ -130,7 +132,7 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(result.data, expect)
 
     def test_02_root(self):
-        expect = [u'/discovery', u'/boot.ipxe', u'/healthz', u'/', u'/ipxe']
+        expect = [u'/discovery', u'/boot.ipxe', u'/boot.ipxe.0', u'/healthz', u'/', u'/ipxe']
         result = self.app.get('/')
         content = json.loads(result.data)
         self.assertEqual(result.status_code, 200)
@@ -152,15 +154,14 @@ class TestAPI(unittest.TestCase):
         gen.dumps()
         result = self.app.get('/ipxe')
         expect = "#!ipxe\n" \
-                 ":retry_dhcp\n" \
-                 "dhcp || goto retry_dhcp\n" \
+                 "echo start /ipxe\n" \
                  "kernel " \
                  "%s/assets/coreos/serve/coreos_production_pxe.vmlinuz " \
                  "coreos.autologin " \
                  "coreos.config.url=%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp} " \
                  "coreos.first_boot\n" \
-                "initrd %s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz \n" \
-                "boot\n" % (gen.profile.bootcfg_uri, gen.profile.bootcfg_uri, gen.profile.bootcfg_uri)
+                 "initrd %s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz \n" \
+                 "boot\n" % (gen.profile.bootcfg_uri, gen.profile.bootcfg_uri, gen.profile.bootcfg_uri)
         self.assertEqual(result.data, expect)
         self.assertEqual(result.status_code, 200)
 
@@ -181,10 +182,14 @@ class TestAPI(unittest.TestCase):
 
         result = self.app.get('/ipxe?mac=%s' % mac)
         expect = "#!ipxe\n" \
-                 ":retry_dhcp\n" \
-                 "dhcp || goto retry_dhcp\n" \
+                 "echo start /ipxe\n" \
                  "kernel %s/assets/coreos/serve/coreos_production_pxe.vmlinuz coreos.autologin coreos.config.url=http://192.168.192.234:8080/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp} coreos.first_boot\n" \
                  "initrd %s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz \n" \
                  "boot\n" % (gen.profile.bootcfg_uri, gen.profile.bootcfg_uri)
         self.assertEqual(result.data, expect)
+        self.assertEqual(result.status_code, 200)
+
+    def test_06_discovery(self):
+        result = self.app.post('/discovery', data="ok")
+        self.assertEqual(result.data, "thank-you\n")
         self.assertEqual(result.status_code, 200)

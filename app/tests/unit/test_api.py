@@ -20,6 +20,7 @@ class TestAPI(unittest.TestCase):
             u'global': False,
             u'bootcfg': {
                 u'/boot.ipxe': False,
+                u'/boot.ipxe.0': False,
                 u'/': False,
                 u'/assets': False
             }}

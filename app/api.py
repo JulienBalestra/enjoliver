@@ -2,8 +2,6 @@ import os
 import urllib2
 
 from flask import Flask, request, json
-from flask import redirect
-from flask import url_for
 
 app = application = Flask(__name__)
 
@@ -13,6 +11,7 @@ application.config["BOOTCFG_URI"] = os.getenv(
 application.config["BOOTCFG_URLS"] = [
     "/",
     "/boot.ipxe",
+    "/boot.ipxe.0",
     "/assets"
 ]
 
@@ -47,8 +46,7 @@ def healthz():
                 "%s%s" % (app.config["BOOTCFG_URI"], k))
             assert bootcfg_resp.code == 200
             status["bootcfg"][k] = True
-        except Exception as e:
-            # app.log_exception(e.message)
+        except Exception:
             status["bootcfg"][k] = False
             status["global"] = False
 
@@ -57,22 +55,7 @@ def healthz():
 
 @application.route('/discovery', methods=['POST'])
 def discovery():
-    request.form.to_dict()
-    return "thank-you"
-
-
-def insert_dhcp_retry(resp_list):
-    """
-    :param resp_list: the iPXE readlines response from bootcfg
-    :return: the response with the dhcp retry
-    """
-    if len(resp_list) == 4:
-        resp_list.insert(1, ":retry_dhcp\n")
-        resp_list.insert(2, "dhcp || goto retry_dhcp\n")
-    else:
-        app.logger.warning("iPXE response is not coherent")
-    # print "".join(resp_list)
-    return "".join(resp_list), 200
+    return "thank-you\n"
 
 
 @application.route('/boot.ipxe', methods=['GET'])
@@ -90,6 +73,7 @@ def boot_ipxe():
 
     response = \
         "#!ipxe\n" \
+        "echo start /boot.ipxe\n" \
         ":retry_dhcp\n" \
         "dhcp || goto retry_dhcp\n" \
         "chain %s/ipxe?" \
@@ -99,6 +83,11 @@ def boot_ipxe():
         "hostname=${hostname}&" \
         "serial=${serial}\n" % flask_uri
     return response
+
+
+@application.route('/boot.ipxe.0', methods=['GET'])
+def boot_ipxe_0():
+    return ""
 
 
 @application.route('/ipxe', methods=['GET'])
@@ -114,12 +103,24 @@ def ipxe():
                 request.full_path))
         resp_list = bootcfg_resp.readlines()
         bootcfg_resp.close()
-        # print insert_dhcp_retry(resp_list)
-        return insert_dhcp_retry(resp_list)
+        # [ipxe, kernel, initrd, boot]
+        if len(resp_list) == 4:
+            resp_list.insert(1, "echo start /ipxe\n")
+            # resp_list.insert(2, ":retry_dhcp\n")
+            # resp_list.insert(3, "dhcp || reboot\n")
+        else:
+            app.logger.warning("iPXE response is not coherent")
+
+        return "".join(resp_list), 200
 
     except urllib2.URLError:
         return "404", 404
 
 
+@app.errorhandler(404)
+def page_not_found(error):
+    return '404', 404
+
+
 if __name__ == "__main__":
-    application.run()
+    application.run(debug=True)
