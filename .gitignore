@@ -17,3 +17,5 @@ serve
 /app/tests/bootcfg_dir/
 *.pyc
 /env/
+/app/tests/ipxe.iso
+/app/tests/undionly.kkkpxe
