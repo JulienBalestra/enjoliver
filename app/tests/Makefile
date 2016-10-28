@@ -108,14 +108,14 @@ $(KKK):
 	@echo Run as USER
 	test $(ROOT)
 	CHAIN_IP_PORT=$(CHAIN_IP_PORT) make -C $(PROJECT)/chain $(KKK)
-	cp -iv $(PROJECT)/chain/ipxe/src/bin/$(KKK) $(KKK)
+	cp -v $(PROJECT)/chain/ipxe/src/bin/$(KKK) $(CWD)/$(KKK)
 	file $(KKK)
 
 $(ISO):
 	@echo Run as USER
 	test $(ROOT)
 	CHAIN_IP_PORT=$(CHAIN_IP_PORT) make -C $(PROJECT)/chain $(ISO)
-	cp -iv $(PROJECT)/chain/ipxe/src/bin/$(ISO) $(ISO)
+	cp -v $(PROJECT)/chain/ipxe/src/bin/$(ISO) $(CWD)/$(ISO)
 	file $(ISO)
 
 re: clean default
