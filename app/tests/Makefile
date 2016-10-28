@@ -9,6 +9,11 @@ RKT_DIR_DATA=$(RKT_DIR)/data
 RKT=$(RKT_DIR)/rkt
 RKT_RELEASE=https://github.com/coreos/rkt/releases/download/v1.17.0/rkt-v1.17.0.tar.gz
 
+
+CHAIN_IP_PORT=172.15.0.1:5000
+KKK=undionly.kkkpxe
+ISO=ipxe.iso
+
 EUID= $(shell id -u -r)
 ifneq ($(EUID), 0)
 	ROOT=1
@@ -18,7 +23,7 @@ PROJECT=$(CWD)/../..
 ENV_NAME=env
 PYTHON=$(PROJECT)/$(ENV_NAME)/bin/python
 
-default: $(BOOTCFG) $(RKT) $(PYTHON)
+default: $(BOOTCFG) $(RKT) $(PYTHON) $(KKK) $(ISO)
 
 $(PYTHON):
 	@echo Run as USER
@@ -74,6 +79,9 @@ gci:
 clean:
 	rm -Rfv $(BOOTCFG_DIR)
 	rm -Rfv $(RKT_DIR)
+	rm -v $(ISO)
+	rm -v $(KKK)
+	make -C $(PROJECT)/chain clean
 
 fclean: clean gci gc
 
@@ -86,5 +94,25 @@ check_assets: default $(PYTHON)
 
 check_euid: $(PYTHON)
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover euid/
+
+check_euid_iso: $(PYTHON)
+	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/test_kvm_iso.py
+
+check_euid_pxe: $(PYTHON)
+	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/test_kvm_pxe.py
+
+$(KKK):
+	@echo Run as USER
+	test $(ROOT)
+	CHAIN_IP_PORT=$(CHAIN_IP_PORT) make -C $(PROJECT)/chain $(KKK)
+	cp -iv $(PROJECT)/chain/ipxe/src/bin/$(KKK) $(KKK)
+	file $(KKK)
+
+$(ISO):
+	@echo Run as USER
+	test $(ROOT)
+	CHAIN_IP_PORT=$(CHAIN_IP_PORT) make -C $(PROJECT)/chain $(ISO)
+	cp -iv $(PROJECT)/chain/ipxe/src/bin/$(ISO) $(ISO)
+	file $(ISO)
 
 re: clean default

@@ -3,6 +3,6 @@
 :retry_dhcp
 dhcp || goto retry_dhcp
 
-set coreos-baremetal BOOTCFG_IP_PORT
-
-chain http://${coreos-baremetal}/boot.ipxe
+set chain-ip-port CHAIN_IP_PORT
+echo ${chain-ip-port}
+chain http://${chain-ip-port}/boot.ipxe

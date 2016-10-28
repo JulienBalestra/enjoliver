@@ -8,7 +8,7 @@ systemd:
         Requires=network-online.target
         After=network-online.target
         [Service]
-        Type=simple
-        ExecStart=/usr/bin/curl -XPOST http://172.15.0.1:5000/discovery -d "euid-testkvm-test_02-0"
+        Type=oneshot
+        ExecStart=/usr/bin/curl -f -XPOST http://172.15.0.1:5050/ok -d "euid-testkvm-test_00"
         [Install]
         WantedBy=multi-user.target
