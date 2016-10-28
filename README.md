@@ -10,8 +10,17 @@
 * make
 * curl
 * gpg
-* python2.7
+* python (2.7)
 * virtualenv
+* KVM-QEMU
+
+
+    kvm-ok 
+    INFO: /dev/kvm exists
+    KVM acceleration can be used
+    
+    sudo apt-get install qemu-kvm libvirt-bin bridge-utils
+    which virt-install && which virsh && echo OK
     
 * ipxe chain loading build
     * liblzma-dev 
@@ -40,6 +49,8 @@
     Ran 4 tests in 147.393s
     
     OK
+
+    
 
     
 # Backlog    
