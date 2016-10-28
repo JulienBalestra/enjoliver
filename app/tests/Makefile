@@ -85,9 +85,12 @@ clean:
 
 fclean: clean gci gc
 
-check: default $(PYTHON)
+check_fast: default $(PYTHON)
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover unit/
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover inte/
+
+check: default $(PYTHON)
+	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover ./
 
 check_assets: default $(PYTHON)
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover assets/

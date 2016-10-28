@@ -19,6 +19,31 @@
     * isolinux    
 
 
+
+
+## Quick start
+
+    git clone ${REPOSITORY} CaaS
+    cd CaaS
+    make
+    ...
+    
+    make check
+    ...
+    Ran 79 tests in 42.501s
+    
+    OK (skipped=4)
+    
+    
+    sudo make check_euid
+    ...
+    Ran 4 tests in 147.393s
+    
+    OK
+
+    
+# Backlog    
+
 * rkt KVM-QEMU from ubuntu 16.04 
     
     
@@ -48,25 +73,4 @@
             --with-stage1-flavors=kvm \
             --with-stage1-kvm-hypervisors=qemu && \
         make    
-    # and that doesn't works
-
-
-
-    git clone ${REPOSITORY} CaaS
-    cd CaaS
-    make check
-    
-Should produce the following output:
-
-    make -C app/tests/ check    
-    ...   
-    ...   
-    ...   
-    
-    ----------------------------------------------------------------------
-    Ran X tests in XX.XXXs
-    
-    OK
-    make[1]: Leaving directory 'XX/CaaS/app/tests'
-    
-
+    # and that doesn't works    
