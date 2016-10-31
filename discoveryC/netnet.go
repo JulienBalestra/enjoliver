@@ -2,38 +2,61 @@ package main
 
 import (
 	"net"
-	"log"
-	"strconv"
 	"strings"
+	"strconv"
 )
 
 type Iface struct {
 	IPv4    string
-	CIDR    string
+	CIDRv4  string
 	Netmask int
+	MAC     string
+	Name    string
+}
+
+func IsCIDRv4(cidr string) bool {
+	i, _, err := net.ParseCIDR(cidr)
+	if err != nil {
+		return false
+	}
+	if i.To4() == nil {
+		return false
+	}
+	return true
+}
+
+func GetIPv4Netmask(cidr string) (ip string, mask int) {
+	split := strings.Split(cidr, "/")
+
+	ip = split[0]
+	mask, _ = strconv.Atoi(split[1])
+	return
 }
 
 func LocalIfaces() []Iface {
 	var ifaces []Iface
 	var iface Iface
+	var addrs []net.Addr
+	var err error
 
-	interfaces, err := net.InterfaceAddrs()
-	if err != nil {
-		log.Println(err)
-	}
+	interfaces, _ := net.Interfaces()
+
 	for _, i := range interfaces {
-		ip, network, err := net.ParseCIDR(i.String())
+
+		addrs, err = i.Addrs()
 		if err != nil {
-			log.Println(err)
 			continue
 		}
-		if !ip.IsLoopback() && ip.To4() != nil {
-			iface.CIDR = network.String()
-			iface.Netmask, _ = strconv.Atoi(strings.Split(network.String(), "/")[1])
-			iface.IPv4 = ip.String()
-			ifaces = append(ifaces, iface)
+		iface.Name = i.Name
+		iface.MAC = i.HardwareAddr.String()
+		for _, a := range addrs {
+			if IsCIDRv4(a.String()) {
+				iface.CIDRv4 = a.String()
+				iface.IPv4, iface.Netmask =
+					GetIPv4Netmask(a.String())
+			}
 		}
+		ifaces = append(ifaces, iface)
 	}
-	log.Printf("%d ifaces", len(ifaces))
 	return ifaces
 }

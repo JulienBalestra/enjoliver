@@ -4,10 +4,19 @@ import (
 	"log"
 )
 
-var CONF, _ = CreateConfig()
+var CONF Config
 
 func main() {
-	log.Println(LocalIfaces())
-
+	var err error
+	CONF, err = CreateConfig()
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+	ifaces := LocalIfaces()
+	err = PostToDiscovery(ifaces)
+	if err != nil {
+		log.Fatal(err)
+	}
 	return
 }
