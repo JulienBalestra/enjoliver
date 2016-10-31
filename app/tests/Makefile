@@ -98,11 +98,14 @@ check_assets: default $(PYTHON)
 check_euid: $(PYTHON)
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover euid/
 
-check_euid_iso: $(PYTHON)
-	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/test_kvm_iso.py
+check_euid_basic: $(PYTHON)
+	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover euid/basic/
 
-check_euid_pxe: $(PYTHON)
-	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/test_kvm_pxe.py
+check_euid_basic_iso: $(PYTHON)
+	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/basic/test_kvm_basic_iso.py
+
+check_euid_basic_pxe: $(PYTHON)
+	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/basic/test_kvm_basic_pxe.py
 
 $(KKK):
 	@echo Run as USER

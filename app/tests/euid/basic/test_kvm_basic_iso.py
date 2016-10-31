@@ -17,14 +17,15 @@ from app import api
 
 
 @unittest.skipIf(os.geteuid() != 0,
-                 "TestKVMIso need privilege")
-class TestKVMIso(TestCase):
+                 "TestKVMBasicISO need privilege")
+class TestKVMBasicISO(TestCase):
     p_bootcfg = Process
     p_dnsmasq = Process
     p_api = Process
     gen = generator.Generator
 
-    euid_path = "%s" % os.path.dirname(os.path.abspath(__file__))
+    basic_path = "%s" % os.path.dirname(os.path.abspath(__file__))
+    euid_path = "%s" % os.path.dirname(basic_path)
     tests_path = "%s" % os.path.split(euid_path)[0]
     app_path = os.path.split(tests_path)[0]
     project_path = os.path.split(app_path)[0]
@@ -46,10 +47,10 @@ class TestKVMIso(TestCase):
     @staticmethod
     def process_target_bootcfg():
         cmd = [
-            "%s/bootcfg_dir/bootcfg" % TestKVMIso.tests_path,
-            "-data-path", "%s" % TestKVMIso.test_bootcfg_path,
-            "-assets-path", "%s" % TestKVMIso.assets_path,
-            "-address", "%s" % TestKVMIso.bootcfg_address,
+            "%s/bootcfg_dir/bootcfg" % TestKVMBasicISO.tests_path,
+            "-data-path", "%s" % TestKVMBasicISO.test_bootcfg_path,
+            "-assets-path", "%s" % TestKVMBasicISO.assets_path,
+            "-address", "%s" % TestKVMBasicISO.bootcfg_address,
             "-log-level", "debug"
         ]
         os.write(1, "PID  -> %s\n"
@@ -64,10 +65,10 @@ class TestKVMIso(TestCase):
     @staticmethod
     def process_target_dnsmasq():
         cmd = [
-            "%s/rkt_dir/rkt" % TestKVMIso.tests_path,
+            "%s/rkt_dir/rkt" % TestKVMBasicISO.tests_path,
             # "--debug",
-            "--dir=%s/rkt_dir/data" % TestKVMIso.tests_path,
-            "--local-config=%s" % TestKVMIso.tests_path,
+            "--dir=%s/rkt_dir/data" % TestKVMBasicISO.tests_path,
+            "--local-config=%s" % TestKVMBasicISO.tests_path,
             "--mount",
             "volume=config,target=/etc/dnsmasq.conf",
             "--mount",
@@ -79,9 +80,9 @@ class TestKVMIso(TestCase):
             "--interactive",
             "--uuid-file-save=/tmp/dnsmasq.uuid",
             "--volume",
-            "config,kind=host,source=%s/dnsmasq-metal0.conf" % TestKVMIso.tests_path,
+            "config,kind=host,source=%s/dnsmasq-metal0.conf" % TestKVMBasicISO.tests_path,
             "--volume",
-            "kkkpxe,kind=host,source=%s/chain/ipxe/src/bin/undionly.kkkpxe" % TestKVMIso.project_path
+            "kkkpxe,kind=host,source=%s/chain/ipxe/src/bin/undionly.kkkpxe" % TestKVMBasicISO.project_path
         ]
         os.write(1, "PID  -> %s\n"
                     "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
@@ -92,10 +93,10 @@ class TestKVMIso(TestCase):
     @staticmethod
     def process_target_create_metal0():
         cmd = [
-            "%s/rkt_dir/rkt" % TestKVMIso.tests_path,
+            "%s/rkt_dir/rkt" % TestKVMBasicISO.tests_path,
             # "--debug",
-            "--dir=%s/rkt_dir/data" % TestKVMIso.tests_path,
-            "--local-config=%s" % TestKVMIso.tests_path,
+            "--dir=%s/rkt_dir/data" % TestKVMBasicISO.tests_path,
+            "--local-config=%s" % TestKVMBasicISO.tests_path,
             "run",
             "quay.io/coreos/dnsmasq:v0.3.0",
             "--insecure-options=all",
@@ -159,25 +160,25 @@ class TestKVMIso(TestCase):
 
         cls.clean_sandbox()
 
-        if os.path.isfile("%s/rkt_dir/rkt" % TestKVMIso.tests_path) is False or \
-                        os.path.isfile("%s/bootcfg_dir/bootcfg" % TestKVMIso.tests_path) is False or \
-                        os.path.isfile("%s/undionly.kkkpxe" % TestKVMIso.tests_path) is False or \
-                        os.path.isfile("%s/ipxe.iso" % TestKVMIso.tests_path) is False:
+        if os.path.isfile("%s/rkt_dir/rkt" % TestKVMBasicISO.tests_path) is False or \
+                        os.path.isfile("%s/bootcfg_dir/bootcfg" % TestKVMBasicISO.tests_path) is False or \
+                        os.path.isfile("%s/undionly.kkkpxe" % TestKVMBasicISO.tests_path) is False or \
+                        os.path.isfile("%s/ipxe.iso" % TestKVMBasicISO.tests_path) is False:
             os.write(2, "Call 'make' as user for:\n"
-                        "- %s/undionly.kkkpxe\n" % TestKVMIso.tests_path +
-                     "- %s/ipxe.iso\n" % TestKVMIso.tests_path +
-                     "- %s/rkt_dir/rkt\n" % TestKVMIso.tests_path +
-                     "- %s/bootcfg_dir/bootcfg\n" % TestKVMIso.tests_path)
+                        "- %s/undionly.kkkpxe\n" % TestKVMBasicISO.tests_path +
+                     "- %s/ipxe.iso\n" % TestKVMBasicISO.tests_path +
+                     "- %s/rkt_dir/rkt\n" % TestKVMBasicISO.tests_path +
+                     "- %s/bootcfg_dir/bootcfg\n" % TestKVMBasicISO.tests_path)
             exit(2)
 
         os.write(1, "PPID -> %s\n" % os.getpid())
-        cls.p_bootcfg = Process(target=TestKVMIso.process_target_bootcfg)
+        cls.p_bootcfg = Process(target=TestKVMBasicISO.process_target_bootcfg)
         cls.p_bootcfg.start()
         assert cls.p_bootcfg.is_alive() is True
 
         if subprocess.call(["ip", "link", "show", "metal0"], stdout=None) != 0:
             p_create_metal0 = Process(
-                target=TestKVMIso.process_target_create_metal0)
+                target=TestKVMBasicISO.process_target_create_metal0)
             p_create_metal0.start()
             for i in xrange(60):
                 if p_create_metal0.exitcode == 0:
@@ -187,12 +188,12 @@ class TestKVMIso(TestCase):
                 time.sleep(0.5)
         assert subprocess.call(["ip", "link", "show", "metal0"]) == 0
 
-        cls.p_dnsmasq = Process(target=TestKVMIso.process_target_dnsmasq)
+        cls.p_dnsmasq = Process(target=TestKVMBasicISO.process_target_dnsmasq)
         cls.p_dnsmasq.start()
         assert cls.p_dnsmasq.is_alive() is True
-        TestKVMIso.dns_masq_running()
+        TestKVMBasicISO.dns_masq_running()
 
-        cls.p_api = Process(target=TestKVMIso.process_target_api)
+        cls.p_api = Process(target=TestKVMBasicISO.process_target_api)
         cls.p_api.start()
         assert cls.p_api.is_alive() is True
 
@@ -210,17 +211,17 @@ class TestKVMIso(TestCase):
         cls.p_api.join(timeout=5)
         # cls.clean_sandbox()
         subprocess.call([
-            "%s/rkt_dir/rkt" % TestKVMIso.tests_path,
+            "%s/rkt_dir/rkt" % TestKVMBasicISO.tests_path,
             "--debug",
-            "--dir=%s/rkt_dir/data" % TestKVMIso.tests_path,
-            "--local-config=%s" % TestKVMIso.tests_path,
+            "--dir=%s/rkt_dir/data" % TestKVMBasicISO.tests_path,
+            "--local-config=%s" % TestKVMBasicISO.tests_path,
             "gc",
             "--grace-period=0s"])
         cls.dev_null.close()
 
     @staticmethod
     def clean_sandbox():
-        dirs = ["%s/%s" % (TestKVMIso.test_bootcfg_path, k)
+        dirs = ["%s/%s" % (TestKVMBasicISO.test_bootcfg_path, k)
                 for k in ("profiles", "groups")]
         for d in dirs:
             for f in os.listdir(d):
@@ -242,7 +243,7 @@ class TestKVMIso(TestCase):
             raise RuntimeError("\"%s\"" % " ".join(cmd))
 
     def test_00(self):
-        marker = "euid-%s-%s" % (TestKVMIso.__name__.lower(), self.test_00.__name__)
+        marker = "euid-%s-%s" % (TestKVMBasicISO.__name__.lower(), self.test_00.__name__)
         os.environ["BOOTCFG_IP"] = "172.15.0.1"
         gen = generator.Generator(
             profile_id="%s" % marker,
@@ -291,12 +292,12 @@ class TestKVMIso(TestCase):
         finally:
             self.virsh(destroy), os.write(1, "\r")
             self.virsh(undefine), os.write(1, "\r")
-        self.assertItemsEqual(resp, [['euid-testkvmiso-test_00']])
+        self.assertItemsEqual(resp, [['euid-testkvmbasiciso-test_00']])
 
     # @unittest.skip("just skip")
     def test_01(self):
         nb_node = 3
-        marker = "euid-%s-%s" % (TestKVMIso.__name__.lower(), self.test_01.__name__)
+        marker = "euid-%s-%s" % (TestKVMBasicISO.__name__.lower(), self.test_01.__name__)
         os.environ["BOOTCFG_IP"] = "172.15.0.1"
         gen = generator.Generator(
             profile_id="%s" % marker,
@@ -354,14 +355,14 @@ class TestKVMIso(TestCase):
                 self.virsh(undefine), os.write(1, "\r")
         self.assertEqual(nb_node, len(resp))
         self.assertItemsEqual(resp, [
-            ['euid-testkvmiso-test_01'],
-            ['euid-testkvmiso-test_01'],
-            ['euid-testkvmiso-test_01']])
+            ['euid-testkvmbasiciso-test_01'],
+            ['euid-testkvmbasiciso-test_01'],
+            ['euid-testkvmbasiciso-test_01']])
 
     # @unittest.skip("just skip")
     def test_02(self):
         nb_node = 3
-        marker = "euid-%s-%s" % (TestKVMIso.__name__.lower(), self.test_02.__name__)
+        marker = "euid-%s-%s" % (TestKVMBasicISO.__name__.lower(), self.test_02.__name__)
         os.environ["BOOTCFG_IP"] = "172.15.0.1"
 
         app = Flask(marker)
@@ -421,9 +422,9 @@ class TestKVMIso(TestCase):
                 self.virsh(undefine, v=self.dev_null), os.write(1, "\r")
         self.assertEqual(nb_node, len(resp))
         self.assertItemsEqual(resp, [
-            ['euid-testkvmiso-test_02-0'],
-            ['euid-testkvmiso-test_02-2'],
-            ['euid-testkvmiso-test_02-1']])
+            ['euid-testkvmbasiciso-test_02-0'],
+            ['euid-testkvmbasiciso-test_02-2'],
+            ['euid-testkvmbasiciso-test_02-1']])
 
 if __name__ == "__main__":
     unittest.main()
