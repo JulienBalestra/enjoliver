@@ -23,7 +23,7 @@ func TestPostToDiscovery(t *testing.T) {
 		bodyBytes, _ = ioutil.ReadAll(r.Body)
 		var j []Iface
 		json.Unmarshal(bodyBytes, &j)
-		if j[0] != i {
+		if len(j) != 1 && j[0] != i {
 			t.Fail()
 		}
 	})
