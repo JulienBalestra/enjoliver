@@ -59,6 +59,7 @@ def discovery():
 
 
 @application.route('/boot.ipxe', methods=['GET'])
+@application.route('/boot.ipxe.0', methods=['GET'])
 def boot_ipxe():
     """
     Replace the bootcfg/boot.ipxe by insert retry for dhcp and full URL for the chain
@@ -83,11 +84,6 @@ def boot_ipxe():
         "hostname=${hostname}&" \
         "serial=${serial}\n" % flask_uri
     return response
-
-
-@application.route('/boot.ipxe.0', methods=['GET'])
-def boot_ipxe_0():
-    return ""
 
 
 @application.route('/ipxe', methods=['GET'])
@@ -119,7 +115,7 @@ def ipxe():
 
 @app.errorhandler(404)
 def page_not_found(error):
-    return '404', 404
+    return '404\n', 404
 
 
 if __name__ == "__main__":

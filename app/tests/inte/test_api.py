@@ -131,6 +131,17 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(result.status_code, 200)
         self.assertEqual(result.data, expect)
 
+    def test_01_boot_ipxe_0(self):
+        expect = \
+            "#!ipxe\n" \
+            "echo start /boot.ipxe\n" \
+            ":retry_dhcp\n" \
+            "dhcp || goto retry_dhcp\n" \
+            "chain http://localhost/ipxe?uuid=${uuid}&mac=${net0/mac:hexhyp}&domain=${domain}&hostname=${hostname}&serial=${serial}\n"
+        result = self.app.get('/boot.ipxe.0')
+        self.assertEqual(result.status_code, 200)
+        self.assertEqual(result.data, expect)
+
     def test_02_root(self):
         expect = [u'/discovery', u'/boot.ipxe', u'/boot.ipxe.0', u'/healthz', u'/', u'/ipxe']
         result = self.app.get('/')
@@ -194,3 +205,7 @@ class TestAPI(unittest.TestCase):
         result = self.app.post('/discovery', data="ok")
         self.assertEqual(result.data, "thank-you\n")
         self.assertEqual(result.status_code, 200)
+
+    def test_07_404_fake(self):
+        result = self.app.get('/fake')
+        self.assertEqual(result.status_code, 404)
