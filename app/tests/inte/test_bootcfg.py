@@ -176,7 +176,8 @@ class TestBootConfigCommon(TestCase):
             '%s/assets/coreos/serve/coreos_production_pxe.vmlinuz' % self.gen.profile.bootcfg_uri,
             'coreos.autologin',
             'coreos.config.url=%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % self.gen.profile.bootcfg_uri,
-            'coreos.first_boot']
+            'coreos.first_boot',
+            "coreos.oem.id=pxe"]
         self.assertEqual(kernel, kernel_expect)
 
         init_rd = lines[2].split(" ")
@@ -279,7 +280,8 @@ class TestBootConfigSelector(TestBootConfigCommon):
             '%s/assets/coreos/serve/coreos_production_pxe.vmlinuz' % self.gen.profile.bootcfg_uri,
             'coreos.autologin',
             'coreos.config.url=%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % self.gen.profile.bootcfg_uri,
-            'coreos.first_boot']
+            'coreos.first_boot',
+            "coreos.oem.id=pxe"]
         self.assertEqual(kernel, kernel_expect)
 
         init_rd = lines[2].split(" ")

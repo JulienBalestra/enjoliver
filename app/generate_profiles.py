@@ -34,7 +34,8 @@ class GenerateProfile(GenerateCommon):
                 "coreos.config.url":
                     "%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}" % self.bootcfg_uri,
                 "coreos.autologin": "",
-                "coreos.first_boot": ""
+                "coreos.first_boot": "",
+                "coreos.oem.id": "pxe"
             }
         }
 

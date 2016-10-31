@@ -1,8 +1,8 @@
-VERSION=1122.3.0
+VERSION=1214.0.0
 
 SERVE=serve
 
-CHANNEL=https://stable.release.core-os.net/amd64-usr
+CHANNEL=https://alpha.release.core-os.net/amd64-usr
 VMLINUZ=coreos_production_pxe.vmlinuz
 CPIO=coreos_production_pxe_image.cpio.gz
 
@@ -21,17 +21,17 @@ $(VERSION):
 	mkdir -pv $(VERSION)
 
 $(KEY): $(VERSION)
-	curl -fs https://coreos.com/security/image-signing-key/$(ASC) -o $(KEY)
+	curl -f https://coreos.com/security/image-signing-key/$(ASC) -o $(KEY)
 	$(GPG) --logger-fd 1 --import < $(KEY)
 
 $(KERNEL): $(KEY) $(VERSION)
-	curl -fs $(CHANNEL)/$(KERNEL) -o $(KERNEL)
-	curl -fs $(CHANNEL)/$(KERNEL).sig -o $(KERNEL).sig
+	curl -f $(CHANNEL)/$(KERNEL) -o $(KERNEL)
+	curl -f $(CHANNEL)/$(KERNEL).sig -o $(KERNEL).sig
 	$(GPG) --logger-fd 1 --verify $(KERNEL).sig
 
 $(INITRD): $(KEY) $(VERSION)
-	curl -fs $(CHANNEL)/$(INITRD) -o $(INITRD)
-	curl -fs $(CHANNEL)/$(INITRD).sig -o $(INITRD).sig
+	curl -f $(CHANNEL)/$(INITRD) -o $(INITRD)
+	curl -f $(CHANNEL)/$(INITRD).sig -o $(INITRD).sig
 	$(GPG)  --logger-fd 1 --verify $(KERNEL).sig
 
 clean:

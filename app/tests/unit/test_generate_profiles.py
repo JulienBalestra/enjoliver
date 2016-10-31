@@ -56,6 +56,7 @@ class TestGenerateProfiles(TestCase):
                 {
                     'coreos.autologin': '',
                     'coreos.first_boot': '',
+                    'coreos.oem.id': 'pxe',
                     'coreos.config.url': '%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % self.gen.bootcfg_uri
                 }
         }
@@ -74,6 +75,7 @@ class TestGenerateProfiles(TestCase):
                 "cmdline": {
                     "coreos.autologin": "",
                     "coreos.first_boot": "",
+                    "coreos.oem.id": "pxe",
                     "coreos.config.url": "%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}" %
                                          self.gen.bootcfg_uri
                 }
