@@ -1,12 +1,20 @@
 import os
 import urllib2
 
-from flask import Flask, request, json
+from flask import Flask, request, json, jsonify
+from werkzeug.contrib.cache import FileSystemCache, SimpleCache
 
 app = application = Flask(__name__)
 
 application.config["BOOTCFG_URI"] = os.getenv(
     "BOOTCFG_URI", "http://127.0.0.1:8080")
+
+# application.config["FS_CACHE"] = os.getenv(
+#     "FS_CACHE", "/tmp")
+
+# cache = FileSystemCache(application.config["FS_CACHE"])
+
+cache = SimpleCache()
 
 application.config["BOOTCFG_URLS"] = [
     "/",
@@ -55,7 +63,34 @@ def healthz():
 
 @application.route('/discovery', methods=['POST'])
 def discovery():
-    return "thank-you\n"
+    if request.content_type != "application/json":
+        try:
+            r = json.loads(request.data)
+        except ValueError:
+            return "Bad Request", 400
+    else:
+        r = request.get_json()
+
+    interfaces_key = "interfaces"
+    if r and interfaces_key in r:
+
+        old_interfaces = cache.get_dict(interfaces_key)[interfaces_key]
+
+        if old_interfaces is None:
+            old_interfaces = []
+
+        old_interfaces.append(r[interfaces_key])
+        cache.set(key=interfaces_key, value=old_interfaces, timeout=0)
+        return jsonify({interfaces_key: len(old_interfaces)})
+
+    return "Bad Request", 400
+
+
+@application.route('/discovery/interfaces', methods=['GET'])
+def discovery_interfaces():
+    interfaces_key = "interfaces"
+    interfaces = cache.get_dict(interfaces_key)
+    return jsonify(interfaces)
 
 
 @application.route('/boot.ipxe', methods=['GET'])

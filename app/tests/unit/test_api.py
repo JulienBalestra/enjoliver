@@ -74,4 +74,35 @@ class TestAPI(unittest.TestCase):
         result = self.app.get('/')
         self.assertEqual(result.status_code, 200)
         content = json.loads(result.data)
-        self.assertItemsEqual(content, [u'/boot.ipxe.0', u'/discovery', u'/boot.ipxe', u'/healthz', u'/ipxe', u'/'])
+        self.assertItemsEqual(content, [
+            u'/boot.ipxe.0',
+            u'/discovery',
+            u'/discovery/interfaces',
+            u'/boot.ipxe',
+            u'/healthz',
+            u'/ipxe',
+            u'/'])
+
+    def test_discovery_00(self):
+        discovery_data = {
+            "interfaces": [
+                {"IPv4": "192.168.1.1",
+                 "CIDRv4": "192.168.1.1/24",
+                 "netmask": 24,
+                 "MAC": "00:00:00:00:00",
+                 "name": "eth0"}]}
+        result = self.app.post('/discovery', data=json.dumps(discovery_data),
+                               content_type='application/json')
+        self.assertEqual(result.status_code, 200)
+        self.assertEqual(json.loads(result.data), {"interfaces": 1})
+        result = self.app.post('/discovery', data=json.dumps(discovery_data),
+                               content_type='application/json')
+        self.assertEqual(result.status_code, 200)
+        self.assertEqual(json.loads(result.data), {"interfaces": 2})
+
+    def test_discovery_01(self):
+        discovery_data = "bad"
+        result = self.app.post('/discovery', data=json.dumps(discovery_data),
+                               content_type='application/json')
+        self.assertEqual(result.status_code, 400)
+        self.assertEqual(result.data, "Bad Request")

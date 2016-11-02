@@ -49,8 +49,10 @@ class TestAPI(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        api.cache.clear()
         cls.app = api.app.test_client()
         cls.app.testing = True
+        # cls.app.application.cache.clear()
 
         subprocess.check_output(["make"], cwd=cls.project_path)
         if os.path.isfile("%s/bootcfg_dir/bootcfg" % TestAPI.tests_path) is False:
@@ -104,6 +106,7 @@ class TestAPI(unittest.TestCase):
     def setUp(self):
         self.assertTrue(self.p_bootcfg.is_alive())
         self.clean_sandbox()
+        api.cache.clear()
 
     def test_00_healthz(self):
         expect = {
@@ -143,7 +146,10 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(result.data, expect)
 
     def test_02_root(self):
-        expect = [u'/discovery', u'/boot.ipxe', u'/boot.ipxe.0', u'/healthz', u'/', u'/ipxe']
+        expect = [
+            u'/discovery',
+            u'/discovery/interfaces',
+            u'/boot.ipxe', u'/boot.ipxe.0', u'/healthz', u'/', u'/ipxe']
         result = self.app.get('/')
         content = json.loads(result.data)
         self.assertEqual(result.status_code, 200)
@@ -201,10 +207,60 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(result.data, expect)
         self.assertEqual(result.status_code, 200)
 
-    def test_06_discovery(self):
+    def test_06_discovery_400(self):
         result = self.app.post('/discovery', data="ok")
-        self.assertEqual(result.data, "thank-you\n")
+        self.assertEqual(result.data, "Bad Request")
+        self.assertEqual(result.status_code, 400)
+
+    def test_06_discovery_interfaces(self):
+        result = self.app.get("/discovery/interfaces")
+        expect = {"interfaces": None}
+        self.assertEqual(json.loads(result.data), expect)
+
+    def test_06_discovery_00(self):
+        discovery_data = {
+            "interfaces": [
+                {"IPv4": "192.168.1.1",
+                 "CIDRv4": "192.168.1.1/24",
+                 "netmask": 24,
+                 "MAC": "00:00:00:00:00",
+                 "name": "eth0"}]}
+        result = self.app.post('/discovery', data=json.dumps(discovery_data),
+                               content_type='application/json')
+        self.assertEqual(json.loads(result.data), {"interfaces": 1})
         self.assertEqual(result.status_code, 200)
+
+    def test_06_discovery_01(self):
+        discovery_data = {
+            "interfaces": [
+                {"IPv4": "192.168.1.1",
+                 "CIDRv4": "192.168.1.1/24",
+                 "netmask": 24,
+                 "MAC": "00:00:00:00:00",
+                 "name": "eth0"}]}
+        result = self.app.post('/discovery', data=json.dumps(discovery_data),
+                               content_type='application/json')
+        self.assertEqual(json.loads(result.data), {"interfaces": 1})
+        self.assertEqual(result.status_code, 200)
+
+        result = self.app.post('/discovery', data=json.dumps(discovery_data),
+                               content_type='application/json')
+        self.assertEqual(json.loads(result.data), {"interfaces": 2})
+        self.assertEqual(result.status_code, 200)
+
+        result = self.app.get("/discovery/interfaces")
+        expect = {"interfaces": [
+            [{u'MAC': u'00:00:00:00:00',
+              u'netmask': 24,
+              u'IPv4': u'192.168.1.1',
+              u'CIDRv4': u'192.168.1.1/24',
+              u'name': u'eth0'}],
+            [{u'MAC': u'00:00:00:00:00',
+              u'netmask': 24,
+              u'IPv4': u'192.168.1.1',
+              u'CIDRv4': u'192.168.1.1/24',
+              u'name': u'eth0'}]]}
+        self.assertEqual(expect, json.loads(result.data))
 
     def test_07_404_fake(self):
         result = self.app.get('/fake')
