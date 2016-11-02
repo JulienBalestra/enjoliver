@@ -7,8 +7,8 @@ import (
 	"log"
 )
 
-func PostToDiscovery(ifaces []Iface) (err error) {
-	b, _ := json.Marshal(&ifaces)
+func PostToDiscovery(i interface{}) (err error) {
+	b, _ := json.Marshal(&i)
 	data := bytes.NewBuffer(b)
 	log.Println(data)
 	_, err = http.Post(CONF.DiscoveryAddress, "application/json", data)

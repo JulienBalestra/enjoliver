@@ -6,6 +6,10 @@ import (
 
 var CONF Config
 
+type DiscoveryData struct {
+	Interfaces []Iface `json:"interfaces"`
+}
+
 func main() {
 	var err error
 	CONF, err = CreateConfig()
@@ -13,8 +17,9 @@ func main() {
 		log.Fatal(err)
 		return
 	}
-	ifaces := LocalIfaces()
-	err = PostToDiscovery(ifaces)
+	data := DiscoveryData{}
+	data.Interfaces = LocalIfaces()
+	err = PostToDiscovery(data)
 	if err != nil {
 		log.Fatal(err)
 	}

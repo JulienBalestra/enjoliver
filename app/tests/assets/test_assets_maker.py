@@ -3,6 +3,7 @@ import subprocess
 import unittest
 
 
+@unittest.skipIf(os.getenv("PYCHARM_HOSTED"), "PYCHARM_HOSTED")
 class TestAssetsCoreOS(unittest.TestCase):
     func_path = "%s" % os.path.dirname(__file__)
     tests_path = "%s" % os.path.split(func_path)[0]
@@ -43,6 +44,7 @@ class TestAssetsCoreOS(unittest.TestCase):
         self.assertItemsEqual(self.default_files, real)
 
 
+@unittest.skipIf(os.getenv("PYCHARM_HOSTED"), "PYCHARM_HOSTED")
 class TestAssetsSetupNetworkEnvironment(unittest.TestCase):
     func_path = "%s" % os.path.dirname(__file__)
     tests_path = os.path.split(func_path)[0]
@@ -83,6 +85,7 @@ class TestAssetsSetupNetworkEnvironment(unittest.TestCase):
         self.assertItemsEqual(expect, real)
 
 
+@unittest.skipIf(os.getenv("PYCHARM_HOSTED"), "PYCHARM_HOSTED")
 class TestAssetsDiscoveryC(unittest.TestCase):
     func_path = "%s" % os.path.dirname(__file__)
     tests_path = os.path.split(func_path)[0]
