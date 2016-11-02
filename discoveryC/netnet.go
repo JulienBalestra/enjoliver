@@ -9,9 +9,9 @@ import (
 type Iface struct {
 	IPv4    string
 	CIDRv4  string
-	Netmask int
+	Netmask int        `json:"netmask"`
 	MAC     string
-	Name    string
+	Name    string     `json:"name"`
 }
 
 func IsCIDRv4(cidr string) bool {
