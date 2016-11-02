@@ -9,10 +9,12 @@ assets:
 	make -C bootcfg/assets/coreos serve
 	make -C bootcfg/assets/setup-network-environment
 	make -C bootcfg/assets/setup-network-environment serve
+	make -C bootcfg/assets/discoveryC
 
 clean:
 	make -C bootcfg/assets/coreos fclean
 	make -C bootcfg/assets/setup-network-environment fclean
+	make -C bootcfg/assets/discoveryC fclean
 
 $(CHECK):
 	make -C discoveryC/ $(CHECK)
