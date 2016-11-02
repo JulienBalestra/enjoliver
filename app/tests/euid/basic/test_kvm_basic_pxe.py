@@ -70,8 +70,8 @@ class TestKVMBasicPXE(TestCase):
             "--local-config=%s" % TestKVMBasicPXE.tests_path,
             "--mount",
             "volume=config,target=/etc/dnsmasq.conf",
-            "--mount",
-            "volume=kkkpxe,target=/var/lib/tftpboot/undionly.kkkpxe",
+            # "--mount",
+            # "volume=kkkpxe,target=/var/lib/tftpboot/undionly.kkkpxe",
             "run",
             "quay.io/coreos/dnsmasq:v0.3.0",
             "--insecure-options=all",
@@ -80,8 +80,8 @@ class TestKVMBasicPXE(TestCase):
             "--uuid-file-save=/tmp/dnsmasq.uuid",
             "--volume",
             "config,kind=host,source=%s/dnsmasq-metal0.conf" % TestKVMBasicPXE.tests_path,
-            "--volume",
-            "kkkpxe,kind=host,source=%s/chain/ipxe/src/bin/undionly.kkkpxe" % TestKVMBasicPXE.project_path
+            # "--volume",
+            # "kkkpxe,kind=host,source=%s/chain/ipxe/src/bin/undionly.kkkpxe" % TestKVMBasicPXE.project_path
         ]
         os.write(1, "PID  -> %s\n"
                     "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
@@ -160,11 +160,11 @@ class TestKVMBasicPXE(TestCase):
         cls.clean_sandbox()
 
         if os.path.isfile("%s/rkt_dir/rkt" % TestKVMBasicPXE.tests_path) is False or \
-                        os.path.isfile("%s/bootcfg_dir/bootcfg" % TestKVMBasicPXE.tests_path) is False or \
-                        os.path.isfile("%s/undionly.kkkpxe" % TestKVMBasicPXE.tests_path) is False:
+                        os.path.isfile("%s/bootcfg_dir/bootcfg" % TestKVMBasicPXE.tests_path) is False:# or \
+                        # os.path.isfile("%s/undionly.kkkpxe" % TestKVMBasicPXE.tests_path) is False:
             os.write(2, "Call 'make' as user for:\n"
-                        "- %s/undionly.kkkpxe\n" % TestKVMBasicPXE.tests_path +
-                        "- %s/rkt_dir/rkt\n" % TestKVMBasicPXE.tests_path +
+                        # "- %s/undionly.kkkpxe\n" % TestKVMBasicPXE.tests_path +
+                     "- %s/rkt_dir/rkt\n" % TestKVMBasicPXE.tests_path +
                      "- %s/bootcfg_dir/bootcfg\n" % TestKVMBasicPXE.tests_path)
             exit(2)
         os.write(1, "PPID -> %s\n" % os.getpid())
@@ -238,6 +238,7 @@ class TestKVMBasicPXE(TestCase):
         if assertion is True and ret != 0:
             raise RuntimeError("\"%s\"" % " ".join(cmd))
 
+    # @unittest.skip("just skip")
     def test_00(self):
         marker = "euid-%s-%s" % (TestKVMBasicPXE.__name__.lower(), self.test_00.__name__)
         os.environ["BOOTCFG_IP"] = "172.15.0.1"
@@ -288,6 +289,70 @@ class TestKVMBasicPXE(TestCase):
             self.virsh(destroy), os.write(1, "\r")
             self.virsh(undefine), os.write(1, "\r")
         self.assertItemsEqual(resp, [['euid-testkvmbasicpxe-test_00']])
+
+    # @unittest.skip("just skip")
+    def test_01(self):
+        nb_node = 3
+        marker = "euid-%s-%s" % (TestKVMBasicPXE.__name__.lower(), self.test_01.__name__)
+        os.environ["BOOTCFG_IP"] = "172.15.0.1"
+        gen = generator.Generator(
+            profile_id="%s" % marker,
+            name="%s" % marker,
+            ignition_id="%s.yaml" % marker,
+            bootcfg_path=self.test_bootcfg_path
+        )
+        gen.dumps()
+
+        app = Flask(marker)
+        resp = []
+
+        @app.route('/ok', methods=['POST'])
+        def machine_ready():
+            resp.append(request.form.keys())
+            if len(resp) == nb_node:
+                request.environ.get('werkzeug.server.shutdown')()
+            return "roger\n"
+
+        try:
+            for i in xrange(nb_node):
+                machine_marker = "%s-%d" % (marker, i)
+                destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
+                                    ["virsh", "undefine", "%s" % machine_marker]
+                self.virsh(destroy, v=self.dev_null), self.virsh(undefine, v=self.dev_null)
+                virt_install = [
+                    "virt-install",
+                    "--name",
+                    "%s" % machine_marker,
+                    "--network=bridge:metal0,model=virtio",
+                    "--memory=1024",
+                    "--vcpus=1",
+                    "--pxe",
+                    "--disk",
+                    "none",
+                    "--os-type=linux",
+                    "--os-variant=generic",
+                    "--noautoconsole",
+                    "--boot=network"
+                ]
+                self.virsh(virt_install, assertion=True, v=self.dev_null)
+
+            os.write(2, "\r\n")
+            app.run(
+                host="172.15.0.1", port=self.flask_ok_port, debug=False, use_reloader=False)
+            os.write(2, "\r -> Flask stop\n\r")
+
+        finally:
+            for i in xrange(nb_node):
+                machine_marker = "%s-%d" % (marker, i)
+                destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
+                                    ["virsh", "undefine", "%s" % machine_marker]
+                self.virsh(destroy), os.write(1, "\r")
+                self.virsh(undefine), os.write(1, "\r")
+        self.assertEqual(nb_node, len(resp))
+        self.assertItemsEqual(resp, [
+            ['euid-testkvmbasicpxe-test_01'],
+            ['euid-testkvmbasicpxe-test_01'],
+            ['euid-testkvmbasicpxe-test_01']])
 
 
 if __name__ == "__main__":

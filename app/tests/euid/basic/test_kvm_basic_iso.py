@@ -71,8 +71,6 @@ class TestKVMBasicISO(TestCase):
             "--local-config=%s" % TestKVMBasicISO.tests_path,
             "--mount",
             "volume=config,target=/etc/dnsmasq.conf",
-            "--mount",
-            "volume=kkkpxe,target=/var/lib/tftpboot/undionly.kkkpxe",
             "run",
             "quay.io/coreos/dnsmasq:v0.3.0",
             "--insecure-options=all",
@@ -80,9 +78,7 @@ class TestKVMBasicISO(TestCase):
             "--interactive",
             "--uuid-file-save=/tmp/dnsmasq.uuid",
             "--volume",
-            "config,kind=host,source=%s/dnsmasq-metal0.conf" % TestKVMBasicISO.tests_path,
-            "--volume",
-            "kkkpxe,kind=host,source=%s/chain/ipxe/src/bin/undionly.kkkpxe" % TestKVMBasicISO.project_path
+            "config,kind=host,source=%s/dnsmasq-metal0.conf" % TestKVMBasicISO.tests_path
         ]
         os.write(1, "PID  -> %s\n"
                     "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
@@ -162,10 +158,8 @@ class TestKVMBasicISO(TestCase):
 
         if os.path.isfile("%s/rkt_dir/rkt" % TestKVMBasicISO.tests_path) is False or \
                         os.path.isfile("%s/bootcfg_dir/bootcfg" % TestKVMBasicISO.tests_path) is False or \
-                        os.path.isfile("%s/undionly.kkkpxe" % TestKVMBasicISO.tests_path) is False or \
                         os.path.isfile("%s/ipxe.iso" % TestKVMBasicISO.tests_path) is False:
             os.write(2, "Call 'make' as user for:\n"
-                        "- %s/undionly.kkkpxe\n" % TestKVMBasicISO.tests_path +
                      "- %s/ipxe.iso\n" % TestKVMBasicISO.tests_path +
                      "- %s/rkt_dir/rkt\n" % TestKVMBasicISO.tests_path +
                      "- %s/bootcfg_dir/bootcfg\n" % TestKVMBasicISO.tests_path)
