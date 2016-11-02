@@ -320,6 +320,121 @@ class TestKVMDiscoveryClient(TestCase):
                     self.assertEqual(ifaces["IPv4"][:9], '172.15.0.')
                     self.assertEqual(len(ifaces["MAC"]), 17)
 
+    def test_01(self):
+        nb_node = 3
+        marker = "euid-%s-%s" % (TestKVMDiscoveryClient.__name__.lower(), self.test_01.__name__)
+        os.environ["BOOTCFG_IP"] = "172.15.0.1"
+        gen = generator.Generator(
+            profile_id="%s" % marker,
+            name="%s" % marker,
+            ignition_id="%s.yaml" % marker,
+            bootcfg_path=self.test_bootcfg_path
+        )
+        gen.dumps()
+
+        interfaces = {}
+        try:
+            for i in xrange(nb_node):
+                machine_marker = "%s-%d" % (marker, i)
+                destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
+                                    ["virsh", "undefine", "%s" % machine_marker]
+                self.virsh(destroy, v=self.dev_null), self.virsh(undefine, v=self.dev_null)
+                virt_install = [
+                    "virt-install",
+                    "--name",
+                    "%s" % machine_marker,
+                    "--network=bridge:metal0,model=virtio",
+                    "--memory=1024",
+                    "--vcpus=1",
+                    "--pxe",
+                    "--disk",
+                    "none",
+                    "--os-type=linux",
+                    "--os-variant=generic",
+                    "--noautoconsole",
+                    "--boot=network"
+                ]
+                self.virsh(virt_install, assertion=True, v=self.dev_null)
+                time.sleep(3)  # KVM fail to associate nic
+
+            for ifaces in xrange(100):
+                os.write(2, "\r")
+                request = urllib2.urlopen("%s/discovery/interfaces" % self.api_endpoint)
+                response_body = request.read()
+                request.close()
+                self.assertEqual(request.code, 200)
+                interfaces = json.loads(response_body)
+                if interfaces["interfaces"] is not None and \
+                                len(interfaces["interfaces"]) == nb_node:
+                    break
+                time.sleep(3)
+
+        finally:
+            for i in xrange(nb_node):
+                machine_marker = "%s-%d" % (marker, i)
+                destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
+                                    ["virsh", "undefine", "%s" % machine_marker]
+                self.virsh(destroy), os.write(1, "\r")
+                self.virsh(undefine), os.write(1, "\r")
+            """
+            {u'interfaces': [
+                [
+                    {u'MAC': u'',
+                     u'netmask': 8,
+                     u'IPv4': u'127.0.0.1',
+                     u'CIDRv4': u'127.0.0.1/8',
+                     u'name': u'lo'},
+
+                    {u'MAC': u'52:54:00:ae:b7:a8',
+                     u'netmask': 16,
+                     u'IPv4': u'172.15.0.60',
+                     u'CIDRv4': u'172.15.0.60/16',
+                     u'name': u'eth0'}
+                ],
+                [
+                    {u'MAC': u'',
+                     u'netmask': 8,
+                     u'IPv4': u'127.0.0.1',
+                     u'CIDRv4': u'127.0.0.1/8',
+                     u'name': u'lo'},
+
+                    {u'MAC': u'52:54:00:de:a5:52',
+                     u'netmask': 16,
+                     u'IPv4': u'172.15.0.66',
+                     u'CIDRv4': u'172.15.0.66/16',
+                     u'name': u'eth0'}
+                ],
+                [
+                    {u'MAC': u'', u'netmask': 8,
+                     u'IPv4': u'127.0.0.1',
+                     u'CIDRv4': u'127.0.0.1/8',
+                     u'name': u'lo'},
+
+                    {u'MAC': u'52:54:00:85:26:20',
+                     u'netmask': 16,
+                     u'IPv4': u'172.15.0.61',
+                     u'CIDRv4': u'172.15.0.61/16',
+                     u'name': u'eth0'}
+                ]
+            ]}
+            """
+        # Several machines
+        self.assertEqual(len(interfaces["interfaces"]), nb_node)
+
+        for machine in interfaces["interfaces"]:
+            # each machine with 2 interfaces [lo, eth0]
+            for ifaces in machine:
+                if ifaces["name"] == "lo":
+                    self.assertEqual(ifaces["netmask"], 8)
+                    self.assertEqual(ifaces["IPv4"], '127.0.0.1')
+                    self.assertEqual(ifaces["MAC"], '')
+                    self.assertEqual(ifaces["CIDRv4"], '127.0.0.1/8')
+                else:
+                    self.assertEqual(ifaces["name"], "eth0")
+                    self.assertEqual(ifaces["netmask"], 16)
+                    self.assertEqual(ifaces["IPv4"][:9], '172.15.0.')
+                    self.assertEqual(len(ifaces["MAC"]), 17)
+
 
 if __name__ == "__main__":
     unittest.main()
