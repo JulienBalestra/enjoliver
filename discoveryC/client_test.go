@@ -27,7 +27,13 @@ func TestPostToDiscovery(t *testing.T) {
 			t.Fail()
 		}
 	})
-	go http.ListenAndServe("127.0.0.1:8080", nil)
+	go func() {
+		e := http.ListenAndServe("127.0.0.1:8080", nil)
+		if e != nil {
+			t.Log(e)
+			t.Fail()
+		}
+	}()
 	err := PostToDiscovery(all)
 	if err != nil {
 		t.Fail()

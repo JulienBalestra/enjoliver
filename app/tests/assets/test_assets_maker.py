@@ -81,3 +81,43 @@ class TestAssetsSetupNetworkEnvironment(unittest.TestCase):
         subprocess.check_output(["make", "-C", self.asset_test, "fclean"])
         real = os.listdir(self.asset_test)
         self.assertItemsEqual(expect, real)
+
+
+class TestAssetsDiscoveryC(unittest.TestCase):
+    func_path = "%s" % os.path.dirname(__file__)
+    tests_path = os.path.split(func_path)[0]
+    app_path = os.path.split(tests_path)[0]
+    project_path = os.path.split(app_path)[0]
+    assets_path = "%s/bootcfg/assets" % project_path
+    asset_test = "%s/discoveryC" % assets_path
+    default_files = ["Makefile"]
+
+    def test_00_fclean(self):
+        expect = self.default_files
+        subprocess.check_output(["make", "-C", self.asset_test, "fclean"])
+        real = os.listdir(self.asset_test)
+        self.assertItemsEqual(expect, real)
+
+    def test_01_default(self):
+        expect = self.default_files + ["serve"]
+        subprocess.check_output(["make", "-C", self.asset_test])
+        real = os.listdir(self.asset_test)
+        self.assertItemsEqual(expect, real)
+
+    def test_02_static(self):
+        f = "%s/serve/discoveryC" % self.asset_test
+        self.assertTrue(os.path.isfile(f))
+        ret = subprocess.call(["ldd", f])
+        self.assertEqual(ret, 1)
+
+    def test_03_clean(self):
+        expect = self.default_files + ["serve"]
+        subprocess.check_output(["make", "-C", self.asset_test, "clean"])
+        real = os.listdir(self.asset_test)
+        self.assertItemsEqual(expect, real)
+
+    def test_04_fclean(self):
+        expect = self.default_files
+        subprocess.check_output(["make", "-C", self.asset_test, "fclean"])
+        real = os.listdir(self.asset_test)
+        self.assertItemsEqual(expect, real)

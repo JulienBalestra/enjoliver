@@ -19,3 +19,6 @@ serve
 /env/
 /app/tests/ipxe.iso
 /app/tests/undionly.kkkpxe
+/discoveryC/discoveryC.iml
+/discoveryC/discoveryC
+/bootcfg/assets/discoveryC/discoveryC
