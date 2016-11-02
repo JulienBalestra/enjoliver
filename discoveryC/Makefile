@@ -1,6 +1,9 @@
 CC=go
 TARGET=discoveryC
 
+check:
+	$(CC) test -v ./...
+
 $(TARGET):
 	$(CC) build -o $(TARGET)
 
