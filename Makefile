@@ -15,6 +15,7 @@ clean:
 	make -C bootcfg/assets/setup-network-environment fclean
 
 $(CHECK):
+	make -C discoveryC/ $(CHECK)
 	make -C app/tests/ $(CHECK)
 
 $(CHECK_EUID):
