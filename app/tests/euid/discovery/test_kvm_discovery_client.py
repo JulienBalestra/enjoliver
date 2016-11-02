@@ -1,21 +1,16 @@
 import json
 import os
-import unittest
 import socket
-import urllib2
-from unittest import TestCase
-from multiprocessing import Process
 import subprocess
-
 import sys
-
 import time
+import unittest
+import urllib2
+from multiprocessing import Process
+from unittest import TestCase
 
-from flask import Flask
-from flask import request
-
-from app import generator
 from app import api
+from app import generator
 
 
 @unittest.skipIf(os.geteuid() != 0,
@@ -229,6 +224,7 @@ class TestKVMDiscoveryClient(TestCase):
     def setUp(self):
         self.assertTrue(self.p_bootcfg.is_alive())
         self.assertTrue(self.p_dnsmasq.is_alive())
+        api.cache.clear()
         self.clean_sandbox()
 
     def virsh(self, cmd, assertion=False, v=None):
