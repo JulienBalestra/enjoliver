@@ -25,6 +25,11 @@ PYTHON=$(PROJECT)/$(ENV_NAME)/bin/python
 
 default: $(BOOTCFG) $(RKT) $(PYTHON) $(KKK) $(ISO)
 
+bootcfg_assets:
+	@echo Run as USER
+	test $(ROOT)
+	make -C $(PROJECT) assets
+
 $(PYTHON):
 	@echo Run as USER
 	test $(ROOT)
@@ -97,6 +102,9 @@ check_assets: default $(PYTHON)
 
 check_euid: $(PYTHON)
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover euid/
+
+check_euid_discovery: $(PYTHON)
+	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover euid/discovery/
 
 check_euid_basic: $(PYTHON)
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover euid/basic/
