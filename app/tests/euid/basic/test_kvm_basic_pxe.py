@@ -335,6 +335,7 @@ class TestKVMBasicPXE(TestCase):
                     "--boot=network"
                 ]
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
+                time.sleep(3)
 
             os.write(2, "\r\n")
             app.run(
