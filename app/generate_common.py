@@ -32,7 +32,7 @@ class GenerateCommon(object):
         return
 
     def log_stderr(self, message):
-        os.write(2, "%s %s\n" % (self, message))
+        os.write(2, "\r%s %s\n" % (self, message))
         sys.stderr.flush()
 
     @property
