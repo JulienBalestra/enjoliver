@@ -316,6 +316,7 @@ class TestKVMDiscoveryClient(TestCase):
                     self.assertEqual(ifaces["IPv4"][:9], '172.15.0.')
                     self.assertEqual(len(ifaces["MAC"]), 17)
 
+    # @unittest.skip("just skip")
     def test_01(self):
         nb_node = 3
         marker = "euid-%s-%s" % (TestKVMDiscoveryClient.__name__.lower(), self.test_01.__name__)

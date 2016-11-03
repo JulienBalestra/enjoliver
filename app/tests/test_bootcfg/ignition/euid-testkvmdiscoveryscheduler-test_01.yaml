@@ -1,0 +1,31 @@
+---
+systemd:
+  units:
+    - name: download-discoveryC.service
+      enable: true
+      contents: |
+        [Unit]
+        Requires=network-online.target
+        After=network-online.target
+        [Service]
+        Type=oneshot
+        Environment=OPT_BIN=/opt/bin
+        ExecStartPre=/bin/mkdir -pv ${OPT_BIN}
+        ExecStart=/usr/bin/curl -f http://172.15.0.1:8080/assets/discoveryC/serve/discoveryC \
+          -o ${OPT_BIN}/discoveryC
+        ExecStartPost=/usr/bin/chmod +x ${OPT_BIN}/discoveryC
+        RemainAfterExit=yes
+        [Install]
+        WantedBy=multi-user.target
+    - name: discoveryC.service
+      enable: true
+      contents: |
+        [Unit]
+        Requires=download-discoveryC.service
+        After=download-discoveryC.service
+        [Service]
+        Type=oneshot
+        Environment=DISCOVERY_ADDRESS=http://172.15.0.1:5000/discovery
+        ExecStart=/opt/bin/discoveryC
+        [Install]
+        WantedBy=multi-user.target
