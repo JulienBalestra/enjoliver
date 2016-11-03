@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"io/ioutil"
 	"encoding/json"
+	"time"
 )
 
 func TestPostToDiscovery(t *testing.T) {
@@ -34,8 +35,19 @@ func TestPostToDiscovery(t *testing.T) {
 			t.Fail()
 		}
 	}()
-	err := PostToDiscovery(all)
+	var err error
+	// wait or not the http server go routine
+	for i := 0; i < 10; i++ {
+		err := PostToDiscovery(all)
+		if err == nil {
+			break
+		} else {
+			t.Log(err)
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
 	if err != nil {
+		t.Log(err)
 		t.Fail()
 	}
 }
