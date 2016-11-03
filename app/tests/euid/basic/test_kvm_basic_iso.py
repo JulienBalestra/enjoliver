@@ -16,8 +16,16 @@ from app import generator
 from app import api
 
 
-@unittest.skipIf(os.geteuid() != 0,
-                 "TestKVMBasicISO need privilege")
+def skip_iso():
+    if os.geteuid() != 0:
+        return True
+    if os.getenv("KVM_RUN_ISO"):
+        return True
+    return False
+
+
+@unittest.skipIf(skip_iso(),
+                 "TestKVMBasicISO need privilege and env KVM_RUN_ISO=whatever")
 class TestKVMBasicISO(TestCase):
     p_bootcfg = Process
     p_dnsmasq = Process
@@ -33,7 +41,6 @@ class TestKVMBasicISO(TestCase):
     assets_path = "%s/bootcfg/assets" % project_path
 
     test_bootcfg_path = "%s/test_bootcfg" % tests_path
-
 
     bootcfg_port = int(os.getenv("BOOTCFG_PORT", "8080"))
 
@@ -160,7 +167,7 @@ class TestKVMBasicISO(TestCase):
                         os.path.isfile("%s/bootcfg_dir/bootcfg" % TestKVMBasicISO.tests_path) is False or \
                         os.path.isfile("%s/ipxe.iso" % TestKVMBasicISO.tests_path) is False:
             os.write(2, "Call 'make' as user for:\n"
-                     "- %s/ipxe.iso\n" % TestKVMBasicISO.tests_path +
+                        "- %s/ipxe.iso\n" % TestKVMBasicISO.tests_path +
                      "- %s/rkt_dir/rkt\n" % TestKVMBasicISO.tests_path +
                      "- %s/bootcfg_dir/bootcfg\n" % TestKVMBasicISO.tests_path)
             exit(2)
@@ -419,6 +426,7 @@ class TestKVMBasicISO(TestCase):
             ['euid-testkvmbasiciso-test_02-0'],
             ['euid-testkvmbasiciso-test_02-2'],
             ['euid-testkvmbasiciso-test_02-1']])
+
 
 if __name__ == "__main__":
     unittest.main()
