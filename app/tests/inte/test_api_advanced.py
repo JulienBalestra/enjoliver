@@ -252,9 +252,12 @@ class TestAPIAdvanced(unittest.TestCase):
         request.close()
         expect = "#!ipxe\n" \
                  "echo start /ipxe\n" \
-                 "kernel %s/assets/coreos/serve/coreos_production_pxe.vmlinuz coreos.autologin coreos.config.url=http://192.168.192.234:8080/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp} coreos.first_boot coreos.oem.id=pxe\n" \
+                 "kernel %s/assets/coreos/serve/coreos_production_pxe.vmlinuz " \
+                 "coreos.autologin " \
+                 "coreos.config.url=%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp} " \
+                 "coreos.first_boot coreos.oem.id=pxe\n" \
                  "initrd %s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz \n" \
-                 "boot\n" % (gen.profile.bootcfg_uri, gen.profile.bootcfg_uri)
+                 "boot\n" % (gen.profile.bootcfg_uri, gen.profile.bootcfg_uri, gen.profile.bootcfg_uri)
         self.assertEqual(response_body, expect)
         self.assertEqual(response_code, 200)
 
