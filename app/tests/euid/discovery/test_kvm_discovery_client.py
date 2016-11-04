@@ -235,6 +235,8 @@ class TestKVMDiscoveryClient(TestCase):
         if assertion is True and ret != 0:
             raise RuntimeError("\"%s\"" % " ".join(cmd))
 
+
+class TestKVMDiscoveryClientOne(TestKVMDiscoveryClient):
     # @unittest.skip("just skip")
     def test_00(self):
         marker = "euid-%s-%s" % (TestKVMDiscoveryClient.__name__.lower(), self.test_00.__name__)
@@ -316,6 +318,8 @@ class TestKVMDiscoveryClient(TestCase):
                     self.assertEqual(ifaces["IPv4"][:9], '172.15.0.')
                     self.assertEqual(len(ifaces["MAC"]), 17)
 
+
+class TestKVMDiscoveryClientTwo(TestKVMDiscoveryClient):
     # @unittest.skip("just skip")
     def test_01(self):
         nb_node = 3
