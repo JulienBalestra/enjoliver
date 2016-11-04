@@ -17,9 +17,7 @@ from app import api
 
 
 def skip_iso():
-    if os.geteuid() != 0:
-        return True
-    if os.getenv("KVM_RUN_ISO"):
+    if os.geteuid() != 0 and os.getenv("KVM_RUN_ISO"):
         return True
     return False
 
