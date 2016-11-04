@@ -33,7 +33,9 @@ bootcfg_assets:
 $(PYTHON):
 	@echo Run as USER
 	test $(ROOT)
-	ls $(PROJECT)/$(ENV_NAME) || virtualenv $(PROJECT)/$(ENV_NAME)
+	ls $(PROJECT)/$(ENV_NAME) || \
+		virtualenv2 --python=python2.7 $(PROJECT)/$(ENV_NAME) || \
+		virtualenv --python=python2.7 $(PROJECT)/$(ENV_NAME)
 	$(PROJECT)/$(ENV_NAME)/bin/pip install -r $(PROJECT)/requirements.txt
 	$(PYTHON) --version
 
