@@ -18,8 +18,8 @@ from app import api
 
 def skip_iso():
     if os.geteuid() != 0 and os.getenv("KVM_RUN_ISO"):
-        return True
-    return False
+        return False
+    return True
 
 
 @unittest.skipIf(skip_iso(),
