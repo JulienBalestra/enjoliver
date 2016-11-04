@@ -64,7 +64,7 @@ class GenerateCommon(object):
         :rtype: str
         :return: IP address
         """
-        if self._api_ip:
+        if self._api_ip is not None:
             self.log_stderr("return %s" % self._api_ip)
             return self._api_ip
         api_ip = os.getenv("API_IP")
@@ -82,8 +82,8 @@ class GenerateCommon(object):
         :rtype: str
         :return: IP address
         """
-        if self._bootcfg_ip:
-            self.log_stderr("return %s" % self._api_ip)
+        if self._bootcfg_ip is not None:
+            self.log_stderr("return %s" % self._bootcfg_ip)
             return self._bootcfg_ip
         bootcfg_ip = os.getenv("BOOTCFG_IP")
         if bootcfg_ip and re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", bootcfg_ip):
