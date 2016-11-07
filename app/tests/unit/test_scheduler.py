@@ -76,7 +76,7 @@ class TestEtcdScheduler(unittest.TestCase):
         marker = "unit-%s-%s-" % (TestEtcdScheduler.__name__.lower(), self.test_00.__name__)
         scheduler.EtcdScheduler.fetch_interfaces = fake_fetch_interfaces
         sch = scheduler.EtcdScheduler(
-            "http:127.0.0.1:5000",
+            "http://127.0.0.1:5000",
             self.test_bootcfg_path,
             ignition_member="%semember" % marker,
             ignition_proxy="%sproxy" % marker,
@@ -88,6 +88,16 @@ class TestEtcdScheduler(unittest.TestCase):
                     self.test_bootcfg_path, marker, i)) as group:
                 etcd_groups.append(json.loads(group.read()))
         self.assertEqual(3, len(etcd_groups))
+
+        ref = 0
+        for g in etcd_groups:
+            ref += 1
+            self.assertEqual(len(g["metadata"]["etcd_initial_cluster"].split(",")), 3)
+            self.assertEqual(g["metadata"]["etcd_initial_cluster"],
+                             "static0=http://172.15.0.61:2380,"
+                             "static1=http://172.15.0.60:2380,"
+                             "static2=http://172.15.0.66:2380")
+        self.assertTrue(ref == 3)
 
         etcd_profile = "%s/profiles/%semember.json" % (self.test_bootcfg_path, marker)
         with open(etcd_profile) as p:
@@ -115,12 +125,20 @@ class TestEtcdScheduler(unittest.TestCase):
         marker = "unit-%s-%s-" % (TestEtcdScheduler.__name__.lower(), self.test_01.__name__)
         scheduler.EtcdScheduler.fetch_interfaces = fake_fetch_interfaces
         sch = scheduler.EtcdScheduler(
-            "http:127.0.0.1:5000",
+            "http://127.0.0.1:5000",
             self.test_bootcfg_path,
             ignition_member="%semember" % marker,
             ignition_proxy="%sproxy" % marker,
             bootcfg_prefix=marker)
         self.assertFalse(sch.apply())
+
+        etcd_groups = []
+        for i in xrange(sch.etcd_members_nb):
+            with self.assertRaises(IOError):
+                with open("%s/groups/%semember-%d.json" % (
+                        self.test_bootcfg_path, marker, i)) as group:
+                    etcd_groups.append(json.loads(group.read()))
+        self.assertEqual(0, len(etcd_groups))
 
     # @unittest.skip("skip")
     def test_02(self):
@@ -155,12 +173,20 @@ class TestEtcdScheduler(unittest.TestCase):
         marker = "unit-%s-%s-" % (TestEtcdScheduler.__name__.lower(), self.test_01.__name__)
         scheduler.EtcdScheduler.fetch_interfaces = fake_fetch_interfaces
         sch = scheduler.EtcdScheduler(
-            "http:127.0.0.1:5000",
+            "http://127.0.0.1:5000",
             self.test_bootcfg_path,
             ignition_member="%semember" % marker,
             ignition_proxy="%sproxy" % marker,
             bootcfg_prefix=marker)
         self.assertFalse(sch.apply())
+
+        etcd_groups = []
+        for i in xrange(sch.etcd_members_nb):
+            with self.assertRaises(IOError):
+                with open("%s/groups/%semember-%d.json" % (
+                        self.test_bootcfg_path, marker, i)) as group:
+                    etcd_groups.append(json.loads(group.read()))
+        self.assertEqual(0, len(etcd_groups))
 
     def test_03(self):
         fake_fetch_interfaces = lambda x, y: {u'interfaces': [
@@ -206,7 +232,7 @@ class TestEtcdScheduler(unittest.TestCase):
         marker = "unit-%s-%s-" % (TestEtcdScheduler.__name__.lower(), self.test_00.__name__)
         scheduler.EtcdScheduler.fetch_interfaces = fake_fetch_interfaces
         sch = scheduler.EtcdScheduler(
-            "http:127.0.0.1:5000",
+            "http://127.0.0.1:5000",
             self.test_bootcfg_path,
             ignition_member="%semember" % marker,
             ignition_proxy="%sproxy" % marker,
@@ -219,12 +245,36 @@ class TestEtcdScheduler(unittest.TestCase):
                 etcd_groups.append(json.loads(group.read()))
         self.assertEqual(3, len(etcd_groups))
 
+        self.assertEqual(3, len(etcd_groups))
+
+        ref = 0
+        for g in etcd_groups:
+            ref += 1
+            self.assertEqual(len(g["metadata"]["etcd_initial_cluster"].split(",")), 3)
+            self.assertEqual(g["metadata"]["etcd_initial_cluster"],
+                             "static0=http://172.15.0.61:2380,"
+                             "static1=http://172.15.0.60:2380,"
+                             "static2=http://172.15.0.66:2380")
+        self.assertTrue(ref == 3)
+
         etcd_profile = "%s/profiles/%semember.json" % (self.test_bootcfg_path, marker)
         with open(etcd_profile) as p:
             p_data = json.loads(p.read())
         self.assertEqual(p_data["ignition_id"],
                          "unit-testetcdscheduler-test_00-emember.yaml")
         self.assertTrue(sch.apply())
+
+        self.assertEqual(3, len(etcd_groups))
+
+        ref = 0
+        for g in etcd_groups:
+            ref += 1
+            self.assertEqual(len(g["metadata"]["etcd_initial_cluster"].split(",")), 3)
+            self.assertEqual(g["metadata"]["etcd_initial_cluster"],
+                             "static0=http://172.15.0.61:2380,"
+                             "static1=http://172.15.0.60:2380,"
+                             "static2=http://172.15.0.66:2380")
+        self.assertTrue(ref == 3)
 
     def test_04(self):
         fake_fetch_interfaces = lambda x, y: {u'interfaces': [
@@ -259,7 +309,7 @@ class TestEtcdScheduler(unittest.TestCase):
         marker = "unit-%s-%s-" % (TestEtcdScheduler.__name__.lower(), self.test_00.__name__)
         scheduler.EtcdScheduler.fetch_interfaces = fake_fetch_interfaces
         sch = scheduler.EtcdScheduler(
-            "http:127.0.0.1:5000",
+            "http://127.0.0.1:5000",
             self.test_bootcfg_path,
             ignition_member="%semember" % marker,
             ignition_proxy="%sproxy" % marker,
@@ -313,9 +363,33 @@ class TestEtcdScheduler(unittest.TestCase):
                 etcd_groups.append(json.loads(group.read()))
         self.assertEqual(3, len(etcd_groups))
 
+        self.assertEqual(3, len(etcd_groups))
+
+        ref = 0
+        for g in etcd_groups:
+            ref += 1
+            self.assertEqual(len(g["metadata"]["etcd_initial_cluster"].split(",")), 3)
+            self.assertEqual(g["metadata"]["etcd_initial_cluster"],
+                             "static0=http://172.15.0.61:2380,"
+                             "static1=http://172.15.0.60:2380,"
+                             "static2=http://172.15.0.66:2380")
+        self.assertTrue(ref == 3)
+
         etcd_profile = "%s/profiles/%semember.json" % (self.test_bootcfg_path, marker)
         with open(etcd_profile) as p:
             p_data = json.loads(p.read())
         self.assertEqual(p_data["ignition_id"],
                          "unit-testetcdscheduler-test_00-emember.yaml")
         self.assertTrue(sch.apply())
+
+        self.assertEqual(3, len(etcd_groups))
+
+        ref = 0
+        for g in etcd_groups:
+            ref += 1
+            self.assertEqual(len(g["metadata"]["etcd_initial_cluster"].split(",")), 3)
+            self.assertEqual(g["metadata"]["etcd_initial_cluster"],
+                             "static0=http://172.15.0.61:2380,"
+                             "static1=http://172.15.0.60:2380,"
+                             "static2=http://172.15.0.66:2380")
+        self.assertTrue(ref == 3)

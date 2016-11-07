@@ -8,7 +8,7 @@ class Generator(object):
     """
 
     def __init__(self, profile_id, name, ignition_id, bootcfg_path,
-                 selector=None, group_id=None):
+                 selector=None, group_id=None, extra_metadata=None):
         self.profile = GenerateProfile(
             _id=profile_id,
             name=name,
@@ -20,6 +20,7 @@ class Generator(object):
             name=name,
             profile=profile_id,  # TODO
             selector=selector,
+            metadata=extra_metadata,
             bootcfg_path=bootcfg_path)
 
     def generate_profile(self):

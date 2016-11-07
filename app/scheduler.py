@@ -8,6 +8,7 @@ import generator
 class EtcdScheduler(object):
     etcd_members_nb = 3
     __name__ = "EtcdScheduler"
+    etcd_name = "static"  # basename
 
     def __init__(self,
                  api_endpoint, bootcfg_path,
@@ -51,11 +52,11 @@ class EtcdScheduler(object):
                 if len(machine) > 2:
                     # Scheduler is stupid
                     raise AttributeError("too much interfaces, which one choose ?")
-                for ifaces in machine:
-                    if ifaces["name"] == "lo":
+                for nic in machine:
+                    if nic["name"] == "lo":
                         continue
                     elif len(self._pending_etcd_member) < self.etcd_members_nb:
-                        self._pending_etcd_member.add(ifaces["MAC"])
+                        self._pending_etcd_member.add((nic["IPv4"], nic["MAC"]))
                     else:
                         os.write(2, "\r-> enough machines %d/%d\n\r" % (
                             len(interfaces["interfaces"]), self.etcd_members_nb))
@@ -66,28 +67,44 @@ class EtcdScheduler(object):
 
     def _apply_member(self):
         os.write(2, "\r-> %s.%s in progress...\n\r" % (self.__name__, self._apply_member.__name__))
-        interfaces = self.fetch_interfaces(self.api_endpoint)
-        self._fifo_members(interfaces)
 
         marker = "%s%smember" % (self.bootcfg_prefix, "e")  # e for Etcd
 
-        for i, mac in enumerate(self._pending_etcd_member):
+        etcd_initial_cluster_list = []
+        for i, m in enumerate(self._pending_etcd_member):
+            etcd_initial_cluster_list.append("%s%d=http://%s:2380" % (self.etcd_name, i, m[0]))
+
+        etcd_initial_cluster = ",".join(etcd_initial_cluster_list)
+
+        for i, nic in enumerate(self._pending_etcd_member):
+            # nic = (IPv4, MAC)
             self.gen = generator.Generator(
                 group_id="%s-%d" % (marker, i),  # one per machine
                 profile_id=marker,  # link to ignition
                 name="%s-%d" % (marker, i),
                 ignition_id="%s.yaml" % self.ignition_member,
                 bootcfg_path=self.bootcfg_path,
-                selector={"mac": mac}
+                selector={"mac": nic[1]},
+                extra_metadata={
+                    "etcd_name": "%s%d" % (self.etcd_name, i),
+                    "etcd_initial_cluster": etcd_initial_cluster,
+                    "etcd_initial_advertise_peer_urls": "http://%s:2380" % nic[0],
+                    "etcd_advertise_client_urls": "http://%s:2379" % nic[0],
+
+                }
             )
             self.gen.dumps()
-            self._done_etcd_member.add(mac)
+            self._done_etcd_member.add(nic)
             os.write(2, "\r-> %s.%s selector {mac: %s}\n\r" % (
-                self.__name__, self._apply_member.__name__, mac))
+                self.__name__, self._apply_member.__name__, nic))
 
     def apply(self):
+        # Etcd Members
         if len(self._done_etcd_member) < self.etcd_members_nb:
-            self._apply_member()
+            interfaces = self.fetch_interfaces(self.api_endpoint)
+            self._fifo_members(interfaces)
+            if len(self._pending_etcd_member) == self.etcd_members_nb:
+                self._apply_member()
 
         else:
             # TODO Etcd Proxy

@@ -251,6 +251,7 @@ class TestKVMDiscoveryScheduler(TestCase):
         return interfaces
 
 
+# @unittest.skip("skip")
 @unittest.skipIf(os.geteuid() != 0,
                  "TestKVMDiscovery need privilege")
 class TestKVMDiscoveryScheduler0(TestKVMDiscoveryScheduler):
@@ -260,6 +261,7 @@ class TestKVMDiscoveryScheduler0(TestKVMDiscoveryScheduler):
         nb_node = 3
         marker = "euid-%s-%s" % (TestKVMDiscoveryScheduler.__name__.lower(), self.test_00.__name__)
         os.environ["BOOTCFG_IP"] = "172.15.0.1"
+        os.environ["API_IP"] = "172.15.0.1"
         gen = generator.Generator(
             profile_id="%s" % marker,
             name="%s" % marker,
@@ -366,15 +368,18 @@ class TestKVMDiscoveryScheduler0(TestKVMDiscoveryScheduler):
                 self.virsh(undefine), os.write(1, "\r")
 
 
+# @unittest.skip("skip")
 @unittest.skipIf(os.geteuid() != 0,
                  "TestKVMDiscovery need privilege")
-class TestKVMDiscoveryScheduler2(TestKVMDiscoveryScheduler):
+class TestKVMDiscoveryScheduler1(TestKVMDiscoveryScheduler):
+
     # @unittest.skip("just skip")
     def test_01(self):
         self.assertIsNone(self.fetch_discovery_interfaces()["interfaces"])
         nb_node = 3
         marker = "euid-%s-%s" % (TestKVMDiscoveryScheduler.__name__.lower(), self.test_01.__name__)
         os.environ["BOOTCFG_IP"] = "172.15.0.1"
+        os.environ["API_IP"] = "172.15.0.1"
         gen = generator.Generator(
             profile_id="%s" % marker,
             name="%s" % marker,
@@ -471,7 +476,137 @@ class TestKVMDiscoveryScheduler2(TestKVMDiscoveryScheduler):
 
                 time.sleep(2)
 
+            # time.sleep(1000)
             self.assertTrue(etcd)
+
+        finally:
+            for i in xrange(nb_node):
+                machine_marker = "%s-%d" % (marker, i)
+                destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
+                                    ["virsh", "undefine", "%s" % machine_marker]
+                self.virsh(destroy), os.write(1, "\r")
+                self.virsh(undefine), os.write(1, "\r")
+
+
+# @unittest.skip("skip")
+@unittest.skipIf(os.geteuid() != 0,
+                 "TestKVMDiscovery need privilege")
+class TestKVMDiscoveryScheduler2(TestKVMDiscoveryScheduler):
+    # @unittest.skip("just skip")
+    def test_02(self):
+        self.assertIsNone(self.fetch_discovery_interfaces()["interfaces"])
+        nb_node = 3
+        marker = "euid-%s-%s" % (TestKVMDiscoveryScheduler.__name__.lower(), self.test_02.__name__)
+        os.environ["BOOTCFG_IP"] = "172.15.0.1"
+        os.environ["API_IP"] = "172.15.0.1"
+        gen = generator.Generator(
+            profile_id="%s" % marker,
+            name="%s" % marker,
+            ignition_id="%s.yaml" % marker,
+            bootcfg_path=self.test_bootcfg_path
+        )
+        gen.dumps()
+
+        try:
+            for i in xrange(nb_node):
+                machine_marker = "%s-%d" % (marker, i)
+                destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
+                                    ["virsh", "undefine", "%s" % machine_marker]
+                self.virsh(destroy, v=self.dev_null), self.virsh(undefine, v=self.dev_null)
+                virt_install = [
+                    "virt-install",
+                    "--name",
+                    "%s" % machine_marker,
+                    "--network=bridge:metal0,model=virtio",
+                    "--memory=1024",
+                    "--vcpus=1",
+                    "--pxe",
+                    "--disk",
+                    "none",
+                    "--os-type=linux",
+                    "--os-variant=generic",
+                    "--noautoconsole",
+                    "--boot=network"
+                ]
+                self.virsh(virt_install, assertion=True, v=self.dev_null)
+                time.sleep(3)  # KVM fail to associate nic
+
+            sch = scheduler.EtcdScheduler(
+                api_endpoint=self.api_endpoint,
+                bootcfg_path=self.test_bootcfg_path,
+                ignition_member="%s-emember" % marker,
+                ignition_proxy="%s-eproxy" % marker,
+                bootcfg_prefix="%s-" % marker
+            )
+            # sch.etcd_members_nb = 3 # This is by default
+
+            for i in xrange(30):
+                if sch.apply() is True:
+                    break
+                time.sleep(2)
+
+            os.write(2, "\r")
+            interfaces = self.fetch_discovery_interfaces()
+
+            # time.sleep(600)
+            os.write(2, "\r-> start reboot nodes\n\r")
+
+            for i in xrange(nb_node):
+                machine_marker = "%s-%d" % (marker, i)
+                reset = ["virsh", "reset", "%s" % machine_marker]
+                self.virsh(reset), os.write(1, "\r")
+
+            time.sleep(1)
+
+            for i in xrange(nb_node):
+                machine_marker = "%s-%d" % (marker, i)
+                start = ["virsh", "start", "%s" % machine_marker]
+                self.virsh(start), os.write(1, "\r")
+                time.sleep(3)
+
+            os.write(2, "\r-> start reboot asked\n\r")
+
+            ips_collected = []
+
+            for machine in interfaces["interfaces"]:
+                for i in machine:
+                    if i["name"] == "eth0":
+                        ips_collected.append(i["IPv4"])
+
+            os.write(2, "\rIPs collected: %s\n\r" % ips_collected)
+
+            # time.sleep(6000)
+
+            etcd_ok = 0
+            for i in xrange(30):
+                if etcd_ok == nb_node:
+                    break
+
+                for ip in ips_collected:
+                    if etcd_ok == nb_node:
+                        break
+
+                    try:
+                        endpoint = "http://%s:2379/health" % ip
+                        request = urllib2.urlopen(endpoint)
+                        response_body = json.loads(request.read())
+                        request.close()
+                        if response_body == {u'health': u'true'}:
+                            etcd_ok += 1
+                            os.write(2, "\r%s %s\n\r" % (endpoint, response_body))
+
+                    except urllib2.URLError:
+                        pass
+
+                time.sleep(2)
+
+            self.assertEqual(etcd_ok, 3)
+
+            endpoint = "http://%s:2379/v2/members" % ips_collected[0]
+            request = urllib2.urlopen(endpoint)
+            response_body = json.loads(request.read())
+            request.close()
+            self.assertEqual(len(response_body["members"]), 3)
 
         finally:
             for i in xrange(nb_node):
