@@ -10,7 +10,7 @@ RKT=$(RKT_DIR)/rkt
 RKT_RELEASE=https://github.com/coreos/rkt/releases/download/v1.17.0/rkt-v1.17.0.tar.gz
 
 
-CHAIN_IP_PORT=172.15.0.1:5000
+CHAIN_IP_PORT=172.20.0.1:5000
 KKK=undionly.kkkpxe
 ISO=ipxe.iso
 
@@ -66,7 +66,7 @@ fetch: $(RKT)
 
 dnsmasq:
 	@file $(RKT)
-	@cat $(CWD)/dnsmasq-metal0.conf
+	@cat $(CWD)/dnsmasq-rack0.conf
 	$(CWD)/$(RKT) \
 		--interactive \
 		--dir=$(CWD)/$(RKT_DIR)/data \
@@ -75,7 +75,7 @@ dnsmasq:
 		run --insecure-options=all \
 		quay.io/coreos/dnsmasq:v0.3.0 \
 		--net=host \
-		--volume config,kind=host,source=$(CWD)/dnsmasq-metal0.conf
+		--volume config,kind=host,source=$(CWD)/dnsmasq-rack0.conf
 
 gc:
 	test ! -e $(CWD)/$(RKT) || $(CWD)/$(RKT) --dir=$(CWD)/$(RKT_DIR)/data gc --grace-period=0s
@@ -114,8 +114,8 @@ check_euid_discovery_scheduler: $(PYTHON)
 check_euid_basic: $(PYTHON)
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover euid/basic/
 
-check_euid_basic_iso: $(PYTHON)
-	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/basic/test_kvm_basic_iso.py
+check_euid_basic_iso: $(PYTHON) $(ISO)
+	KVM_ISO=run PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/basic/test_kvm_basic_iso.py
 
 check_euid_basic_pxe: $(PYTHON)
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/basic/test_kvm_basic_pxe.py

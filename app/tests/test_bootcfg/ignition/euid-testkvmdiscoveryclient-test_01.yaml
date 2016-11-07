@@ -11,7 +11,7 @@ systemd:
         Type=oneshot
         Environment=OPT_BIN=/opt/bin
         ExecStartPre=/bin/mkdir -pv ${OPT_BIN}
-        ExecStart=/usr/bin/curl -f http://172.15.0.1:8080/assets/discoveryC/serve/discoveryC \
+        ExecStart=/usr/bin/curl -f http://172.20.0.1:8080/assets/discoveryC/serve/discoveryC \
           -o ${OPT_BIN}/discoveryC
         ExecStartPost=/usr/bin/chmod +x ${OPT_BIN}/discoveryC
         RemainAfterExit=yes
@@ -25,7 +25,7 @@ systemd:
         After=download-discoveryC.service
         [Service]
         Type=oneshot
-        Environment=DISCOVERY_ADDRESS=http://172.15.0.1:5000/discovery
+        Environment=DISCOVERY_ADDRESS=http://172.20.0.1:5000/discovery
         ExecStart=/opt/bin/discoveryC
         [Install]
         WantedBy=multi-user.target

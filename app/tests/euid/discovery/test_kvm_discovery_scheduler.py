@@ -39,7 +39,7 @@ class TestKVMDiscoveryScheduler(TestCase):
 
     api_port = int(os.getenv("API_PORT", "5000"))
 
-    api_host = "172.15.0.1"
+    api_host = "172.20.0.1"
     api_endpoint = "http://%s:%d" % (api_host, api_port)
 
     dev_null = None
@@ -79,7 +79,7 @@ class TestKVMDiscoveryScheduler(TestCase):
             "--interactive",
             "--uuid-file-save=/tmp/dnsmasq.uuid",
             "--volume",
-            "config,kind=host,source=%s/dnsmasq-metal0.conf" % TestKVMDiscoveryScheduler.tests_path
+            "config,kind=host,source=%s/dnsmasq-rack0.conf" % TestKVMDiscoveryScheduler.tests_path
         ]
         os.write(1, "PID  -> %s\n"
                     "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
@@ -88,7 +88,7 @@ class TestKVMDiscoveryScheduler(TestCase):
         os._exit(2)
 
     @staticmethod
-    def process_target_create_metal0():
+    def process_target_create_rack0():
         cmd = [
             "%s/rkt_dir/rkt" % TestKVMDiscoveryScheduler.tests_path,
             # "--debug",
@@ -97,7 +97,7 @@ class TestKVMDiscoveryScheduler(TestCase):
             "run",
             "quay.io/coreos/dnsmasq:v0.3.0",
             "--insecure-options=all",
-            "--net=metal0",
+            "--net=rack0",
             "--interactive",
             "--exec",
             "/bin/true"]
@@ -110,16 +110,16 @@ class TestKVMDiscoveryScheduler(TestCase):
     @staticmethod
     def dns_masq_running():
         """
-        net.d/10-metal0.conf
+        net.d/10-rack0.conf
         {
-            "name": "metal0",
+            "name": "rack0",
             "type": "bridge",
-            "bridge": "metal0",
+            "bridge": "rack0",
             "isGateway": true,
             "ipMasq": true,
             "ipam": {
                 "type": "host-local",
-                "subnet": "172.15.0.0/16",
+                "subnet": "172.20.0.0/21",
                 "routes" : [ { "dst" : "0.0.0.0/0" } ]
             }
         }
@@ -127,7 +127,7 @@ class TestKVMDiscoveryScheduler(TestCase):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         result = 1
         for i in xrange(120):
-            result = sock.connect_ex(('172.15.0.1', 53))
+            result = sock.connect_ex(('172.20.0.1', 53))
             if result == 0:
                 break
             time.sleep(0.5)
@@ -169,17 +169,17 @@ class TestKVMDiscoveryScheduler(TestCase):
         cls.p_bootcfg.start()
         assert cls.p_bootcfg.is_alive() is True
 
-        if subprocess.call(["ip", "link", "show", "metal0"], stdout=None) != 0:
-            p_create_metal0 = Process(
-                target=TestKVMDiscoveryScheduler.process_target_create_metal0)
-            p_create_metal0.start()
+        if subprocess.call(["ip", "link", "show", "rack0"], stdout=None) != 0:
+            p_create_rack0 = Process(
+                target=TestKVMDiscoveryScheduler.process_target_create_rack0)
+            p_create_rack0.start()
             for i in xrange(60):
-                if p_create_metal0.exitcode == 0:
+                if p_create_rack0.exitcode == 0:
                     os.write(1, "Bridge done\n\r")
                     break
                 os.write(1, "Bridge not ready\n\r")
                 time.sleep(0.5)
-        assert subprocess.call(["ip", "link", "show", "metal0"]) == 0
+        assert subprocess.call(["ip", "link", "show", "rack0"]) == 0
 
         cls.p_dnsmasq = Process(target=TestKVMDiscoveryScheduler.process_target_dnsmasq)
         cls.p_dnsmasq.start()
@@ -260,8 +260,8 @@ class TestKVMDiscoveryScheduler0(TestKVMDiscoveryScheduler):
         self.assertIsNone(self.fetch_discovery_interfaces()["interfaces"])
         nb_node = 3
         marker = "euid-%s-%s" % (TestKVMDiscoveryScheduler.__name__.lower(), self.test_00.__name__)
-        os.environ["BOOTCFG_IP"] = "172.15.0.1"
-        os.environ["API_IP"] = "172.15.0.1"
+        os.environ["BOOTCFG_IP"] = "172.20.0.1"
+        os.environ["API_IP"] = "172.20.0.1"
         gen = generator.Generator(
             profile_id="%s" % marker,
             name="%s" % marker,
@@ -280,7 +280,7 @@ class TestKVMDiscoveryScheduler0(TestKVMDiscoveryScheduler):
                     "virt-install",
                     "--name",
                     "%s" % machine_marker,
-                    "--network=bridge:metal0,model=virtio",
+                    "--network=bridge:rack0,model=virtio",
                     "--memory=1024",
                     "--vcpus=1",
                     "--pxe",
@@ -294,11 +294,10 @@ class TestKVMDiscoveryScheduler0(TestKVMDiscoveryScheduler):
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
                 time.sleep(3)  # KVM fail to associate nic
 
-            sch = scheduler.EtcdScheduler(
+            sch = scheduler.EtcdMemberScheduler(
                 api_endpoint=self.api_endpoint,
                 bootcfg_path=self.test_bootcfg_path,
                 ignition_member="%s-emember" % marker,
-                ignition_proxy="%s-eproxy" % marker,
                 bootcfg_prefix="%s-" % marker
             )
             sch.etcd_members_nb = 1
@@ -307,6 +306,8 @@ class TestKVMDiscoveryScheduler0(TestKVMDiscoveryScheduler):
                 if sch.apply() is True:
                     break
                 time.sleep(2)
+
+            self.assertTrue(sch.apply())
 
             interfaces = self.fetch_discovery_interfaces()
 
@@ -372,14 +373,13 @@ class TestKVMDiscoveryScheduler0(TestKVMDiscoveryScheduler):
 @unittest.skipIf(os.geteuid() != 0,
                  "TestKVMDiscovery need privilege")
 class TestKVMDiscoveryScheduler1(TestKVMDiscoveryScheduler):
-
     # @unittest.skip("just skip")
     def test_01(self):
         self.assertIsNone(self.fetch_discovery_interfaces()["interfaces"])
         nb_node = 3
         marker = "euid-%s-%s" % (TestKVMDiscoveryScheduler.__name__.lower(), self.test_01.__name__)
-        os.environ["BOOTCFG_IP"] = "172.15.0.1"
-        os.environ["API_IP"] = "172.15.0.1"
+        os.environ["BOOTCFG_IP"] = "172.20.0.1"
+        os.environ["API_IP"] = "172.20.0.1"
         gen = generator.Generator(
             profile_id="%s" % marker,
             name="%s" % marker,
@@ -398,7 +398,7 @@ class TestKVMDiscoveryScheduler1(TestKVMDiscoveryScheduler):
                     "virt-install",
                     "--name",
                     "%s" % machine_marker,
-                    "--network=bridge:metal0,model=virtio",
+                    "--network=bridge:rack0,model=virtio",
                     "--memory=1024",
                     "--vcpus=1",
                     "--pxe",
@@ -412,11 +412,10 @@ class TestKVMDiscoveryScheduler1(TestKVMDiscoveryScheduler):
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
                 time.sleep(3)  # KVM fail to associate nic
 
-            sch = scheduler.EtcdScheduler(
+            sch = scheduler.EtcdMemberScheduler(
                 api_endpoint=self.api_endpoint,
                 bootcfg_path=self.test_bootcfg_path,
                 ignition_member="%s-emember" % marker,
-                ignition_proxy="%s-eproxy" % marker,
                 bootcfg_prefix="%s-" % marker
             )
             # sch.etcd_members_nb = 3 # This is by default
@@ -425,6 +424,8 @@ class TestKVMDiscoveryScheduler1(TestKVMDiscoveryScheduler):
                 if sch.apply() is True:
                     break
                 time.sleep(2)
+
+            self.assertTrue(sch.apply())
 
             os.write(2, "\r")
             interfaces = self.fetch_discovery_interfaces()
@@ -497,8 +498,8 @@ class TestKVMDiscoveryScheduler2(TestKVMDiscoveryScheduler):
         self.assertIsNone(self.fetch_discovery_interfaces()["interfaces"])
         nb_node = 3
         marker = "euid-%s-%s" % (TestKVMDiscoveryScheduler.__name__.lower(), self.test_02.__name__)
-        os.environ["BOOTCFG_IP"] = "172.15.0.1"
-        os.environ["API_IP"] = "172.15.0.1"
+        os.environ["BOOTCFG_IP"] = "172.20.0.1"
+        os.environ["API_IP"] = "172.20.0.1"
         gen = generator.Generator(
             profile_id="%s" % marker,
             name="%s" % marker,
@@ -517,7 +518,7 @@ class TestKVMDiscoveryScheduler2(TestKVMDiscoveryScheduler):
                     "virt-install",
                     "--name",
                     "%s" % machine_marker,
-                    "--network=bridge:metal0,model=virtio",
+                    "--network=bridge:rack0,model=virtio",
                     "--memory=1024",
                     "--vcpus=1",
                     "--pxe",
@@ -531,11 +532,12 @@ class TestKVMDiscoveryScheduler2(TestKVMDiscoveryScheduler):
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
                 time.sleep(3)  # KVM fail to associate nic
 
-            sch = scheduler.EtcdScheduler(
+            # time.sleep(600)
+
+            sch = scheduler.EtcdMemberScheduler(
                 api_endpoint=self.api_endpoint,
                 bootcfg_path=self.test_bootcfg_path,
                 ignition_member="%s-emember" % marker,
-                ignition_proxy="%s-eproxy" % marker,
                 bootcfg_prefix="%s-" % marker
             )
             # sch.etcd_members_nb = 3 # This is by default
@@ -544,6 +546,8 @@ class TestKVMDiscoveryScheduler2(TestKVMDiscoveryScheduler):
                 if sch.apply() is True:
                     break
                 time.sleep(2)
+
+            self.assertTrue(sch.apply())
 
             os.write(2, "\r")
             interfaces = self.fetch_discovery_interfaces()
@@ -600,13 +604,13 @@ class TestKVMDiscoveryScheduler2(TestKVMDiscoveryScheduler):
 
                 time.sleep(2)
 
-            self.assertEqual(etcd_ok, 3)
+            self.assertEqual(etcd_ok, nb_node)
 
             endpoint = "http://%s:2379/v2/members" % ips_collected[0]
             request = urllib2.urlopen(endpoint)
             response_body = json.loads(request.read())
             request.close()
-            self.assertEqual(len(response_body["members"]), 3)
+            self.assertEqual(len(response_body["members"]), nb_node)
 
         finally:
             for i in xrange(nb_node):

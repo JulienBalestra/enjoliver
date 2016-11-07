@@ -9,6 +9,6 @@ systemd:
         After=network-online.target
         [Service]
         Type=oneshot
-        ExecStart=/usr/bin/curl -f -XPOST http://172.15.0.1:5050/ok -d "euid-testkvmbasiciso-test_01"
+        ExecStart=/usr/bin/curl -f -XPOST http://172.20.0.1:5050/ok -d "euid-testkvmbasiciso-test_01"
         [Install]
         WantedBy=multi-user.target

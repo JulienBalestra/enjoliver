@@ -59,7 +59,7 @@ class TestKVMBasicPXE(TestCase):
 
     @staticmethod
     def process_target_api():
-        api.app.run(host="172.15.0.1", port=5000)
+        api.app.run(host="172.20.0.1", port=5000)
 
     @staticmethod
     def process_target_dnsmasq():
@@ -79,7 +79,7 @@ class TestKVMBasicPXE(TestCase):
             "--interactive",
             "--uuid-file-save=/tmp/dnsmasq.uuid",
             "--volume",
-            "config,kind=host,source=%s/dnsmasq-metal0.conf" % TestKVMBasicPXE.tests_path,
+            "config,kind=host,source=%s/dnsmasq-rack0.conf" % TestKVMBasicPXE.tests_path,
             # "--volume",
             # "kkkpxe,kind=host,source=%s/chain/ipxe/src/bin/undionly.kkkpxe" % TestKVMBasicPXE.project_path
         ]
@@ -90,7 +90,7 @@ class TestKVMBasicPXE(TestCase):
         os._exit(2)
 
     @staticmethod
-    def process_target_create_metal0():
+    def process_target_create_rack0():
         cmd = [
             "%s/rkt_dir/rkt" % TestKVMBasicPXE.tests_path,
             # "--debug",
@@ -99,7 +99,7 @@ class TestKVMBasicPXE(TestCase):
             "run",
             "quay.io/coreos/dnsmasq:v0.3.0",
             "--insecure-options=all",
-            "--net=metal0",
+            "--net=rack0",
             "--interactive",
             "--exec",
             "/bin/true"]
@@ -112,16 +112,16 @@ class TestKVMBasicPXE(TestCase):
     @staticmethod
     def dns_masq_running():
         """
-        net.d/10-metal0.conf
+        net.d/10-rack0.conf
         {
-            "name": "metal0",
+            "name": "rack0",
             "type": "bridge",
-            "bridge": "metal0",
+            "bridge": "rack0",
             "isGateway": true,
             "ipMasq": true,
             "ipam": {
                 "type": "host-local",
-                "subnet": "172.15.0.0/16",
+                "subnet": "172.20.0.0/21",
                 "routes" : [ { "dst" : "0.0.0.0/0" } ]
             }
         }
@@ -129,7 +129,7 @@ class TestKVMBasicPXE(TestCase):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         result = 1
         for i in xrange(120):
-            result = sock.connect_ex(('172.15.0.1', 53))
+            result = sock.connect_ex(('172.20.0.1', 53))
             if result == 0:
                 break
             time.sleep(0.5)
@@ -172,17 +172,17 @@ class TestKVMBasicPXE(TestCase):
         cls.p_bootcfg.start()
         assert cls.p_bootcfg.is_alive() is True
 
-        if subprocess.call(["ip", "link", "show", "metal0"], stdout=None) != 0:
-            p_create_metal0 = Process(
-                target=TestKVMBasicPXE.process_target_create_metal0)
-            p_create_metal0.start()
+        if subprocess.call(["ip", "link", "show", "rack0"], stdout=None) != 0:
+            p_create_rack0 = Process(
+                target=TestKVMBasicPXE.process_target_create_rack0)
+            p_create_rack0.start()
             for i in xrange(60):
-                if p_create_metal0.exitcode == 0:
+                if p_create_rack0.exitcode == 0:
                     os.write(1, "Bridge done\n\r")
                     break
                 os.write(1, "Bridge not ready\n\r")
                 time.sleep(0.5)
-        assert subprocess.call(["ip", "link", "show", "metal0"]) == 0
+        assert subprocess.call(["ip", "link", "show", "rack0"]) == 0
 
         cls.p_dnsmasq = Process(target=TestKVMBasicPXE.process_target_dnsmasq)
         cls.p_dnsmasq.start()
@@ -241,7 +241,7 @@ class TestKVMBasicPXE(TestCase):
     # @unittest.skip("just skip")
     def test_00(self):
         marker = "euid-%s-%s" % (TestKVMBasicPXE.__name__.lower(), self.test_00.__name__)
-        os.environ["BOOTCFG_IP"] = "172.15.0.1"
+        os.environ["BOOTCFG_IP"] = "172.20.0.1"
         gen = generator.Generator(
             profile_id="%s" % marker,
             name="%s" % marker,
@@ -267,7 +267,7 @@ class TestKVMBasicPXE(TestCase):
                 "virt-install",
                 "--name",
                 "%s" % marker,
-                "--network=bridge:metal0,model=virtio",
+                "--network=bridge:rack0,model=virtio",
                 "--memory=1024",
                 "--vcpus=1",
                 "--pxe",
@@ -282,7 +282,7 @@ class TestKVMBasicPXE(TestCase):
 
             os.write(2, "\r\n")
             app.run(
-                host="172.15.0.1", port=self.flask_ok_port, debug=False, use_reloader=False)
+                host="172.20.0.1", port=self.flask_ok_port, debug=False, use_reloader=False)
             os.write(2, "\r -> Flask stop\n\r")
 
         finally:
@@ -294,7 +294,7 @@ class TestKVMBasicPXE(TestCase):
     def test_01(self):
         nb_node = 3
         marker = "euid-%s-%s" % (TestKVMBasicPXE.__name__.lower(), self.test_01.__name__)
-        os.environ["BOOTCFG_IP"] = "172.15.0.1"
+        os.environ["BOOTCFG_IP"] = "172.20.0.1"
         gen = generator.Generator(
             profile_id="%s" % marker,
             name="%s" % marker,
@@ -323,7 +323,7 @@ class TestKVMBasicPXE(TestCase):
                     "virt-install",
                     "--name",
                     "%s" % machine_marker,
-                    "--network=bridge:metal0,model=virtio",
+                    "--network=bridge:rack0,model=virtio",
                     "--memory=1024",
                     "--vcpus=1",
                     "--pxe",
@@ -339,7 +339,7 @@ class TestKVMBasicPXE(TestCase):
 
             os.write(2, "\r\n")
             app.run(
-                host="172.15.0.1", port=self.flask_ok_port, debug=False, use_reloader=False)
+                host="172.20.0.1", port=self.flask_ok_port, debug=False, use_reloader=False)
             os.write(2, "\r -> Flask stop\n\r")
 
         finally:

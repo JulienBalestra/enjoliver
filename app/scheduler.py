@@ -5,25 +5,26 @@ import urllib2
 import generator
 
 
-class EtcdScheduler(object):
+class EtcdMemberScheduler(object):
     etcd_members_nb = 3
-    __name__ = "EtcdScheduler"
+    __name__ = "EtcdMemberScheduler"
     etcd_name = "static"  # basename
 
     def __init__(self,
                  api_endpoint, bootcfg_path,
-                 ignition_member, ignition_proxy,
+                 ignition_member,
                  bootcfg_prefix=""):
 
         self.api_endpoint = api_endpoint
         self.gen = generator.Generator
         self.bootcfg_path = bootcfg_path
+        self.bootcfg_prefix = bootcfg_prefix
+
+        # Etcd member area
+        self.ignition_member = ignition_member
         self._pending_etcd_member = set()
         self._done_etcd_member = set()
-        self.bootcfg_prefix = bootcfg_prefix
-        # self.scheduler_model = self.
-        self.ignition_member = ignition_member
-        self.ignition_proxy = ignition_proxy
+        self.etcd_initial_cluster = []
 
     @staticmethod
     def fetch_interfaces(api_endpoint):
@@ -107,7 +108,6 @@ class EtcdScheduler(object):
                 self._apply_member()
 
         else:
-            # TODO Etcd Proxy
             os.write(2, "\r-> %s.%s already complete\n\r" %
                      (self.__name__, self.apply.__name__))
             return True

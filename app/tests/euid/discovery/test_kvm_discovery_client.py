@@ -38,7 +38,7 @@ class TestKVMDiscoveryClient(TestCase):
 
     api_port = int(os.getenv("API_PORT", "5000"))
 
-    api_host = "172.15.0.1"
+    api_host = "172.20.0.1"
     api_endpoint = "http://%s:%d" % (api_host, api_port)
 
     dev_null = None
@@ -78,7 +78,7 @@ class TestKVMDiscoveryClient(TestCase):
             "--interactive",
             "--uuid-file-save=/tmp/dnsmasq.uuid",
             "--volume",
-            "config,kind=host,source=%s/dnsmasq-metal0.conf" % TestKVMDiscoveryClient.tests_path
+            "config,kind=host,source=%s/dnsmasq-rack0.conf" % TestKVMDiscoveryClient.tests_path
         ]
         os.write(1, "PID  -> %s\n"
                     "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
@@ -87,7 +87,7 @@ class TestKVMDiscoveryClient(TestCase):
         os._exit(2)
 
     @staticmethod
-    def process_target_create_metal0():
+    def process_target_create_rack0():
         cmd = [
             "%s/rkt_dir/rkt" % TestKVMDiscoveryClient.tests_path,
             # "--debug",
@@ -96,7 +96,7 @@ class TestKVMDiscoveryClient(TestCase):
             "run",
             "quay.io/coreos/dnsmasq:v0.3.0",
             "--insecure-options=all",
-            "--net=metal0",
+            "--net=rack0",
             "--interactive",
             "--exec",
             "/bin/true"]
@@ -109,16 +109,16 @@ class TestKVMDiscoveryClient(TestCase):
     @staticmethod
     def dns_masq_running():
         """
-        net.d/10-metal0.conf
+        net.d/10-rack0.conf
         {
-            "name": "metal0",
+            "name": "rack0",
             "type": "bridge",
-            "bridge": "metal0",
+            "bridge": "rack0",
             "isGateway": true,
             "ipMasq": true,
             "ipam": {
                 "type": "host-local",
-                "subnet": "172.15.0.0/16",
+                "subnet": "172.20.0.0/21",
                 "routes" : [ { "dst" : "0.0.0.0/0" } ]
             }
         }
@@ -126,7 +126,7 @@ class TestKVMDiscoveryClient(TestCase):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         result = 1
         for i in xrange(120):
-            result = sock.connect_ex(('172.15.0.1', 53))
+            result = sock.connect_ex(('172.20.0.1', 53))
             if result == 0:
                 break
             time.sleep(0.5)
@@ -168,17 +168,17 @@ class TestKVMDiscoveryClient(TestCase):
         cls.p_bootcfg.start()
         assert cls.p_bootcfg.is_alive() is True
 
-        if subprocess.call(["ip", "link", "show", "metal0"], stdout=None) != 0:
-            p_create_metal0 = Process(
-                target=TestKVMDiscoveryClient.process_target_create_metal0)
-            p_create_metal0.start()
+        if subprocess.call(["ip", "link", "show", "rack0"], stdout=None) != 0:
+            p_create_rack0 = Process(
+                target=TestKVMDiscoveryClient.process_target_create_rack0)
+            p_create_rack0.start()
             for i in xrange(60):
-                if p_create_metal0.exitcode == 0:
+                if p_create_rack0.exitcode == 0:
                     os.write(1, "Bridge done\n\r")
                     break
                 os.write(1, "Bridge not ready\n\r")
                 time.sleep(0.5)
-        assert subprocess.call(["ip", "link", "show", "metal0"]) == 0
+        assert subprocess.call(["ip", "link", "show", "rack0"]) == 0
 
         cls.p_dnsmasq = Process(target=TestKVMDiscoveryClient.process_target_dnsmasq)
         cls.p_dnsmasq.start()
@@ -240,7 +240,7 @@ class TestKVMDiscoveryClientOne(TestKVMDiscoveryClient):
     # @unittest.skip("just skip")
     def test_00(self):
         marker = "euid-%s-%s" % (TestKVMDiscoveryClient.__name__.lower(), self.test_00.__name__)
-        os.environ["BOOTCFG_IP"] = "172.15.0.1"
+        os.environ["BOOTCFG_IP"] = "172.20.0.1"
         gen = generator.Generator(
             profile_id="%s" % marker,
             name="%s" % marker,
@@ -257,7 +257,7 @@ class TestKVMDiscoveryClientOne(TestKVMDiscoveryClient):
                 "virt-install",
                 "--name",
                 "%s" % marker,
-                "--network=bridge:metal0,model=virtio",
+                "--network=bridge:rack0,model=virtio",
                 "--memory=1024",
                 "--vcpus=1",
                 "--pxe",
@@ -294,9 +294,9 @@ class TestKVMDiscoveryClientOne(TestKVMDiscoveryClient):
                  u'name': u'lo'},
 
                 {u'MAC': u'52:54:00:76:bf:eb',
-                 u'netmask': 16,
-                 u'IPv4': u'172.15.0.53',
-                 u'CIDRv4': u'172.15.0.53/16',
+                 u'netmask': 21,
+                 u'IPv4': u'172.20.0.53',
+                 u'CIDRv4': u'172.20.0.53/21',
                  u'name': u'eth0'}
             ]
         ]}
@@ -314,8 +314,8 @@ class TestKVMDiscoveryClientOne(TestKVMDiscoveryClient):
                     self.assertEqual(ifaces["CIDRv4"], '127.0.0.1/8')
                 else:
                     self.assertEqual(ifaces["name"], "eth0")
-                    self.assertEqual(ifaces["netmask"], 16)
-                    self.assertEqual(ifaces["IPv4"][:9], '172.15.0.')
+                    self.assertEqual(ifaces["netmask"], 21)
+                    self.assertEqual(ifaces["IPv4"][:9], '172.20.0.')
                     self.assertEqual(len(ifaces["MAC"]), 17)
 
 
@@ -324,7 +324,7 @@ class TestKVMDiscoveryClientTwo(TestKVMDiscoveryClient):
     def test_01(self):
         nb_node = 3
         marker = "euid-%s-%s" % (TestKVMDiscoveryClient.__name__.lower(), self.test_01.__name__)
-        os.environ["BOOTCFG_IP"] = "172.15.0.1"
+        os.environ["BOOTCFG_IP"] = "172.20.0.1"
         gen = generator.Generator(
             profile_id="%s" % marker,
             name="%s" % marker,
@@ -344,7 +344,7 @@ class TestKVMDiscoveryClientTwo(TestKVMDiscoveryClient):
                     "virt-install",
                     "--name",
                     "%s" % machine_marker,
-                    "--network=bridge:metal0,model=virtio",
+                    "--network=bridge:rack0,model=virtio",
                     "--memory=1024",
                     "--vcpus=1",
                     "--pxe",
@@ -387,9 +387,9 @@ class TestKVMDiscoveryClientTwo(TestKVMDiscoveryClient):
                      u'name': u'lo'},
 
                     {u'MAC': u'52:54:00:ae:b7:a8',
-                     u'netmask': 16,
-                     u'IPv4': u'172.15.0.60',
-                     u'CIDRv4': u'172.15.0.60/16',
+                     u'netmask': 21,
+                     u'IPv4': u'172.20.0.60',
+                     u'CIDRv4': u'172.20.0.60/21',
                      u'name': u'eth0'}
                 ],
                 [
@@ -400,9 +400,9 @@ class TestKVMDiscoveryClientTwo(TestKVMDiscoveryClient):
                      u'name': u'lo'},
 
                     {u'MAC': u'52:54:00:de:a5:52',
-                     u'netmask': 16,
-                     u'IPv4': u'172.15.0.66',
-                     u'CIDRv4': u'172.15.0.66/16',
+                     u'netmask': 21,
+                     u'IPv4': u'172.20.0.66',
+                     u'CIDRv4': u'172.20.0.66/21',
                      u'name': u'eth0'}
                 ],
                 [
@@ -412,9 +412,9 @@ class TestKVMDiscoveryClientTwo(TestKVMDiscoveryClient):
                      u'name': u'lo'},
 
                     {u'MAC': u'52:54:00:85:26:20',
-                     u'netmask': 16,
-                     u'IPv4': u'172.15.0.61',
-                     u'CIDRv4': u'172.15.0.61/16',
+                     u'netmask': 21,
+                     u'IPv4': u'172.20.0.61',
+                     u'CIDRv4': u'172.20.0.61/21',
                      u'name': u'eth0'}
                 ]
             ]}
@@ -432,8 +432,8 @@ class TestKVMDiscoveryClientTwo(TestKVMDiscoveryClient):
                     self.assertEqual(ifaces["CIDRv4"], '127.0.0.1/8')
                 else:
                     self.assertEqual(ifaces["name"], "eth0")
-                    self.assertEqual(ifaces["netmask"], 16)
-                    self.assertEqual(ifaces["IPv4"][:9], '172.15.0.')
+                    self.assertEqual(ifaces["netmask"], 21)
+                    self.assertEqual(ifaces["IPv4"][:9], '172.20.0.')
                     self.assertEqual(len(ifaces["MAC"]), 17)
 
 

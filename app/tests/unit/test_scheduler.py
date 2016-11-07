@@ -74,12 +74,11 @@ class TestEtcdScheduler(unittest.TestCase):
             ]
         ]}
         marker = "unit-%s-%s-" % (TestEtcdScheduler.__name__.lower(), self.test_00.__name__)
-        scheduler.EtcdScheduler.fetch_interfaces = fake_fetch_interfaces
-        sch = scheduler.EtcdScheduler(
+        scheduler.EtcdMemberScheduler.fetch_interfaces = fake_fetch_interfaces
+        sch = scheduler.EtcdMemberScheduler(
             "http://127.0.0.1:5000",
             self.test_bootcfg_path,
             ignition_member="%semember" % marker,
-            ignition_proxy="%sproxy" % marker,
             bootcfg_prefix=marker)
         self.assertTrue(sch.apply())
         etcd_groups = []
@@ -123,12 +122,11 @@ class TestEtcdScheduler(unittest.TestCase):
             ]
         ]}
         marker = "unit-%s-%s-" % (TestEtcdScheduler.__name__.lower(), self.test_01.__name__)
-        scheduler.EtcdScheduler.fetch_interfaces = fake_fetch_interfaces
-        sch = scheduler.EtcdScheduler(
+        scheduler.EtcdMemberScheduler.fetch_interfaces = fake_fetch_interfaces
+        sch = scheduler.EtcdMemberScheduler(
             "http://127.0.0.1:5000",
             self.test_bootcfg_path,
             ignition_member="%semember" % marker,
-            ignition_proxy="%sproxy" % marker,
             bootcfg_prefix=marker)
         self.assertFalse(sch.apply())
 
@@ -171,12 +169,11 @@ class TestEtcdScheduler(unittest.TestCase):
             ]
         ]}
         marker = "unit-%s-%s-" % (TestEtcdScheduler.__name__.lower(), self.test_01.__name__)
-        scheduler.EtcdScheduler.fetch_interfaces = fake_fetch_interfaces
-        sch = scheduler.EtcdScheduler(
+        scheduler.EtcdMemberScheduler.fetch_interfaces = fake_fetch_interfaces
+        sch = scheduler.EtcdMemberScheduler(
             "http://127.0.0.1:5000",
             self.test_bootcfg_path,
             ignition_member="%semember" % marker,
-            ignition_proxy="%sproxy" % marker,
             bootcfg_prefix=marker)
         self.assertFalse(sch.apply())
 
@@ -230,12 +227,11 @@ class TestEtcdScheduler(unittest.TestCase):
             ]
         ]}
         marker = "unit-%s-%s-" % (TestEtcdScheduler.__name__.lower(), self.test_00.__name__)
-        scheduler.EtcdScheduler.fetch_interfaces = fake_fetch_interfaces
-        sch = scheduler.EtcdScheduler(
+        scheduler.EtcdMemberScheduler.fetch_interfaces = fake_fetch_interfaces
+        sch = scheduler.EtcdMemberScheduler(
             "http://127.0.0.1:5000",
             self.test_bootcfg_path,
             ignition_member="%semember" % marker,
-            ignition_proxy="%sproxy" % marker,
             bootcfg_prefix=marker)
         self.assertTrue(sch.apply())
         etcd_groups = []
@@ -307,15 +303,14 @@ class TestEtcdScheduler(unittest.TestCase):
 
         ]}
         marker = "unit-%s-%s-" % (TestEtcdScheduler.__name__.lower(), self.test_00.__name__)
-        scheduler.EtcdScheduler.fetch_interfaces = fake_fetch_interfaces
-        sch = scheduler.EtcdScheduler(
+        scheduler.EtcdMemberScheduler.fetch_interfaces = fake_fetch_interfaces
+        sch = scheduler.EtcdMemberScheduler(
             "http://127.0.0.1:5000",
             self.test_bootcfg_path,
             ignition_member="%semember" % marker,
-            ignition_proxy="%sproxy" % marker,
             bootcfg_prefix=marker)
         self.assertFalse(sch.apply())
-        scheduler.EtcdScheduler.fetch_interfaces = lambda x, y: {u'interfaces': [
+        scheduler.EtcdMemberScheduler.fetch_interfaces = lambda x, y: {u'interfaces': [
             [
                 {u'MAC': u'',
                  u'netmask': 8,
