@@ -8,6 +8,7 @@ import (
 type Config struct {
 	// http://IP:PORT
 	DiscoveryAddress string
+	ProcCmdline      string
 }
 
 func CreateConfig() (Config, error) {
@@ -17,5 +18,6 @@ func CreateConfig() (Config, error) {
 	if (c.DiscoveryAddress == "") {
 		return c, errors.New("Environment DISCOVERY_ADDRESS is nil")
 	}
+	c.ProcCmdline = "/proc/cmdline"
 	return c, nil
 }

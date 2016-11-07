@@ -1,0 +1,1 @@
+rootflags=rw mount.usrflags=ro coreos.autologin coreos.config.url=http://172.20.0.1:8080/ignition?uuid=2023e709-39b4-47d7-8905-e8be3e6bc2c6&mac=52-54-00-0d-bd-31 coreos.first_boot coreos.oem.id=pxe
