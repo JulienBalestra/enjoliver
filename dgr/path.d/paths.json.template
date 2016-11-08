@@ -1,0 +1,6 @@
+{
+	"rktKind": "paths",
+	"rktVersion": "v1",
+	"data": "__FULLPATH__/rkt_dir/data",
+    "stage1-images": "__FULLPATH__/rkt_dir"
+}

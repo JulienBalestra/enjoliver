@@ -22,3 +22,8 @@ serve
 /discoveryC/discoveryC.iml
 /discoveryC/discoveryC
 /bootcfg/assets/discoveryC/discoveryC
+/dgr/dgr-linux-amd64-77.tar.gz
+/dgr/bin/
+/dgr/config.yml
+/dgr/rkt_dir/
+/dgr/path.d/paths.json
