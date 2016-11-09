@@ -1,0 +1,13 @@
+lldp.eth0.via=LLDP
+lldp.eth0.rid=1
+lldp.eth0.age=0 day, 00:00:01
+lldp.eth0.chassis.mac=28:f1:0e:12:20:00
+lldp.eth0.chassis.name=E7470
+lldp.eth0.chassis.descr=Debian GNU/Linux 8 (jessie) Linux 4.4.0-45-generic #66-Ubuntu SMP Wed Oct 19 14:12:37 UTC 2016 x86_64
+lldp.eth0.chassis.mgmt-ip=192.168.192.234
+lldp.eth0.chassis.Bridge.enabled=on
+lldp.eth0.chassis.Router.enabled=on
+lldp.eth0.chassis.Wlan.enabled=on
+lldp.eth0.chassis.Station.enabled=off
+lldp.eth0.port.mac=fe:54:00:96:14:87
+lldp.eth0.port.descr=vnet0
