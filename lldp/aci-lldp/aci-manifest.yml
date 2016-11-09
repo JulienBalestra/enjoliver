@@ -1,0 +1,4 @@
+name: static-aci-lldp:0
+aci:
+  dependencies:
+    - static-aci-debian:8

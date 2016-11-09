@@ -26,4 +26,8 @@ serve
 /dgr/bin/
 /dgr/config.yml
 /dgr/rkt_dir/
-/dgr/path.d/paths.json
+/paths/d/paths.json
+/dgr/dgr/
+/dgr/paths.d/paths.json
+/lldp/static-aci-lldp-0.aci
+/lldp/lldp.render/

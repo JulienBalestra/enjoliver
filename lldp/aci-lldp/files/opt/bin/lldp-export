@@ -1,0 +1,12 @@
+#!/bin/bash
+
+OUTPUT=/var/run/lldp.kv
+MAX=120
+
+for i in {0..60}
+do
+    lldpctl -f keyvalue | tee ${OUTPUT}
+    test $(cat ${OUTPUT} | wc -l) -ne 0 && break
+    echo "Fail to run $0 attempt ${i}/${MAX}" >&2
+    sleep 1
+done
