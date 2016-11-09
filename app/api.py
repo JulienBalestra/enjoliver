@@ -58,6 +58,7 @@ def healthz():
             status["bootcfg"][k] = False
             status["global"] = False
 
+    app.logger.debug("%s" % status)
     return json.jsonify(status)
 
 
@@ -67,13 +68,15 @@ def discovery():
         try:
             r = json.loads(request.data)
         except ValueError:
+            app.logger.error("ValueError for %s" % request.data)
             return "Bad Request", 400
     else:
         r = request.get_json()
 
+    app.logger.debug("application/json \"%s\"" % r)
+
     interfaces_key = "interfaces"
     if r and interfaces_key in r:
-
         old_interfaces = cache.get_dict(interfaces_key)[interfaces_key]
 
         if old_interfaces is None:
@@ -83,6 +86,7 @@ def discovery():
         cache.set(key=interfaces_key, value=old_interfaces, timeout=0)
         return jsonify({interfaces_key: len(old_interfaces)})
 
+    app.logger.error("Bad Request")
     return "Bad Request", 400
 
 
@@ -104,8 +108,11 @@ def boot_ipxe():
         flask_uri = "%s://%s" % (
             request.environ.get('wsgi.url_scheme'),
             request.environ.get('HTTP_HOST'))
-    except Exception:
+        app.logger.debug("%s" % flask_uri)
+
+    except Exception as e:
         flask_uri = application.config["BOOTCFG_URI"]
+        app.logger.warning("%s: fall back to BOOTCFG_URI: %s" % (e.message, flask_uri))
 
     response = \
         "#!ipxe\n" \
@@ -118,6 +125,7 @@ def boot_ipxe():
         "domain=${domain}&" \
         "hostname=${hostname}&" \
         "serial=${serial}\n" % flask_uri
+    app.logger.debug("%s" % response)
     return response
 
 
@@ -142,7 +150,9 @@ def ipxe():
         else:
             app.logger.warning("iPXE response is not coherent")
 
-        return "".join(resp_list), 200
+        response = "".join(resp_list)
+        app.logger.debug("%s" % response)
+        return response, 200
 
     except urllib2.URLError:
         return "404", 404
@@ -154,4 +164,5 @@ def page_not_found(error):
 
 
 if __name__ == "__main__":
+    app.logger.setLevel("DEBUG")
     application.run(debug=True)
