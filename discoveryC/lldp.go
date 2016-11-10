@@ -7,26 +7,26 @@ import (
 )
 
 type LLDPData struct {
-	IsFile bool
-	Data XLLDP
+	IsFile bool `json:"is_file"`
+	Data XLLDP `json:"data"`
 }
 
 type XLLDP struct {
-	Interfaces []XInterface `xml:"interface"`
+	Interfaces []XInterface `xml:"interface" json:"interfaces"`
 }
 
 type XInterface struct {
-	Port XPort `xml:"port"`
-	Chassis XChassis `xml:"chassis"`
+	Port XPort `xml:"port" json:"port"`
+	Chassis XChassis `xml:"chassis" json:"chassis"`
 }
 
 type XPort struct {
-	Id string `xml:"id"`
+	Id string `xml:"id" json:"id"`
 }
 
 type XChassis struct {
-	Id string `xml:"id"`
-	Name string `xml:"name"`
+	Id string `xml:"id" json:"id"`
+	Name string `xml:"name" json:"name"`
 }
 
 func extractXMLLinkLayerDiscovery(b []byte) XLLDP {

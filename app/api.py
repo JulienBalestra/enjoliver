@@ -4,6 +4,8 @@ import urllib2
 from flask import Flask, request, json, jsonify
 from werkzeug.contrib.cache import FileSystemCache, SimpleCache
 
+import discoverydb
+
 app = application = Flask(__name__)
 
 application.config["BOOTCFG_URI"] = os.getenv(
@@ -75,25 +77,35 @@ def discovery():
 
     app.logger.debug("application/json \"%s\"" % r)
 
-    interfaces_key = "interfaces"
-    if r and interfaces_key in r:
-        old_interfaces = cache.get_dict(interfaces_key)[interfaces_key]
+    # print r
 
-        if old_interfaces is None:
-            old_interfaces = []
+    discovery_key = "discovery"
+    discovery_data = cache.get_dict(discovery_key)[discovery_key]
+    try:
+        disco = discoverydb.Discovery(r, discovery_data)
+        discovery_data = disco.refresh_cache()
+        cache.set(key=discovery_key, value=discovery_data, timeout=0)
 
-        old_interfaces.append(r[interfaces_key])
-        cache.set(key=interfaces_key, value=old_interfaces, timeout=0)
-        return jsonify({interfaces_key: len(old_interfaces)})
-
-    app.logger.error("Bad Request")
-    return "Bad Request", 400
+        return jsonify(
+            {"total_elt": len(discovery_data),
+             "update": disco.is_update})
+    except LookupError:
+        return jsonify(
+            {
+                u'boot-info': {},
+                u'lldp': {},
+                u'interfaces': []
+            }), 400
 
 
 @application.route('/discovery/interfaces', methods=['GET'])
 def discovery_interfaces():
-    interfaces_key = "interfaces"
-    interfaces = cache.get_dict(interfaces_key)
+    discovery_key = "discovery"
+    discovery_data = cache.get_dict(discovery_key)[discovery_key]
+    interfaces = {"interfaces": None}
+    if discovery_data:
+        interfaces["interfaces"] = [k["interfaces"] for k in discovery_data]
+
     return jsonify(interfaces)
 
 
