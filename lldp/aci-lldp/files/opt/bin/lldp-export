@@ -8,10 +8,10 @@ set -o pipefail
 
 SOCKET=/var/run/lldpd.socket
 
-for i in {0..60}
+for i in {0..10}
 do
     test -S ${SOCKET} && break
-    echo "$0 without any socket: ${SOCKET} attempt ${i}/60"
+    echo "$0 without any socket: ${SOCKET} attempt ${i}/10"
     sleep 1
 done
 
@@ -29,7 +29,7 @@ do
     # ${SOCKET} have to be /var/run/lldpd.socket
     lldpctl -f keyvalue
     lldpctl -f xml > ${OUTPUT}
-    test $(cat ${OUTPUT} | wc -l) -gt 2 && echo "$0 with content in ${OUTPUT}" && exit 0
+    test $(cat ${OUTPUT} | wc -l) -gt 2 && echo "$0 with content in ${OUTPUT}: $(wc -l ${OUTPUT})" && exit 0
     echo "Fail to run $0 attempt ${j}/120"
     sleep 1
 done
