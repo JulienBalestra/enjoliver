@@ -22,9 +22,8 @@ func TestPostToDiscovery(t *testing.T) {
 
 	data.BootInfo.Mac = "00:00:00:00:00"
 	data.BootInfo.Uuid = "2023e709-39b4-47d7-8905-e8be3e6bc2c6"
-	data.LLDPInfo.Connects = []string{"lldp.eno1.port.ifname=Ethernet1/23",
-		"lldp.eno2.port.ifname=Ethernet1/23"}
-	data.LLDPInfo.Lines = 2
+	data.LLDPInfo.IsFile = true
+	data.LLDPInfo.Data.Interfaces = []XInterface{}
 
 	CONF.DiscoveryAddress = "http://127.0.0.1:8888"
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

@@ -1,12 +1,11 @@
 #!/bin/bash
 
-OUTPUT=/var/run/lldp.kv
-MAX=120
+OUTPUT=/var/run/lldp.xml
 
-for i in {0..60}
+for i in {0..90}
 do
-    lldpctl -f keyvalue | tee ${OUTPUT}
-    test $(cat ${OUTPUT} | wc -l) -ne 0 && break
-    echo "Fail to run $0 attempt ${i}/${MAX}" >&2
+    lldpctl -f xml | tee ${OUTPUT}
+    test $(cat ${OUTPUT} | wc -l) -gt 3 && break
+    echo "Fail to run $0 attempt ${i}" >&2
     sleep 1
 done
