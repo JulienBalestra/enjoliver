@@ -221,6 +221,9 @@ class TestAPI(unittest.TestCase):
 
     def test_06_discovery_00(self):
         discovery_data = {
+            "boot-info": {
+                "mac": "00:00:00:00:00"
+            },
             "interfaces": [
                 {"IPv4": "192.168.1.1",
                  "CIDRv4": "192.168.1.1/24",
@@ -229,11 +232,14 @@ class TestAPI(unittest.TestCase):
                  "name": "eth0"}]}
         result = self.app.post('/discovery', data=json.dumps(discovery_data),
                                content_type='application/json')
-        self.assertEqual(json.loads(result.data), {"interfaces": 1})
+        self.assertEqual(json.loads(result.data), {u'total_elt': 1, u'update': False})
         self.assertEqual(result.status_code, 200)
 
     def test_06_discovery_01(self):
         discovery_data = {
+            "boot-info": {
+                "mac": "00:00:00:00:00"
+            },
             "interfaces": [
                 {"IPv4": "192.168.1.1",
                  "CIDRv4": "192.168.1.1/24",
@@ -242,12 +248,12 @@ class TestAPI(unittest.TestCase):
                  "name": "eth0"}]}
         result = self.app.post('/discovery', data=json.dumps(discovery_data),
                                content_type='application/json')
-        self.assertEqual(json.loads(result.data), {"interfaces": 1})
+        self.assertEqual(json.loads(result.data), {u'total_elt': 1, u'update': False})
         self.assertEqual(result.status_code, 200)
 
         result = self.app.post('/discovery', data=json.dumps(discovery_data),
                                content_type='application/json')
-        self.assertEqual(json.loads(result.data), {"interfaces": 2})
+        self.assertEqual(json.loads(result.data), {u'total_elt': 1, u'update': True})
         self.assertEqual(result.status_code, 200)
 
         result = self.app.get("/discovery/interfaces")
@@ -256,12 +262,11 @@ class TestAPI(unittest.TestCase):
               u'netmask': 24,
               u'IPv4': u'192.168.1.1',
               u'CIDRv4': u'192.168.1.1/24',
-              u'name': u'eth0'}],
-            [{u'MAC': u'00:00:00:00:00',
-              u'netmask': 24,
-              u'IPv4': u'192.168.1.1',
-              u'CIDRv4': u'192.168.1.1/24',
-              u'name': u'eth0'}]]}
+              u'name': u'eth0'}]
+            ]}
+        print "=================================="
+        print expect
+        print json.loads(result.data)
         self.assertEqual(expect, json.loads(result.data))
 
     def test_07_404_fake(self):

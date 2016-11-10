@@ -4,6 +4,76 @@ from app import api
 import unittest
 
 
+
+POST_ONE = {
+    u'boot-info': {
+        u'mac': u'52:54:00:ea:93:b7',
+        u'uuid': u'769ea7b-6192-433d-a775-b215d5fbd64f'},
+    u'lldp': {
+        u'data': {
+            u'interfaces': [
+                {
+                    u'chassis': {
+                        u'id': u'28:f1:0e:12:20:00',
+                        u'name': u'E7470'},
+                    u'port': {
+                        u'id': u'fe:54:00:ea:93:b7'}
+                }
+            ]
+        },
+        u'is_file': True},
+    u'interfaces': [
+        {
+            u'netmask': 8,
+            u'MAC': u'',
+            u'IPv4': u'127.0.0.1',
+            u'CIDRv4': u'127.0.0.1/8',
+            u'name': u'lo'},
+        {
+            u'netmask': 21,
+            u'MAC': u'52:54:00:ea:93:b7',
+            u'IPv4': u'172.20.0.65',
+            u'CIDRv4': u'172.20.0.65/21',
+            u'name': u'eth0'
+        }
+    ]
+}
+
+POST_TWO = {
+    u'boot-info': {
+        u'mac': u'52:54:00:ea:93:02',
+        u'uuid': u'769ea7b-6192-433d-a775-b215d5fbd64f'},
+    u'lldp': {
+        u'data': {
+            u'interfaces': [
+                {
+                    u'chassis': {
+                        u'id': u'28:f1:0e:12:20:00',
+                        u'name': u'E7470'},
+                    u'port': {
+                        u'id': u'fe:54:00:ea:93:02'}
+                }
+            ]
+        },
+        u'is_file': True},
+    u'interfaces': [
+        {
+            u'netmask': 8,
+            u'MAC': u'',
+            u'IPv4': u'127.0.0.1',
+            u'CIDRv4': u'127.0.0.1/8',
+            u'name': u'lo'},
+        {
+            u'netmask': 21,
+            u'MAC': u'52:54:00:ea:93:02',
+            u'IPv4': u'172.20.0.66',
+            u'CIDRv4': u'172.20.0.66/21',
+            u'name': u'eth0'
+        }
+    ]
+}
+
+
 class TestAPI(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -91,18 +161,18 @@ class TestAPI(unittest.TestCase):
                  "netmask": 24,
                  "MAC": "00:00:00:00:00",
                  "name": "eth0"}]}
-        result = self.app.post('/discovery', data=json.dumps(discovery_data),
+        result = self.app.post('/discovery', data=json.dumps(POST_ONE),
                                content_type='application/json')
         self.assertEqual(result.status_code, 200)
-        self.assertEqual(json.loads(result.data), {"interfaces": 1})
-        result = self.app.post('/discovery', data=json.dumps(discovery_data),
+        self.assertEqual(json.loads(result.data), {u'total_elt': 1, u'update': False})
+        result = self.app.post('/discovery', data=json.dumps(POST_TWO),
                                content_type='application/json')
         self.assertEqual(result.status_code, 200)
-        self.assertEqual(json.loads(result.data), {"interfaces": 2})
+        self.assertEqual(json.loads(result.data), {u'total_elt': 2, u'update': False})
 
     def test_discovery_01(self):
         discovery_data = "bad"
         result = self.app.post('/discovery', data=json.dumps(discovery_data),
                                content_type='application/json')
         self.assertEqual(result.status_code, 400)
-        self.assertEqual(result.data, "Bad Request")
+        self.assertEqual(json.loads(result.data), {u'boot-info': {}, u'interfaces': [], u'lldp': {}})
