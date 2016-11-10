@@ -3,7 +3,7 @@ package main
 type DiscoveryData struct {
 	Interfaces []Iface `json:"interfaces"`
 	BootInfo   BootInfo `json:"boot-info"`
-	LLDPInfo   LLDPInfo `json:"lldp"`
+	LLDPInfo   LLDPData `json:"lldp"`
 }
 
 func CollectData() DiscoveryData {

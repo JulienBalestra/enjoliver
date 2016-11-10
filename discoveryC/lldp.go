@@ -3,52 +3,55 @@ package main
 import (
 	"io/ioutil"
 	"log"
-	"strings"
+	"encoding/xml"
 )
 
-type LLDPInfo struct {
-	File     bool
-	Lines    int
-	Connects []string
+type LLDPData struct {
+	IsFile bool
+	Data XLLDP
 }
 
-func getLLDPPortIfname(b []byte) LLDPInfo {
-	var lldp LLDPInfo
-
-	// with []byte where is a file
-	lldp.File = true
-
-	str := string(b)
-	lines := strings.Split(str, "\n")
-	lldp.Lines = len(lines)
-	log.Printf("lldp.lines=%v", lldp.Lines)
-
-	if lldp.Lines < 2 {
-		log.Println("lldp.Lines < 2")
-		return lldp
-	}
-
-	for _, line := range lines {
-		if strings.Contains(line, "port.ifname=") == true {
-			log.Printf("port.ifname match: %s", line)
-			lldp.Connects = append(lldp.Connects, line)
-		}
-	}
-	log.Printf("lldp.connects=%v", len(lldp.Connects))
-	return lldp
+type XLLDP struct {
+	Interfaces []XInterface `xml:"interface"`
 }
 
-func ParseLLDPFile() LLDPInfo {
-	var lldp LLDPInfo
+type XInterface struct {
+	Port XPort `xml:"port"`
+	Chassis XChassis `xml:"chassis"`
+}
+
+type XPort struct {
+	Id string `xml:"id"`
+}
+
+type XChassis struct {
+	Id string `xml:"id"`
+	Name string `xml:"name"`
+}
+
+func extractXMLLinkLayerDiscovery(b []byte) XLLDP {
+	var l XLLDP
+
+	e := xml.Unmarshal(b, &l)
+	if e != nil {
+		log.Println(e)
+		return l
+	}
+	return l
+}
+
+func ParseLLDPFile() LLDPData {
+	var lldp LLDPData
 
 	b, err := ioutil.ReadFile(CONF.LLDPFile)
 
 	if err != nil {
 		// no file no LLDP
-		lldp.File = false
+		lldp.IsFile = false
 		log.Println(err)
 		return lldp
 	}
-	lldp = getLLDPPortIfname(b)
+	lldp.IsFile = true
+	lldp.Data = extractXMLLinkLayerDiscovery(b)
 	return lldp
 }

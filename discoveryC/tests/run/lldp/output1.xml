@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lldp label="LLDP neighbors">
+    <interface label="Interface" name="eth0" via="LLDP" rid="1" age="0 day, 00:00:14">
+        <chassis label="Chassis">
+            <id label="ChassisID" type="mac">28:f1:0e:12:20:00</id>
+            <name label="SysName">E7470</name>
+            <descr label="SysDescr">Debian GNU/Linux 8 (jessie) Linux 4.4.0-45-generic #66-Ubuntu SMP Wed Oct 19 14:12:37 UTC 2016 x86_64</descr>
+            <mgmt-ip label="MgmtIP">192.168.192.234</mgmt-ip>
+            <capability label="Capability" type="Bridge" enabled="on"/>
+            <capability label="Capability" type="Router" enabled="on"/>
+            <capability label="Capability" type="Wlan" enabled="on"/>
+            <capability label="Capability" type="Station" enabled="off"/>
+        </chassis>
+        <port label="Port">
+            <id label="PortID" type="mac">fe:54:00:fe:0f:fc</id>
+            <descr label="PortDescr">vnet0</descr>
+        </port>
+    </interface>
+</lldp>
