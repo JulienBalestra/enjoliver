@@ -13,11 +13,12 @@ type BootInfo struct {
 }
 
 func getCoreosConfigUrl(b []byte) (string, error) {
+	prefix := "coreos.config.url="
 	str := string(b)
 	fields := strings.Fields(str)
 	for _, word := range fields {
-		if strings.Contains(word, "coreos.config.url=") {
-			line := strings.Trim(word, "coreos.config.url=")
+		if strings.Contains(word, prefix) {
+			line := strings.Split(word, prefix)[1]
 			return line, nil
 		}
 	}
@@ -36,10 +37,10 @@ func getBootInfo(url string) (BootInfo, error) {
 	args := strings.Split(query[1], "&")
 	for _, arg := range args {
 		if strings.Contains(arg, uuid) {
-			bi.Uuid = strings.Trim(arg, uuid)
+			bi.Uuid = strings.Split(arg, uuid)[1]
 		}
 		if strings.Contains(arg, mac) {
-			bi.Mac = strings.Trim(arg, mac)
+			bi.Mac = strings.Split(arg, mac)[1]
 			bi.Mac = strings.Replace(bi.Mac, "-", ":", -1)
 		}
 	}
