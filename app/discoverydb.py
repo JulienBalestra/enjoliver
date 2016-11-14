@@ -1,8 +1,11 @@
+import os
+
+
 class Discovery(object):
     def __init__(self, new, cache_list):
         """
         :param new: Dict
-        :param cache_list: Werkzeug Cache
+        :param cache_list: Werkzeug Cache as list of dict like new
         """
 
         self.new = new
@@ -16,15 +19,19 @@ class Discovery(object):
 
     @staticmethod
     def _look_for_coherence(new):
+        # TODO -> logs
         try:
             mac = new["boot-info"]["mac"]
             interfaces = new["interfaces"]
             for i in interfaces:
                 if i["MAC"] == mac:
+                    os.write(2, "\r_look_for_coherence valid MAC spotted %s\n\r" % mac)
                     return mac
-        except (KeyError, TypeError):
+        except (KeyError, TypeError) as e:
+            os.write(2, "\r_look_for_coherence catch Exception: %s\n\r" % e.message)
             mac, interfaces = None, None
 
+        os.write(2, "\r_look_for_coherence ERROR with: %s\n\r" % new)
         raise LookupError("%s not found in interfaces list: %s" % (mac, interfaces))
 
     def _upsert(self):

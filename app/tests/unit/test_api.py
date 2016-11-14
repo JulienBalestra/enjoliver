@@ -174,5 +174,5 @@ class TestAPI(unittest.TestCase):
         discovery_data = "bad"
         result = self.app.post('/discovery', data=json.dumps(discovery_data),
                                content_type='application/json')
-        self.assertEqual(result.status_code, 400)
+        self.assertEqual(result.status_code, 406)
         self.assertEqual(json.loads(result.data), {u'boot-info': {}, u'interfaces': [], u'lldp': {}})

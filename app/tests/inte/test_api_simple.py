@@ -211,7 +211,6 @@ class TestAPI(unittest.TestCase):
 
     def test_06_discovery_400(self):
         result = self.app.post('/discovery', data="ok")
-        self.assertEqual(result.data, "Bad Request")
         self.assertEqual(result.status_code, 400)
 
     def test_06_discovery_interfaces(self):
@@ -264,9 +263,6 @@ class TestAPI(unittest.TestCase):
               u'CIDRv4': u'192.168.1.1/24',
               u'name': u'eth0'}]
             ]}
-        print "=================================="
-        print expect
-        print json.loads(result.data)
         self.assertEqual(expect, json.loads(result.data))
 
     def test_07_404_fake(self):
