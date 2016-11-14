@@ -20,6 +20,7 @@ class TestKVMDiscoveryScheduler(TestCase):
     p_bootcfg = Process
     p_dnsmasq = Process
     p_api = Process
+    p_lldp = Process
     gen = generator.Generator
 
     basic_path = "%s" % os.path.dirname(os.path.abspath(__file__))
@@ -72,12 +73,16 @@ class TestKVMDiscoveryScheduler(TestCase):
             "--local-config=%s" % TestKVMDiscoveryScheduler.tests_path,
             "--mount",
             "volume=config,target=/etc/dnsmasq.conf",
+            "--mount",
+            "volume=resolv,target=/etc/resolv.conf",
             "run",
             "quay.io/coreos/dnsmasq:v0.3.0",
             "--insecure-options=all",
             "--net=host",
             "--interactive",
             "--uuid-file-save=/tmp/dnsmasq.uuid",
+            "--volume",
+            "resolv,kind=host,source=/etc/resolv.conf",
             "--volume",
             "config,kind=host,source=%s/dnsmasq-rack0.conf" % TestKVMDiscoveryScheduler.tests_path
         ]
@@ -86,6 +91,40 @@ class TestKVMDiscoveryScheduler(TestCase):
         sys.stdout.flush()
         os.execv(cmd[0], cmd)
         os._exit(2)
+
+    @staticmethod
+    def fetch_lldpd():
+        cmd = [
+            "%s/rkt_dir/rkt" % TestKVMDiscoveryScheduler.tests_path,
+            # "--debug",
+            "--dir=%s/rkt_dir/data" % TestKVMDiscoveryScheduler.tests_path,
+            "--local-config=%s" % TestKVMDiscoveryScheduler.tests_path,
+            "fetch",
+            "--insecure-options=all",
+            "%s/lldp/serve/static-aci-lldp-0.aci" % TestKVMDiscoveryScheduler.assets_path]
+        assert subprocess.call(cmd) == 0
+
+    @staticmethod
+    def process_target_lldpd():
+        cmd = [
+            "%s/rkt_dir/rkt" % TestKVMDiscoveryScheduler.tests_path,
+            # "--debug",
+            "--dir=%s/rkt_dir/data" % TestKVMDiscoveryScheduler.tests_path,
+            "--local-config=%s" % TestKVMDiscoveryScheduler.tests_path,
+            "run",
+            "static-aci-lldp",
+            "--insecure-options=all",
+            "--net=host",
+            "--interactive",
+            "--exec",
+            "/usr/sbin/lldpd",
+            "--",
+            "-dd"]
+        os.write(1, "PID  -> %s\n"
+                    "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
+        sys.stdout.flush()
+        os.execv(cmd[0], cmd)
+        os._exit(2)  # Should not happen
 
     @staticmethod
     def process_target_create_rack0():
@@ -109,21 +148,6 @@ class TestKVMDiscoveryScheduler(TestCase):
 
     @staticmethod
     def dns_masq_running():
-        """
-        net.d/10-rack0.conf
-        {
-            "name": "rack0",
-            "type": "bridge",
-            "bridge": "rack0",
-            "isGateway": true,
-            "ipMasq": true,
-            "ipam": {
-                "type": "host-local",
-                "subnet": "172.20.0.0/21",
-                "routes" : [ { "dst" : "0.0.0.0/0" } ]
-            }
-        }
-        """
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         result = 1
         for i in xrange(120):
@@ -190,6 +214,10 @@ class TestKVMDiscoveryScheduler(TestCase):
         cls.p_api.start()
         assert cls.p_api.is_alive() is True
 
+        cls.p_lldp = Process(target=TestKVMDiscoveryScheduler.process_target_lldpd)
+        cls.p_lldp.start()
+        assert cls.p_lldp.is_alive() is True
+
         cls.dev_null = open("/dev/null", "w")
 
     @classmethod
@@ -202,6 +230,8 @@ class TestKVMDiscoveryScheduler(TestCase):
         cls.p_dnsmasq.join(timeout=5)
         cls.p_api.terminate()
         cls.p_api.join(timeout=5)
+        cls.p_lldp.terminate()
+        cls.p_lldp.join(timeout=5)
         # cls.clean_sandbox()
         subprocess.call([
             "%s/rkt_dir/rkt" % TestKVMDiscoveryScheduler.tests_path,
@@ -226,6 +256,7 @@ class TestKVMDiscoveryScheduler(TestCase):
         self.assertTrue(self.p_bootcfg.is_alive())
         self.assertTrue(self.p_dnsmasq.is_alive())
         self.assertTrue(self.p_api.is_alive())
+        self.assertTrue(self.p_lldp.is_alive())
 
         self.clean_sandbox()
         for i in xrange(10):
@@ -249,6 +280,14 @@ class TestKVMDiscoveryScheduler(TestCase):
         self.assertEqual(request.code, 200)
         interfaces = json.loads(response_body)
         return interfaces
+
+    def fetch_discovery(self):
+        request = urllib2.urlopen("%s/discovery" % self.api_endpoint)
+        response_body = request.read()
+        request.close()
+        self.assertEqual(request.code, 200)
+        disco_data = json.loads(response_body)
+        return disco_data
 
 
 # @unittest.skip("skip")
@@ -281,7 +320,7 @@ class TestKVMDiscoveryScheduler0(TestKVMDiscoveryScheduler):
                     "--name",
                     "%s" % machine_marker,
                     "--network=bridge:rack0,model=virtio",
-                    "--memory=1024",
+                    "--memory=2048",
                     "--vcpus=1",
                     "--pxe",
                     "--disk",
@@ -292,8 +331,9 @@ class TestKVMDiscoveryScheduler0(TestKVMDiscoveryScheduler):
                     "--boot=network"
                 ]
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
-                time.sleep(3)  # KVM fail to associate nic
+                time.sleep(4)  # KVM fail to associate nic
 
+            time.sleep(10)
             sch = scheduler.EtcdMemberScheduler(
                 api_endpoint=self.api_endpoint,
                 bootcfg_path=self.test_bootcfg_path,
@@ -305,13 +345,9 @@ class TestKVMDiscoveryScheduler0(TestKVMDiscoveryScheduler):
             for i in xrange(30):
                 if sch.apply() is True:
                     break
-                time.sleep(2)
+                time.sleep(6)
 
             self.assertTrue(sch.apply())
-
-            interfaces = self.fetch_discovery_interfaces()
-
-            # time.sleep(600)
 
             for i in xrange(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
@@ -326,18 +362,11 @@ class TestKVMDiscoveryScheduler0(TestKVMDiscoveryScheduler):
                 self.virsh(start), os.write(1, "\r")
                 time.sleep(3)
 
-            ips_collected = []
-
-            for machine in interfaces["interfaces"]:
-                for i in machine:
-                    if i["name"] == "eth0":
-                        ips_collected.append(i["IPv4"])
-
-            os.write(2, "\rIPs collected: %s\n\r" % ips_collected)
+            ips = sch.members_ip
 
             one_etcd = False
             for i in xrange(30):
-                for ip in ips_collected:
+                for ip in ips:
                     try:
                         endpoint = "http://%s:2379/health" % ip
                         request = urllib2.urlopen(endpoint)
@@ -373,7 +402,6 @@ class TestKVMDiscoveryScheduler0(TestKVMDiscoveryScheduler):
 @unittest.skipIf(os.geteuid() != 0,
                  "TestKVMDiscovery need privilege")
 class TestKVMDiscoveryScheduler1(TestKVMDiscoveryScheduler):
-    # @unittest.skip("just skip")
     def test_01(self):
         self.assertIsNone(self.fetch_discovery_interfaces()["interfaces"])
         nb_node = 3
@@ -399,7 +427,7 @@ class TestKVMDiscoveryScheduler1(TestKVMDiscoveryScheduler):
                     "--name",
                     "%s" % machine_marker,
                     "--network=bridge:rack0,model=virtio",
-                    "--memory=1024",
+                    "--memory=2048",
                     "--vcpus=1",
                     "--pxe",
                     "--disk",
@@ -410,27 +438,23 @@ class TestKVMDiscoveryScheduler1(TestKVMDiscoveryScheduler):
                     "--boot=network"
                 ]
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
-                time.sleep(3)  # KVM fail to associate nic
+                time.sleep(4)  # KVM fail to associate nic
 
+            time.sleep(10)
             sch = scheduler.EtcdMemberScheduler(
                 api_endpoint=self.api_endpoint,
                 bootcfg_path=self.test_bootcfg_path,
                 ignition_member="%s-emember" % marker,
                 bootcfg_prefix="%s-" % marker
             )
-            # sch.etcd_members_nb = 3 # This is by default
 
             for i in xrange(30):
                 if sch.apply() is True:
                     break
-                time.sleep(2)
+                time.sleep(6)
 
             self.assertTrue(sch.apply())
 
-            os.write(2, "\r")
-            interfaces = self.fetch_discovery_interfaces()
-
-            # time.sleep(600)
             os.write(2, "\r-> start reboot nodes\n\r")
 
             for i in xrange(nb_node):
@@ -448,18 +472,11 @@ class TestKVMDiscoveryScheduler1(TestKVMDiscoveryScheduler):
 
             os.write(2, "\r-> start reboot asked\n\r")
 
-            ips_collected = []
-
-            for machine in interfaces["interfaces"]:
-                for i in machine:
-                    if i["name"] == "eth0":
-                        ips_collected.append(i["IPv4"])
-
-            os.write(2, "\rIPs collected: %s\n\r" % ips_collected)
+            ips = sch.members_ip
 
             etcd = 0
             for i in xrange(30):
-                for ip in ips_collected:
+                for ip in ips:
                     try:
                         endpoint = "http://%s:2379/health" % ip
                         request = urllib2.urlopen(endpoint)
@@ -468,6 +485,8 @@ class TestKVMDiscoveryScheduler1(TestKVMDiscoveryScheduler):
                         if response_body == {u'health': u'true'}:
                             etcd += 1
                             os.write(2, "\r%s %s\n\r" % (endpoint, response_body))
+                            if etcd == nb_node:
+                                break
 
                     except urllib2.URLError:
                         pass
@@ -476,9 +495,7 @@ class TestKVMDiscoveryScheduler1(TestKVMDiscoveryScheduler):
                     break
 
                 time.sleep(2)
-
-            # time.sleep(1000)
-            self.assertTrue(etcd)
+            self.assertTrue(etcd == nb_node)
 
         finally:
             for i in xrange(nb_node):
@@ -519,7 +536,7 @@ class TestKVMDiscoveryScheduler2(TestKVMDiscoveryScheduler):
                     "--name",
                     "%s" % machine_marker,
                     "--network=bridge:rack0,model=virtio",
-                    "--memory=1024",
+                    "--memory=2048",
                     "--vcpus=1",
                     "--pxe",
                     "--disk",
@@ -532,79 +549,48 @@ class TestKVMDiscoveryScheduler2(TestKVMDiscoveryScheduler):
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
                 time.sleep(3)  # KVM fail to associate nic
 
-            # time.sleep(600)
-
             sch = scheduler.EtcdMemberScheduler(
                 api_endpoint=self.api_endpoint,
                 bootcfg_path=self.test_bootcfg_path,
                 ignition_member="%s-emember" % marker,
                 bootcfg_prefix="%s-" % marker
             )
-            # sch.etcd_members_nb = 3 # This is by default
 
+            time.sleep(10)
             for i in xrange(30):
                 if sch.apply() is True:
                     break
-                time.sleep(2)
+                time.sleep(6)
 
             self.assertTrue(sch.apply())
 
-            os.write(2, "\r")
-            interfaces = self.fetch_discovery_interfaces()
-
-            # time.sleep(600)
             os.write(2, "\r-> start reboot nodes\n\r")
 
             for i in xrange(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 reset = ["virsh", "reset", "%s" % machine_marker]
                 self.virsh(reset), os.write(1, "\r")
-
-            time.sleep(1)
-
-            for i in xrange(nb_node):
-                machine_marker = "%s-%d" % (marker, i)
+                time.sleep(2)
                 start = ["virsh", "start", "%s" % machine_marker]
                 self.virsh(start), os.write(1, "\r")
-                time.sleep(3)
+                time.sleep(2)
 
             os.write(2, "\r-> start reboot asked\n\r")
 
-            ips_collected = []
+            ips_collected = sch.members_ip
 
-            for machine in interfaces["interfaces"]:
-                for i in machine:
-                    if i["name"] == "eth0":
-                        ips_collected.append(i["IPv4"])
-
-            os.write(2, "\rIPs collected: %s\n\r" % ips_collected)
-
-            # time.sleep(6000)
-
-            etcd_ok = 0
             for i in xrange(30):
-                if etcd_ok == nb_node:
-                    break
-
-                for ip in ips_collected:
-                    if etcd_ok == nb_node:
+                try:
+                    endpoint = "http://%s:2379/v2/members" % ips_collected[0]
+                    request = urllib2.urlopen(endpoint)
+                    response_body = json.loads(request.read())
+                    request.close()
+                    if len(response_body["members"]) == nb_node:
                         break
+                except urllib2.URLError:
+                    pass
 
-                    try:
-                        endpoint = "http://%s:2379/health" % ip
-                        request = urllib2.urlopen(endpoint)
-                        response_body = json.loads(request.read())
-                        request.close()
-                        if response_body == {u'health': u'true'}:
-                            etcd_ok += 1
-                            os.write(2, "\r%s %s\n\r" % (endpoint, response_body))
-
-                    except urllib2.URLError:
-                        pass
-
-                time.sleep(2)
-
-            self.assertEqual(etcd_ok, nb_node)
+                time.sleep(6)
 
             endpoint = "http://%s:2379/v2/members" % ips_collected[0]
             request = urllib2.urlopen(endpoint)
