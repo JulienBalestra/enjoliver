@@ -27,43 +27,46 @@ class EtcdMemberScheduler(object):
         self.etcd_initial_cluster = []
 
     @staticmethod
-    def fetch_interfaces(api_endpoint):
+    def get_machine_boot_ip_mac(discovery):
+        mac = discovery["boot-info"]["mac"]
+        ipv4 = None
+        for i in discovery["interfaces"]:
+            if i["MAC"] == mac:
+                ipv4 = i["IPv4"]
+        if ipv4 is None:
+            raise LookupError("%s Lookup failed in %s" % (mac, discovery))
+        return ipv4, mac
+
+    @staticmethod
+    def fetch_discovery(api_endpoint):
         os.write(2, "\r-> fetch %s\n\r" % api_endpoint)
-        content = urllib2.urlopen("%s/discovery/interfaces" % api_endpoint)
+        content = urllib2.urlopen("%s/discovery" % api_endpoint)
         response_body = content.read()
         content.close()
         interfaces = json.loads(response_body)
         os.write(2, "\r-> fetch done\n\r")
         return interfaces
 
-    def _fifo_members(self, interfaces):
+    def _fifo_members_simple(self, discovery):
 
-        if interfaces["interfaces"] is None:
+        if not discovery or len(discovery) == 0:
             os.write(2, "\r-> no machine 0/%d\n\r" % self.etcd_members_nb)
             return self._pending_etcd_member
 
-        elif len(interfaces["interfaces"]) < self.etcd_members_nb:
+        elif len(discovery) < self.etcd_members_nb:
             os.write(2, "\r-> not enough machines %d/%d\n\r" % (
-                len(interfaces["interfaces"]), self.etcd_members_nb))
+                len(discovery), self.etcd_members_nb))
             return self._pending_etcd_member
 
         else:
-            for machine in interfaces["interfaces"]:
-                # each machine with 2 interfaces [lo, eth0]
-                if len(machine) > 2:
-                    # Scheduler is stupid
-                    raise AttributeError("too much interfaces, which one choose ?")
-                for nic in machine:
-                    if nic["name"] == "lo":
-                        continue
-                    elif len(self._pending_etcd_member) < self.etcd_members_nb:
-                        self._pending_etcd_member.add((nic["IPv4"], nic["MAC"]))
-                    else:
-                        os.write(2, "\r-> enough machines %d/%d\n\r" % (
-                            len(interfaces["interfaces"]), self.etcd_members_nb))
-                        return self._pending_etcd_member
+            for machine in discovery:
+                ip_mac = self.get_machine_boot_ip_mac(machine)
+                if len(self._pending_etcd_member) < self.etcd_members_nb:
+                    self._pending_etcd_member.add(ip_mac)
+                else:
+                    break
 
-        os.write(2, "\r-> enough machines %d/%d\n\r" % (len(interfaces["interfaces"]), self.etcd_members_nb))
+        os.write(2, "\r-> enough machines %d/%d\n\r" % (len(discovery), self.etcd_members_nb))
         return self._pending_etcd_member
 
     def _apply_member(self):
@@ -99,11 +102,15 @@ class EtcdMemberScheduler(object):
             os.write(2, "\r-> %s.%s selector {mac: %s}\n\r" % (
                 self.__name__, self._apply_member.__name__, nic))
 
+    @property
+    def members_ip(self):
+        return [k[0] for k in self._done_etcd_member]
+
     def apply(self):
         # Etcd Members
         if len(self._done_etcd_member) < self.etcd_members_nb:
-            interfaces = self.fetch_interfaces(self.api_endpoint)
-            self._fifo_members(interfaces)
+            discovery = self.fetch_discovery(self.api_endpoint)
+            self._fifo_members_simple(discovery)
             if len(self._pending_etcd_member) == self.etcd_members_nb:
                 self._apply_member()
 

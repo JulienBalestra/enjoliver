@@ -1,6 +1,26 @@
 ---
 systemd:
   units:
+    - name: lldpd.service
+      enable: true
+      contents: |
+        [Unit]
+        Requires=network-online.target
+        After=network-online.target
+        [Service]
+        Environment=LLDP_VOLUME=/run/lldp
+        ExecStartPre=/bin/mkdir -pv ${LLDP_VOLUME}
+        ExecStartPre=/usr/bin/rkt fetch --insecure-options=all \
+          http://172.20.0.1:8080/assets/lldp/serve/static-aci-lldp-0.aci
+
+        ExecStart=/usr/bin/rkt run --mount volume=socket,target=/var/run \
+          --net=host \
+          static-aci-lldp \
+          --volume socket,kind=host,source=${LLDP_VOLUME} \
+          --exec /usr/sbin/lldpd -- -ddd
+        [Install]
+        WantedBy=multi-user.target
+
     - name: download-discoveryC.service
       enable: true
       contents: |
@@ -17,15 +37,23 @@ systemd:
         RemainAfterExit=yes
         [Install]
         WantedBy=multi-user.target
+
     - name: discoveryC.service
       enable: true
       contents: |
         [Unit]
         Requires=download-discoveryC.service
-        After=download-discoveryC.service
+        After=download-discoveryC.service lldpd.service
         [Service]
         Type=oneshot
+        Environment=LLDP_VOLUME=/run/lldp
+        Environment=LLDP_FILE=/run/lldp/lldp.xml
         Environment=DISCOVERY_ADDRESS=http://172.20.0.1:5000/discovery
+        ExecStartPre=-/usr/bin/rkt run --mount volume=socket,target=/var/run \
+           --net=host \
+           static-aci-lldp \
+           --volume socket,kind=host,source=${LLDP_VOLUME} \
+           --exec opt/bin/lldp-export
         ExecStart=/opt/bin/discoveryC
         [Install]
         WantedBy=multi-user.target

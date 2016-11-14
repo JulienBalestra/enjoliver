@@ -1,70 +1,6 @@
 ---
 systemd:
   units:
-    - name: download-setup-network-environment.service
-      enable: true
-      contents: |
-        [Unit]
-        Requires=network-online.target
-        After=network-online.target
-        [Service]
-        Type=oneshot
-        EnvironmentFile=/etc/metadata-endpoints.env
-        Environment=OPT_BIN=/opt/bin
-        Environment=BINARY=setup-network-environment
-        ExecStartPre=/bin/mkdir -pv ${OPT_BIN}
-        ExecStart=/usr/bin/curl -f \
-          ${BOOTCFG_URI}/assets/setup-network-environment/serve/${BINARY} \
-          -o ${OPT_BIN}/${BINARY}
-        ExecStartPost=/usr/bin/chmod +x ${OPT_BIN}/${BINARY}
-        RemainAfterExit=yes
-        [Install]
-        WantedBy=multi-user.target
-
-    - name: setup-network-environment.service
-      enable: true
-      contents: |
-        [Unit]
-        Requires=download-setup-network-environment.service
-        After=download-setup-network-environment.service
-        [Service]
-        Type=oneshot
-        ExecStartPre=/bin/ls -l /opt/bin/setup-network-environment
-        ExecStart=/opt/bin/setup-network-environment
-        [Install]
-        WantedBy=multi-user.target
-
-    - name: download-discoveryC.service
-      enable: true
-      contents: |
-        [Unit]
-        Requires=network-online.target
-        After=network-online.target
-        [Service]
-        Type=oneshot
-        EnvironmentFile=/etc/metadata-endpoints.env
-        Environment=OPT_BIN=/opt/bin
-        ExecStartPre=/bin/mkdir -pv ${OPT_BIN}
-        ExecStart=/usr/bin/curl -f ${BOOTCFG_URI}/assets/discoveryC/serve/discoveryC \
-          -o ${OPT_BIN}/discoveryC
-        ExecStartPost=/usr/bin/chmod +x ${OPT_BIN}/discoveryC
-        RemainAfterExit=yes
-        [Install]
-        WantedBy=multi-user.target
-
-    - name: discoveryC.service
-      enable: true
-      contents: |
-        [Unit]
-        Requires=download-discoveryC.service
-        After=download-discoveryC.service
-        [Service]
-        Type=oneshot
-        EnvironmentFile=/etc/metadata-endpoints.env
-        ExecStart=/opt/bin/discoveryC
-        [Install]
-        WantedBy=multi-user.target
-
     - name: metadata.service
       enable: true
       contents: |
@@ -74,7 +10,7 @@ systemd:
         [Service]
         Type=oneshot
         EnvironmentFile=/etc/metadata-endpoints.env
-        Environment=METADATA=/run/metadata.env
+        Environment=METADATA=/etc/metadata.env
         ExecStart=/usr/bin/curl ${BOOTCFG_URI}/metadata?${REQUEST_RAW_QUERY} -o $METADATA
         RemainAfterExit=yes
         [Install]
@@ -89,11 +25,9 @@ systemd:
             Requires=metadata.service
             After=metadata.service
             [Service]
-            EnvironmentFile=/run/metadata.env
+            EnvironmentFile=/etc/metadata.env
             Environment=ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379,http://0.0.0.0:4001
             Environment=ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380,http://0.0.0.0:7001
-
-
 
 storage:
   files:
