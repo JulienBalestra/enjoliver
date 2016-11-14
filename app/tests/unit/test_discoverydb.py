@@ -144,6 +144,5 @@ class TestDiscovery(unittest.TestCase):
                  u'name': u'eth0'}
             ]
         }
-        one = discoverydb.Discovery(o, None)
-        cache = one.refresh_cache()
-        self.assertEqual(cache, [o])
+        with self.assertRaises(LookupError):
+            discoverydb.Discovery(o, None)
