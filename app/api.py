@@ -71,13 +71,18 @@ def discovery():
             r = json.loads(request.data)
         except ValueError:
             app.logger.error("ValueError for %s" % request.data)
-            return "Bad Request", 400
+            return jsonify(
+                {
+                    u'boot-info': {},
+                    u'lldp': {},
+                    u'interfaces': []
+                }), 400
     else:
         r = request.get_json()
 
     app.logger.debug("application/json \"%s\"" % r)
 
-    # print r
+    print r
 
     discovery_key = "discovery"
     discovery_data = cache.get_dict(discovery_key)[discovery_key]
@@ -89,13 +94,22 @@ def discovery():
         return jsonify(
             {"total_elt": len(discovery_data),
              "update": disco.is_update})
+
     except LookupError:
         return jsonify(
             {
                 u'boot-info': {},
                 u'lldp': {},
                 u'interfaces': []
-            }), 400
+            }), 406
+
+
+@application.route('/discovery', methods=['GET'])
+def discovery_get():
+    discovery_key = "discovery"
+    discovery_data = cache.get_dict(discovery_key)[discovery_key]
+
+    return jsonify(discovery_data)
 
 
 @application.route('/discovery/interfaces', methods=['GET'])

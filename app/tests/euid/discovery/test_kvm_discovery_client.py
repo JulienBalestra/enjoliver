@@ -19,6 +19,7 @@ class TestKVMDiscoveryClient(TestCase):
     p_bootcfg = Process
     p_dnsmasq = Process
     p_api = Process
+    p_lldpd = Process
     gen = generator.Generator
 
     basic_path = "%s" % os.path.dirname(os.path.abspath(__file__))
@@ -60,6 +61,7 @@ class TestKVMDiscoveryClient(TestCase):
     @staticmethod
     def process_target_api():
         api.cache.clear()
+        api.app.logger.setLevel("DEBUG")
         api.app.run(host=TestKVMDiscoveryClient.api_host, port=TestKVMDiscoveryClient.api_port)
 
     @staticmethod
@@ -71,12 +73,16 @@ class TestKVMDiscoveryClient(TestCase):
             "--local-config=%s" % TestKVMDiscoveryClient.tests_path,
             "--mount",
             "volume=config,target=/etc/dnsmasq.conf",
+            "--mount",
+            "volume=resolv,target=/etc/resolv.conf",
             "run",
             "quay.io/coreos/dnsmasq:v0.3.0",
             "--insecure-options=all",
             "--net=host",
             "--interactive",
             "--uuid-file-save=/tmp/dnsmasq.uuid",
+            "--volume",
+            "resolv,kind=host,source=/etc/resolv.conf",
             "--volume",
             "config,kind=host,source=%s/dnsmasq-rack0.conf" % TestKVMDiscoveryClient.tests_path
         ]
@@ -107,22 +113,41 @@ class TestKVMDiscoveryClient(TestCase):
         os._exit(2)  # Should not happen
 
     @staticmethod
+    def fetch_lldpd():
+        cmd = [
+            "%s/rkt_dir/rkt" % TestKVMDiscoveryClient.tests_path,
+            # "--debug",
+            "--dir=%s/rkt_dir/data" % TestKVMDiscoveryClient.tests_path,
+            "--local-config=%s" % TestKVMDiscoveryClient.tests_path,
+            "fetch",
+            "--insecure-options=all",
+            "%s/lldp/serve/static-aci-lldp-0.aci" % TestKVMDiscoveryClient.assets_path]
+        assert subprocess.call(cmd) == 0
+
+    @staticmethod
+    def process_target_lldpd():
+        cmd = [
+            "%s/rkt_dir/rkt" % TestKVMDiscoveryClient.tests_path,
+            # "--debug",
+            "--dir=%s/rkt_dir/data" % TestKVMDiscoveryClient.tests_path,
+            "--local-config=%s" % TestKVMDiscoveryClient.tests_path,
+            "run",
+            "static-aci-lldp",
+            "--insecure-options=all",
+            "--net=host",
+            "--interactive",
+            "--exec",
+            "/usr/sbin/lldpd",
+            "--",
+            "-dd"]
+        os.write(1, "PID  -> %s\n"
+                    "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
+        sys.stdout.flush()
+        os.execv(cmd[0], cmd)
+        os._exit(2)  # Should not happen
+
+    @staticmethod
     def dns_masq_running():
-        """
-        net.d/10-rack0.conf
-        {
-            "name": "rack0",
-            "type": "bridge",
-            "bridge": "rack0",
-            "isGateway": true,
-            "ipMasq": true,
-            "ipam": {
-                "type": "host-local",
-                "subnet": "172.20.0.0/21",
-                "routes" : [ { "dst" : "0.0.0.0/0" } ]
-            }
-        }
-        """
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         result = 1
         for i in xrange(120):
@@ -189,19 +214,28 @@ class TestKVMDiscoveryClient(TestCase):
         cls.p_api.start()
         assert cls.p_api.is_alive() is True
 
+        cls.fetch_lldpd()
+        cls.p_lldpd = Process(target=TestKVMDiscoveryClient.process_target_lldpd)
+        cls.p_lldpd.start()
+        assert cls.p_lldpd.is_alive() is True
+
         cls.dev_null = open("/dev/null", "w")
 
     @classmethod
     def tearDownClass(cls):
-        os.write(1, "\n\rTERM -> %d\n\r" % cls.p_bootcfg.pid)
-        sys.stdout.flush()
         cls.p_bootcfg.terminate()
         cls.p_bootcfg.join(timeout=5)
         cls.p_dnsmasq.terminate()
         cls.p_dnsmasq.join(timeout=5)
         cls.p_api.terminate()
         cls.p_api.join(timeout=5)
+
+        cls.p_lldpd.terminate()
+        cls.p_lldpd.join(timeout=5)
+
+        # subprocess.call(["pkill", "lldp"])
         # cls.clean_sandbox()
+
         subprocess.call([
             "%s/rkt_dir/rkt" % TestKVMDiscoveryClient.tests_path,
             "--debug",
@@ -224,7 +258,8 @@ class TestKVMDiscoveryClient(TestCase):
     def setUp(self):
         self.assertTrue(self.p_bootcfg.is_alive())
         self.assertTrue(self.p_dnsmasq.is_alive())
-        api.cache.clear()
+        self.assertTrue(self.p_api.is_alive())
+        self.assertTrue(self.p_lldpd.is_alive())
         self.clean_sandbox()
 
     def virsh(self, cmd, assertion=False, v=None):
@@ -236,8 +271,8 @@ class TestKVMDiscoveryClient(TestCase):
             raise RuntimeError("\"%s\"" % " ".join(cmd))
 
 
-class TestKVMDiscoveryClientOne(TestKVMDiscoveryClient):
-    # @unittest.skip("just skip")
+# @unittest.skip("just skip")
+class TestKVMDiscoveryClient00(TestKVMDiscoveryClient):
     def test_00(self):
         marker = "euid-%s-%s" % (TestKVMDiscoveryClient.__name__.lower(), self.test_00.__name__)
         os.environ["BOOTCFG_IP"] = "172.20.0.1"
@@ -270,9 +305,10 @@ class TestKVMDiscoveryClientOne(TestKVMDiscoveryClient):
             ]
             self.virsh(virt_install, assertion=True, v=self.dev_null)
 
-            for ifaces in xrange(100):
+            for i in xrange(60):
                 os.write(2, "\r")
                 request = urllib2.urlopen("%s/discovery/interfaces" % self.api_endpoint)
+                os.write(2, "\r")
                 response_body = request.read()
                 request.close()
                 self.assertEqual(request.code, 200)
@@ -281,46 +317,30 @@ class TestKVMDiscoveryClientOne(TestKVMDiscoveryClient):
                     break
                 time.sleep(3)
 
+            # Just one machine
+            self.assertEqual(len(interfaces["interfaces"]), 1)
+
+            for machine in interfaces["interfaces"]:
+                # one machine with 2 interfaces [lo, eth0]
+                for ifaces in machine:
+                    if ifaces["name"] == "lo":
+                        self.assertEqual(ifaces["netmask"], 8)
+                        self.assertEqual(ifaces["IPv4"], '127.0.0.1')
+                        self.assertEqual(ifaces["MAC"], '')
+                        self.assertEqual(ifaces["CIDRv4"], '127.0.0.1/8')
+                    else:
+                        self.assertEqual(ifaces["name"], "eth0")
+                        self.assertEqual(ifaces["netmask"], 21)
+                        self.assertEqual(ifaces["IPv4"][:9], '172.20.0.')
+                        self.assertEqual(len(ifaces["MAC"]), 17)
+
         finally:
             self.virsh(destroy), os.write(1, "\r")
             self.virsh(undefine), os.write(1, "\r")
-        """
-        {u'interfaces': [
-            [
-                {u'MAC': u'',
-                 u'netmask': 8,
-                 u'IPv4': u'127.0.0.1',
-                 u'CIDRv4': u'127.0.0.1/8',
-                 u'name': u'lo'},
-
-                {u'MAC': u'52:54:00:76:bf:eb',
-                 u'netmask': 21,
-                 u'IPv4': u'172.20.0.53',
-                 u'CIDRv4': u'172.20.0.53/21',
-                 u'name': u'eth0'}
-            ]
-        ]}
-        """
-        # Just one machine
-        self.assertEqual(len(interfaces["interfaces"]), 1)
-
-        for machine in interfaces["interfaces"]:
-            # one machine with 2 interfaces [lo, eth0]
-            for ifaces in machine:
-                if ifaces["name"] == "lo":
-                    self.assertEqual(ifaces["netmask"], 8)
-                    self.assertEqual(ifaces["IPv4"], '127.0.0.1')
-                    self.assertEqual(ifaces["MAC"], '')
-                    self.assertEqual(ifaces["CIDRv4"], '127.0.0.1/8')
-                else:
-                    self.assertEqual(ifaces["name"], "eth0")
-                    self.assertEqual(ifaces["netmask"], 21)
-                    self.assertEqual(ifaces["IPv4"][:9], '172.20.0.')
-                    self.assertEqual(len(ifaces["MAC"]), 17)
 
 
-class TestKVMDiscoveryClientTwo(TestKVMDiscoveryClient):
-    # @unittest.skip("just skip")
+# @unittest.skip("just skip")
+class TestKVMDiscoveryClient01(TestKVMDiscoveryClient):
     def test_01(self):
         nb_node = 3
         marker = "euid-%s-%s" % (TestKVMDiscoveryClient.__name__.lower(), self.test_01.__name__)
@@ -358,7 +378,7 @@ class TestKVMDiscoveryClientTwo(TestKVMDiscoveryClient):
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
                 time.sleep(3)  # KVM fail to associate nic
 
-            for ifaces in xrange(100):
+            for i in xrange(60):
                 os.write(2, "\r")
                 request = urllib2.urlopen("%s/discovery/interfaces" % self.api_endpoint)
                 response_body = request.read()
@@ -370,6 +390,23 @@ class TestKVMDiscoveryClientTwo(TestKVMDiscoveryClient):
                     break
                 time.sleep(3)
 
+            # Several machines
+            self.assertEqual(len(interfaces["interfaces"]), nb_node)
+
+            for machine in interfaces["interfaces"]:
+                # each machine with 2 interfaces [lo, eth0]
+                for ifaces in machine:
+                    if ifaces["name"] == "lo":
+                        self.assertEqual(ifaces["netmask"], 8)
+                        self.assertEqual(ifaces["IPv4"], '127.0.0.1')
+                        self.assertEqual(ifaces["MAC"], '')
+                        self.assertEqual(ifaces["CIDRv4"], '127.0.0.1/8')
+                    else:
+                        self.assertEqual(ifaces["name"], "eth0")
+                        self.assertEqual(ifaces["netmask"], 21)
+                        self.assertEqual(ifaces["IPv4"][:9], '172.20.0.')
+                        self.assertEqual(len(ifaces["MAC"]), 17)
+
         finally:
             for i in xrange(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
@@ -377,64 +414,179 @@ class TestKVMDiscoveryClientTwo(TestKVMDiscoveryClient):
                                     ["virsh", "undefine", "%s" % machine_marker]
                 self.virsh(destroy), os.write(1, "\r")
                 self.virsh(undefine), os.write(1, "\r")
-            """
-            {u'interfaces': [
-                [
-                    {u'MAC': u'',
-                     u'netmask': 8,
-                     u'IPv4': u'127.0.0.1',
-                     u'CIDRv4': u'127.0.0.1/8',
-                     u'name': u'lo'},
 
-                    {u'MAC': u'52:54:00:ae:b7:a8',
-                     u'netmask': 21,
-                     u'IPv4': u'172.20.0.60',
-                     u'CIDRv4': u'172.20.0.60/21',
-                     u'name': u'eth0'}
-                ],
-                [
-                    {u'MAC': u'',
-                     u'netmask': 8,
-                     u'IPv4': u'127.0.0.1',
-                     u'CIDRv4': u'127.0.0.1/8',
-                     u'name': u'lo'},
 
-                    {u'MAC': u'52:54:00:de:a5:52',
-                     u'netmask': 21,
-                     u'IPv4': u'172.20.0.66',
-                     u'CIDRv4': u'172.20.0.66/21',
-                     u'name': u'eth0'}
-                ],
-                [
-                    {u'MAC': u'', u'netmask': 8,
-                     u'IPv4': u'127.0.0.1',
-                     u'CIDRv4': u'127.0.0.1/8',
-                     u'name': u'lo'},
+# @unittest.skip("just skip")
+class TestKVMDiscoveryClient02(TestKVMDiscoveryClient):
+    def test_02(self):
+        marker = "euid-%s-%s" % (TestKVMDiscoveryClient.__name__.lower(), self.test_02.__name__)
+        os.environ["BOOTCFG_IP"] = "172.20.0.1"
+        os.environ["API_IP"] = "172.20.0.1"
+        gen = generator.Generator(
+            profile_id="%s" % marker,
+            name="%s" % marker,
+            ignition_id="%s.yaml" % marker,
+            bootcfg_path=self.test_bootcfg_path
+        )
+        gen.dumps()
 
-                    {u'MAC': u'52:54:00:85:26:20',
-                     u'netmask': 21,
-                     u'IPv4': u'172.20.0.61',
-                     u'CIDRv4': u'172.20.0.61/21',
-                     u'name': u'eth0'}
+        destroy, undefine = ["virsh", "destroy", "%s" % marker], ["virsh", "undefine", "%s" % marker]
+        self.virsh(destroy, v=self.dev_null), self.virsh(undefine, v=self.dev_null)
+
+        disco_data = []
+        try:
+            virt_install = [
+                "virt-install",
+                "--name",
+                "%s" % marker,
+                "--network=bridge:rack0,model=virtio",
+                "--memory=2048",
+                "--vcpus=1",
+                "--pxe",
+                "--disk",
+                "none",
+                "--os-type=linux",
+                "--os-variant=generic",
+                "--noautoconsole",
+                "--boot=network"
+            ]
+            self.virsh(virt_install, assertion=True, v=self.dev_null)
+
+            for i in xrange(30):
+                os.write(2, "\r")
+                request = urllib2.urlopen("%s/discovery" % self.api_endpoint)
+                os.write(2, "\r")
+                response_body = request.read()
+                request.close()
+                self.assertEqual(request.code, 200)
+                disco_data = json.loads(response_body)
+                if disco_data:
+                    break
+                time.sleep(6)
+
+            self.assertEqual(len(disco_data), 1)
+            for machine in disco_data:
+                self.assertTrue(machine["lldp"]["is_file"])
+                self.assertEqual(len(machine["lldp"]["data"]["interfaces"]), 1)
+
+                lldp_i0 = machine["lldp"]["data"]["interfaces"][0]
+                self.assertEqual(lldp_i0["chassis"]["name"][:4], "rkt-")
+                self.assertEqual(len(lldp_i0["chassis"]["id"]), 17)
+                self.assertEqual(len(lldp_i0["port"]["id"]), 17)
+
+                # one machine with 2 interfaces [lo, eth0]
+                for ifaces in machine["interfaces"]:
+                    if ifaces["name"] == "lo":
+                        self.assertEqual(ifaces["netmask"], 8)
+                        self.assertEqual(ifaces["IPv4"], '127.0.0.1')
+                        self.assertEqual(ifaces["MAC"], '')
+                        self.assertEqual(ifaces["CIDRv4"], '127.0.0.1/8')
+                    else:
+                        # Have to be eth0
+                        self.assertEqual(ifaces["name"], "eth0")
+                        self.assertEqual(ifaces["netmask"], 21)
+                        self.assertEqual(ifaces["IPv4"][:9], '172.20.0.')
+                        self.assertEqual(len(ifaces["MAC"]), 17)
+
+        finally:
+            self.virsh(destroy), os.write(1, "\r")
+            self.virsh(undefine), os.write(1, "\r")
+
+
+# @unittest.skip("just skip")
+class TestKVMDiscoveryClient03(TestKVMDiscoveryClient):
+    def test_03(self):
+        nb_node = 3
+        marker = "euid-%s-%s" % (TestKVMDiscoveryClient.__name__.lower(), self.test_03.__name__)
+        os.environ["BOOTCFG_IP"] = "172.20.0.1"
+        os.environ["API_IP"] = "172.20.0.1"
+        gen = generator.Generator(
+            profile_id="%s" % marker,
+            name="%s" % marker,
+            ignition_id="%s.yaml" % marker,
+            bootcfg_path=self.test_bootcfg_path
+        )
+        gen.dumps()
+
+        destroy, undefine = ["virsh", "destroy", "%s" % marker], ["virsh", "undefine", "%s" % marker]
+        self.virsh(destroy, v=self.dev_null), self.virsh(undefine, v=self.dev_null)
+
+        disco_data = []
+        try:
+            for i in xrange(nb_node):
+                machine_marker = "%s-%d" % (marker, i)
+                destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
+                                    ["virsh", "undefine", "%s" % machine_marker]
+                self.virsh(destroy, v=self.dev_null), self.virsh(undefine, v=self.dev_null)
+                virt_install = [
+                    "virt-install",
+                    "--name",
+                    "%s" % machine_marker,
+                    "--network=bridge:rack0,model=virtio",
+                    "--memory=2048",
+                    "--vcpus=1",
+                    "--pxe",
+                    "--disk",
+                    "none",
+                    "--os-type=linux",
+                    "--os-variant=generic",
+                    "--noautoconsole",
+                    "--boot=network"
                 ]
-            ]}
-            """
-        # Several machines
-        self.assertEqual(len(interfaces["interfaces"]), nb_node)
+                self.virsh(virt_install, assertion=True, v=self.dev_null)
+                time.sleep(4)  # KVM fail to associate nic
 
-        for machine in interfaces["interfaces"]:
-            # each machine with 2 interfaces [lo, eth0]
-            for ifaces in machine:
-                if ifaces["name"] == "lo":
-                    self.assertEqual(ifaces["netmask"], 8)
-                    self.assertEqual(ifaces["IPv4"], '127.0.0.1')
-                    self.assertEqual(ifaces["MAC"], '')
-                    self.assertEqual(ifaces["CIDRv4"], '127.0.0.1/8')
-                else:
-                    self.assertEqual(ifaces["name"], "eth0")
-                    self.assertEqual(ifaces["netmask"], 21)
-                    self.assertEqual(ifaces["IPv4"][:9], '172.20.0.')
-                    self.assertEqual(len(ifaces["MAC"]), 17)
+            for i in xrange(30):
+                os.write(2, "\r")
+                request = urllib2.urlopen("%s/discovery" % self.api_endpoint)
+                os.write(2, "\r")
+                response_body = request.read()
+                request.close()
+                self.assertEqual(request.code, 200)
+                disco_data = json.loads(response_body)
+                if disco_data and len(disco_data) == nb_node:
+                    break
+                time.sleep(6)
+
+            # Checks
+            self.assertEqual(len(disco_data), 3)
+
+            for j, machine in enumerate(disco_data):
+                self.assertTrue(machine["lldp"]["is_file"])
+                self.assertEqual(len(machine["lldp"]["data"]["interfaces"]), 1)
+
+                lldp_i = machine["lldp"]["data"]["interfaces"][0]
+                self.assertEqual(lldp_i["chassis"]["name"][:4], "rkt-")
+                self.assertEqual(len(lldp_i["chassis"]["id"]), 17)
+                self.assertEqual(len(lldp_i["port"]["id"]), 17)
+
+                # Each machine with 2 interfaces [lo, eth0]
+                for i in machine["interfaces"]:
+                    if i["name"] == "lo":
+                        self.assertEqual(i["netmask"], 8)
+                        self.assertEqual(i["IPv4"], '127.0.0.1')
+                        self.assertEqual(i["MAC"], '')
+                        self.assertEqual(i["CIDRv4"], '127.0.0.1/8')
+                    else:
+                        # Have to be eth0
+                        self.assertEqual(i["name"], "eth0")
+                        self.assertEqual(i["netmask"], 21)
+                        self.assertEqual(i["IPv4"][:9], '172.20.0.')
+                        self.assertEqual(len(i["MAC"]), 17)
+        finally:
+            for i in xrange(nb_node):
+                machine_marker = "%s-%d" % (marker, i)
+                destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
+                                    ["virsh", "undefine", "%s" % machine_marker]
+                self.virsh(destroy), os.write(1, "\r")
+                self.virsh(undefine), os.write(1, "\r")
+                time.sleep(1)
+
+
+# @unittest.skip("just skip")
+# class TestUseless(TestKVMDiscoveryClient):
+#     def test_a_task(self):
+#         time.sleep(5)
 
 
 if __name__ == "__main__":
