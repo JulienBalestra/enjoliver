@@ -1,30 +1,14 @@
+import abc
 import json
 import os
+import time
 import urllib2
 
 import generator
 
 
-class EtcdMemberScheduler(object):
-    etcd_members_nb = 3
-    __name__ = "EtcdMemberScheduler"
-    etcd_name = "static"  # basename
-
-    def __init__(self,
-                 api_endpoint, bootcfg_path,
-                 ignition_member,
-                 bootcfg_prefix=""):
-
-        self.api_endpoint = api_endpoint
-        self.gen = generator.Generator
-        self.bootcfg_path = bootcfg_path
-        self.bootcfg_prefix = bootcfg_prefix
-
-        # Etcd member area
-        self.ignition_member = ignition_member
-        self._pending_etcd_member = set()
-        self._done_etcd_member = set()
-        self.etcd_initial_cluster = []
+class CommonScheduler(object):
+    __metaclass__ = abc.ABCMeta
 
     @staticmethod
     def get_machine_boot_ip_mac(discovery):
@@ -46,6 +30,135 @@ class EtcdMemberScheduler(object):
         interfaces = json.loads(response_body)
         os.write(2, "\r-> fetch done\n\r")
         return interfaces
+
+    @abc.abstractmethod
+    def apply(self):
+        return
+
+    @abc.abstractproperty
+    def etcd_initial_cluster(self):
+        pass
+
+
+class EtcdProxyScheduler(CommonScheduler):
+    __name__ = "EtcdProxyScheduler"
+    apply_deps_delay = 6
+    apply_deps_tries = apply_deps_delay * 50
+
+    def __init__(self,
+                 etcd_member_instance,
+                 ignition_proxy,
+                 apply_first=False):
+
+        self._etcd_initial_cluster = None
+        self._etcd_member_instance = etcd_member_instance
+
+        if isinstance(self._etcd_member_instance, EtcdMemberScheduler) is False:
+            raise AttributeError("%s not a instanceof(%s)" % (
+                "etcd_member_instance", EtcdMemberScheduler.__name__))
+
+        if apply_first is True:
+            self.apply_member()
+
+        self._ignition_proxy = ignition_proxy
+        self.api_endpoint = self._etcd_member_instance.api_endpoint
+        self.bootcfg_prefix = self._etcd_member_instance.bootcfg_prefix
+        self.bootcfg_path = self._etcd_member_instance.bootcfg_path
+        self._gen = generator.Generator
+        self._done_etcd_proxy = set()
+        self._pending_etcd_proxy = set()
+
+    @property
+    def etcd_initial_cluster(self):
+        if self._etcd_initial_cluster is None:
+            self._etcd_initial_cluster = self._etcd_member_instance.etcd_initial_cluster
+        return self._etcd_initial_cluster
+
+    def apply_member(self):
+        if self.etcd_initial_cluster is not None:
+            return True
+        for t in xrange(self.apply_deps_tries):
+            if self._etcd_member_instance.apply() is True:
+                self._etcd_initial_cluster = self._etcd_member_instance.etcd_initial_cluster
+                return True
+            time.sleep(self.apply_deps_delay)
+        raise RuntimeError("timeout after %d" % (
+            self.apply_deps_delay * self.apply_deps_tries))
+
+    def _fall_back_to_proxy(self, discovery):
+        done = self._etcd_member_instance.members_ip + list(self._done_etcd_proxy)
+
+        if len(discovery) > len(done):
+            for machine in discovery:
+                ip_mac = self.get_machine_boot_ip_mac(machine)
+                if ip_mac in self._etcd_member_instance.done_etcd_member:
+                    os.write(2, "\r-> Skip because Etcd Member %s\n\r" % str(ip_mac))
+                else:
+                    self._pending_etcd_proxy.add(ip_mac)
+            print "do something"
+        else:
+            os.write(2, "\r-> no machine 0\n\r")
+
+    def _apply_proxy(self):
+        os.write(2, "\r-> %s.%s in progress...\n\r" % (self.__name__, self._apply_proxy.__name__))
+
+        marker = "%s%sproxy" % (self.bootcfg_prefix, "e")  # e for Etcd
+
+        base = len(self._done_etcd_proxy)
+        for i, nic in enumerate(self._pending_etcd_proxy):
+            # nic = (IPv4, MAC)
+            i += base
+            self._gen = generator.Generator(
+                group_id="%s-%d" % (marker, i),  # one per machine
+                profile_id=marker,  # link to ignition
+                name="%s-%d" % (marker, i),
+                ignition_id="%s.yaml" % self._ignition_proxy,
+                bootcfg_path=self.bootcfg_path,
+                selector={"mac": nic[1]},
+                extra_metadata={
+                    "etcd_initial_cluster": self.etcd_initial_cluster,
+                    "etcd_advertise_client_urls": "http://%s:2379" % nic[0],
+                }
+            )
+            self._gen.dumps()
+            self._done_etcd_proxy.add(nic)
+            os.write(2, "\r-> %s.%s selector {mac: %s}\n\r" % (
+                self.__name__, self._apply_proxy.__name__, nic))
+
+    def apply(self):
+        self.apply_member()
+        discovery = self.fetch_discovery(self.api_endpoint)
+        self._fall_back_to_proxy(discovery)
+        if len(self._pending_etcd_proxy) > 0:
+            self._apply_proxy()
+
+        os.write(2, "\r-> %s.%s total %d" % (
+            self.__name__,
+            self.apply.__name__,
+            len(self._done_etcd_proxy)))
+        return len(self._done_etcd_proxy)
+
+
+class EtcdMemberScheduler(CommonScheduler):
+    etcd_members_nb = 3
+    __name__ = "EtcdMemberScheduler"
+    etcd_name = "static"  # basename
+
+    def __init__(self,
+                 api_endpoint, bootcfg_path,
+                 ignition_member,
+                 bootcfg_prefix=""):
+
+        self.api_endpoint = api_endpoint
+        self._gen = generator.Generator
+        self.bootcfg_path = bootcfg_path
+        self.bootcfg_prefix = bootcfg_prefix
+
+        # Etcd member area
+        self._ignition_member = ignition_member
+        self._pending_etcd_member = set()
+        self._done_etcd_member = set()
+        self._etcd_initial_cluster = None
 
     def _fifo_members_simple(self, discovery):
 
@@ -82,11 +195,11 @@ class EtcdMemberScheduler(object):
 
         for i, nic in enumerate(self._pending_etcd_member):
             # nic = (IPv4, MAC)
-            self.gen = generator.Generator(
+            self._gen = generator.Generator(
                 group_id="%s-%d" % (marker, i),  # one per machine
                 profile_id=marker,  # link to ignition
                 name="%s-%d" % (marker, i),
-                ignition_id="%s.yaml" % self.ignition_member,
+                ignition_id="%s.yaml" % self._ignition_member,
                 bootcfg_path=self.bootcfg_path,
                 selector={"mac": nic[1]},
                 extra_metadata={
@@ -97,14 +210,23 @@ class EtcdMemberScheduler(object):
 
                 }
             )
-            self.gen.dumps()
+            self._gen.dumps()
             self._done_etcd_member.add(nic)
             os.write(2, "\r-> %s.%s selector {mac: %s}\n\r" % (
                 self.__name__, self._apply_member.__name__, nic))
+        self._etcd_initial_cluster = etcd_initial_cluster
+
+    @property
+    def etcd_initial_cluster(self):
+        return self._etcd_initial_cluster
 
     @property
     def members_ip(self):
         return [k[0] for k in self._done_etcd_member]
+
+    @property
+    def done_etcd_member(self):
+        return self._done_etcd_member
 
     def apply(self):
         # Etcd Members

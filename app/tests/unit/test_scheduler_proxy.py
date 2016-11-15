@@ -6,7 +6,7 @@ import unittest
 from app import scheduler
 
 
-class TestEtcdScheduler(unittest.TestCase):
+class TestEtcdSchedulerProxy(unittest.TestCase):
     __name__ = "TestEtcdScheduler"
     unit_path = "%s" % os.path.dirname(__file__)
     tests_path = "%s" % os.path.split(unit_path)[0]
@@ -17,10 +17,12 @@ class TestEtcdScheduler(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         subprocess.check_output(["make", "-C", cls.project_path])
+        scheduler.EtcdProxyScheduler.apply_deps_tries = 1
+        scheduler.EtcdProxyScheduler.apply_deps_delay = 0
 
     @staticmethod
     def clean_sandbox():
-        dirs = ["%s/%s" % (TestEtcdScheduler.test_bootcfg_path, k)
+        dirs = ["%s/%s" % (TestEtcdSchedulerProxy.test_bootcfg_path, k)
                 for k in ("profiles", "groups")]
         for d in dirs:
             for f in os.listdir(d):
@@ -117,319 +119,8 @@ class TestEtcdScheduler(unittest.TestCase):
             scheduler.EtcdMemberScheduler.get_machine_boot_ip_mac(m)
 
     # @unittest.skip("skip")
-    def test_00(self):
-        def fake_fetch_discovery(x, y):
-            return [
-                {
-                    "boot-info": {
-                        "mac": "52:54:00:95:24:0f",
-                        "uuid": "77fae11f-81ba-4e5f-a2a5-75181887afbc"
-                    },
-                    "interfaces": [
-                        {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
-                            "name": "lo",
-                            "netmask": 8
-                        },
-                        {
-                            "CIDRv4": "172.20.0.57/21",
-                            "IPv4": "172.20.0.57",
-                            "MAC": "52:54:00:95:24:0f",
-                            "name": "eth0",
-                            "netmask": 21
-                        }
-                    ],
-                    "lldp": {
-                        "data": {
-                            "interfaces": [
-                                {
-                                    "chassis": {
-                                        "id": "28:f1:0e:12:20:00",
-                                        "name": "rkt-2253e328-b6b0-42a2-bc38-977a8efb4908"
-                                    },
-                                    "port": {
-                                        "id": "fe:54:00:95:24:0f"
-                                    }
-                                }
-                            ]
-                        },
-                        "is_file": True
-                    }
-                },
-                {
-                    "boot-info": {
-                        "mac": "52:54:00:a4:32:b5",
-                        "uuid": "7faef191-44d2-4dd9-9492-63b8cce55eae"
-                    },
-                    "interfaces": [
-                        {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
-                            "name": "lo",
-                            "netmask": 8
-                        },
-                        {
-                            "CIDRv4": "172.20.0.83/21",
-                            "IPv4": "172.20.0.83",
-                            "MAC": "52:54:00:a4:32:b5",
-                            "name": "eth0",
-                            "netmask": 21
-                        }
-                    ],
-                    "lldp": {
-                        "data": {
-                            "interfaces": [
-                                {
-                                    "chassis": {
-                                        "id": "28:f1:0e:12:20:00",
-                                        "name": "rkt-2253e328-b6b0-42a2-bc38-977a8efb4908"
-                                    },
-                                    "port": {
-                                        "id": "fe:54:00:a4:32:b5"
-                                    }
-                                }
-                            ]
-                        },
-                        "is_file": True
-                    }
-                },
-                {
-                    "boot-info": {
-                        "mac": "52:54:00:c3:22:c2",
-                        "uuid": "40cab2a6-62eb-4fb3-b798-5aca4c6f3a4c"
-                    },
-                    "interfaces": [
-                        {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
-                            "name": "lo",
-                            "netmask": 8
-                        },
-                        {
-                            "CIDRv4": "172.20.0.70/21",
-                            "IPv4": "172.20.0.70",
-                            "MAC": "52:54:00:c3:22:c2",
-                            "name": "eth0",
-                            "netmask": 21
-                        }
-                    ],
-                    "lldp": {
-                        "data": {
-                            "interfaces": [
-                                {
-                                    "chassis": {
-                                        "id": "28:f1:0e:12:20:00",
-                                        "name": "rkt-2253e328-b6b0-42a2-bc38-977a8efb4908"
-                                    },
-                                    "port": {
-                                        "id": "fe:54:00:c3:22:c2"
-                                    }
-                                }
-                            ]
-                        },
-                        "is_file": True
-                    }
-                }
-            ]
-
-        marker = "unit-%s-%s-" % (TestEtcdScheduler.__name__.lower(), self.test_00.__name__)
-        scheduler.EtcdMemberScheduler.fetch_discovery = fake_fetch_discovery
-        sch = scheduler.EtcdMemberScheduler(
-            "http://127.0.0.1:5000",
-            self.test_bootcfg_path,
-            ignition_member="%semember" % marker,
-            bootcfg_prefix=marker)
-        self.assertTrue(sch.apply())
-        etcd_groups = []
-        for i in xrange(sch.etcd_members_nb):
-            with open("%s/groups/%semember-%d.json" % (
-                    self.test_bootcfg_path, marker, i)) as group:
-                etcd_groups.append(json.loads(group.read()))
-        self.assertEqual(3, len(etcd_groups))
-
-        ref = 0
-        for g in etcd_groups:
-            ref += 1
-            self.assertEqual(len(g["metadata"]["etcd_initial_cluster"].split(",")), 3)
-            self.assertEqual(g["metadata"]["etcd_initial_cluster"],
-                             "static0=http://172.20.0.70:2380,"
-                             "static1=http://172.20.0.83:2380,"
-                             "static2=http://172.20.0.57:2380")
-        self.assertTrue(ref == 3)
-
-        etcd_profile = "%s/profiles/%semember.json" % (self.test_bootcfg_path, marker)
-        with open(etcd_profile) as p:
-            p_data = json.loads(p.read())
-        self.assertEqual(p_data["ignition_id"],
-                         "unit-testetcdscheduler-test_00-emember.yaml")
-
-    # @unittest.skip("skip")
-    def test_01(self):
-        def fake_fetch_discovery(x, y):
-            return [
-                {
-                    "boot-info": {
-                        "mac": "52:54:00:a4:32:b5",
-                        "uuid": "7faef191-44d2-4dd9-9492-63b8cce55eae"
-                    },
-                    "interfaces": [
-                        {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
-                            "name": "lo",
-                            "netmask": 8
-                        },
-                        {
-                            "CIDRv4": "172.20.0.83/21",
-                            "IPv4": "172.20.0.83",
-                            "MAC": "52:54:00:a4:32:b5",
-                            "name": "eth0",
-                            "netmask": 21
-                        }
-                    ],
-                    "lldp": {
-                        "data": {
-                            "interfaces": [
-                                {
-                                    "chassis": {
-                                        "id": "28:f1:0e:12:20:00",
-                                        "name": "rkt-2253e328-b6b0-42a2-bc38-977a8efb4908"
-                                    },
-                                    "port": {
-                                        "id": "fe:54:00:a4:32:b5"
-                                    }
-                                }
-                            ]
-                        },
-                        "is_file": True
-                    }
-                }
-            ]
-
-        marker = "unit-%s-%s-" % (TestEtcdScheduler.__name__.lower(), self.test_01.__name__)
-        scheduler.EtcdMemberScheduler.fetch_discovery = fake_fetch_discovery
-        sch = scheduler.EtcdMemberScheduler(
-            "http://127.0.0.1:5000",
-            self.test_bootcfg_path,
-            ignition_member="%semember" % marker,
-            bootcfg_prefix=marker)
-        self.assertFalse(sch.apply())
-
-        etcd_groups = []
-        for i in xrange(sch.etcd_members_nb):
-            with self.assertRaises(IOError):
-                with open("%s/groups/%semember-%d.json" % (
-                        self.test_bootcfg_path, marker, i)) as group:
-                    etcd_groups.append(json.loads(group.read()))
-        self.assertEqual(0, len(etcd_groups))
-
-    # @unittest.skip("skip")
-    def test_02(self):
-        def fake_fetch_discovery(x, y):
-            return [
-                {
-                    "boot-info": {
-                        "mac": "52:54:00:95:24:0f",
-                        "uuid": "77fae11f-81ba-4e5f-a2a5-75181887afbc"
-                    },
-                    "interfaces": [
-                        {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
-                            "name": "lo",
-                            "netmask": 8
-                        },
-                        {
-                            "CIDRv4": "172.20.0.57/21",
-                            "IPv4": "172.20.0.57",
-                            "MAC": "52:54:00:95:24:0f",
-                            "name": "eth0",
-                            "netmask": 21
-                        }
-                    ],
-                    "lldp": {
-                        "data": {
-                            "interfaces": [
-                                {
-                                    "chassis": {
-                                        "id": "28:f1:0e:12:20:00",
-                                        "name": "rkt-2253e328-b6b0-42a2-bc38-977a8efb4908"
-                                    },
-                                    "port": {
-                                        "id": "fe:54:00:95:24:0f"
-                                    }
-                                }
-                            ]
-                        },
-                        "is_file": True
-                    }
-                },
-                {
-                    "boot-info": {
-                        "mac": "52:54:00:a4:32:b5",
-                        "uuid": "7faef191-44d2-4dd9-9492-63b8cce55eae"
-                    },
-                    "interfaces": [
-                        {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
-                            "name": "lo",
-                            "netmask": 8
-                        },
-                        {
-                            "CIDRv4": "172.20.0.83/21",
-                            "IPv4": "172.20.0.83",
-                            "MAC": "52:54:00:a4:32:b5",
-                            "name": "eth0",
-                            "netmask": 21
-                        }
-                    ],
-                    "lldp": {
-                        "data": {
-                            "interfaces": [
-                                {
-                                    "chassis": {
-                                        "id": "28:f1:0e:12:20:00",
-                                        "name": "rkt-2253e328-b6b0-42a2-bc38-977a8efb4908"
-                                    },
-                                    "port": {
-                                        "id": "fe:54:00:a4:32:b5"
-                                    }
-                                }
-                            ]
-                        },
-                        "is_file": True
-                    }
-                }
-            ]
-
-        marker = "unit-%s-%s-" % (TestEtcdScheduler.__name__.lower(), self.test_01.__name__)
-        scheduler.EtcdMemberScheduler.fetch_discovery = fake_fetch_discovery
-        sch = scheduler.EtcdMemberScheduler(
-            "http://127.0.0.1:5000",
-            self.test_bootcfg_path,
-            ignition_member="%semember" % marker,
-            bootcfg_prefix=marker)
-        self.assertFalse(sch.apply())
-
-        etcd_groups = []
-        for i in xrange(sch.etcd_members_nb):
-            with self.assertRaises(IOError):
-                with open("%s/groups/%semember-%d.json" % (
-                        self.test_bootcfg_path, marker, i)) as group:
-                    etcd_groups.append(json.loads(group.read()))
-        self.assertEqual(0, len(etcd_groups))
-
-    # @unittest.skip("skip")
     def test_03(self):
-        def fake_fetch_discovery(x, y):
+        def fake_fetch_discovery(x):
             return [
                 {
                     "boot-info": {
@@ -547,55 +238,26 @@ class TestEtcdScheduler(unittest.TestCase):
                 }
             ]
 
-        marker = "unit-%s-%s-" % (TestEtcdScheduler.__name__.lower(), self.test_00.__name__)
-        scheduler.EtcdMemberScheduler.fetch_discovery = fake_fetch_discovery
-        sch = scheduler.EtcdMemberScheduler(
+        marker = "unit-%s-" % TestEtcdSchedulerProxy.__name__.lower()
+        sch_member = scheduler.EtcdMemberScheduler(
             "http://127.0.0.1:5000",
             self.test_bootcfg_path,
             ignition_member="%semember" % marker,
             bootcfg_prefix=marker)
-        self.assertTrue(sch.apply())
-        etcd_groups = []
-        for i in xrange(sch.etcd_members_nb):
-            with open("%s/groups/%semember-%d.json" % (
-                    self.test_bootcfg_path, marker, i)) as group:
-                etcd_groups.append(json.loads(group.read()))
-        self.assertEqual(3, len(etcd_groups))
-
-        self.assertEqual(3, len(etcd_groups))
-
-        ref = 0
-        for g in etcd_groups:
-            ref += 1
-            self.assertEqual(len(g["metadata"]["etcd_initial_cluster"].split(",")), 3)
-            self.assertEqual(g["metadata"]["etcd_initial_cluster"],
-                             "static0=http://172.20.0.70:2380,"
-                             "static1=http://172.20.0.83:2380,"
-                             "static2=http://172.20.0.57:2380")
-        self.assertTrue(ref == 3)
-
-        etcd_profile = "%s/profiles/%semember.json" % (self.test_bootcfg_path, marker)
-        with open(etcd_profile) as p:
-            p_data = json.loads(p.read())
-        self.assertEqual(p_data["ignition_id"],
-                         "unit-testetcdscheduler-test_00-emember.yaml")
-        self.assertTrue(sch.apply())
-
-        self.assertEqual(3, len(etcd_groups))
-
-        ref = 0
-        for g in etcd_groups:
-            ref += 1
-            self.assertEqual(len(g["metadata"]["etcd_initial_cluster"].split(",")), 3)
-            self.assertEqual(g["metadata"]["etcd_initial_cluster"],
-                             "static0=http://172.20.0.70:2380,"
-                             "static1=http://172.20.0.83:2380,"
-                             "static2=http://172.20.0.57:2380")
-        self.assertTrue(ref == 3)
+        sch_member.fetch_discovery = fake_fetch_discovery
+        self.assertTrue(sch_member.apply())
+        sch_proxy = scheduler.EtcdProxyScheduler(
+            etcd_member_instance=sch_member,
+            ignition_proxy="%seproxy" % marker
+        )
+        self.assertEqual(sch_proxy.etcd_initial_cluster,
+                         "static0=http://172.20.0.70:2380,"
+                         "static1=http://172.20.0.83:2380,"
+                         "static2=http://172.20.0.57:2380")
 
     # @unittest.skip("skip")
     def test_04(self):
-        def fake_fetch_discovery(x, y):
+        def fake_fetch_discovery(x):
             return [
                 {
                     "boot-info": {
@@ -672,182 +334,515 @@ class TestEtcdScheduler(unittest.TestCase):
                         },
                         "is_file": True
                     }
+                },
+                {
+                    "boot-info": {
+                        "mac": "52:54:00:c3:22:c2",
+                        "uuid": "40cab2a6-62eb-4fb3-b798-5aca4c6f3a4c"
+                    },
+                    "interfaces": [
+                        {
+                            "CIDRv4": "127.0.0.1/8",
+                            "IPv4": "127.0.0.1",
+                            "MAC": "",
+                            "name": "lo",
+                            "netmask": 8
+                        },
+                        {
+                            "CIDRv4": "172.20.0.70/21",
+                            "IPv4": "172.20.0.70",
+                            "MAC": "52:54:00:c3:22:c2",
+                            "name": "eth0",
+                            "netmask": 21
+                        }
+                    ],
+                    "lldp": {
+                        "data": {
+                            "interfaces": [
+                                {
+                                    "chassis": {
+                                        "id": "28:f1:0e:12:20:00",
+                                        "name": "rkt-2253e328-b6b0-42a2-bc38-977a8efb4908"
+                                    },
+                                    "port": {
+                                        "id": "fe:54:00:c3:22:c2"
+                                    }
+                                }
+                            ]
+                        },
+                        "is_file": True
+                    }
                 }
             ]
 
-        marker = "unit-%s-%s-" % (TestEtcdScheduler.__name__.lower(), self.test_00.__name__)
-        scheduler.EtcdMemberScheduler.fetch_discovery = fake_fetch_discovery
-        sch = scheduler.EtcdMemberScheduler(
+        marker = "unit-%s-" % TestEtcdSchedulerProxy.__name__.lower()
+        sch_member = scheduler.EtcdMemberScheduler(
             "http://127.0.0.1:5000",
             self.test_bootcfg_path,
             ignition_member="%semember" % marker,
             bootcfg_prefix=marker)
-        self.assertFalse(sch.apply())
-        scheduler.EtcdMemberScheduler.fetch_discovery = lambda x, y: [
-            {
-                "boot-info": {
-                    "mac": "52:54:00:95:24:0f",
-                    "uuid": "77fae11f-81ba-4e5f-a2a5-75181887afbc"
-                },
-                "interfaces": [
-                    {
-                        "CIDRv4": "127.0.0.1/8",
-                        "IPv4": "127.0.0.1",
-                        "MAC": "",
-                        "name": "lo",
-                        "netmask": 8
-                    },
-                    {
-                        "CIDRv4": "172.20.0.57/21",
-                        "IPv4": "172.20.0.57",
-                        "MAC": "52:54:00:95:24:0f",
-                        "name": "eth0",
-                        "netmask": 21
-                    }
-                ],
-                "lldp": {
-                    "data": {
-                        "interfaces": [
-                            {
-                                "chassis": {
-                                    "id": "28:f1:0e:12:20:00",
-                                    "name": "rkt-2253e328-b6b0-42a2-bc38-977a8efb4908"
-                                },
-                                "port": {
-                                    "id": "fe:54:00:95:24:0f"
-                                }
-                            }
-                        ]
-                    },
-                    "is_file": True
-                }
-            },
-            {
-                "boot-info": {
-                    "mac": "52:54:00:a4:32:b5",
-                    "uuid": "7faef191-44d2-4dd9-9492-63b8cce55eae"
-                },
-                "interfaces": [
-                    {
-                        "CIDRv4": "127.0.0.1/8",
-                        "IPv4": "127.0.0.1",
-                        "MAC": "",
-                        "name": "lo",
-                        "netmask": 8
-                    },
-                    {
-                        "CIDRv4": "172.20.0.83/21",
-                        "IPv4": "172.20.0.83",
-                        "MAC": "52:54:00:a4:32:b5",
-                        "name": "eth0",
-                        "netmask": 21
-                    }
-                ],
-                "lldp": {
-                    "data": {
-                        "interfaces": [
-                            {
-                                "chassis": {
-                                    "id": "28:f1:0e:12:20:00",
-                                    "name": "rkt-2253e328-b6b0-42a2-bc38-977a8efb4908"
-                                },
-                                "port": {
-                                    "id": "fe:54:00:a4:32:b5"
-                                }
-                            }
-                        ]
-                    },
-                    "is_file": True
-                }
-            },
-            {
-                "boot-info": {
-                    "mac": "52:54:00:c3:22:c2",
-                    "uuid": "40cab2a6-62eb-4fb3-b798-5aca4c6f3a4c"
-                },
-                "interfaces": [
-                    {
-                        "CIDRv4": "127.0.0.1/8",
-                        "IPv4": "127.0.0.1",
-                        "MAC": "",
-                        "name": "lo",
-                        "netmask": 8
-                    },
-                    {
-                        "CIDRv4": "172.20.0.70/21",
-                        "IPv4": "172.20.0.70",
-                        "MAC": "52:54:00:c3:22:c2",
-                        "name": "eth0",
-                        "netmask": 21
-                    }
-                ],
-                "lldp": {
-                    "data": {
-                        "interfaces": [
-                            {
-                                "chassis": {
-                                    "id": "28:f1:0e:12:20:00",
-                                    "name": "rkt-2253e328-b6b0-42a2-bc38-977a8efb4908"
-                                },
-                                "port": {
-                                    "id": "fe:54:00:c3:22:c2"
-                                }
-                            }
-                        ]
-                    },
-                    "is_file": True
-                }
-            }
-        ]
-        self.assertTrue(sch.apply())
-        etcd_groups = []
-        for i in xrange(sch.etcd_members_nb):
-            with open("%s/groups/%semember-%d.json" % (
-                    self.test_bootcfg_path, marker, i)) as group:
-                etcd_groups.append(json.loads(group.read()))
-        self.assertEqual(3, len(etcd_groups))
-
-        self.assertEqual(3, len(etcd_groups))
-
-        ref = 0
-        for g in etcd_groups:
-            ref += 1
-            self.assertEqual(len(g["metadata"]["etcd_initial_cluster"].split(",")), 3)
-            self.assertEqual(g["metadata"]["etcd_initial_cluster"],
-                             "static0=http://172.20.0.70:2380,"
-                             "static1=http://172.20.0.83:2380,"
-                             "static2=http://172.20.0.57:2380")
-        self.assertTrue(ref == 3)
-
-        etcd_profile = "%s/profiles/%semember.json" % (self.test_bootcfg_path, marker)
-        with open(etcd_profile) as p:
-            p_data = json.loads(p.read())
-        self.assertEqual(p_data["ignition_id"],
-                         "unit-testetcdscheduler-test_00-emember.yaml")
-        self.assertTrue(sch.apply())
-
-        self.assertEqual(3, len(etcd_groups))
-
-        ref = 0
-        for g in etcd_groups:
-            ref += 1
-            self.assertEqual(len(g["metadata"]["etcd_initial_cluster"].split(",")), 3)
-            self.assertEqual(g["metadata"]["etcd_initial_cluster"],
-                             "static0=http://172.20.0.70:2380,"
-                             "static1=http://172.20.0.83:2380,"
-                             "static2=http://172.20.0.57:2380")
-        self.assertTrue(ref == 3)
+        sch_member.fetch_discovery = fake_fetch_discovery
+        sch_proxy = scheduler.EtcdProxyScheduler(
+            etcd_member_instance=sch_member,
+            ignition_proxy="%seproxy" % marker,
+            apply_first=True
+        )
+        self.assertEqual(sch_proxy.etcd_initial_cluster,
+                         "static0=http://172.20.0.70:2380,"
+                         "static1=http://172.20.0.83:2380,"
+                         "static2=http://172.20.0.57:2380")
 
     # @unittest.skip("skip")
     def test_05(self):
-        def fake_fetch_discovery(x, y):
-            return None
+        def fake_fetch_discovery(x):
+            return [
+                {
+                    "boot-info": {
+                        "mac": "52:54:00:95:24:0f",
+                        "uuid": "77fae11f-81ba-4e5f-a2a5-75181887afbc"
+                    },
+                    "interfaces": [
+                        {
+                            "CIDRv4": "127.0.0.1/8",
+                            "IPv4": "127.0.0.1",
+                            "MAC": "",
+                            "name": "lo",
+                            "netmask": 8
+                        },
+                        {
+                            "CIDRv4": "172.20.0.57/21",
+                            "IPv4": "172.20.0.57",
+                            "MAC": "52:54:00:95:24:0f",
+                            "name": "eth0",
+                            "netmask": 21
+                        }
+                    ],
+                    "lldp": {
+                        "data": {
+                            "interfaces": [
+                                {
+                                    "chassis": {
+                                        "id": "28:f1:0e:12:20:00",
+                                        "name": "rkt-2253e328-b6b0-42a2-bc38-977a8efb4908"
+                                    },
+                                    "port": {
+                                        "id": "fe:54:00:95:24:0f"
+                                    }
+                                }
+                            ]
+                        },
+                        "is_file": True
+                    }
+                },
+                {
+                    "boot-info": {
+                        "mac": "52:54:00:a4:32:b5",
+                        "uuid": "7faef191-44d2-4dd9-9492-63b8cce55eae"
+                    },
+                    "interfaces": [
+                        {
+                            "CIDRv4": "127.0.0.1/8",
+                            "IPv4": "127.0.0.1",
+                            "MAC": "",
+                            "name": "lo",
+                            "netmask": 8
+                        },
+                        {
+                            "CIDRv4": "172.20.0.83/21",
+                            "IPv4": "172.20.0.83",
+                            "MAC": "52:54:00:a4:32:b5",
+                            "name": "eth0",
+                            "netmask": 21
+                        }
+                    ],
+                    "lldp": {
+                        "data": {
+                            "interfaces": [
+                                {
+                                    "chassis": {
+                                        "id": "28:f1:0e:12:20:00",
+                                        "name": "rkt-2253e328-b6b0-42a2-bc38-977a8efb4908"
+                                    },
+                                    "port": {
+                                        "id": "fe:54:00:a4:32:b5"
+                                    }
+                                }
+                            ]
+                        },
+                        "is_file": True
+                    }
+                },
+                {
+                    "boot-info": {
+                        "mac": "52:54:00:c3:22:c2",
+                        "uuid": "40cab2a6-62eb-4fb3-b798-5aca4c6f3a4c"
+                    },
+                    "interfaces": [
+                        {
+                            "CIDRv4": "127.0.0.1/8",
+                            "IPv4": "127.0.0.1",
+                            "MAC": "",
+                            "name": "lo",
+                            "netmask": 8
+                        },
+                        {
+                            "CIDRv4": "172.20.0.70/21",
+                            "IPv4": "172.20.0.70",
+                            "MAC": "52:54:00:c3:22:c2",
+                            "name": "eth0",
+                            "netmask": 21
+                        }
+                    ],
+                    "lldp": {
+                        "data": {
+                            "interfaces": [
+                                {
+                                    "chassis": {
+                                        "id": "28:f1:0e:12:20:00",
+                                        "name": "rkt-2253e328-b6b0-42a2-bc38-977a8efb4908"
+                                    },
+                                    "port": {
+                                        "id": "fe:54:00:c3:22:c2"
+                                    }
+                                }
+                            ]
+                        },
+                        "is_file": True
+                    }
+                }
+            ]
 
-        marker = "unit-%s-%s-" % (TestEtcdScheduler.__name__.lower(), self.test_00.__name__)
-        scheduler.EtcdMemberScheduler.fetch_discovery = fake_fetch_discovery
-        sch = scheduler.EtcdMemberScheduler(
+        marker = "unit-%s-" % TestEtcdSchedulerProxy.__name__.lower()
+        sch_member = scheduler.EtcdMemberScheduler(
             "http://127.0.0.1:5000",
             self.test_bootcfg_path,
             ignition_member="%semember" % marker,
             bootcfg_prefix=marker)
-        self.assertFalse(sch.apply())
+        sch_member.fetch_discovery = fake_fetch_discovery
+        sch_proxy = scheduler.EtcdProxyScheduler(
+            etcd_member_instance=sch_member,
+            ignition_proxy="%seproxy" % marker
+        )
+        sch_proxy.fetch_discovery = fake_fetch_discovery
+        self.assertEqual(sch_proxy.etcd_initial_cluster, None)
+        sch_proxy.apply_member()
+        self.assertEqual(sch_proxy.etcd_initial_cluster,
+                         "static0=http://172.20.0.70:2380,"
+                         "static1=http://172.20.0.83:2380,"
+                         "static2=http://172.20.0.57:2380")
+
+    # @unittest.skip("skip")
+    def test_06(self):
+        def fake_fetch_discovery(x):
+            return [
+                {
+                    "boot-info": {
+                        "mac": "52:54:00:95:24:0f",
+                        "uuid": "77fae11f-81ba-4e5f-a2a5-75181887afbc"
+                    },
+                    "interfaces": [
+                        {
+                            "CIDRv4": "127.0.0.1/8",
+                            "IPv4": "127.0.0.1",
+                            "MAC": "",
+                            "name": "lo",
+                            "netmask": 8
+                        },
+                        {
+                            "CIDRv4": "172.20.0.57/21",
+                            "IPv4": "172.20.0.57",
+                            "MAC": "52:54:00:95:24:0f",
+                            "name": "eth0",
+                            "netmask": 21
+                        }
+                    ],
+                    "lldp": {
+                        "data": {
+                            "interfaces": [
+                                {
+                                    "chassis": {
+                                        "id": "28:f1:0e:12:20:00",
+                                        "name": "rkt-2253e328-b6b0-42a2-bc38-977a8efb4908"
+                                    },
+                                    "port": {
+                                        "id": "fe:54:00:95:24:0f"
+                                    }
+                                }
+                            ]
+                        },
+                        "is_file": True
+                    }
+                },
+                {
+                    "boot-info": {
+                        "mac": "52:54:00:a4:32:b5",
+                        "uuid": "7faef191-44d2-4dd9-9492-63b8cce55eae"
+                    },
+                    "interfaces": [
+                        {
+                            "CIDRv4": "127.0.0.1/8",
+                            "IPv4": "127.0.0.1",
+                            "MAC": "",
+                            "name": "lo",
+                            "netmask": 8
+                        },
+                        {
+                            "CIDRv4": "172.20.0.83/21",
+                            "IPv4": "172.20.0.83",
+                            "MAC": "52:54:00:a4:32:b5",
+                            "name": "eth0",
+                            "netmask": 21
+                        }
+                    ],
+                    "lldp": {
+                        "data": {
+                            "interfaces": [
+                                {
+                                    "chassis": {
+                                        "id": "28:f1:0e:12:20:00",
+                                        "name": "rkt-2253e328-b6b0-42a2-bc38-977a8efb4908"
+                                    },
+                                    "port": {
+                                        "id": "fe:54:00:a4:32:b5"
+                                    }
+                                }
+                            ]
+                        },
+                        "is_file": True
+                    }
+                },
+                {
+                    "boot-info": {
+                        "mac": "52:54:00:c3:22:c2",
+                        "uuid": "40cab2a6-62eb-4fb3-b798-5aca4c6f3a4c"
+                    },
+                    "interfaces": [
+                        {
+                            "CIDRv4": "127.0.0.1/8",
+                            "IPv4": "127.0.0.1",
+                            "MAC": "",
+                            "name": "lo",
+                            "netmask": 8
+                        },
+                        {
+                            "CIDRv4": "172.20.0.70/21",
+                            "IPv4": "172.20.0.70",
+                            "MAC": "52:54:00:c3:22:c2",
+                            "name": "eth0",
+                            "netmask": 21
+                        }
+                    ],
+                    "lldp": {
+                        "data": {
+                            "interfaces": [
+                                {
+                                    "chassis": {
+                                        "id": "28:f1:0e:12:20:00",
+                                        "name": "rkt-2253e328-b6b0-42a2-bc38-977a8efb4908"
+                                    },
+                                    "port": {
+                                        "id": "fe:54:00:c3:22:c2"
+                                    }
+                                }
+                            ]
+                        },
+                        "is_file": True
+                    }
+                }
+            ]
+
+        marker = "unit-%s-" % TestEtcdSchedulerProxy.__name__.lower()
+        sch_member = scheduler.EtcdMemberScheduler(
+            "http://127.0.0.1:5000",
+            self.test_bootcfg_path,
+            ignition_member="%semember" % marker,
+            bootcfg_prefix=marker)
+        sch_member.fetch_discovery = fake_fetch_discovery
+        sch_proxy = scheduler.EtcdProxyScheduler(
+            etcd_member_instance=sch_member,
+            ignition_proxy="%seproxy" % marker,
+            apply_first=True
+        )
+        sch_proxy.fetch_discovery = fake_fetch_discovery
+        self.assertEqual(sch_proxy.etcd_initial_cluster,
+                         "static0=http://172.20.0.70:2380,"
+                         "static1=http://172.20.0.83:2380,"
+                         "static2=http://172.20.0.57:2380")
+        self.assertEqual(sch_proxy.apply(), 0)
+
+    # @unittest.skip("skip")
+    def test_07(self):
+        def fake_fetch_discovery(x):
+            return [
+                {
+                    "boot-info": {
+                        "mac": "52:54:00:95:24:0f",
+                        "uuid": "77fae11f-81ba-4e5f-a2a5-75181887afbc"
+                    },
+                    "interfaces": [
+                        {
+                            "CIDRv4": "127.0.0.1/8",
+                            "IPv4": "127.0.0.1",
+                            "MAC": "",
+                            "name": "lo",
+                            "netmask": 8
+                        },
+                        {
+                            "CIDRv4": "172.20.0.57/21",
+                            "IPv4": "172.20.0.57",
+                            "MAC": "52:54:00:95:24:0f",
+                            "name": "eth0",
+                            "netmask": 21
+                        }
+                    ],
+                    "lldp": {
+                        "data": {
+                            "interfaces": [
+                                {
+                                    "chassis": {
+                                        "id": "28:f1:0e:12:20:00",
+                                        "name": "rkt-2253e328-b6b0-42a2-bc38-977a8efb4908"
+                                    },
+                                    "port": {
+                                        "id": "fe:54:00:95:24:0f"
+                                    }
+                                }
+                            ]
+                        },
+                        "is_file": True
+                    }
+                },
+                {
+                    "boot-info": {
+                        "mac": "52:54:00:a4:32:b5",
+                        "uuid": "7faef191-44d2-4dd9-9492-63b8cce55eae"
+                    },
+                    "interfaces": [
+                        {
+                            "CIDRv4": "127.0.0.1/8",
+                            "IPv4": "127.0.0.1",
+                            "MAC": "",
+                            "name": "lo",
+                            "netmask": 8
+                        },
+                        {
+                            "CIDRv4": "172.20.0.83/21",
+                            "IPv4": "172.20.0.83",
+                            "MAC": "52:54:00:a4:32:b5",
+                            "name": "eth0",
+                            "netmask": 21
+                        }
+                    ],
+                    "lldp": {
+                        "data": {
+                            "interfaces": [
+                                {
+                                    "chassis": {
+                                        "id": "28:f1:0e:12:20:00",
+                                        "name": "rkt-2253e328-b6b0-42a2-bc38-977a8efb4908"
+                                    },
+                                    "port": {
+                                        "id": "fe:54:00:a4:32:b5"
+                                    }
+                                }
+                            ]
+                        },
+                        "is_file": True
+                    }
+                },
+                {
+                    "boot-info": {
+                        "mac": "52:54:00:c3:22:c2",
+                        "uuid": "40cab2a6-62eb-4fb3-b798-5aca4c6f3a4c"
+                    },
+                    "interfaces": [
+                        {
+                            "CIDRv4": "127.0.0.1/8",
+                            "IPv4": "127.0.0.1",
+                            "MAC": "",
+                            "name": "lo",
+                            "netmask": 8
+                        },
+                        {
+                            "CIDRv4": "172.20.0.70/21",
+                            "IPv4": "172.20.0.70",
+                            "MAC": "52:54:00:c3:22:c2",
+                            "name": "eth0",
+                            "netmask": 21
+                        }
+                    ],
+                    "lldp": {
+                        "data": {
+                            "interfaces": [
+                                {
+                                    "chassis": {
+                                        "id": "28:f1:0e:12:20:00",
+                                        "name": "rkt-2253e328-b6b0-42a2-bc38-977a8efb4908"
+                                    },
+                                    "port": {
+                                        "id": "fe:54:00:c3:22:c2"
+                                    }
+                                }
+                            ]
+                        },
+                        "is_file": True
+                    }
+                },
+                {
+                    "boot-info": {
+                        "mac": "52:54:00:c3:22:c4",
+                        "uuid": "40cab2a6-62eb-4fb3-b798-5aca4c6f3a8c"
+                    },
+                    "interfaces": [
+                        {
+                            "CIDRv4": "127.0.0.1/8",
+                            "IPv4": "127.0.0.1",
+                            "MAC": "",
+                            "name": "lo",
+                            "netmask": 8
+                        },
+                        {
+                            "CIDRv4": "172.20.0.70/21",
+                            "IPv4": "172.20.0.70",
+                            "MAC": "52:54:00:c3:22:c4",
+                            "name": "eth0",
+                            "netmask": 21
+                        }
+                    ],
+                    "lldp": {
+                        "data": {
+                            "interfaces": [
+                                {
+                                    "chassis": {
+                                        "id": "28:f1:0e:12:20:00",
+                                        "name": "rkt-2253e328-b6b0-42a2-bc38-977a8efb4908"
+                                    },
+                                    "port": {
+                                        "id": "fe:54:00:c3:22:c4"
+                                    }
+                                }
+                            ]
+                        },
+                        "is_file": True
+                    }
+                }
+            ]
+
+        marker = "unit-%s-" % TestEtcdSchedulerProxy.__name__.lower()
+        sch_member = scheduler.EtcdMemberScheduler(
+            "http://127.0.0.1:5000",
+            self.test_bootcfg_path,
+            ignition_member="%semember" % marker,
+            bootcfg_prefix=marker)
+        sch_member.fetch_discovery = fake_fetch_discovery
+        sch_proxy = scheduler.EtcdProxyScheduler(
+            etcd_member_instance=sch_member,
+            ignition_proxy="%seproxy" % marker,
+            apply_first=True
+        )
+        sch_proxy.fetch_discovery = fake_fetch_discovery
+        self.assertEqual(sch_proxy.etcd_initial_cluster,
+                         "static0=http://172.20.0.70:2380,"
+                         "static1=http://172.20.0.83:2380,"
+                         "static2=http://172.20.0.57:2380")
+        self.assertEqual(sch_proxy.apply(), 1)
