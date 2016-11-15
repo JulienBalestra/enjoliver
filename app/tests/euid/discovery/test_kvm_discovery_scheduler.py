@@ -206,6 +206,7 @@ class TestKVMDiscoveryScheduler(TestCase):
         cls.p_api.start()
         assert cls.p_api.is_alive() is True
 
+        cls.fetch_lldpd()
         cls.p_lldp = Process(target=TestKVMDiscoveryScheduler.process_target_lldpd)
         cls.p_lldp.start()
         assert cls.p_lldp.is_alive() is True
