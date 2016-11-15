@@ -46,6 +46,14 @@
     
 # Backlog / No priority   
 
+### Refactor the lldp.aci to no depends on old style dgr builds
+
+* lldp/aci-base
+* lldp/aci-debian
+
+
+### rkt stage for KVM-QEMU
+
 * rkt KVM-QEMU from ubuntu 16.04 
     
     
