@@ -55,21 +55,21 @@ $(RKT):
 	mkdir -pv $(RKT_DIR_DATA)
 	curl -Lf $(RKT_RELEASE) -o $(RKT).tar.gz
 	tar -C $(RKT_DIR) -xzf $(RKT).tar.gz --strip-components=1
-	$(CWD)/$(RKT) --dir=$(CWD)/$(RKT_DIR)/data fetch \
+	$(CWD)/gen_config.py
+	$(CWD)/$(RKT) --local-config=$(CWD) fetch \
     		--insecure-options=all $(RKT_DIR)/stage1-coreos.aci
-	$(CWD)/$(RKT) --dir=$(CWD)/$(RKT_DIR)/data image list
+	$(CWD)/$(RKT) --local-config=$(CWD) image list
 
 fetch: $(RKT)
-	$(CWD)/$(RKT) --dir=$(CWD)/$(RKT_DIR)/data fetch \
+	$(CWD)/$(RKT) --local-config=$(CWD) fetch \
 		--insecure-options=all quay.io/coreos/dnsmasq:v0.3.0
-	$(CWD)/$(RKT) --dir=$(CWD)/$(RKT_DIR)/data image list
+	$(CWD)/$(RKT) --local-config=$(CWD) image list
 
 dnsmasq:
 	@file $(RKT)
 	@cat $(CWD)/dnsmasq-rack0.conf
 	$(CWD)/$(RKT) \
 		--interactive \
-		--dir=$(CWD)/$(RKT_DIR)/data \
 		--mount volume=config,target=/etc/dnsmasq.conf \
 		--local-config=$(CWD) \
 		run --insecure-options=all \
@@ -78,16 +78,17 @@ dnsmasq:
 		--volume config,kind=host,source=$(CWD)/dnsmasq-rack0.conf
 
 gc:
-	test ! -e $(CWD)/$(RKT) || $(CWD)/$(RKT) --dir=$(CWD)/$(RKT_DIR)/data gc --grace-period=0s
+	test ! -e $(CWD)/$(RKT) || $(CWD)/$(RKT) --local-config=$(CWD) gc --grace-period=0s
 
 gci:
-	test ! -e $(CWD)/$(RKT) || $(CWD)/$(RKT) --dir=$(CWD)/$(RKT_DIR)/data image gc --grace-period=0s
+	test ! -e $(CWD)/$(RKT) || $(CWD)/$(RKT) --local-config=$(CWD) image gc --grace-period=0s
 
 clean:
 	rm -Rfv $(BOOTCFG_DIR)
 	rm -Rfv $(RKT_DIR)
 	rm -v $(ISO)
 	rm -v $(KKK)
+	rm -v paths.d/*.json
 	make -C $(PROJECT)/chain clean
 
 fclean: clean gci gc

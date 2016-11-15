@@ -65,8 +65,6 @@ class TestKVMBasicPXE(TestCase):
     def process_target_dnsmasq():
         cmd = [
             "%s/rkt_dir/rkt" % TestKVMBasicPXE.tests_path,
-            # "--debug",
-            "--dir=%s/rkt_dir/data" % TestKVMBasicPXE.tests_path,
             "--local-config=%s" % TestKVMBasicPXE.tests_path,
             "--mount",
             "volume=config,target=/etc/dnsmasq.conf",
@@ -93,8 +91,6 @@ class TestKVMBasicPXE(TestCase):
     def process_target_create_rack0():
         cmd = [
             "%s/rkt_dir/rkt" % TestKVMBasicPXE.tests_path,
-            # "--debug",
-            "--dir=%s/rkt_dir/data" % TestKVMBasicPXE.tests_path,
             "--local-config=%s" % TestKVMBasicPXE.tests_path,
             "run",
             "quay.io/coreos/dnsmasq:v0.3.0",
@@ -111,21 +107,6 @@ class TestKVMBasicPXE(TestCase):
 
     @staticmethod
     def dns_masq_running():
-        """
-        net.d/10-rack0.conf
-        {
-            "name": "rack0",
-            "type": "bridge",
-            "bridge": "rack0",
-            "isGateway": true,
-            "ipMasq": true,
-            "ipam": {
-                "type": "host-local",
-                "subnet": "172.20.0.0/21",
-                "routes" : [ { "dst" : "0.0.0.0/0" } ]
-            }
-        }
-        """
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         result = 1
         for i in xrange(120):
@@ -208,8 +189,6 @@ class TestKVMBasicPXE(TestCase):
         # cls.clean_sandbox()
         subprocess.call([
             "%s/rkt_dir/rkt" % TestKVMBasicPXE.tests_path,
-            "--debug",
-            "--dir=%s/rkt_dir/data" % TestKVMBasicPXE.tests_path,
             "--local-config=%s" % TestKVMBasicPXE.tests_path,
             "gc",
             "--grace-period=0s"])
