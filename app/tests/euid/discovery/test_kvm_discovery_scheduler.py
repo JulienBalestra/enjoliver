@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import socket
@@ -12,6 +13,16 @@ from unittest import TestCase
 from app import api
 from app import generator
 from app import scheduler
+
+
+def pause(s=200):
+    try:
+        os.write(2, "\r==> sleep %d...\n\r" % s)
+        time.sleep(s)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        os.write(2, "\r==> sleep finish\n\r" % s)
 
 
 @unittest.skipIf(os.geteuid() != 0,
@@ -57,7 +68,7 @@ class TestKVMDiscoveryScheduler(TestCase):
         os.write(1, "PID  -> %s\n"
                     "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
         sys.stdout.flush()
-        os.execv(cmd[0], cmd)
+        os.execve(cmd[0], cmd, os.environ)
 
     @staticmethod
     def process_target_api():
@@ -78,6 +89,7 @@ class TestKVMDiscoveryScheduler(TestCase):
             "--insecure-options=all",
             "--net=host",
             "--interactive",
+            "--set-env=TERM=%s" % os.getenv("TERM", "xterm"),
             "--uuid-file-save=/tmp/dnsmasq.uuid",
             "--volume",
             "resolv,kind=host,source=/etc/resolv.conf",
@@ -87,7 +99,7 @@ class TestKVMDiscoveryScheduler(TestCase):
         os.write(1, "PID  -> %s\n"
                     "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
         sys.stdout.flush()
-        os.execv(cmd[0], cmd)
+        os.execve(cmd[0], cmd, os.environ)
         os._exit(2)
 
     @staticmethod
@@ -110,6 +122,7 @@ class TestKVMDiscoveryScheduler(TestCase):
             "--insecure-options=all",
             "--net=host",
             "--interactive",
+            "--set-env=TERM=%s" % os.getenv("TERM", "xterm"),
             "--exec",
             "/usr/sbin/lldpd",
             "--",
@@ -117,7 +130,7 @@ class TestKVMDiscoveryScheduler(TestCase):
         os.write(1, "PID  -> %s\n"
                     "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
         sys.stdout.flush()
-        os.execv(cmd[0], cmd)
+        os.execve(cmd[0], cmd, os.environ)
         os._exit(2)  # Should not happen
 
     @staticmethod
@@ -130,12 +143,13 @@ class TestKVMDiscoveryScheduler(TestCase):
             "--insecure-options=all",
             "--net=rack0",
             "--interactive",
+            "--set-env=TERM=%s" % os.getenv("TERM", "xterm"),
             "--exec",
             "/bin/true"]
         os.write(1, "PID  -> %s\n"
                     "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
         sys.stdout.flush()
-        os.execv(cmd[0], cmd)
+        os.execve(cmd[0], cmd, os.environ)
         os._exit(2)  # Should not happen
 
     @staticmethod
@@ -185,16 +199,11 @@ class TestKVMDiscoveryScheduler(TestCase):
         cls.p_bootcfg.start()
         assert cls.p_bootcfg.is_alive() is True
 
-        if subprocess.call(["ip", "link", "show", "rack0"], stdout=None) != 0:
-            p_create_rack0 = Process(
-                target=TestKVMDiscoveryScheduler.process_target_create_rack0)
-            p_create_rack0.start()
-            for i in xrange(60):
-                if p_create_rack0.exitcode == 0:
-                    os.write(1, "Bridge done\n\r")
-                    break
-                os.write(1, "Bridge not ready\n\r")
-                time.sleep(0.5)
+        p_create_rack0 = Process(
+            target=TestKVMDiscoveryScheduler.process_target_create_rack0)
+        p_create_rack0.start()
+        p_create_rack0.join(5)
+        os.write(1, "\rBridge w/ iptables creation exitcode:%d\n\r" % p_create_rack0.exitcode)
         assert subprocess.call(["ip", "link", "show", "rack0"]) == 0
 
         cls.p_dnsmasq = Process(target=TestKVMDiscoveryScheduler.process_target_dnsmasq)
@@ -571,6 +580,114 @@ class TestKVMDiscoveryScheduler2(TestKVMDiscoveryScheduler):
             ips_collected = sch.members_ip
 
             for i in xrange(30):
+                try:
+                    endpoint = "http://%s:2379/v2/members" % ips_collected[0]
+                    request = urllib2.urlopen(endpoint)
+                    response_body = json.loads(request.read())
+                    request.close()
+                    if len(response_body["members"]) == nb_node:
+                        break
+                except urllib2.URLError:
+                    pass
+
+                time.sleep(6)
+
+            endpoint = "http://%s:2379/v2/members" % ips_collected[0]
+            request = urllib2.urlopen(endpoint)
+            response_body = json.loads(request.read())
+            request.close()
+            self.assertEqual(len(response_body["members"]), nb_node)
+
+        finally:
+            for i in xrange(nb_node):
+                machine_marker = "%s-%d" % (marker, i)
+                destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
+                                    ["virsh", "undefine", "%s" % machine_marker]
+                self.virsh(destroy), os.write(1, "\r")
+                self.virsh(undefine), os.write(1, "\r")
+
+
+# @unittest.skip("skip")
+@unittest.skipIf(os.geteuid() != 0,
+                 "TestKVMDiscovery need privilege")
+class TestKVMDiscoveryScheduler3(TestKVMDiscoveryScheduler):
+    # @unittest.skip("just skip")
+    def test_03(self):
+        self.assertIsNone(self.fetch_discovery_interfaces()["interfaces"])
+        nb_node = 3
+        marker = "euid-%s-%s" % (TestKVMDiscoveryScheduler.__name__.lower(), self.test_03.__name__)
+        nodes = ["%s-%d" % (marker, i) for i in xrange(nb_node)]
+        os.environ["BOOTCFG_IP"] = "172.20.0.1"
+        os.environ["API_IP"] = "172.20.0.1"
+        gen = generator.Generator(
+            profile_id="%s" % marker,
+            name="%s" % marker,
+            ignition_id="%s.yaml" % marker,
+            bootcfg_path=self.test_bootcfg_path
+        )
+        gen.dumps()
+        for m in nodes:
+            destroy, undefine = ["virsh", "destroy", m], \
+                                ["virsh", "undefine", m]
+            self.virsh(destroy, v=self.dev_null), self.virsh(undefine, v=self.dev_null)
+        try:
+            for m in nodes:
+                virt_install = [
+                    "virt-install",
+                    "--name",
+                    "%s" % m,
+                    "--network=bridge:rack0,model=virtio",
+                    "--memory=2048",
+                    "--vcpus=1",
+                    "--pxe",
+                    "--disk",
+                    "none",
+                    "--os-type=linux",
+                    "--os-variant=generic",
+                    "--noautoconsole",
+                    "--boot=network"
+                ]
+                self.virsh(virt_install, assertion=True, v=self.dev_null)
+                time.sleep(3)  # KVM fail to associate nic
+
+            sch = scheduler.EtcdMemberScheduler(
+                api_endpoint=self.api_endpoint,
+                bootcfg_path=self.test_bootcfg_path,
+                ignition_member="%s-emember" % marker,
+                bootcfg_prefix="%s-" % marker
+            )
+
+            time.sleep(10)
+            for i in xrange(30):
+                if sch.apply() is True:
+                    break
+                time.sleep(6)
+
+            self.assertTrue(sch.apply())
+
+            # TODO -> KVM doesn't restart itself
+            to_start = copy.deepcopy(nodes)
+            for j in xrange(60):
+                if len(to_start) == 0:
+                    break
+
+                for i, m in enumerate(to_start):
+                    start = ["virsh", "start", "%s" % m]
+                    try:
+                        self.virsh(start, assertion=True), os.write(1, "\r")
+                        to_start.pop(i)
+                        time.sleep(4)
+
+                    except RuntimeError:
+                        # virsh raise this
+                        pass
+
+                time.sleep(2)
+
+            self.assertEqual(len(to_start), 0)
+            ips_collected = sch.members_ip
+
+            for i in xrange(20):
                 try:
                     endpoint = "http://%s:2379/v2/members" % ips_collected[0]
                     request = urllib2.urlopen(endpoint)
