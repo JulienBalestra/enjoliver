@@ -78,6 +78,7 @@ class TestKVMDiscoveryClient(TestCase):
             "--insecure-options=all",
             "--net=host",
             "--interactive",
+            "--set-env=TERM=%s" % os.getenv("TERM", "xterm"),
             "--uuid-file-save=/tmp/dnsmasq.uuid",
             "--volume",
             "resolv,kind=host,source=/etc/resolv.conf",
@@ -100,6 +101,7 @@ class TestKVMDiscoveryClient(TestCase):
             "--insecure-options=all",
             "--net=rack0",
             "--interactive",
+            "--set-env=TERM=%s" % os.getenv("TERM", "xterm"),
             "--exec",
             "/bin/true"]
         os.write(1, "PID  -> %s\n"
@@ -128,6 +130,7 @@ class TestKVMDiscoveryClient(TestCase):
             "--insecure-options=all",
             "--net=host",
             "--interactive",
+            "--set-env=TERM=%s" % os.getenv("TERM", "xterm"),
             "--exec",
             "/usr/sbin/lldpd",
             "--",
