@@ -52,6 +52,20 @@
 * lldp/aci-debian
 
 
+### Store the POST discovery data inside a DB
+
+* Etcd with ODM
+* Real db cluster for Documents
+
+
+### Keep and history of each POST discovery
+
+* Real db cluster for Documents (capped)
+
+### Store the scheduling results in DB
+
+* Real db cluster for Documents
+
 ### rkt stage for KVM-QEMU
 
 * rkt KVM-QEMU from ubuntu 16.04 
