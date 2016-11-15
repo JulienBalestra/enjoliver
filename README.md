@@ -14,6 +14,7 @@
 * virtualenv
 * KVM-QEMU
 * Go
+* iptables-restore
 
 
     kvm-ok 
@@ -43,30 +44,38 @@
     sudo make check_euid
 
 
+# TODO
+
+#### QEMU-KVM doesn't restart itself when invoking systemctl reboot: stay power off 
+
     
 # Backlog / No priority   
 
-### Refactor the lldp.aci to no depends on old style dgr builds
+#### Keep SSH config (KeyChecking)
+
+#### Avoid reset -q after lldp exit
+
+#### Refactor the lldp.aci to no depends on old style dgr builds
 
 * lldp/aci-base
 * lldp/aci-debian
 
 
-### Store the POST discovery data inside a DB
+#### Store the POST discovery data inside a DB
 
 * Etcd with ODM
 * Real db cluster for Documents
 
 
-### Keep and history of each POST discovery
+#### Keep and history of each POST discovery
 
 * Real db cluster for Documents (capped)
 
-### Store the scheduling results in DB
+#### Store the scheduling results in DB
 
 * Real db cluster for Documents
 
-### rkt stage for KVM-QEMU
+#### rkt stage for KVM-QEMU
 
 * rkt KVM-QEMU from ubuntu 16.04 
     
