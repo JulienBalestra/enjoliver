@@ -68,8 +68,6 @@ class TestKVMDiscoveryScheduler(TestCase):
     def process_target_dnsmasq():
         cmd = [
             "%s/rkt_dir/rkt" % TestKVMDiscoveryScheduler.tests_path,
-            # "--debug",
-            "--dir=%s/rkt_dir/data" % TestKVMDiscoveryScheduler.tests_path,
             "--local-config=%s" % TestKVMDiscoveryScheduler.tests_path,
             "--mount",
             "volume=config,target=/etc/dnsmasq.conf",
@@ -96,8 +94,6 @@ class TestKVMDiscoveryScheduler(TestCase):
     def fetch_lldpd():
         cmd = [
             "%s/rkt_dir/rkt" % TestKVMDiscoveryScheduler.tests_path,
-            # "--debug",
-            "--dir=%s/rkt_dir/data" % TestKVMDiscoveryScheduler.tests_path,
             "--local-config=%s" % TestKVMDiscoveryScheduler.tests_path,
             "fetch",
             "--insecure-options=all",
@@ -108,8 +104,6 @@ class TestKVMDiscoveryScheduler(TestCase):
     def process_target_lldpd():
         cmd = [
             "%s/rkt_dir/rkt" % TestKVMDiscoveryScheduler.tests_path,
-            # "--debug",
-            "--dir=%s/rkt_dir/data" % TestKVMDiscoveryScheduler.tests_path,
             "--local-config=%s" % TestKVMDiscoveryScheduler.tests_path,
             "run",
             "static-aci-lldp",
@@ -130,8 +124,6 @@ class TestKVMDiscoveryScheduler(TestCase):
     def process_target_create_rack0():
         cmd = [
             "%s/rkt_dir/rkt" % TestKVMDiscoveryScheduler.tests_path,
-            # "--debug",
-            "--dir=%s/rkt_dir/data" % TestKVMDiscoveryScheduler.tests_path,
             "--local-config=%s" % TestKVMDiscoveryScheduler.tests_path,
             "run",
             "quay.io/coreos/dnsmasq:v0.3.0",
@@ -235,8 +227,6 @@ class TestKVMDiscoveryScheduler(TestCase):
         # cls.clean_sandbox()
         subprocess.call([
             "%s/rkt_dir/rkt" % TestKVMDiscoveryScheduler.tests_path,
-            "--debug",
-            "--dir=%s/rkt_dir/data" % TestKVMDiscoveryScheduler.tests_path,
             "--local-config=%s" % TestKVMDiscoveryScheduler.tests_path,
             "gc",
             "--grace-period=0s"])

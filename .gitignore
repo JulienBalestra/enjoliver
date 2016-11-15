@@ -32,3 +32,4 @@ serve
 /lldp/static-aci-lldp-0.aci
 /lldp/lldp.render/
 /lldp/aci-lldp/target/
+/app/tests/paths.d/paths.json

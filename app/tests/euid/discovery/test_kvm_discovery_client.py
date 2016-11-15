@@ -68,8 +68,6 @@ class TestKVMDiscoveryClient(TestCase):
     def process_target_dnsmasq():
         cmd = [
             "%s/rkt_dir/rkt" % TestKVMDiscoveryClient.tests_path,
-            # "--debug",
-            "--dir=%s/rkt_dir/data" % TestKVMDiscoveryClient.tests_path,
             "--local-config=%s" % TestKVMDiscoveryClient.tests_path,
             "--mount",
             "volume=config,target=/etc/dnsmasq.conf",
@@ -96,8 +94,6 @@ class TestKVMDiscoveryClient(TestCase):
     def process_target_create_rack0():
         cmd = [
             "%s/rkt_dir/rkt" % TestKVMDiscoveryClient.tests_path,
-            # "--debug",
-            "--dir=%s/rkt_dir/data" % TestKVMDiscoveryClient.tests_path,
             "--local-config=%s" % TestKVMDiscoveryClient.tests_path,
             "run",
             "quay.io/coreos/dnsmasq:v0.3.0",
@@ -116,8 +112,6 @@ class TestKVMDiscoveryClient(TestCase):
     def fetch_lldpd():
         cmd = [
             "%s/rkt_dir/rkt" % TestKVMDiscoveryClient.tests_path,
-            # "--debug",
-            "--dir=%s/rkt_dir/data" % TestKVMDiscoveryClient.tests_path,
             "--local-config=%s" % TestKVMDiscoveryClient.tests_path,
             "fetch",
             "--insecure-options=all",
@@ -128,8 +122,6 @@ class TestKVMDiscoveryClient(TestCase):
     def process_target_lldpd():
         cmd = [
             "%s/rkt_dir/rkt" % TestKVMDiscoveryClient.tests_path,
-            # "--debug",
-            "--dir=%s/rkt_dir/data" % TestKVMDiscoveryClient.tests_path,
             "--local-config=%s" % TestKVMDiscoveryClient.tests_path,
             "run",
             "static-aci-lldp",
@@ -238,8 +230,6 @@ class TestKVMDiscoveryClient(TestCase):
 
         subprocess.call([
             "%s/rkt_dir/rkt" % TestKVMDiscoveryClient.tests_path,
-            "--debug",
-            "--dir=%s/rkt_dir/data" % TestKVMDiscoveryClient.tests_path,
             "--local-config=%s" % TestKVMDiscoveryClient.tests_path,
             "gc",
             "--grace-period=0s"])
