@@ -1,7 +1,7 @@
 CHECK=check
 CHECK_EUID=check_euid
 
-default: submodules assets
+default: submodules
 
 
 acis:
@@ -9,12 +9,12 @@ acis:
 	make -C lldp
 
 assets:
+	make -C bootcfg/assets/lldp
 	make -C bootcfg/assets/coreos
 	make -C bootcfg/assets/coreos serve
 	make -C bootcfg/assets/setup-network-environment
 	make -C bootcfg/assets/setup-network-environment serve
 	make -C bootcfg/assets/discoveryC
-	make -C bootcfg/assets/lldp
 
 clean:
 	make -C bootcfg/assets/coreos fclean
@@ -27,6 +27,7 @@ $(CHECK):
 	make -C app/tests/ $(CHECK)
 
 $(CHECK_EUID):
+	test $(shell id -u -r) -eq 0
 	make -C app/tests/ $(CHECK_EUID)
 
 submodules:
