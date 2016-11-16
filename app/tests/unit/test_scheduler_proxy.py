@@ -3,6 +3,8 @@ import os
 import subprocess
 import unittest
 
+import time
+
 from app import scheduler
 
 
@@ -29,6 +31,26 @@ class TestEtcdSchedulerProxy(unittest.TestCase):
                 if ".json" in f:
                     os.write(1, "\r-> remove %s\n\r" % f)
                     os.remove("%s/%s" % (d, f))
+
+    @staticmethod
+    def get_something(things):
+        l = []
+        d = "%s/%s" % (TestEtcdSchedulerProxy.test_bootcfg_path, things)
+        for f in os.listdir(d):
+            if ".gitkeep" == f:
+                continue
+            with open("%s/%s" % (d, f), 'r') as j:
+                content = j.read()
+            l.append(json.loads(content))
+        return l
+
+    @staticmethod
+    def get_profiles():
+        return TestEtcdSchedulerProxy.get_something("profiles")
+
+    @staticmethod
+    def get_groups():
+        return TestEtcdSchedulerProxy.get_something("groups")
 
     def setUp(self):
         self.clean_sandbox()
@@ -254,6 +276,10 @@ class TestEtcdSchedulerProxy(unittest.TestCase):
                          "static0=http://172.20.0.70:2380,"
                          "static1=http://172.20.0.83:2380,"
                          "static2=http://172.20.0.57:2380")
+        profiles = self.get_profiles()
+        self.assertEqual(len(profiles), 1)
+        groups = self.get_groups()
+        self.assertEqual(len(groups), 3)
 
     # @unittest.skip("skip")
     def test_04(self):
@@ -391,6 +417,10 @@ class TestEtcdSchedulerProxy(unittest.TestCase):
                          "static0=http://172.20.0.70:2380,"
                          "static1=http://172.20.0.83:2380,"
                          "static2=http://172.20.0.57:2380")
+        profiles = self.get_profiles()
+        self.assertEqual(len(profiles), 1)
+        groups = self.get_groups()
+        self.assertEqual(len(groups), 3)
 
     # @unittest.skip("skip")
     def test_05(self):
@@ -530,6 +560,10 @@ class TestEtcdSchedulerProxy(unittest.TestCase):
                          "static0=http://172.20.0.70:2380,"
                          "static1=http://172.20.0.83:2380,"
                          "static2=http://172.20.0.57:2380")
+        profiles = self.get_profiles()
+        self.assertEqual(len(profiles), 1)
+        groups = self.get_groups()
+        self.assertEqual(len(groups), 3)
 
     # @unittest.skip("skip")
     def test_06(self):
@@ -669,6 +703,10 @@ class TestEtcdSchedulerProxy(unittest.TestCase):
                          "static1=http://172.20.0.83:2380,"
                          "static2=http://172.20.0.57:2380")
         self.assertEqual(sch_proxy.apply(), 0)
+        profiles = self.get_profiles()
+        self.assertEqual(len(profiles), 1)
+        groups = self.get_groups()
+        self.assertEqual(len(groups), 3)
 
     # @unittest.skip("skip")
     def test_07(self):
@@ -964,82 +1002,6 @@ class TestEtcdSchedulerProxy(unittest.TestCase):
                         },
                         "is_file": True
                     }
-                },
-                {
-                    "boot-info": {
-                        "mac": "52:54:00:c3:22:c4",
-                        "uuid": "40cab2a6-62eb-4fb3-b798-5aca4c6f3a8c"
-                    },
-                    "interfaces": [
-                        {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
-                            "name": "lo",
-                            "netmask": 8
-                        },
-                        {
-                            "CIDRv4": "172.20.0.100/21",
-                            "IPv4": "172.20.0.100",
-                            "MAC": "52:54:00:c3:22:c4",
-                            "name": "eth0",
-                            "netmask": 21
-                        }
-                    ],
-                    "lldp": {
-                        "data": {
-                            "interfaces": [
-                                {
-                                    "chassis": {
-                                        "id": "28:f1:0e:12:20:00",
-                                        "name": "rkt-2253e328-b6b0-42a2-bc38-977a8efb4908"
-                                    },
-                                    "port": {
-                                        "id": "fe:54:00:c3:22:c4"
-                                    }
-                                }
-                            ]
-                        },
-                        "is_file": True
-                    }
-                },
-                {
-                    "boot-info": {
-                        "mac": "52:54:00:95:24:4f",
-                        "uuid": "77fae11f-81ba-4e5f-a2a5-75181887afbc"
-                    },
-                    "interfaces": [
-                        {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
-                            "name": "lo",
-                            "netmask": 8
-                        },
-                        {
-                            "CIDRv4": "172.20.0.101/21",
-                            "IPv4": "172.20.0.101",
-                            "MAC": "52:54:00:95:24:4f",
-                            "name": "eth0",
-                            "netmask": 21
-                        }
-                    ],
-                    "lldp": {
-                        "data": {
-                            "interfaces": [
-                                {
-                                    "chassis": {
-                                        "id": "28:f1:0e:12:20:00",
-                                        "name": "rkt-2253e328-b6b0-42a2-bc38-977a8efb4908"
-                                    },
-                                    "port": {
-                                        "id": "fe:54:00:95:24:4f"
-                                    }
-                                }
-                            ]
-                        },
-                        "is_file": True
-                    }
                 }
             ]
 
@@ -1060,7 +1022,11 @@ class TestEtcdSchedulerProxy(unittest.TestCase):
                          "static0=http://172.20.0.70:2380,"
                          "static1=http://172.20.0.83:2380,"
                          "static2=http://172.20.0.57:2380")
-        self.assertEqual(sch_proxy.apply(), 2)
+        self.assertEqual(sch_proxy.apply(), 0)
+        profiles = self.get_profiles()
+        self.assertEqual(len(profiles), 1)
+        groups = self.get_groups()
+        self.assertEqual(len(groups), 3)
 
         def fake_fetch_discovery(x):
             return [
@@ -1219,7 +1185,7 @@ class TestEtcdSchedulerProxy(unittest.TestCase):
                 {
                     "boot-info": {
                         "mac": "52:54:00:95:24:4f",
-                        "uuid": "77fae11f-81ba-4e5f-a2a5-75181887afbc"
+                        "uuid": "70fae11f-81ba-4e5f-a2a5-75181887afbc"
                     },
                     "interfaces": [
                         {
@@ -1331,8 +1297,13 @@ class TestEtcdSchedulerProxy(unittest.TestCase):
                     }
                 }
             ]
+
         sch_proxy.fetch_discovery = fake_fetch_discovery
+        self.assertEqual(sch_proxy.apply(), 4)
         self.assertEqual(sch_proxy.apply(), 4)
         self.assertEqual(len(sch_member.done_etcd_member), 3)
         self.assertEqual(len(sch_member.done_etcd_member) + sch_proxy.apply(), len(fake_fetch_discovery(None)))
-
+        profiles = self.get_profiles()
+        self.assertEqual(len(profiles), 2)
+        groups = self.get_groups()
+        self.assertEqual(len(groups), 7)
