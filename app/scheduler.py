@@ -166,6 +166,145 @@ class EtcdProxyScheduler(CommonScheduler):
         return [k for k in self._done_etcd_proxy]
 
 
+class K8sControlPlaneScheduler(CommonScheduler):
+    __name__ = "K8sControlPlaneScheduler"
+
+    apply_deps_delay = 6
+    apply_deps_tries = apply_deps_delay * 50
+
+    control_plane_nb = 3
+
+    def __init__(self,
+                 etcd_member_instance,
+                 ignition_control_plane,
+                 apply_first=False):
+
+        self._etcd_initial_cluster = None
+        self._etcd_member_instance = etcd_member_instance
+
+        if isinstance(self._etcd_member_instance, EtcdMemberScheduler) is False:
+            raise AttributeError("%s not a instanceof(%s)" % (
+                "etcd_member_instance", EtcdMemberScheduler.__name__))
+
+        if apply_first is True:
+            self.apply_member()
+
+        self._ignition_control_plane = ignition_control_plane
+        self.api_endpoint = self._etcd_member_instance.api_endpoint
+        self.bootcfg_prefix = self._etcd_member_instance.bootcfg_prefix
+        self.bootcfg_path = self._etcd_member_instance.bootcfg_path
+        self._gen = generator.Generator
+        self._done_control_plane = set()
+        self._pending_control_plane = set()
+
+    def apply_member(self):
+        if self.etcd_initial_cluster is not None:
+            return True
+        for t in xrange(self.apply_deps_tries):
+            if self._etcd_member_instance.apply() is True:
+                self._etcd_initial_cluster = self._etcd_member_instance.etcd_initial_cluster
+                return True
+            time.sleep(self.apply_deps_delay)
+        raise RuntimeError("timeout after %d" % (
+            self.apply_deps_delay * self.apply_deps_tries))
+
+    def _fifo_control_plane_simple(self, discovery):
+        if not discovery or len(discovery) == 0:
+            os.write(2, "\r-> no machine 0/%d\n\r" % self.control_plane_nb)
+            return self._pending_control_plane
+
+        elif len(discovery) < self.control_plane_nb:
+            os.write(2, "\r-> not enough machines %d/%d\n\r" % (
+                len(discovery), self.control_plane_nb))
+            return self._pending_control_plane
+
+        else:
+            for machine in discovery:
+                ip_mac = self.get_machine_boot_ip_mac(machine)
+
+                if ip_mac in self._etcd_member_instance.done_list:
+                    os.write(2, "\r-> Skip because Etcd Member %s\n\r" % str(ip_mac))
+                elif ip_mac in self._done_control_plane:
+                    os.write(2, "\r-> Skip because K8s Control Plane -> WARNING %s\n\r" % str(ip_mac))
+                elif len(self._pending_control_plane) < self.control_plane_nb:
+                    os.write(2, "\r-> Pending K8s Control Plane %s\n\r" % str(ip_mac))
+                    self._pending_control_plane.add(ip_mac)
+                else:
+                    break
+
+        os.write(2, "\r-> enough machines %d/%d\n\r" % (len(discovery), self.control_plane_nb))
+        return self._pending_control_plane
+
+    def _apply_control_plane(self):
+        os.write(2, "\r-> %s.%s in progress...\n\r" % (self.__name__, self._apply_control_plane.__name__))
+
+        marker = "%s%scontrol-plane" % (self.bootcfg_prefix, "k8s")  # e for Etcd
+
+        new_pending = set()
+        for i, nic in enumerate(self._pending_control_plane):
+            # nic = (IPv4, MAC)
+            self._gen = generator.Generator(
+                group_id="%s-%d" % (marker, i),  # one per machine
+                profile_id=marker,  # link to ignition
+                name="%s-%d" % (marker, i),
+                ignition_id="%s.yaml" % self._ignition_control_plane,
+                bootcfg_path=self.bootcfg_path,
+                selector={"mac": nic[1]},
+                extra_metadata={
+                    # Etcd Proxy
+                    "etcd_initial_cluster": self.etcd_initial_cluster,
+                    "etcd_advertise_client_urls": "http://%s:2379" % nic[0],
+                    "etcd_proxy": "on",
+                    # K8s Control Plane
+                    "apiserver-count": self.control_plane_nb
+                }
+            )
+            self._gen.dumps()
+            self._done_control_plane.add(nic)
+            new_pending = self._pending_control_plane - self._done_control_plane
+            os.write(2, "\r-> %s.%s selector {mac: %s}\n\r" % (
+                self.__name__, self._apply_control_plane.__name__, nic))
+
+        if self._pending_control_plane - self._done_control_plane:
+            raise AssertionError("self._apply_control_plane - self._done_control_plane have to return an empty set")
+        self._pending_control_plane = new_pending
+
+    def apply(self):
+        self.apply_member()
+        # K8s Control Plane
+        if len(self._done_control_plane) < self.control_plane_nb:
+            discovery = self.fetch_discovery(self.api_endpoint)
+            self._fifo_control_plane_simple(discovery)
+            if len(self._pending_control_plane) == self.control_plane_nb:
+                self._apply_control_plane()
+
+        else:
+            os.write(2, "\r-> %s.%s already complete\n\r" %
+                     (self.__name__, self.apply.__name__))
+            return True
+
+        if len(self._done_control_plane) < self.control_plane_nb:
+            return False
+        else:
+            os.write(2, "\r-> %s.%s complete\n\r" %
+                     (self.__name__, self.apply.__name__))
+            return True
+
+    @property
+    def etcd_initial_cluster(self):
+        if self._etcd_initial_cluster is None:
+            self._etcd_initial_cluster = self._etcd_member_instance.etcd_initial_cluster
+        return self._etcd_initial_cluster
+
+    @property
+    def ip_list(self):
+        return []
+
+    @property
+    def done_list(self):
+        return []
+
+
 class EtcdMemberScheduler(CommonScheduler):
     etcd_members_nb = 3
     __name__ = "EtcdMemberScheduler"
