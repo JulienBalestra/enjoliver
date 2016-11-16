@@ -289,6 +289,44 @@ class TestKVMDiscoveryScheduler(TestCase):
         disco_data = json.loads(response_body)
         return disco_data
 
+    def kvm_restart_off_machines(self, to_start, tries=60):
+        for j in xrange(tries):
+            if len(to_start) == 0:
+                break
+
+            for i, m in enumerate(to_start):
+                start = ["virsh", "start", "%s" % m]
+                try:
+                    self.virsh(start, assertion=True), os.write(1, "\r")
+                    to_start.pop(i)
+                    time.sleep(4)
+
+                except RuntimeError:
+                    # virsh raise this
+                    pass
+
+            time.sleep(2)
+        self.assertEqual(len(to_start), 0)
+
+    def etcd_endpoint_health(self, ips, tries=15):
+        for t in xrange(tries):
+            for i, ip in enumerate(ips):
+                try:
+                    endpoint = "http://%s:2379/health" % ip
+                    request = urllib2.urlopen(endpoint)
+                    response_body = json.loads(request.read())
+                    request.close()
+                    os.write(1, "\r-> RESULT %s %s\n\r" % (endpoint, response_body))
+                    sys.stdout.flush()
+                    if response_body == {u"health": u"true"}:
+                        ips.pop(i)
+                        os.write(1, "\r-> REMAIN %s\n\r" % str(ips))
+
+                except urllib2.URLError:
+                    os.write(2, "\r-> NOT READY %s\n\r" % ip)
+                    time.sleep(6)
+        self.assertEqual(len(ips), 0)
+
 
 # @unittest.skip("skip")
 @unittest.skipIf(os.geteuid() != 0,
@@ -667,24 +705,7 @@ class TestKVMDiscoveryScheduler3(TestKVMDiscoveryScheduler):
 
             # TODO -> KVM doesn't restart itself
             to_start = copy.deepcopy(nodes)
-            for j in xrange(60):
-                if len(to_start) == 0:
-                    break
-
-                for i, m in enumerate(to_start):
-                    start = ["virsh", "start", "%s" % m]
-                    try:
-                        self.virsh(start, assertion=True), os.write(1, "\r")
-                        to_start.pop(i)
-                        time.sleep(4)
-
-                    except RuntimeError:
-                        # virsh raise this
-                        pass
-
-                time.sleep(2)
-
-            self.assertEqual(len(to_start), 0)
+            self.kvm_restart_off_machines(to_start)
             ips_collected = sch.members_ip
 
             for i in xrange(20):
@@ -705,6 +726,314 @@ class TestKVMDiscoveryScheduler3(TestKVMDiscoveryScheduler):
             response_body = json.loads(request.read())
             request.close()
             self.assertEqual(len(response_body["members"]), nb_node)
+
+        finally:
+            for i in xrange(nb_node):
+                machine_marker = "%s-%d" % (marker, i)
+                destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
+                                    ["virsh", "undefine", "%s" % machine_marker]
+                self.virsh(destroy), os.write(1, "\r")
+                self.virsh(undefine), os.write(1, "\r")
+
+
+#
+# => Below KVM Instance will auto shutdown and testing suite will reboot them
+#
+
+# @unittest.skip("skip")
+@unittest.skipIf(os.geteuid() != 0,
+                 "TestKVMDiscovery need privilege")
+class TestKVMDiscoveryScheduler4(TestKVMDiscoveryScheduler):
+    # @unittest.skip("just skip")
+    def test_04(self):
+        self.assertIsNone(self.fetch_discovery_interfaces()["interfaces"])
+        nb_node = 4
+        marker = "euid-%s-%s" % (TestKVMDiscoveryScheduler.__name__.lower(), self.test_04.__name__)
+        nodes = ["%s-%d" % (marker, i) for i in xrange(nb_node)]
+        os.environ["BOOTCFG_IP"] = "172.20.0.1"
+        os.environ["API_IP"] = "172.20.0.1"
+        gen = generator.Generator(
+            profile_id="%s" % marker,
+            name="%s" % marker,
+            ignition_id="%s.yaml" % marker,
+            bootcfg_path=self.test_bootcfg_path
+        )
+        gen.dumps()
+        for m in nodes:
+            destroy, undefine = ["virsh", "destroy", m], \
+                                ["virsh", "undefine", m]
+            self.virsh(destroy, v=self.dev_null), self.virsh(undefine, v=self.dev_null)
+        try:
+            for m in nodes:
+                virt_install = [
+                    "virt-install",
+                    "--name",
+                    "%s" % m,
+                    "--network=bridge:rack0,model=virtio",
+                    "--memory=2048",
+                    "--vcpus=1",
+                    "--pxe",
+                    "--disk",
+                    "none",
+                    "--os-type=linux",
+                    "--os-variant=generic",
+                    "--noautoconsole",
+                    "--boot=network"
+                ]
+                self.virsh(virt_install, assertion=True, v=self.dev_null)
+                time.sleep(3)  # KVM fail to associate nic
+
+            sch_member = scheduler.EtcdMemberScheduler(
+                api_endpoint=self.api_endpoint,
+                bootcfg_path=self.test_bootcfg_path,
+                ignition_member="%s-emember" % marker,
+                bootcfg_prefix="%s-" % marker
+            )
+
+            time.sleep(10)
+            for i in xrange(30):
+                if sch_member.apply() is True:
+                    break
+                time.sleep(6)
+
+            self.assertTrue(sch_member.apply())
+            sch_proxy = scheduler.EtcdProxyScheduler(
+                etcd_member_instance=sch_member,
+                ignition_proxy="%s-emember" % marker,
+                apply_first=False
+            )
+            for i in xrange(5):
+                if sch_proxy.apply() == 1:
+                    break
+                time.sleep(6)
+
+            self.assertEqual(sch_proxy.apply(), 1)
+
+            # TODO -> KVM doesn't restart itself
+            to_start = copy.deepcopy(nodes)
+            self.kvm_restart_off_machines(to_start)
+
+            ips_collected = sch_member.members_ip
+
+            response_body = {}
+            for i in xrange(20):
+                try:
+                    endpoint = "http://%s:2379/v2/members" % ips_collected[0]
+                    request = urllib2.urlopen(endpoint)
+                    response_body = json.loads(request.read())
+                    request.close()
+                    if len(response_body["members"]) == sch_member.etcd_members_nb:
+                        break
+                except urllib2.URLError:
+                    pass
+
+                time.sleep(6)
+
+            self.assertEqual(len(response_body["members"]), sch_member.etcd_members_nb)
+            self.etcd_endpoint_health(sch_proxy.proxies_ip)
+
+        finally:
+            for i in xrange(nb_node):
+                machine_marker = "%s-%d" % (marker, i)
+                destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
+                                    ["virsh", "undefine", "%s" % machine_marker]
+                self.virsh(destroy), os.write(1, "\r")
+                self.virsh(undefine), os.write(1, "\r")
+
+
+# @unittest.skip("skip")
+@unittest.skipIf(os.geteuid() != 0,
+                 "TestKVMDiscovery need privilege")
+class TestKVMDiscoveryScheduler5(TestKVMDiscoveryScheduler):
+    # @unittest.skip("just skip")
+    def test_05(self):
+        self.assertIsNone(self.fetch_discovery_interfaces()["interfaces"])
+        nb_node = 5
+        marker = "euid-%s-%s" % (TestKVMDiscoveryScheduler.__name__.lower(), self.test_05.__name__)
+        nodes = ["%s-%d" % (marker, i) for i in xrange(nb_node)]
+        os.environ["BOOTCFG_IP"] = "172.20.0.1"
+        os.environ["API_IP"] = "172.20.0.1"
+        gen = generator.Generator(
+            profile_id="%s" % marker,
+            name="%s" % marker,
+            ignition_id="%s.yaml" % marker,
+            bootcfg_path=self.test_bootcfg_path
+        )
+        gen.dumps()
+        for m in nodes:
+            destroy, undefine = ["virsh", "destroy", m], \
+                                ["virsh", "undefine", m]
+            self.virsh(destroy, v=self.dev_null), self.virsh(undefine, v=self.dev_null)
+        try:
+            for m in nodes:
+                virt_install = [
+                    "virt-install",
+                    "--name",
+                    "%s" % m,
+                    "--network=bridge:rack0,model=virtio",
+                    "--memory=2048",
+                    "--vcpus=1",
+                    "--pxe",
+                    "--disk",
+                    "none",
+                    "--os-type=linux",
+                    "--os-variant=generic",
+                    "--noautoconsole",
+                    "--boot=network"
+                ]
+                self.virsh(virt_install, assertion=True, v=self.dev_null)
+                time.sleep(3)  # KVM fail to associate nic
+
+            sch_member = scheduler.EtcdMemberScheduler(
+                api_endpoint=self.api_endpoint,
+                bootcfg_path=self.test_bootcfg_path,
+                ignition_member="%s-emember" % marker,
+                bootcfg_prefix="%s-" % marker
+            )
+
+            time.sleep(20)
+            for i in xrange(30):
+                if sch_member.apply() is True:
+                    break
+                time.sleep(6)
+
+            self.assertTrue(sch_member.apply())
+            sch_proxy = scheduler.EtcdProxyScheduler(
+                etcd_member_instance=sch_member,
+                ignition_proxy="%s-emember" % marker,
+                apply_first=False
+            )
+            for i in xrange(10):
+                if sch_proxy.apply() == 2:
+                    break
+                time.sleep(6)
+
+            self.assertEqual(sch_proxy.apply(), 2)
+
+            # TODO -> KVM doesn't restart itself
+            to_start = copy.deepcopy(nodes)
+            self.kvm_restart_off_machines(to_start)
+
+            ips_collected = sch_member.members_ip
+
+            response_body = {}
+            for i in xrange(20):
+                try:
+                    endpoint = "http://%s:2379/v2/members" % ips_collected[0]
+                    request = urllib2.urlopen(endpoint)
+                    response_body = json.loads(request.read())
+                    request.close()
+                    if len(response_body["members"]) == sch_member.etcd_members_nb:
+                        break
+                except urllib2.URLError:
+                    pass
+
+                time.sleep(6)
+
+            self.assertEqual(len(response_body["members"]), sch_member.etcd_members_nb)
+            self.etcd_endpoint_health(sch_proxy.proxies_ip)
+
+        finally:
+            for i in xrange(nb_node):
+                machine_marker = "%s-%d" % (marker, i)
+                destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
+                                    ["virsh", "undefine", "%s" % machine_marker]
+                self.virsh(destroy), os.write(1, "\r")
+                self.virsh(undefine), os.write(1, "\r")
+
+
+# @unittest.skip("skip")
+@unittest.skipIf(os.geteuid() != 0,
+                 "TestKVMDiscovery need privilege")
+class TestKVMDiscoveryScheduler6(TestKVMDiscoveryScheduler):
+    # @unittest.skip("just skip")
+    def test_06(self):
+        self.assertIsNone(self.fetch_discovery_interfaces()["interfaces"])
+        nb_node = 5
+        marker = "euid-%s-%s" % (TestKVMDiscoveryScheduler.__name__.lower(), self.test_06.__name__)
+        nodes = ["%s-%d" % (marker, i) for i in xrange(nb_node)]
+        os.environ["BOOTCFG_IP"] = "172.20.0.1"
+        os.environ["API_IP"] = "172.20.0.1"
+        gen = generator.Generator(
+            profile_id="%s" % marker,
+            name="%s" % marker,
+            ignition_id="%s.yaml" % marker,
+            bootcfg_path=self.test_bootcfg_path
+        )
+        gen.dumps()
+        for m in nodes:
+            destroy, undefine = ["virsh", "destroy", m], \
+                                ["virsh", "undefine", m]
+            self.virsh(destroy, v=self.dev_null), self.virsh(undefine, v=self.dev_null)
+        try:
+            for m in nodes:
+                virt_install = [
+                    "virt-install",
+                    "--name",
+                    "%s" % m,
+                    "--network=bridge:rack0,model=virtio",
+                    "--memory=2048",
+                    "--vcpus=1",
+                    "--pxe",
+                    "--disk",
+                    "none",
+                    "--os-type=linux",
+                    "--os-variant=generic",
+                    "--noautoconsole",
+                    "--boot=network"
+                ]
+                self.virsh(virt_install, assertion=True, v=self.dev_null)
+                time.sleep(4)  # KVM fail to associate nic
+
+            sch_member = scheduler.EtcdMemberScheduler(
+                api_endpoint=self.api_endpoint,
+                bootcfg_path=self.test_bootcfg_path,
+                ignition_member="%s-emember" % marker,
+                bootcfg_prefix="%s-" % marker
+            )
+            sch_member.etcd_members_nb = 1
+
+            time.sleep(20)
+            for i in xrange(30):
+                if sch_member.apply() is True:
+                    break
+                time.sleep(6)
+
+            self.assertTrue(sch_member.apply())
+            sch_proxy = scheduler.EtcdProxyScheduler(
+                etcd_member_instance=sch_member,
+                ignition_proxy="%s-emember" % marker,
+                apply_first=False
+            )
+            for i in xrange(30):
+                if sch_proxy.apply() == 4:
+                    break
+                time.sleep(6)
+
+            self.assertEqual(sch_proxy.apply(), 4)
+
+            # TODO -> KVM doesn't restart itself
+            to_start = copy.deepcopy(nodes)
+            self.kvm_restart_off_machines(to_start)
+
+            ips_collected = sch_member.members_ip
+
+            response_body = {}
+            for i in xrange(20):
+                try:
+                    endpoint = "http://%s:2379/v2/members" % ips_collected[0]
+                    request = urllib2.urlopen(endpoint)
+                    response_body = json.loads(request.read())
+                    request.close()
+                    if len(response_body["members"]) == sch_member.etcd_members_nb:
+                        break
+                except urllib2.URLError:
+                    pass
+
+                time.sleep(6)
+
+            self.assertEqual(len(response_body["members"]), sch_member.etcd_members_nb)
+            self.etcd_endpoint_health(sch_proxy.proxies_ip)
 
         finally:
             for i in xrange(nb_node):
