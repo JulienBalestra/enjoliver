@@ -1301,8 +1301,8 @@ class TestEtcdSchedulerProxy(unittest.TestCase):
         sch_proxy.fetch_discovery = fake_fetch_discovery
         self.assertEqual(sch_proxy.apply(), 4)
         self.assertEqual(sch_proxy.apply(), 4)
-        self.assertEqual(len(sch_member.done_etcd_member), 3)
-        self.assertEqual(len(sch_member.done_etcd_member) + sch_proxy.apply(), len(fake_fetch_discovery(None)))
+        self.assertEqual(len(sch_member.done_list), 3)
+        self.assertEqual(len(sch_member.done_list) + sch_proxy.apply(), len(fake_fetch_discovery(None)))
         profiles = self.get_profiles()
         self.assertEqual(len(profiles), 2)
         groups = self.get_groups()
