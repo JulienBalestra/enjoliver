@@ -25,6 +25,9 @@ assets:
 	make -C bootcfg/assets/coreos serve
 	make -C bootcfg/assets/setup-network-environment
 	make -C bootcfg/assets/setup-network-environment serve
+	make -C bootcfg/assets/rkt
+	make -C bootcfg/assets/rkt serve
+	# Self
 	make -C bootcfg/assets/discoveryC
 	@# Depends on .acis
 	make -C bootcfg/assets/lldp
