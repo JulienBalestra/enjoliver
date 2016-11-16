@@ -57,6 +57,8 @@
 
 #### Keep SSH config (KeyChecking)
 
+#### make assets relink twice
+
 #### Avoid reset -q after lldp exit
 
 #### Refactor the lldp.aci to no depends on old style dgr builds
