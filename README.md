@@ -14,7 +14,7 @@
 * virtualenv
 * KVM-QEMU
 * Go
-* iptables-restore
+* iptables-restore (optional)
 
 
     kvm-ok 
