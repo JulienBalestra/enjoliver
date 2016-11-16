@@ -1,8 +1,20 @@
 CHECK=check
 CHECK_EUID=check_euid
 
-default: submodules
+default: help
 
+
+help:
+	@echo ----------------------
+	@echo Setup:
+	@echo make submodules
+	@echo sudo make acis
+	@echo make assets
+	@echo ----------------------
+	@echo Testing:
+	@echo make $(CHECK)
+	@echo sudo make $(CHECK_EUID)
+	@echo ----------------------
 
 acis:
 	test $(shell id -u -r) -eq 0
