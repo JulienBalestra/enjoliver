@@ -87,17 +87,21 @@ class EtcdProxyScheduler(CommonScheduler):
 
     def _fall_back_to_proxy(self, discovery):
         done = self._etcd_member_instance.members_ip + list(self._done_etcd_proxy)
+        if len(self._pending_etcd_proxy) != 0:
+            raise AssertionError("len(self._pending_etcd_proxy) != 0 -> %s" % str(self._pending_etcd_proxy))
 
         if len(discovery) > len(done):
             for machine in discovery:
                 ip_mac = self.get_machine_boot_ip_mac(machine)
                 if ip_mac in self._etcd_member_instance.done_etcd_member:
                     os.write(2, "\r-> Skip because Etcd Member %s\n\r" % str(ip_mac))
+                elif ip_mac in self._done_etcd_proxy:
+                    os.write(2, "\r-> Skip because Etcd Proxy %s\n\r" % str(ip_mac))
                 else:
+                    os.write(2, "\r-> Pending Etcd Proxy %s\n\r" % str(ip_mac))
                     self._pending_etcd_proxy.add(ip_mac)
-            print "do something"
         else:
-            os.write(2, "\r-> no machine 0\n\r")
+            os.write(2, "\r-> no machine 0 %s\n\r" % len(self._pending_etcd_proxy))
 
     def _apply_proxy(self):
         os.write(2, "\r-> %s.%s in progress...\n\r" % (self.__name__, self._apply_proxy.__name__))
@@ -105,6 +109,7 @@ class EtcdProxyScheduler(CommonScheduler):
         marker = "%s%sproxy" % (self.bootcfg_prefix, "e")  # e for Etcd
 
         base = len(self._done_etcd_proxy)
+        new_pending = set()
         for i, nic in enumerate(self._pending_etcd_proxy):
             # nic = (IPv4, MAC)
             i += base
@@ -122,8 +127,13 @@ class EtcdProxyScheduler(CommonScheduler):
             )
             self._gen.dumps()
             self._done_etcd_proxy.add(nic)
+            new_pending = self._pending_etcd_proxy - self._done_etcd_proxy
             os.write(2, "\r-> %s.%s selector {mac: %s}\n\r" % (
                 self.__name__, self._apply_proxy.__name__, nic))
+
+        if self._pending_etcd_proxy - self._done_etcd_proxy:
+            raise AssertionError("self._pending_etcd_proxy - self._done_etcd_proxy have to return an empty set")
+        self._pending_etcd_proxy = new_pending
 
     def apply(self):
         self.apply_member()
