@@ -400,7 +400,7 @@ class TestKVMDiscoveryScheduler0(TestKVMDiscoveryScheduler):
                 self.virsh(start), os.write(1, "\r")
                 time.sleep(3)
 
-            ips = sch.members_ip
+            ips = sch.ip_list
 
             one_etcd = False
             for i in xrange(30):
@@ -510,7 +510,7 @@ class TestKVMDiscoveryScheduler1(TestKVMDiscoveryScheduler):
 
             os.write(2, "\r-> start reboot asked\n\r")
 
-            ips = sch.members_ip
+            ips = sch.ip_list
 
             etcd = 0
             for i in xrange(30):
@@ -615,7 +615,7 @@ class TestKVMDiscoveryScheduler2(TestKVMDiscoveryScheduler):
 
             os.write(2, "\r-> start reboot asked\n\r")
 
-            ips_collected = sch.members_ip
+            ips_collected = sch.ip_list
 
             for i in xrange(30):
                 try:
@@ -706,7 +706,7 @@ class TestKVMDiscoveryScheduler3(TestKVMDiscoveryScheduler):
             # TODO -> KVM doesn't restart itself
             to_start = copy.deepcopy(nodes)
             self.kvm_restart_off_machines(to_start)
-            ips_collected = sch.members_ip
+            ips_collected = sch.ip_list
 
             for i in xrange(20):
                 try:
@@ -813,7 +813,7 @@ class TestKVMDiscoveryScheduler4(TestKVMDiscoveryScheduler):
             to_start = copy.deepcopy(nodes)
             self.kvm_restart_off_machines(to_start)
 
-            ips_collected = sch_member.members_ip
+            ips_collected = sch_member.ip_list
 
             response_body = {}
             for i in xrange(20):
@@ -830,7 +830,7 @@ class TestKVMDiscoveryScheduler4(TestKVMDiscoveryScheduler):
                 time.sleep(6)
 
             self.assertEqual(len(response_body["members"]), sch_member.etcd_members_nb)
-            self.etcd_endpoint_health(sch_proxy.proxies_ip)
+            self.etcd_endpoint_health(sch_proxy.ip_list)
 
         finally:
             for i in xrange(nb_node):
@@ -914,7 +914,7 @@ class TestKVMDiscoveryScheduler5(TestKVMDiscoveryScheduler):
             to_start = copy.deepcopy(nodes)
             self.kvm_restart_off_machines(to_start)
 
-            ips_collected = sch_member.members_ip
+            ips_collected = sch_member.ip_list
 
             response_body = {}
             for i in xrange(20):
@@ -931,7 +931,7 @@ class TestKVMDiscoveryScheduler5(TestKVMDiscoveryScheduler):
                 time.sleep(6)
 
             self.assertEqual(len(response_body["members"]), sch_member.etcd_members_nb)
-            self.etcd_endpoint_health(sch_proxy.proxies_ip)
+            self.etcd_endpoint_health(sch_proxy.ip_list)
 
         finally:
             for i in xrange(nb_node):
@@ -1016,7 +1016,7 @@ class TestKVMDiscoveryScheduler6(TestKVMDiscoveryScheduler):
             to_start = copy.deepcopy(nodes)
             self.kvm_restart_off_machines(to_start)
 
-            ips_collected = sch_member.members_ip
+            ips_collected = sch_member.ip_list
 
             response_body = {}
             for i in xrange(20):
@@ -1033,7 +1033,7 @@ class TestKVMDiscoveryScheduler6(TestKVMDiscoveryScheduler):
                 time.sleep(6)
 
             self.assertEqual(len(response_body["members"]), sch_member.etcd_members_nb)
-            self.etcd_endpoint_health(sch_proxy.proxies_ip)
+            self.etcd_endpoint_health(sch_proxy.ip_list)
 
         finally:
             for i in xrange(nb_node):

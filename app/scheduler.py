@@ -39,6 +39,14 @@ class CommonScheduler(object):
     def etcd_initial_cluster(self):
         pass
 
+    @abc.abstractproperty
+    def ip_list(self):
+        pass
+
+    @abc.abstractproperty
+    def done_list(self):
+        pass
+
 
 class EtcdProxyScheduler(CommonScheduler):
     __name__ = "EtcdProxyScheduler"
@@ -86,14 +94,14 @@ class EtcdProxyScheduler(CommonScheduler):
             self.apply_deps_delay * self.apply_deps_tries))
 
     def _fall_back_to_proxy(self, discovery):
-        done = self._etcd_member_instance.members_ip + list(self._done_etcd_proxy)
+        done = self._etcd_member_instance.ip_list + list(self._done_etcd_proxy)
         if len(self._pending_etcd_proxy) != 0:
             raise AssertionError("len(self._pending_etcd_proxy) != 0 -> %s" % str(self._pending_etcd_proxy))
 
         if len(discovery) > len(done):
             for machine in discovery:
                 ip_mac = self.get_machine_boot_ip_mac(machine)
-                if ip_mac in self._etcd_member_instance.done_etcd_member:
+                if ip_mac in self._etcd_member_instance.done_list:
                     os.write(2, "\r-> Skip because Etcd Member %s\n\r" % str(ip_mac))
                 elif ip_mac in self._done_etcd_proxy:
                     os.write(2, "\r-> Skip because Etcd Proxy %s\n\r" % str(ip_mac))
@@ -150,8 +158,12 @@ class EtcdProxyScheduler(CommonScheduler):
         return len(self._done_etcd_proxy)
 
     @property
-    def proxies_ip(self):
+    def ip_list(self):
         return [k[0] for k in self._done_etcd_proxy]
+
+    @property
+    def done_list(self):
+        return [k for k in self._done_etcd_proxy]
 
 
 class EtcdMemberScheduler(CommonScheduler):
@@ -236,12 +248,12 @@ class EtcdMemberScheduler(CommonScheduler):
         return self._etcd_initial_cluster
 
     @property
-    def members_ip(self):
+    def ip_list(self):
         return [k[0] for k in self._done_etcd_member]
 
     @property
-    def done_etcd_member(self):
-        return self._done_etcd_member
+    def done_list(self):
+        return [k for k in self._done_etcd_member]
 
     def apply(self):
         # Etcd Members
