@@ -85,7 +85,7 @@ class TestAssetsSetupNetworkEnvironment(unittest.TestCase):
         self.assertItemsEqual(expect, real)
 
 
-# @unittest.skipIf(os.getenv("PYCHARM_HOSTED"), "PYCHARM_HOSTED")
+@unittest.skipIf(os.getenv("PYCHARM_HOSTED"), "PYCHARM_HOSTED")
 class TestAssetsRkt(unittest.TestCase):
     func_path = "%s" % os.path.dirname(__file__)
     tests_path = os.path.split(func_path)[0]
