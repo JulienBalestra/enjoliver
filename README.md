@@ -48,6 +48,10 @@
 
 #### QEMU-KVM doesn't restart itself when invoking systemctl reboot: stay power off 
 
+#### Safe reboot with multi factors
+
+* ignition change
+* GET uuid / mac on API to confirm
     
 # Backlog / No priority   
 

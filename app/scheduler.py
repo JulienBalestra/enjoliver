@@ -123,6 +123,7 @@ class EtcdProxyScheduler(CommonScheduler):
                 extra_metadata={
                     "etcd_initial_cluster": self.etcd_initial_cluster,
                     "etcd_advertise_client_urls": "http://%s:2379" % nic[0],
+                    "etcd_proxy": "on"
                 }
             )
             self._gen.dumps()
@@ -142,11 +143,15 @@ class EtcdProxyScheduler(CommonScheduler):
         if len(self._pending_etcd_proxy) > 0:
             self._apply_proxy()
 
-        os.write(2, "\r-> %s.%s total %d" % (
+        os.write(2, "\r-> %s.%s total %d\n\r" % (
             self.__name__,
             self.apply.__name__,
             len(self._done_etcd_proxy)))
         return len(self._done_etcd_proxy)
+
+    @property
+    def proxies_ip(self):
+        return [k[0] for k in self._done_etcd_proxy]
 
 
 class EtcdMemberScheduler(CommonScheduler):
