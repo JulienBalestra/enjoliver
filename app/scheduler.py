@@ -298,11 +298,11 @@ class K8sControlPlaneScheduler(CommonScheduler):
 
     @property
     def ip_list(self):
-        return []
+        return [k[0] for k in self._done_control_plane]
 
     @property
     def done_list(self):
-        return []
+        return [k for k in self._done_control_plane]
 
 
 class EtcdMemberScheduler(CommonScheduler):

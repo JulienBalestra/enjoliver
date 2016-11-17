@@ -707,6 +707,7 @@ class TestEtcdSchedulerK8sControlPlane(unittest.TestCase):
         self.assertEqual(len(profiles), 1)
         groups = self.get_groups()
         self.assertEqual(len(groups), 3)
+        self.assertEqual(len(sch_cp.done_list), 0)
 
     # @unittest.skip("skip")
     def test_07(self):
@@ -884,6 +885,7 @@ class TestEtcdSchedulerK8sControlPlane(unittest.TestCase):
                          "static1=http://172.20.0.83:2380,"
                          "static2=http://172.20.0.57:2380")
         self.assertFalse(sch_cp.apply())
+        self.assertEqual(sch_cp.done_list, [])
 
     # @unittest.skip("skip")
     def test_07_1(self):
@@ -1062,6 +1064,7 @@ class TestEtcdSchedulerK8sControlPlane(unittest.TestCase):
                          "static1=http://172.20.0.83:2380,"
                          "static2=http://172.20.0.57:2380")
         self.assertTrue(sch_cp.apply())
+        self.assertEqual(len(sch_cp.done_list), 1)
 
     # @unittest.skip("skip")
     def test_08(self):
@@ -1480,6 +1483,7 @@ class TestEtcdSchedulerK8sControlPlane(unittest.TestCase):
         self.assertTrue(sch_cp.apply())
         self.assertTrue(sch_cp.apply())
         self.assertEqual(len(sch_member.done_list), 3)
+        self.assertEqual(len(sch_cp.done_list), 3)
         profiles = self.get_profiles()
         self.assertEqual(len(profiles), 2)
         groups = self.get_groups()
