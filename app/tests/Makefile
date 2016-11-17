@@ -23,6 +23,8 @@ PROJECT=$(CWD)/../..
 ENV_NAME=env
 PYTHON=$(PROJECT)/$(ENV_NAME)/bin/python
 
+TESTING_RSA=testing.id_rsa
+
 default: $(BOOTCFG) $(RKT) $(PYTHON) $(KKK) $(ISO)
 
 bootcfg_assets:
@@ -83,11 +85,18 @@ gc:
 gci:
 	test ! -e $(CWD)/$(RKT) || $(CWD)/$(RKT) --local-config=$(CWD) image gc --grace-period=0s
 
+$(TESTING_RSA):
+	ssh-keygen -f $(CWD)/$(TESTING_RSA) -t rsa -N ''
+	mkdir -vp $(CWD)/test_bootcfg/ssh_authorized_keys/
+	ln -sv $(CWD)/$(TESTING_RSA).pub $(CWD)/test_bootcfg/ssh_authorized_keys/
+
 clean:
 	rm -Rfv $(BOOTCFG_DIR)
 	rm -Rfv $(RKT_DIR)
 	rm -v $(ISO)
 	rm -v $(KKK)
+	rm -v $(TESTING_RSA)*
+	rm -Rfv test_bootcfg/ssh_authorized_keys
 	rm -v paths.d/*.json
 	make -C $(PROJECT)/chain clean
 

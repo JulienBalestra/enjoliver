@@ -40,7 +40,9 @@ class TestGenerateGroups(TestCase):
     def test_01_metadata(self):
         expect = {'etcd_initial_cluster': '',
                   'api_uri': '%s' % self.gen.api_uri,
-                  'bootcfg_uri': "%s" % self.gen.bootcfg_uri}
+                  'bootcfg_uri': "%s" % self.gen.bootcfg_uri,
+                  'ssh_authorized_keys': []}
+
         self.gen._metadata()
         self.assertEqual(expect, self.gen._target_data["metadata"])
 
@@ -50,7 +52,8 @@ class TestGenerateGroups(TestCase):
             'metadata': {
                 'etcd_initial_cluster': '',
                 'api_uri': '%s' % self.gen.api_uri,
-                'bootcfg_uri': "%s" % self.gen.bootcfg_uri
+                'bootcfg_uri': "%s" % self.gen.bootcfg_uri,
+                'ssh_authorized_keys': []
             },
             'id': 'etcd-proxy',
             'name': 'etcd-proxy'
@@ -106,8 +109,10 @@ class TestGenerateGroupsSelectorLower(TestCase):
 
     def test_01_metadata(self):
         expect = {'etcd_initial_cluster': '', 'api_uri': "%s" % self.gen.api_uri,
-                  'bootcfg_uri': "%s" % self.gen.bootcfg_uri}
+                  'bootcfg_uri': "%s" % self.gen.bootcfg_uri,
+                  'ssh_authorized_keys': []}
         self.gen._metadata()
+        self.gen._target_data["metadata"]['ssh_authorized_keys'] = []
         self.assertEqual(expect, self.gen._target_data["metadata"])
 
     def test_02_selector(self):
@@ -122,7 +127,8 @@ class TestGenerateGroupsSelectorLower(TestCase):
                 'etcd_initial_cluster': '',
                 'api_uri': self.gen.api_uri,
                 'selector': {'mac': '08:00:27:37:28:2e'},
-                'bootcfg_uri': "%s" % self.gen.bootcfg_uri
+                'bootcfg_uri': "%s" % self.gen.bootcfg_uri,
+                'ssh_authorized_keys': []
             },
             'id': 'etcd-proxy',
             'name': 'etcd-proxy',
@@ -133,6 +139,7 @@ class TestGenerateGroupsSelectorLower(TestCase):
             selector={"mac": "08:00:27:37:28:2e"},
             bootcfg_path=self.test_bootcfg_path)
         result = new.generate()
+        result["metadata"]['ssh_authorized_keys'] = []
         self.assertEqual(expect, result)
 
     def test_991_dump(self):
@@ -182,8 +189,10 @@ class TestGenerateGroupsSelectorUpper(TestCase):
 
     def test_01_metadata(self):
         expect = {'etcd_initial_cluster': '', 'api_uri': "%s" % self.gen.api_uri,
-                  'bootcfg_uri': "%s" % self.gen.bootcfg_uri}
+                  'bootcfg_uri': "%s" % self.gen.bootcfg_uri,
+                  'ssh_authorized_keys': []}
         self.gen._metadata()
+        self.gen._target_data["metadata"]['ssh_authorized_keys'] = []
         self.assertEqual(expect, self.gen._target_data["metadata"])
 
     def test_02_selector(self):
@@ -198,7 +207,8 @@ class TestGenerateGroupsSelectorUpper(TestCase):
                 'etcd_initial_cluster': '',
                 'api_uri': "%s" % self.gen.api_uri,
                 'selector': {'mac': '08:00:27:37:28:2e'},
-                'bootcfg_uri': "%s" % self.gen.bootcfg_uri
+                'bootcfg_uri': "%s" % self.gen.bootcfg_uri,
+                'ssh_authorized_keys': []
             },
             'id': 'etcd-proxy',
             'name': 'etcd-proxy',
@@ -209,6 +219,7 @@ class TestGenerateGroupsSelectorUpper(TestCase):
             selector={"mac": "08:00:27:37:28:2e"},
             bootcfg_path=self.test_bootcfg_path)
         result = new.generate()
+        result["metadata"]['ssh_authorized_keys'] = []
         self.assertEqual(expect, result)
 
     def test_991_dump(self):
@@ -262,8 +273,10 @@ class TestGenerateGroupsExtraMetadata(TestCase):
         expect = {'etcd_initial_cluster': 'static0=http://192.168.1.1:2379',
                   'api_uri': "%s" % self.gen.api_uri,
                   'api_seed': 'http://192.168.1.2:5000',
-                  'bootcfg_uri': "%s" % self.gen.bootcfg_uri}
+                  'bootcfg_uri': "%s" % self.gen.bootcfg_uri,
+                  'ssh_authorized_keys': []}
         self.gen._metadata()
+        self.gen._target_data["metadata"]['ssh_authorized_keys'] = []
         self.assertEqual(expect, self.gen._target_data["metadata"])
 
     def test_02_selector(self):
@@ -278,7 +291,8 @@ class TestGenerateGroupsExtraMetadata(TestCase):
                 'etcd_initial_cluster': '',
                 'api_uri': "%s" % self.gen.api_uri,
                 'selector': {'mac': '08:00:27:37:28:2e'},
-                'bootcfg_uri': "%s" % self.gen.bootcfg_uri
+                'bootcfg_uri': "%s" % self.gen.bootcfg_uri,
+                'ssh_authorized_keys': []
             },
             'id': 'etcd-proxy',
             'name': 'etcd-proxy',
@@ -289,6 +303,7 @@ class TestGenerateGroupsExtraMetadata(TestCase):
             selector={"mac": "08:00:27:37:28:2e"},
             bootcfg_path=self.test_bootcfg_path)
         result = new.generate()
+        result["metadata"]["ssh_authorized_keys"] = []
         self.assertEqual(expect, result)
 
     def test_991_dump(self):
