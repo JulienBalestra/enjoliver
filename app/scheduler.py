@@ -124,7 +124,7 @@ class EtcdProxyScheduler(CommonScheduler):
             self._gen = generator.Generator(
                 group_id="%s-%d" % (marker, i),  # one per machine
                 profile_id=marker,  # link to ignition
-                name="%s-%d" % (marker, i),
+                name=marker,
                 ignition_id="%s.yaml" % self._ignition_proxy,
                 bootcfg_path=self.bootcfg_path,
                 selector={"mac": nic[1]},
@@ -246,7 +246,7 @@ class K8sControlPlaneScheduler(CommonScheduler):
             self._gen = generator.Generator(
                 group_id="%s-%d" % (marker, i),  # one per machine
                 profile_id=marker,  # link to ignition
-                name="%s-%d" % (marker, i),
+                name=marker,
                 ignition_id="%s.yaml" % self._ignition_control_plane,
                 bootcfg_path=self.bootcfg_path,
                 selector={"mac": nic[1]},
@@ -364,7 +364,7 @@ class EtcdMemberScheduler(CommonScheduler):
             self._gen = generator.Generator(
                 group_id="%s-%d" % (marker, i),  # one per machine
                 profile_id=marker,  # link to ignition
-                name="%s-%d" % (marker, i),
+                name=marker,
                 ignition_id="%s.yaml" % self._ignition_member,
                 bootcfg_path=self.bootcfg_path,
                 selector={"mac": nic[1]},
