@@ -33,3 +33,6 @@ serve
 /lldp/lldp.render/
 /lldp/aci-lldp/target/
 /app/tests/paths.d/paths.json
+/app/tests/testing.id_rsa
+/app/tests/testing.id_rsa.pub
+/app/tests/test_bootcfg/ssh_authorized_keys/

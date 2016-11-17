@@ -1,9 +1,11 @@
+import os
 import re
 
 from generate_common import GenerateCommon
 
 
 class GenerateGroup(GenerateCommon):
+
     def __repr__(self):
         return "GenGroup[%s]" % self._target_data["id"]
 
@@ -12,6 +14,7 @@ class GenerateGroup(GenerateCommon):
 
         self.ensure_directory(bootcfg_path)
         self.target_path = self.ensure_directory("%s/groups" % bootcfg_path)
+        self.ssh_authorized_keys_dir = "%s/ssh_authorized_keys" % bootcfg_path
         self.extra_selector = None if not selector else dict(selector)
         self.extra_metadata = {} if not metadata else dict(metadata)
 
@@ -26,10 +29,26 @@ class GenerateGroup(GenerateCommon):
             }
         }
 
+    def _get_ssh_authorized_keys(self):
+        keys = []
+
+        if os.path.isdir(self.ssh_authorized_keys_dir) is False:
+            return keys
+
+        for k in os.listdir(self.ssh_authorized_keys_dir):
+            fp = "%s/%s" % (self.ssh_authorized_keys_dir, k)
+            with open(fp, 'r') as key:
+                content = key.read()
+            if len(content.split(" ")) < 2:
+                raise IOError("%s not valid as ssh_authorized_keys" % fp)
+            keys.append(content)
+        return keys
+
     def _metadata(self):
         self._target_data["metadata"]["api_uri"] = self.api_uri
         self._target_data["metadata"]["bootcfg_uri"] = self.bootcfg_uri
         self._target_data["metadata"]["etcd_initial_cluster"] = ""  # default WET
+        self._target_data["metadata"]["ssh_authorized_keys"] = self._get_ssh_authorized_keys()
 
         for k, v in self.extra_metadata.iteritems():
             self.log_stderr("add %s: %s in metadata" % (k, v))
