@@ -115,6 +115,9 @@ check_euid_discovery_scheduler: $(PYTHON)
 check_euid_discovery_client: $(PYTHON)
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/discovery/test_kvm_discovery_client.py
 
+check_euid_k8s_basic: $(PYTHON)
+	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/k8s/test_kvm_k8s_basic.py
+
 check_euid_basic: $(PYTHON)
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover euid/basic/
 
