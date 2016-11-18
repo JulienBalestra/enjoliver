@@ -12,6 +12,7 @@ class TestAssetsCoreOS(unittest.TestCase):
     assets_path = "%s/bootcfg/assets" % project_path
     asset_test = "%s/coreos" % assets_path
     default_files = ["Makefile"]
+    version = default_files + ["1214.0.0"]
 
     def test_00_fclean(self):
         expect = self.default_files
@@ -20,13 +21,13 @@ class TestAssetsCoreOS(unittest.TestCase):
         self.assertItemsEqual(expect, real)
 
     def test_01_default(self):
-        expect = self.default_files + ["1214.0.0"]
+        expect = self.version
         subprocess.check_output(["make", "-C", self.asset_test])
         real = os.listdir(self.asset_test)
         self.assertItemsEqual(expect, real)
 
     def test_02_serve(self):
-        expect = self.default_files + ["1214.0.0", "serve"]
+        expect = self.version + ["serve"]
         subprocess.check_output(["make", "-C", self.asset_test, "serve"])
         real = os.listdir(self.asset_test)
         self.assertItemsEqual(expect, real)
@@ -43,6 +44,18 @@ class TestAssetsCoreOS(unittest.TestCase):
         real = os.listdir(self.asset_test)
         self.assertItemsEqual(self.default_files, real)
 
+    def test_05_default(self):
+        expect = self.version
+        subprocess.check_output(["make", "-C", self.asset_test])
+        real = os.listdir(self.asset_test)
+        self.assertItemsEqual(expect, real)
+
+    def test_06_serve(self):
+        expect = self.version + ["serve"]
+        subprocess.check_output(["make", "-C", self.asset_test, "serve"])
+        real = os.listdir(self.asset_test)
+        self.assertItemsEqual(expect, real)
+
 
 @unittest.skipIf(os.getenv("PYCHARM_HOSTED"), "PYCHARM_HOSTED")
 class TestAssetsSetupNetworkEnvironment(unittest.TestCase):
@@ -53,6 +66,7 @@ class TestAssetsSetupNetworkEnvironment(unittest.TestCase):
     assets_path = "%s/bootcfg/assets" % project_path
     asset_test = "%s/setup-network-environment" % assets_path
     default_files = ["Makefile", "1.0.1-setup-network-environment.sha512"]
+    version = default_files + ["1.0.1"]
 
     def test_00_fclean(self):
         expect = self.default_files
@@ -61,13 +75,13 @@ class TestAssetsSetupNetworkEnvironment(unittest.TestCase):
         self.assertItemsEqual(expect, real)
 
     def test_01_default(self):
-        expect = self.default_files + ["1.0.1"]
+        expect = self.version
         subprocess.check_output(["make", "-C", self.asset_test])
         real = os.listdir(self.asset_test)
         self.assertItemsEqual(expect, real)
 
     def test_02_serve(self):
-        expect = self.default_files + ["1.0.1", "serve"]
+        expect = self.version + ["serve"]
         subprocess.check_output(["make", "-C", self.asset_test, "serve"])
         real = os.listdir(self.asset_test)
         self.assertItemsEqual(expect, real)
@@ -84,6 +98,18 @@ class TestAssetsSetupNetworkEnvironment(unittest.TestCase):
         real = os.listdir(self.asset_test)
         self.assertItemsEqual(expect, real)
 
+    def test_05_default(self):
+        expect = self.version
+        subprocess.check_output(["make", "-C", self.asset_test])
+        real = os.listdir(self.asset_test)
+        self.assertItemsEqual(expect, real)
+
+    def test_06_serve(self):
+        expect = self.version + ["serve"]
+        subprocess.check_output(["make", "-C", self.asset_test, "serve"])
+        real = os.listdir(self.asset_test)
+        self.assertItemsEqual(expect, real)
+
 
 @unittest.skipIf(os.getenv("PYCHARM_HOSTED"), "PYCHARM_HOSTED")
 class TestAssetsRkt(unittest.TestCase):
@@ -94,6 +120,7 @@ class TestAssetsRkt(unittest.TestCase):
     assets_path = "%s/bootcfg/assets" % project_path
     asset_test = "%s/rkt" % assets_path
     default_files = ["Makefile"]
+    version = default_files + ["v1.19.0"]
 
     def test_00_fclean(self):
         expect = self.default_files
@@ -102,19 +129,19 @@ class TestAssetsRkt(unittest.TestCase):
         self.assertItemsEqual(expect, real)
 
     def test_01_default(self):
-        expect = self.default_files + ["v1.19.0"]
+        expect = self.version
         subprocess.check_output(["make", "-C", self.asset_test])
         real = os.listdir(self.asset_test)
         self.assertItemsEqual(expect, real)
 
     def test_02_serve(self):
-        expect = self.default_files + ["v1.19.0", "serve"]
+        expect = self.version + ["serve"]
         subprocess.check_output(["make", "-C", self.asset_test, "serve"])
         real = os.listdir(self.asset_test)
         self.assertItemsEqual(expect, real)
 
     def test_03_clean(self):
-        expect = self.default_files + ["v1.19.0", "serve"]
+        expect = self.version + ["serve"]
         subprocess.check_output(["make", "-C", self.asset_test, "clean"])
         real = os.listdir(self.asset_test)
         self.assertItemsEqual(expect, real)
@@ -122,6 +149,18 @@ class TestAssetsRkt(unittest.TestCase):
     def test_04_fclean(self):
         expect = self.default_files
         subprocess.check_output(["make", "-C", self.asset_test, "fclean"])
+        real = os.listdir(self.asset_test)
+        self.assertItemsEqual(expect, real)
+
+    def test_05_default(self):
+        expect = self.version
+        subprocess.check_output(["make", "-C", self.asset_test])
+        real = os.listdir(self.asset_test)
+        self.assertItemsEqual(expect, real)
+
+    def test_06_serve(self):
+        expect = self.version + ["serve"]
+        subprocess.check_output(["make", "-C", self.asset_test, "serve"])
         real = os.listdir(self.asset_test)
         self.assertItemsEqual(expect, real)
 
@@ -165,3 +204,15 @@ class TestAssetsDiscoveryC(unittest.TestCase):
         subprocess.check_output(["make", "-C", self.asset_test, "fclean"])
         real = os.listdir(self.asset_test)
         self.assertItemsEqual(expect, real)
+
+    def test_05_default(self):
+        expect = self.default_files + ["serve"]
+        subprocess.check_output(["make", "-C", self.asset_test])
+        real = os.listdir(self.asset_test)
+        self.assertItemsEqual(expect, real)
+
+    def test_06_static(self):
+        f = "%s/serve/discoveryC" % self.asset_test
+        self.assertTrue(os.path.isfile(f))
+        ret = subprocess.call(["ldd", f])
+        self.assertEqual(ret, 1)
