@@ -19,4 +19,4 @@ KEY=testing.id_rsa
 
 cd $(dirname $0)
 ls -l ${KEY}
-ssh -i ${KEY} -lcore ${IP} -o StrictHostKeyChecking=no
+ssh -i ${KEY} -lcore ${IP} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
