@@ -10,7 +10,7 @@ fi
 
 apt-get update -q
 
-for p in curl python python-virtualenv qemu-kvm libvirt-bin bridge-utils golang
+for p in curl python python-virtualenv qemu-kvm libvirt-bin bridge-utils golang jq
 do
     apt-get install ${INSTALL} $p
 done
