@@ -16,7 +16,13 @@ else
 fi
 
 KEY=testing.id_rsa
+CMD="sudo -i"
 
 cd $(dirname $0)
-ls -l ${KEY}
-ssh -i ${KEY} -lcore ${IP} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+echo ${CMD}
+until ssh -t -i ${KEY} -lcore ${IP} \
+        -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=1 \
+        "${CMD}"
+do
+    sleep 2
+done
