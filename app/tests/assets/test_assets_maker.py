@@ -58,6 +58,60 @@ class TestAssetsCoreOS(unittest.TestCase):
 
 
 @unittest.skipIf(os.getenv("PYCHARM_HOSTED"), "PYCHARM_HOSTED")
+class TestAssetsCNI(unittest.TestCase):
+    func_path = "%s" % os.path.dirname(__file__)
+    tests_path = "%s" % os.path.split(func_path)[0]
+    app_path = os.path.split(tests_path)[0]
+    project_path = os.path.split(app_path)[0]
+    assets_path = "%s/bootcfg/assets" % project_path
+    asset_test = "%s/cni" % assets_path
+    default_files = ["Makefile"]
+    version = default_files + ["v0.3.0"]
+
+    def test_00_fclean(self):
+        expect = self.default_files
+        subprocess.check_output(["make", "-C", self.asset_test, "fclean"])
+        real = os.listdir(self.asset_test)
+        self.assertItemsEqual(expect, real)
+
+    def test_01_default(self):
+        expect = self.version
+        subprocess.check_output(["make", "-C", self.asset_test])
+        real = os.listdir(self.asset_test)
+        self.assertItemsEqual(expect, real)
+
+    def test_02_serve(self):
+        expect = self.version + ["serve"]
+        subprocess.check_output(["make", "-C", self.asset_test, "serve"])
+        real = os.listdir(self.asset_test)
+        self.assertItemsEqual(expect, real)
+
+    def test_03_clean(self):
+        expect = self.default_files + ["serve"]
+        expect.sort()
+        subprocess.check_output(["make", "-C", self.asset_test, "clean"])
+        real = os.listdir(self.asset_test)
+        self.assertItemsEqual(expect, real)
+
+    def test_04_fclean(self):
+        subprocess.check_output(["make", "-C", self.asset_test, "fclean"])
+        real = os.listdir(self.asset_test)
+        self.assertItemsEqual(self.default_files, real)
+
+    def test_05_default(self):
+        expect = self.version
+        subprocess.check_output(["make", "-C", self.asset_test])
+        real = os.listdir(self.asset_test)
+        self.assertItemsEqual(expect, real)
+
+    def test_06_serve(self):
+        expect = self.version + ["serve"]
+        subprocess.check_output(["make", "-C", self.asset_test, "serve"])
+        real = os.listdir(self.asset_test)
+        self.assertItemsEqual(expect, real)
+
+
+@unittest.skipIf(os.getenv("PYCHARM_HOSTED"), "PYCHARM_HOSTED")
 class TestAssetsSetupNetworkEnvironment(unittest.TestCase):
     func_path = "%s" % os.path.dirname(__file__)
     tests_path = os.path.split(func_path)[0]
