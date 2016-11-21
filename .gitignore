@@ -36,3 +36,4 @@ serve
 /app/tests/testing.id_rsa
 /app/tests/testing.id_rsa.pub
 /app/tests/test_bootcfg/ssh_authorized_keys/
+/lldp/aci-base/target/
