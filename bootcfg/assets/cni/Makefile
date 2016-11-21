@@ -1,30 +1,29 @@
+CWD=$(shell pwd)
+PROJECT=$(CWD)/../../..
 
-VERSION=v0.3.0
 CNI_TAR=cni.tar.gz
+CNI_TARGET=$(PROJECT)/cni/cni.tar.gz
 SERVE=serve
+SERVE_CNI=$(SERVE)/$(CNI_TAR)
 
-GITHUB_TARGET="https://github.com/containernetworking/cni/releases/download/$(VERSION)/cni-$(VERSION).tgz"
 TARGET=$(VERSION)/$(CNI_TAR)
 
-default: $(TARGET)
+default: $(CNI_TARGET)
 
-$(VERSION):
-	test $(VERSION)
-	mkdir -pv $(VERSION)
-
-$(TARGET): $(VERSION)
-	curl -fL $(GITHUB_TARGET) -o $(TARGET)
-	ls $(TARGET)
-	tar -C $(VERSION) -xzvf $(TARGET)
+$(CNI_TARGET):
+	cd $(PROJECT)/cni && \
+		./build && \
+		tar -czvf $(CNI_TAR) ./bin
 
 clean:
-	@rm -rfv $(VERSION) 2>&1 || true
+	@rm -v $(CNI_TARGET) 2>&1 || true
 
-$(SERVE): $(TARGET)
-	@ls -dF $(VERSION)
-	ln -vs $(VERSION) $(SERVE)
+$(SERVE): $(CNI_TARGET)
+	ls -l $(CNI_TARGET)
+	mkdir -pv $(SERVE)
+	cp -v $(CNI_TARGET) $(SERVE_CNI)
 
 fclean: clean
-	@rm -v $(SERVE) 2>&1 || true
+	@rm -Rfv $(SERVE) 2>&1 || true
 
 re: fclean default
