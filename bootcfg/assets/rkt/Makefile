@@ -16,7 +16,7 @@ clean:
 	rm -v $(TARGET) || true
 
 $(SERVE): $(TARGET)
-	ln -sv $(TARGET) $(SERVE)
+	ln -sv $(VERSION) $(SERVE)
 
 fclean: clean
 	rm -Rfv $(VERSION) || true
