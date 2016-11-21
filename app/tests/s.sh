@@ -1,11 +1,18 @@
 #!/usr/bin/env bash
 
+set -o pipefail
+
 if [ -z $1 ]
 then
 
     PS3='ssh: '
     options=($(curl -s http://172.20.0.1:5000/discovery/interfaces | \
-        jq -r ".interfaces [$i][$i].IPv4" | grep -v "127.0.0.1" | sort))
+        jq -re ".interfaces [$i][$i].IPv4" | grep -v "127.0.0.1" | sort))
+    if [ $? -ne 0 ]
+    then
+        echo "jq -ne 0: $options"
+        exit 2
+    fi
     select opt in "${options[@]}"
     do
         IP=$opt
