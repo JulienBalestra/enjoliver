@@ -129,7 +129,7 @@ class TestAPI(unittest.TestCase):
                  'hostname=${hostname}&' \
                  'serial=${serial}\n'
 
-        result = self.app.get('/boot.ipxe')
+        result = self.app.get('/boot.ipxe.0')
         self.assertEqual(result.status_code, 200)
         content = result.data
         self.assertEqual(content, expect)
