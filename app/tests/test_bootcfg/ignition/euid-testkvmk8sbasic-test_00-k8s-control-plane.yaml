@@ -33,7 +33,7 @@ systemd:
         Environment=FULL_PATH_DIR_RKT=/opt/bin
         Environment=RKT_ARCHIVE=rkt.tar.gz
         ExecStart=/opt/bin/install-rkt
-        ExecReload=-/bin/rm -Rfv $RKT $OPT_RKT $DOWNLOAD_RKT_DIR
+        ExecReload=-/bin/rm -Rfv $RKT $OPT_RKT $DOWNLOAD_RKT_DIR $FULL_PATH_RKT
         RemainAfterExit=yes
         [Install]
         WantedBy=multi-user.target
@@ -53,7 +53,7 @@ systemd:
         Environment=FULL_PATH_CNI=/opt/bin/cnitool
         Environment=CNI_ARCHIVE=cni.tar.gz
         ExecStart=/opt/bin/install-cni
-        ExecReload=-/bin/rm -v /opt/bin/cnitool $OPT_CNI
+        ExecReload=-/bin/rm -Rfv $FULL_PATH_CNI $OPT_CNI
         RemainAfterExit=yes
         [Install]
         WantedBy=multi-user.target
