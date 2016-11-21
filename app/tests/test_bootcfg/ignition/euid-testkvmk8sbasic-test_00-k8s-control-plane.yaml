@@ -18,7 +18,7 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
-    - name: download-rkt.service
+    - name: install-rkt.service
       enable: true
       contents: |
         [Unit]
@@ -28,15 +28,17 @@ systemd:
         Type=oneshot
         EnvironmentFile=/etc/metadata-endpoints.env
         Environment=OPT_RKT=/opt/rkt
-        Environment=INSTALL_RKT_DIR=/tmp/rkt_install
+        Environment=DOWNLOAD_RKT_DIR=/tmp/rkt_install
+        Environment=FULL_PATH_RKT=/opt/bin/rkt
+        Environment=FULL_PATH_DIR_RKT=/opt/bin
         Environment=RKT_ARCHIVE=rkt.tar.gz
-        ExecStart=/opt/bin/download-rkt
-        ExecReload=/bin/rm -v /opt/bin/rkt
+        ExecStart=/opt/bin/install-rkt
+        ExecReload=-/bin/rm -Rfv $RKT $OPT_RKT $DOWNLOAD_RKT_DIR
         RemainAfterExit=yes
         [Install]
         WantedBy=multi-user.target
 
-    - name: download-cni.service
+    - name: install-cni.service
       enable: true
       contents: |
         [Unit]
@@ -47,28 +49,29 @@ systemd:
         Type=oneshot
         EnvironmentFile=/etc/metadata-endpoints.env
         Environment=OPT_CNI=/opt/cni/bin
+        Environment=FULL_PATH_DIR_CNI=/opt/bin
+        Environment=FULL_PATH_CNI=/opt/bin/cnitool
         Environment=CNI_ARCHIVE=cni.tar.gz
-        ExecStart=/opt/bin/download-cni
-        ExecReload=/bin/rm -v /opt/bin/cnitool
+        ExecStart=/opt/bin/install-cni
+        ExecReload=-/bin/rm -v /opt/bin/cnitool $OPT_CNI
         RemainAfterExit=yes
         [Install]
         WantedBy=multi-user.target
 
-    - name: downloads.target
+    - name: installs.target
       contents: |
         [Unit]
-        Description=Load Kubernetes Assets
-        Requires=download-cni.service
-        After=download-cni.service
-        Requires=download-rkt.service
-        After=download-rkt.service
+        Requires=install-cni.service
+        After=install-cni.service
+        Requires=install-rkt.service
+        After=install-rkt.service
 
     - name: rkt-api.service
       enable: true
       contents: |
         [Unit]
-        After=download-rkt.service
-        Requires=download-rkt.service
+        After=install-rkt.service
+        Requires=install-rkt.service
 
         [Service]
         ExecStart=/opt/bin/rkt api-service
@@ -153,13 +156,12 @@ storage:
           journalctl -u kubelet --no-pager -o short -f
           journalctl -u kubelet --no-pager -o short
 
-    - path: /opt/bin/download-cni
+    - path: /opt/bin/install-cni
       filesystem: root
       mode: 0544
       contents:
         inline: |
           #!/bin/bash
-
           set -xv
 
           function is_var {
@@ -175,29 +177,29 @@ storage:
               fi
 
           }
-          /opt/bin/cnitool
+
+          is_var OPT_CNI ${OPT_CNI}
+          is_var FULL_PATH_CNI ${FULL_PATH_CNI}
+          is_var FULL_PATH_DIR_CNI ${FULL_PATH_DIR_CNI}
+          is_var CNI_ARCHIVE ${CNI_ARCHIVE}
+          is_var BOOTCFG_URI ${BOOTCFG_URI}
+
+          ${FULL_PATH_CNI}
           if [ $? -eq 1 ]
           then
               exit 0
           fi
 
-          is_var OPT_CNI ${OPT_CNI}
-          is_var CNI_ARCHIVE ${CNI_ARCHIVE}
-          is_var BOOTCFG_URI ${BOOTCFG_URI}
+          set -e +v
 
-          set -e
-
-          mkdir -pv /opt/bin
-          curl ${BOOTCFG_URI}/assets/cni/serve/${CNI_ARCHIVE} \
-              -o /tmp/${CNI_ARCHIVE}
           mkdir -pv ${OPT_CNI}
-          tar -C ${OPT_CNI} \
-            -xzvf /tmp/${CNI_ARCHIVE}
-          ln -sv ${OPT_CNI}/cnitool /opt/bin/
+          curl ${BOOTCFG_URI}/assets/cni/serve/${CNI_ARCHIVE} -o /tmp/${CNI_ARCHIVE}
+          tar -C ${OPT_CNI} -xzvf /tmp/${CNI_ARCHIVE}
+          ln -sv ${OPT_CNI}/cnitool ${FULL_PATH_DIR_CNI}
 
           set +e
 
-          /opt/bin/cnitool
+          ${FULL_PATH_CNI}
           if [ $? -ne 1 ]
           then
               exit 2
@@ -205,13 +207,12 @@ storage:
               exit 0
           fi
 
-    - path: /opt/bin/download-rkt
+    - path: /opt/bin/install-rkt
       filesystem: root
       mode: 0544
       contents:
         inline: |
           #!/bin/bash
-
           set -xv
 
           function is_var {
@@ -225,36 +226,28 @@ storage:
                   echo "Variable $1 have to be set" >&2
                   exit 1
               fi
-
           }
 
-          /opt/bin/rkt version && exit 0
-
+          is_var FULL_PATH_RKT ${FULL_PATH_RKT}
+          is_var FULL_PATH_DIR_RKT ${FULL_PATH_DIR_RKT}
           is_var OPT_RKT ${OPT_RKT}
-          is_var INSTALL_RKT_DIR ${INSTALL_RKT_DIR}
+          is_var DOWNLOAD_RKT_DIR ${DOWNLOAD_RKT_DIR}
           is_var RKT_ARCHIVE ${RKT_ARCHIVE}
           is_var BOOTCFG_URI ${BOOTCFG_URI}
 
-          set -e
+          FULL_PATH_RKT version && exit 0
 
-          mkdir -pv ${INSTALL_RKT_DIR}
-          mkdir -pv ${OPT_RKT}
-          curl ${BOOTCFG_URI}/assets/rkt/serve/${RKT_ARCHIVE} \
-                    -o ${INSTALL_RKT_DIR}/${RKT_ARCHIVE}
+          set -e +v
 
-          tar -C ${INSTALL_RKT_DIR} \
-            -xzvf ${INSTALL_RKT_DIR}/${RKT_ARCHIVE} \
-            --strip-component=1
-
-          mkdir -pv /opt/bin
-
-          mv -v ${INSTALL_RKT_DIR}/rkt ${OPT_RKT}
-          mv -v ${INSTALL_RKT_DIR}/stage1-coreos.aci ${OPT_RKT}
-          mv -v ${INSTALL_RKT_DIR}/stage1-fly.aci ${OPT_RKT}
-          mv -v ${INSTALL_RKT_DIR}/stage1-kvm.aci ${OPT_RKT}
-          ln -sv ${OPT_RKT}/rkt /opt/bin/
-
-          /opt/bin/rkt version
+          mkdir -pv ${DOWNLOAD_RKT_DIR} ${OPT_RKT} ${FULL_PATH_DIR_RKT}
+          curl ${BOOTCFG_URI}/assets/rkt/serve/${RKT_ARCHIVE} -o ${DOWNLOAD_RKT_DIR}/${RKT_ARCHIVE}
+          tar -C ${DOWNLOAD_RKT_DIR} -xzvf ${DOWNLOAD_RKT_DIR}/${RKT_ARCHIVE} --strip-component=1
+          for b in rkt stage1-coreos.aci stage1-fly.aci stage1-kvm.aci
+          do
+            mv -v ${DOWNLOAD_RKT_DIR}/${b} ${OPT_RKT}
+          done
+          ln -sv ${OPT_RKT}/rkt ${FULL_PATH_DIR_RKT}
+          ${FULL_PATH_RKT} version
 
 {{ if index . "ssh_authorized_keys" }}
 passwd:
