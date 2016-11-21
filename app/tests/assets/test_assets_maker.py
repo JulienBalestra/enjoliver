@@ -66,7 +66,7 @@ class TestAssetsCNI(unittest.TestCase):
     assets_path = "%s/bootcfg/assets" % project_path
     asset_test = "%s/cni" % assets_path
     default_files = ["Makefile"]
-    version = default_files + ["v0.3.0"]
+    version = default_files
 
     def test_00_fclean(self):
         expect = self.default_files

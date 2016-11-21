@@ -4,3 +4,6 @@
 [submodule "dgr/dgr"]
 	path = dgr/dgr
 	url = https://github.com/blablacar/dgr.git
+[submodule "cni"]
+	path = cni
+	url = https://github.com/containernetworking/cni.git
