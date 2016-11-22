@@ -1,7 +1,23 @@
 #! /usr/bin/env python
+import subprocess
 import unittest
 
 import os
+
+
+class TestValidateRequirements(unittest.TestCase):
+    dev_null = open(os.devnull)
+    cwd = os.path.dirname(os.path.abspath(__file__))
+
+    def test_requirements(self):
+        freeze = subprocess.check_output(["%s/env/bin/pip" % self.cwd, "freeze"], stderr=self.dev_null)
+        freeze = freeze.lower()
+        installed_reqs = freeze
+        with open("%s/requirements.txt" % self.cwd) as f:
+            wanted_resq = f.readlines()
+        self.assertGreater(len(wanted_resq), 0)
+        for r in wanted_resq:
+            self.assertIn(r, installed_reqs)
 
 
 class TestValidateBootcfgAssets(unittest.TestCase):
