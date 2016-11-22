@@ -10,6 +10,7 @@ help:
 	@echo make submodules
 	@echo sudo make acis
 	@echo make assets
+	@echo make validate
 	@echo ----------------------
 	@echo Testing:
 	@echo make $(CHECK)
@@ -19,6 +20,7 @@ help:
 acis:
 	test $(shell id -u -r) -eq 0
 	make -C lldp
+	make -C hyperkube
 
 assets:
 	make -C bootcfg/assets/coreos
@@ -33,6 +35,7 @@ assets:
 	make -C bootcfg/assets/discoveryC
 	@# Depends on .acis
 	make -C bootcfg/assets/lldp
+	make -C bootcfg/assets/hyperkube
 
 clean:
 	make -C bootcfg/assets/coreos fclean
@@ -51,3 +54,6 @@ $(CHECK_EUID):
 submodules:
 	git submodule init
 	git submodule update
+
+validate:
+	@./validate.py
