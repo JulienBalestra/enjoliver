@@ -1,0 +1,23 @@
+From b1d76ac8f30569995ba8e43008c5a6885b644ee6 Mon Sep 17 00:00:00 2001
+Date: Mon, 19 Sep 2016 18:35:24 +0200
+Subject: [PATCH] Remove dockerPrefix when fetching images
+
+---
+ pkg/kubelet/rkt/image.go | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/pkg/kubelet/rkt/image.go b/pkg/kubelet/rkt/image.go
+index 5487a07..01d28b2 100644
+--- a/pkg/kubelet/rkt/image.go
++++ b/pkg/kubelet/rkt/image.go
+@@ -79,7 +79,7 @@ func (r *Runtime) PullImage(image kubecontainer.ImageSpec, pullSecrets []api.Sec
+ 	// Today, `--no-store` will fetch the remote image regardless of whether the content of the image
+ 	// has changed or not. This causes performance downgrades when the image tag is ':latest' and
+ 	// the image pull policy is 'always'. The issue is tracked in https://github.com/coreos/rkt/issues/2937.
+-	if _, err := r.cli.RunCommand(&config, "fetch", "--no-store", dockerPrefix+img); err != nil {
++	if _, err := r.cli.RunCommand(&config, "fetch", "--no-store", img); err != nil {
+ 		glog.Errorf("Failed to fetch: %v", err)
+ 		return err
+ 	}
+--
+2.9.3
