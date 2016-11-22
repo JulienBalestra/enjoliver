@@ -37,3 +37,8 @@ serve
 /app/tests/testing.id_rsa.pub
 /app/tests/test_bootcfg/ssh_authorized_keys/
 /lldp/aci-base/target/
+/hyperkube/aci-builder-k8s/target/
+/hyperkube/workspace/hyperkube
+/dgr/aci-debian/target/
+/dgr/aci-base/target/
+image.aci
