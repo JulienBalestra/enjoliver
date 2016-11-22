@@ -92,6 +92,8 @@ systemd:
         After=install-cni.service
         Requires=install-rkt.service
         After=install-rkt.service
+        Requires=install-hyperkube.service
+        After=install-hyperkube.service
 
     - name: rkt-api.service
       enable: true
@@ -121,6 +123,41 @@ systemd:
             EnvironmentFile=/etc/metadata.env
             Environment=ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379,http://0.0.0.0:4001
             Environment=ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380,http://0.0.0.0:7001
+
+    - name: kubelet.service
+      enable: true
+      contents: |
+        [Unit]
+        After=fetch-metadata.service
+        After=installs.target
+        Requires=installs.target
+
+        [Service]
+        EnvironmentFile=/etc/metadata.env
+        Environment=MANIFESTS=/etc/kubernetes/manifests
+        ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
+        ExecStartPre=/bin/mkdir -pv $MANIFESTS
+        ExecStart=/opt/bin/kubelet \
+          \
+          --network-plugin=cni \
+          --cni-conf-dir=/etc/kubernetes/cni/net.d \
+          \
+          --pod-manifest-path=${MANIFESTS} \
+          --hostname-override=${K8S_ADVERTISE_IP} \
+          --register-schedulable=false \
+          --allow-privileged=true \
+          --api-servers=http://127.0.0.1:8080 \
+          --cloud-provider="" \
+          \
+          --container-runtime=rkt \
+          --rkt-path=/opt/bin/rkt \
+          --v=2
+        Restart=always
+        RestartSec=10
+
+        [Install]
+        WantedBy=multi-user.target
+
 
 storage:
   files:
