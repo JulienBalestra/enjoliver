@@ -1,7 +1,7 @@
 CWD=$(shell pwd)
 
-DGR=$(CWD)/../dgr/
-RKT=$(CWD)/../dgr/rkt_dir/rkt
+DGR=$(CWD)/../dgr
+RKT=$(DGR)/rkt_dir/rkt
 
 BASE=base
 DEBIAN=debian
@@ -17,11 +17,11 @@ default: $(LLDP)
 
 $(BASE):
 	@echo ENV IMAGE=$(CWD)/aci-lldp
-	IMAGE=$(CWD)/aci-$(BASE) make -C $(DGR) install
+	IMAGE=$(DGR)/aci-$(BASE) make -C $(DGR) install
 
 $(DEBIAN): $(BASE)
 	@echo ENV IMAGE=$(CWD)/aci-lldp
-	IMAGE=$(CWD)/aci-$(DEBIAN) make -C $(DGR) install
+	IMAGE=$(DGR)/aci-$(DEBIAN) make -C $(DGR) install
 
 $(LLDP): $(DEBIAN)
 	@echo ENV IMAGE=$(CWD)/aci-lldp
@@ -38,7 +38,7 @@ clean:
 	$(RKT) --local-config=$(DGR) image gc --grace-period=0s
 
 fclean: clean
-	IMAGE=$(CWD)/aci-$(BASE) make -C $(DGR) clean
-	IMAGE=$(CWD)/aci-$(DEBIAN) make -C $(DGR) clean
+	IMAGE=$(DGR)/aci-$(BASE) make -C $(DGR) clean
+	IMAGE=$(DGR)/aci-$(DEBIAN) make -C $(DGR) clean
 	rm -Rf $(RENDER) || true
 	rm -v $(LLDP) || true
