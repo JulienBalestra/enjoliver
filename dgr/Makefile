@@ -12,7 +12,7 @@ DGR_TARGET=target
 RKT_DIR=rkt_dir
 RKT_DIR_DATA=$(RKT_DIR)/data
 RKT=$(RKT_DIR)/rkt
-RKT_RELEASE=https://github.com/coreos/rkt/releases/download/v1.17.0/rkt-v1.17.0.tar.gz
+RKT_RELEASE=https://github.com/coreos/rkt/releases/download/v1.19.0/rkt-v1.19.0.tar.gz
 
 DGR_CONFIG=config.yml
 
