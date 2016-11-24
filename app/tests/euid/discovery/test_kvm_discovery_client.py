@@ -577,6 +577,61 @@ class TestKVMDiscoveryClient03(TestKVMDiscoveryClient):
 
 
 # @unittest.skip("just skip")
+class TestKVMDiscoveryClient04(TestKVMDiscoveryClient):
+    def test_04(self):
+        marker = "euid-%s-%s" % (TestKVMDiscoveryClient.__name__.lower(), self.test_04.__name__)
+        os.environ["BOOTCFG_IP"] = "172.20.0.1"
+        gen = generator.Generator(
+            profile_id="%s" % marker,
+            name="%s" % marker,
+            ignition_id="%s.yaml" % marker,
+            bootcfg_path=self.test_bootcfg_path
+        )
+        gen.dumps()
+
+        destroy, undefine = ["virsh", "destroy", "%s" % marker], ["virsh", "undefine", "%s" % marker]
+        self.virsh(destroy, v=self.dev_null), self.virsh(undefine, v=self.dev_null)
+        try:
+            virt_install = [
+                "virt-install",
+                "--name",
+                "%s" % marker,
+                "--network=bridge:rack0,model=virtio",
+                "--memory=1024",
+                "--vcpus=1",
+                "--pxe",
+                "--disk",
+                "none",
+                "--os-type=linux",
+                "--os-variant=generic",
+                "--noautoconsole",
+                "--boot=network"
+            ]
+            self.virsh(virt_install, assertion=True, v=self.dev_null)
+
+            disco_data = []
+            for i in xrange(30):
+                os.write(2, "\r")
+                request = urllib2.urlopen("%s/discovery" % self.api_endpoint)
+                os.write(2, "\r")
+                response_body = request.read()
+                request.close()
+                self.assertEqual(request.code, 200)
+                disco_data = json.loads(response_body)
+                if disco_data and len(disco_data) == 1:
+                    break
+                time.sleep(6)
+
+            self.assertEqual(1, len(disco_data))
+            self.assertIs(type(disco_data[0]["ignition-journal"]), list)
+            self.assertTrue(len(disco_data[0]["ignition-journal"]) > 0)
+
+        finally:
+            self.virsh(destroy), os.write(1, "\r")
+            self.virsh(undefine), os.write(1, "\r")
+
+
+# @unittest.skip("just skip")
 # class TestUseless(TestKVMDiscoveryClient):
 #     def test_a_task(self):
 #         time.sleep(5)

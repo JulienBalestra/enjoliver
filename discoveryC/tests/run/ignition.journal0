@@ -1,0 +1,42 @@
+Ignition v0.11.2
+parsed url from cmdline: "http://172.20.0.1:8080/ignition?uuid=b601332a-153e-4871-8ad3-9821cf96f746&mac=52-54-00-75-57-8c"
+GET http://172.20.0.1:8080/ignition?uuid=b601332a-153e-4871-8ad3-9821cf96f746&mac=52-54-00-75-57-8c: attempt #1
+GET error: Get http://172.20.0.1:8080/ignition?uuid=b601332a-153e-4871-8ad3-9821cf96f746&mac=52-54-00-75-57-8c: dial tcp 172.20.0.1:8080: connect: network is unreachable
+GET http://172.20.0.1:8080/ignition?uuid=b601332a-153e-4871-8ad3-9821cf96f746&mac=52-54-00-75-57-8c: attempt #2
+GET error: Get http://172.20.0.1:8080/ignition?uuid=b601332a-153e-4871-8ad3-9821cf96f746&mac=52-54-00-75-57-8c: dial tcp 172.20.0.1:8080: connect: network is unreachable
+GET http://172.20.0.1:8080/ignition?uuid=b601332a-153e-4871-8ad3-9821cf96f746&mac=52-54-00-75-57-8c: attempt #3
+GET error: Get http://172.20.0.1:8080/ignition?uuid=b601332a-153e-4871-8ad3-9821cf96f746&mac=52-54-00-75-57-8c: dial tcp 172.20.0.1:8080: connect: network is unreachable
+GET http://172.20.0.1:8080/ignition?uuid=b601332a-153e-4871-8ad3-9821cf96f746&mac=52-54-00-75-57-8c: attempt #4
+GET result: OK
+parsing config: {"ignition":{"version":"2.0.0","config":{}},"storage":{"files":[{"filesystem":"root","path":"/etc/metadata-endpoints.env","contents":{"source":"data:,%23%20Customs%0AAPI_URI%3Dhttp%3A%2F%2F172.20.0.1%3A5000%0ABOOTCFG_URI%3Dhttp%3A%2F%2F172.20.0.1%3A8080%0ADISCOVERY_ADDRESS%3Dhttp%3A%2F%2F172.20.0.1%3A5000%2Fdiscovery%0A%0A%23%20Standards%0AREQUEST_RAW_QUERY%3D%22uuid%3Db601332a-153e-4871-8ad3-9821cf96f746%26mac%3D52-54-00-75-57-8c%22%0A","verification":{}},"mode":420,"user":{},"group":{}},{"filesystem":"root","path":"/opt/installer","contents":{"source":"data:,%23!%2Fbin%2Fbash%20-x%0A%0ANEW_IGNITION%3D%2Frun%2Fnew-ignition.json%0A%0Aif%20%5B%20-z%20%24%7BTIMER%7D%20%5D%0Athen%0A%20%20%20%20TIMER%3D60%0Afi%0A%0Awhile%20true%0Ado%0A%20%20%20%20curl%20-f%20%24%7BBOOTCFG_URI%7D%2Fignition%3F%24%7BREQUEST_RAW_QUERY%7D%20-o%20%24%7BNEW_IGNITION%7D%0A%0A%20%20%20%20diff%20%2Frun%2Fignition.json%20%24%7BNEW_IGNITION%7D%0A%20%20%20%20if%20%5B%20%24%3F%20-eq%201%20%5D%0A%20%20%20%20then%0A%20%20%20%20%20%20%20%20udevadm%20settle%0A%20%20%20%20%20%20%20%20%23systemctl%20reboot%0A%20%20%20%20fi%0A%20%20%20%20sleep%20%24%7BTIMER%7D%0Adone%0A","verification":{}},"mode":320,"user":{},"group":{}}]},"systemd":{"units":[{"name":"lldpd.service","enable":true,"contents":"[Unit]\nRequires=network-online.target\nAfter=network-online.target\n[Service]\nEnvironment=LLDP_VOLUME=/run/lldp\nExecStartPre=/bin/mkdir -pv ${LLDP_VOLUME}\nExecStartPre=/usr/bin/rkt fetch --insecure-options=all \\\n  http://172.20.0.1:8080/assets/lldp/serve/static-aci-lldp-0.aci\n\nExecStart=/usr/bin/rkt run --mount volume=socket,target=/var/run \\\n  --net=host \\\n  static-aci-lldp \\\n  --volume socket,kind=host,source=${LLDP_VOLUME} \\\n  --exec /usr/sbin/lldpd -- -ddd\n[Install]\nWantedBy=multi-user.target\n"},{"name":"download-discoveryC.service","enable":true,"contents":"[Unit]\nRequires=network-online.target\nAfter=network-online.target\n[Service]\nType=oneshot\nEnvironment=OPT_BIN=/opt/bin\nExecStartPre=/bin/mkdir -pv ${OPT_BIN}\nExecStart=/usr/bin/curl -f http://172.20.0.1:8080/assets/discoveryC/serve/discoveryC \\\n  -o ${OPT_BIN}/discoveryC\nExecStartPost=/usr/bin/chmod +x ${OPT_BIN}/discoveryC\nRemainAfterExit=yes\n[Install]\nWantedBy=multi-user.target\n"},{"name":"discoveryC.service","enable":true,"contents":"[Unit]\nRequires=download-discoveryC.service\nAfter=download-discoveryC.service lldpd.service\n[Service]\nType=oneshot\nEnvironment=LLDP_VOLUME=/run/lldp\nEnvironment=LLDP_FILE=/run/lldp/lldp.xml\nEnvironment=IGNITION_FILE=/run/ignition-journal.json\nEnvironment=DISCOVERY_ADDRESS=http://172.20.0.1:5000/discovery\nExecStartPre=-/bin/bash -c \"/usr/bin/journalctl --identifier=ignition -o cat \u003e ${IGNITION_FILE}\"\nExecStartPre=-/usr/bin/rkt run --mount volume=socket,target=/var/run \\\n   --net=host \\\n   static-aci-lldp \\\n   --volume socket,kind=host,source=${LLDP_VOLUME} \\\n   --exec opt/bin/lldp-export\nExecStart=/opt/bin/discoveryC\n[Install]\nWantedBy=multi-user.target\n"},{"name":"installer.service","enable":true,"contents":"[Unit]\nRequires=network-online.target\nAfter=network-online.target\n[Service]\nEnvironmentFile=/etc/metadata-endpoints.env\n# Use short timer in dev\nEnvironment=TIMER=2\nExecStart=/opt/installer\n[Install]\nWantedBy=multi-user.target\n"}]},"networkd":{},"passwd":{"users":[{"name":"core","sshAuthorizedKeys":["ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDkoCggzbUQyBhu+4yAazc7iuLRw+BZYVmFCsjtx+HzIZ/lBtETkazxdfM0TwPG0BHExe+ewUP4QQL5z7/qzSkk3uQ+op6wEDoRCdRLKK6oyH+xcJKMthcnZKRpreEAUCA12iuJtq4BlU0xaNI1B5QoQOGVx+NkRCyAHccpxDBlfIjnNEb+7ZX871xUEOTV3EE7sETmQQE7454KSNQ6Sd8zPXb/cApeWavILsFSC3tslIDjuutjmcmg8FazmRlrShUCRWHjJq6ugxFA87d/ABicSHHdX+CI5UOK/c6WZHpt2hPLJwkF3MAiwO+QpPKzVhmVa7n77d1LmBYECR9aNF3N jb@E7470"]}]}}
+Ignition v0.11.2
+files: createUsers: op(1): [started]  adding ssh keys to user "core"
+files: createUsers: op(1): [finished] adding ssh keys to user "core"
+files: createFilesystemsFiles: createFiles: op(2): [started]  writing file "/etc/metadata-endpoints.env"
+files: createFilesystemsFiles: createFiles: op(2): [finished] writing file "/etc/metadata-endpoints.env"
+files: createFilesystemsFiles: createFiles: op(3): [started]  writing file "/opt/installer"
+files: createFilesystemsFiles: createFiles: op(3): [finished] writing file "/opt/installer"
+files: op(4): [started]  processing unit "lldpd.service"
+files: op(4): op(5): [started]  writing unit "lldpd.service" at "etc/systemd/system/lldpd.service"
+files: op(4): op(5): [finished] writing unit "lldpd.service" at "etc/systemd/system/lldpd.service"
+files: op(4): [finished] processing unit "lldpd.service"
+files: op(6): [started]  enabling unit "lldpd.service"
+files: op(6): [finished] enabling unit "lldpd.service"
+files: op(7): [started]  processing unit "download-discoveryC.service"
+files: op(7): op(8): [started]  writing unit "download-discoveryC.service" at "etc/systemd/system/download-discoveryC.service"
+files: op(7): op(8): [finished] writing unit "download-discoveryC.service" at "etc/systemd/system/download-discoveryC.service"
+files: op(7): [finished] processing unit "download-discoveryC.service"
+files: op(9): [started]  enabling unit "download-discoveryC.service"
+files: op(9): [finished] enabling unit "download-discoveryC.service"
+files: op(a): [started]  processing unit "discoveryC.service"
+files: op(a): op(b): [started]  writing unit "discoveryC.service" at "etc/systemd/system/discoveryC.service"
+files: op(a): op(b): [finished] writing unit "discoveryC.service" at "etc/systemd/system/discoveryC.service"
+files: op(a): [finished] processing unit "discoveryC.service"
+files: op(c): [started]  enabling unit "discoveryC.service"
+files: op(c): [finished] enabling unit "discoveryC.service"
+files: op(d): [started]  processing unit "installer.service"
+files: op(d): op(e): [started]  writing unit "installer.service" at "etc/systemd/system/installer.service"
+files: op(d): op(e): [finished] writing unit "installer.service" at "etc/systemd/system/installer.service"
+files: op(d): [finished] processing unit "installer.service"
+files: op(f): [started]  enabling unit "installer.service"
+files: op(f): [finished] enabling unit "installer.service"
