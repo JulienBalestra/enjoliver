@@ -47,6 +47,10 @@ class CommonScheduler(object):
     def done_list(self):
         pass
 
+    @abc.abstractproperty
+    def wide_done_list(self):
+        pass
+
 
 class EtcdProxyScheduler(CommonScheduler):
     __name__ = "EtcdProxyScheduler"
@@ -94,17 +98,16 @@ class EtcdProxyScheduler(CommonScheduler):
             self.apply_deps_delay * self.apply_deps_tries))
 
     def _fall_back_to_proxy(self, discovery):
-        done = self._etcd_member_instance.ip_list + list(self._done_etcd_proxy)
         if len(self._pending_etcd_proxy) != 0:
             raise AssertionError("len(self._pending_etcd_proxy) != 0 -> %s" % str(self._pending_etcd_proxy))
 
-        if len(discovery) > len(done):
+        if len(discovery) > len(self.wide_done_list):
             for machine in discovery:
                 ip_mac = self.get_machine_boot_ip_mac(machine)
-                if ip_mac in self._etcd_member_instance.done_list:
-                    os.write(2, "\r-> Skip because Etcd Member %s\n\r" % str(ip_mac))
-                elif ip_mac in self._done_etcd_proxy:
+                if ip_mac in self.done_list:
                     os.write(2, "\r-> Skip because Etcd Proxy %s\n\r" % str(ip_mac))
+                elif ip_mac in self.wide_done_list:
+                    os.write(2, "\r-> Skip because Wide Schedule %s\n\r" % str(ip_mac))
                 else:
                     os.write(2, "\r-> Pending Etcd Proxy %s\n\r" % str(ip_mac))
                     self._pending_etcd_proxy.add(ip_mac)
@@ -165,6 +168,10 @@ class EtcdProxyScheduler(CommonScheduler):
     def done_list(self):
         return [k for k in self._done_etcd_proxy]
 
+    @property
+    def wide_done_list(self):
+        return self.done_list + self._etcd_member_instance.wide_done_list
+
 
 class K8sControlPlaneScheduler(CommonScheduler):
     __name__ = "K8sControlPlaneScheduler"
@@ -221,11 +228,10 @@ class K8sControlPlaneScheduler(CommonScheduler):
         else:
             for machine in discovery:
                 ip_mac = self.get_machine_boot_ip_mac(machine)
-
-                if ip_mac in self._etcd_member_instance.done_list:
-                    os.write(2, "\r-> Skip because Etcd Member %s\n\r" % str(ip_mac))
-                elif ip_mac in self._done_control_plane:
+                if ip_mac in self._done_control_plane:
                     os.write(2, "\r-> Skip because K8s Control Plane -> WARNING %s\n\r" % str(ip_mac))
+                elif ip_mac in self.wide_done_list:
+                    os.write(2, "\r-> Skip because Wide Schedule %s\n\r" % str(ip_mac))
                 elif len(self._pending_control_plane) < self.control_plane_nb:
                     os.write(2, "\r-> Pending K8s Control Plane %s\n\r" % str(ip_mac))
                     self._pending_control_plane.add(ip_mac)
@@ -304,6 +310,10 @@ class K8sControlPlaneScheduler(CommonScheduler):
     @property
     def done_list(self):
         return [k for k in self._done_control_plane]
+
+    @property
+    def wide_done_list(self):
+        return self.done_list + self._etcd_member_instance.wide_done_list
 
 
 class EtcdMemberScheduler(CommonScheduler):
@@ -394,6 +404,10 @@ class EtcdMemberScheduler(CommonScheduler):
     @property
     def done_list(self):
         return [k for k in self._done_etcd_member]
+
+    @property
+    def wide_done_list(self):
+        return self.done_list
 
     def apply(self):
         # Etcd Members
