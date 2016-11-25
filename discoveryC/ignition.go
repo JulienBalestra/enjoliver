@@ -1,7 +1,7 @@
 package main
 
 import (
-	"k8s.io/kubernetes/staging/src/k8s.io/client-go/_vendor/github.com/emicklei/go-restful/log"
+	"log"
 	"io/ioutil"
 	"strings"
 )
