@@ -25,6 +25,12 @@ def pause(s=200):
         os.write(2, "\r==> sleep finish\n\r")
 
 
+def memory():
+    mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
+    mem_gib = mem_bytes / (1024. ** 3)
+    return mem_gib
+
+
 @unittest.skipIf(os.geteuid() != 0,
                  "TestKVMDiscovery need privilege")
 class TestKVMK8sBasic(TestCase):
@@ -409,7 +415,7 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
                     "--boot=network"
                 ]
                 if i > 0:
-                    virt_install[4] = "--memory=8192"
+                    virt_install[4] = "--memory=%d" % (memory() // 1.3)
                     virt_install[5] = "--vcpus=2"
 
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
