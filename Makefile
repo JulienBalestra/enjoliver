@@ -7,6 +7,7 @@ default: help
 help:
 	@echo ----------------------
 	@echo Setup:
+	@echo sudo make apt
 	@echo make submodules
 	@echo sudo make acis
 	@echo make assets
@@ -16,6 +17,11 @@ help:
 	@echo make $(CHECK)
 	@echo sudo make $(CHECK_EUID)
 	@echo ----------------------
+
+apt:
+	test $(shell id -u -r) -eq 0
+	DEBIAN_FRONTEND=noninteractive INSTALL="-y" ./apt.sh
+
 
 acis:
 	test $(shell id -u -r) -eq 0
