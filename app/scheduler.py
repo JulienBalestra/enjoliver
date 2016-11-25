@@ -173,6 +173,128 @@ class EtcdProxyScheduler(CommonScheduler):
         return self.done_list + self._etcd_member_instance.wide_done_list
 
 
+class K8sNodeScheduler(CommonScheduler):
+    __name__ = "K8sNodeScheduler"
+    apply_deps_delay = 6
+    apply_deps_tries = apply_deps_delay * 50
+
+    def __init__(self,
+                 k8s_control_plane,
+                 ignition_node,
+                 apply_first=False):
+
+        self._etcd_initial_cluster = None
+        self._k8s_control_plane_instance = k8s_control_plane
+
+        if isinstance(self._k8s_control_plane_instance, K8sControlPlaneScheduler) is False:
+            raise AttributeError("%s not a instanceof(%s)" % (
+                "k8s_control_plane", K8sControlPlaneScheduler.__name__))
+
+        if apply_first is True:
+            self.apply_control_plane()
+
+        self._ignition_node = ignition_node
+        self.api_endpoint = self._k8s_control_plane_instance.api_endpoint
+        self.bootcfg_prefix = self._k8s_control_plane_instance.bootcfg_prefix
+        self.bootcfg_path = self._k8s_control_plane_instance.bootcfg_path
+        self._gen = generator.Generator
+        self._done_k8s_node = set()
+        self._pending_k8s_node = set()
+
+    @property
+    def etcd_initial_cluster(self):
+        if self._etcd_initial_cluster is None:
+            self._etcd_initial_cluster = self._k8s_control_plane_instance.etcd_initial_cluster
+        return self._etcd_initial_cluster
+
+    def apply_control_plane(self):
+        if len(self._k8s_control_plane_instance.done_list) > 0:
+            return True
+        for t in xrange(self.apply_deps_tries):
+            if self._k8s_control_plane_instance.apply() is True:
+                self._etcd_initial_cluster = self._k8s_control_plane_instance.etcd_initial_cluster
+                return True
+            time.sleep(self.apply_deps_delay)
+        raise RuntimeError("timeout after %d" % (
+            self.apply_deps_delay * self.apply_deps_tries))
+
+    def _fall_back_to_node(self, discovery):
+        if len(self._pending_k8s_node) != 0:
+            raise AssertionError("len(self._pending_k8s_node) != 0 -> %s" % str(self._pending_k8s_node))
+
+        if len(discovery) > len(self.wide_done_list):
+            for machine in discovery:
+                ip_mac = self.get_machine_boot_ip_mac(machine)
+                if ip_mac in self._done_k8s_node:
+                    os.write(2, "\r-> Skip because K8s Node %s\n\r" % str(ip_mac))
+                elif ip_mac in self.wide_done_list:
+                    os.write(2, "\r-> Skip because in Wide Schedule %s\n\r" % str(ip_mac))
+                else:
+                    os.write(2, "\r-> Pending K8s Node %s\n\r" % str(ip_mac))
+                    self._pending_k8s_node.add(ip_mac)
+        else:
+            os.write(2, "\r-> no machine 0 %s\n\r" % len(self._pending_k8s_node))
+
+    def _apply_k8s_node(self):
+        os.write(2, "\r-> %s.%s in progress...\n\r" % (self.__name__, self._apply_k8s_node.__name__))
+
+        marker = "%s%snode" % (self.bootcfg_prefix, "k8s")
+
+        base = len(self._done_k8s_node)
+        new_pending = set()
+        for i, nic in enumerate(self._pending_k8s_node):
+            # nic = (IPv4, MAC)
+            i += base
+            self._gen = generator.Generator(
+                group_id="%s-%d" % (marker, i),  # one per machine
+                profile_id=marker,  # link to ignition
+                name=marker,
+                ignition_id="%s.yaml" % self._ignition_node,
+                bootcfg_path=self.bootcfg_path,
+                selector={"mac": nic[1]},
+                extra_metadata={
+                    "etcd_initial_cluster": self.etcd_initial_cluster,
+                    "etcd_advertise_client_urls": "http://%s:2379" % nic[0],
+                    "etcd_proxy": "on",
+                    "k8s_endpoint": ",".join(self._k8s_control_plane_instance.k8s_endpoint)
+                }
+            )
+            self._gen.dumps()
+            self._done_k8s_node.add(nic)
+            new_pending = self._pending_k8s_node - self._done_k8s_node
+            os.write(2, "\r-> %s.%s selector {mac: %s}\n\r" % (
+                self.__name__, self._apply_k8s_node.__name__, nic))
+
+        if self._pending_k8s_node - self._done_k8s_node:
+            raise AssertionError("self._pending_k8s_node - self._done_k8s_node have to return an empty set")
+        self._pending_k8s_node = new_pending
+
+    def apply(self):
+        self.apply_control_plane()
+        discovery = self.fetch_discovery(self.api_endpoint)
+        self._fall_back_to_node(discovery)
+        if len(self._pending_k8s_node) > 0:
+            self._apply_k8s_node()
+
+        os.write(2, "\r-> %s.%s total %d\n\r" % (
+            self.__name__,
+            self.apply.__name__,
+            len(self._done_k8s_node)))
+        return len(self._done_k8s_node)
+
+    @property
+    def ip_list(self):
+        return [k[0] for k in self._done_k8s_node]
+
+    @property
+    def done_list(self):
+        return [k for k in self._done_k8s_node]
+
+    @property
+    def wide_done_list(self):
+        return self.done_list + self._k8s_control_plane_instance.wide_done_list
+
+
 class K8sControlPlaneScheduler(CommonScheduler):
     __name__ = "K8sControlPlaneScheduler"
 
@@ -180,6 +302,7 @@ class K8sControlPlaneScheduler(CommonScheduler):
     apply_deps_tries = apply_deps_delay * 50
 
     control_plane_nb = 3
+    api_server_port = 8080
 
     def __init__(self,
                  etcd_member_instance,
@@ -296,6 +419,10 @@ class K8sControlPlaneScheduler(CommonScheduler):
             os.write(2, "\r-> %s.%s complete\n\r" %
                      (self.__name__, self.apply.__name__))
             return True
+
+    @property
+    def k8s_endpoint(self):
+        return ["http://%s:%d" % (k[0], self.api_server_port) for k in self._done_control_plane]
 
     @property
     def etcd_initial_cluster(self):
