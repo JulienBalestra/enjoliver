@@ -328,6 +328,45 @@ class TestKVMK8sBasic(TestCase):
                     time.sleep(6)
         self.assertEqual(len(ips), 0)
 
+    def etcd_member_len(self, ip, members, tries=30):
+        result = {}
+        for t in xrange(tries):
+            try:
+                endpoint = "http://%s:2379/v2/members" % ip
+                request = urllib2.urlopen(endpoint)
+                content = request.read()
+                request.close()
+                result = json.loads(content)
+                os.write(1, "\r-> RESULT %s %s\n\r" % (endpoint, result))
+                sys.stdout.flush()
+                if len(result["members"]) == members:
+                    break
+
+            except urllib2.URLError:
+                os.write(2, "\r-> NOT READY %s\n\r" % ip)
+                time.sleep(10)
+
+        self.assertEqual(len(result["members"]), members)
+
+    def k8s_api_health(self, ips, tries=60):
+        for t in xrange(tries):
+            for i, ip in enumerate(ips):
+                try:
+                    endpoint = "http://%s:8080/healthz" % ip
+                    request = urllib2.urlopen(endpoint)
+                    response_body = request.read()
+                    request.close()
+                    os.write(1, "\r-> RESULT %s %s\n\r" % (endpoint, response_body))
+                    sys.stdout.flush()
+                    if response_body == "ok":
+                        ips.pop(i)
+                        os.write(1, "\r-> REMAIN %s\n\r" % str(ips))
+
+                except urllib2.URLError:
+                    os.write(2, "\r-> NOT READY %s\n\r" % ip)
+                    time.sleep(10)
+        self.assertEqual(len(ips), 0)
+
 
 # @unittest.skip("skip")
 @unittest.skipIf(os.geteuid() != 0,
@@ -353,7 +392,7 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
                                 ["virsh", "undefine", m]
             self.virsh(destroy, v=self.dev_null), self.virsh(undefine, v=self.dev_null)
         try:
-            for m in nodes:
+            for i, m in enumerate(nodes):
                 virt_install = [
                     "virt-install",
                     "--name",
@@ -369,8 +408,13 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
                     "--noautoconsole",
                     "--boot=network"
                 ]
+                if i > 0:
+                    virt_install[4] = "--memory=8192"
+                    virt_install[5] = "--vcpus=2"
+
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
-                time.sleep(3)  # KVM fail to associate nic
+                if i == 0:
+                    time.sleep(15)  # KVM fail to associate nic
 
             sch_member = scheduler.EtcdMemberScheduler(
                 api_endpoint=self.api_endpoint,
@@ -400,31 +444,12 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
                 time.sleep(6)
 
             self.assertTrue(sch_cp.apply())
-
-            # TODO -> KVM doesn't restart itself
             to_start = copy.deepcopy(nodes)
             self.kvm_restart_off_machines(to_start)
 
-            ips_collected = sch_member.ip_list
-
-            response_body = {}
-            for i in xrange(20):
-                try:
-                    endpoint = "http://%s:2379/v2/members" % ips_collected[0]
-                    request = urllib2.urlopen(endpoint)
-                    response_body = json.loads(request.read())
-                    request.close()
-                    if len(response_body["members"]) == sch_member.etcd_members_nb:
-                        break
-                except urllib2.URLError:
-                    pass
-
-                time.sleep(6)
-
-            self.assertEqual(len(response_body["members"]), sch_member.etcd_members_nb)
+            self.etcd_member_len(sch_member.ip_list[0], sch_member.etcd_members_nb)
             self.etcd_endpoint_health(sch_cp.ip_list)
-
-            pause(600)
+            self.k8s_api_health(sch_cp.ip_list)
 
         finally:
             for i in xrange(nb_node):

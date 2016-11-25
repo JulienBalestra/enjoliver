@@ -49,7 +49,9 @@ systemd:
         Type=oneshot
         Environment=LLDP_VOLUME=/run/lldp
         Environment=LLDP_FILE=/run/lldp/lldp.xml
+        Environment=IGNITION_FILE=/run/ignition.journal
         Environment=DISCOVERY_ADDRESS=http://172.20.0.1:5000/discovery
+        ExecStartPre=-/bin/bash -c "/usr/bin/journalctl --identifier=ignition -o cat > ${IGNITION_FILE}"
         ExecStartPre=-/usr/bin/rkt run --mount volume=socket,target=/var/run \
            --net=host \
            static-aci-lldp \
