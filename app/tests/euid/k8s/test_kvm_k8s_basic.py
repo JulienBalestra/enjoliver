@@ -28,7 +28,7 @@ def pause(s=200):
 def memory():
     mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
     mem_gib = mem_bytes / (1024. ** 3)
-    return mem_gib
+    return mem_gib * 1024
 
 
 @unittest.skipIf(os.geteuid() != 0,
@@ -354,7 +354,26 @@ class TestKVMK8sBasic(TestCase):
 
         self.assertEqual(len(result["members"]), members)
 
-    def k8s_api_health(self, ips, tries=60):
+    def etcd_member_k8s_minions(self, ip, nodes_nb, tries=30):
+        result = {}
+        for t in xrange(tries):
+            try:
+                endpoint = "http://%s:2379/v2/keys/registry/minions" % ip
+                request = urllib2.urlopen(endpoint)
+                content = request.read()
+                request.close()
+                result = json.loads(content)
+                sys.stdout.flush()
+                if result and len(result["node"]["nodes"]) == nodes_nb:
+                    break
+
+            except urllib2.URLError:
+                os.write(2, "\r-> NOT READY %s\n\r" % ip)
+                time.sleep(10)
+
+        self.assertEqual(len(result["node"]["nodes"]), nodes_nb)
+
+    def k8s_api_health(self, ips, tries=90):
         for t in xrange(tries):
             for i, ip in enumerate(ips):
                 try:
@@ -404,8 +423,8 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
                     "--name",
                     "%s" % m,
                     "--network=bridge:rack0,model=virtio",
-                    "--memory=2048",
-                    "--vcpus=1",
+                    "--memory=%d" % (memory() // 2),
+                    "--vcpus=2",
                     "--pxe",
                     "--disk",
                     "none",
@@ -414,13 +433,8 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
                     "--noautoconsole",
                     "--boot=network"
                 ]
-                if i > 0:
-                    virt_install[4] = "--memory=%d" % (memory() // 1.3)
-                    virt_install[5] = "--vcpus=2"
-
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
-                if i == 0:
-                    time.sleep(15)  # KVM fail to associate nic
+                time.sleep(5)  # KVM fail to associate nic
 
             sch_member = scheduler.EtcdMemberScheduler(
                 api_endpoint=self.api_endpoint,
@@ -456,6 +470,104 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
             self.etcd_member_len(sch_member.ip_list[0], sch_member.etcd_members_nb)
             self.etcd_endpoint_health(sch_cp.ip_list)
             self.k8s_api_health(sch_cp.ip_list)
+            self.etcd_member_k8s_minions(sch_member.ip_list[0], sch_cp.control_plane_nb)
+
+        finally:
+            for i in xrange(nb_node):
+                machine_marker = "%s-%d" % (marker, i)
+                destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
+                                    ["virsh", "undefine", "%s" % machine_marker]
+                self.virsh(destroy), os.write(1, "\r")
+                self.virsh(undefine), os.write(1, "\r")
+
+
+@unittest.skipIf(os.geteuid() != 0,
+                 "TestKVMDiscovery need privilege")
+class TestKVMK8SBasic1(TestKVMK8sBasic):
+    # @unittest.skip("just skip")
+    def test_01(self):
+        self.assertIsNone(self.fetch_discovery_interfaces()["interfaces"])
+        nb_node = 3
+        marker = "euid-%s-%s" % (TestKVMK8sBasic.__name__.lower(), self.test_01.__name__)
+        nodes = ["%s-%d" % (marker, i) for i in xrange(nb_node)]
+        os.environ["BOOTCFG_IP"] = "172.20.0.1"
+        os.environ["API_IP"] = "172.20.0.1"
+        gen = generator.Generator(
+            profile_id="%s" % marker,
+            name="%s" % marker,
+            ignition_id="%s.yaml" % marker,
+            bootcfg_path=self.test_bootcfg_path
+        )
+        gen.dumps()
+        for m in nodes:
+            destroy, undefine = ["virsh", "destroy", m], \
+                                ["virsh", "undefine", m]
+            self.virsh(destroy, v=self.dev_null), self.virsh(undefine, v=self.dev_null)
+        try:
+            for i, m in enumerate(nodes):
+                virt_install = [
+                    "virt-install",
+                    "--name",
+                    "%s" % m,
+                    "--network=bridge:rack0,model=virtio",
+                    "--memory=%d" % (memory() // 2),
+                    "--vcpus=2",
+                    "--pxe",
+                    "--disk",
+                    "none",
+                    "--os-type=linux",
+                    "--os-variant=generic",
+                    "--noautoconsole",
+                    "--boot=network"
+                ]
+                self.virsh(virt_install, assertion=True, v=self.dev_null)
+                time.sleep(3)
+
+            sch_member = scheduler.EtcdMemberScheduler(
+                api_endpoint=self.api_endpoint,
+                bootcfg_path=self.test_bootcfg_path,
+                ignition_member="%s-emember" % marker,
+                bootcfg_prefix="%s-" % marker
+            )
+            sch_member.etcd_members_nb = 1
+
+            for i in xrange(60):
+                if sch_member.apply() is True:
+                    break
+                time.sleep(3)
+
+            self.assertTrue(sch_member.apply())
+
+            sch_cp = scheduler.K8sControlPlaneScheduler(
+                etcd_member_instance=sch_member,
+                ignition_control_plane="%s-k8s-control-plane" % marker,
+                apply_first=False
+            )
+            sch_cp.control_plane_nb = 1
+            for i in xrange(10):
+                if sch_cp.apply() is True:
+                    break
+                time.sleep(6)
+
+            self.assertTrue(sch_cp.apply())
+            sch_no = scheduler.K8sNodeScheduler(
+                k8s_control_plane=sch_cp,
+                ignition_node="%s-k8s-node" % marker,
+                apply_first=False
+            )
+            for i in xrange(10):
+                if sch_no.apply() == 1:
+                    break
+                time.sleep(6)
+
+            to_start = copy.deepcopy(nodes)
+            self.kvm_restart_off_machines(to_start)
+
+            self.etcd_member_len(sch_member.ip_list[0], sch_member.etcd_members_nb)
+            self.etcd_endpoint_health(sch_cp.ip_list)
+            self.k8s_api_health(sch_cp.ip_list)
+            self.etcd_member_k8s_minions(sch_member.ip_list[0], len(sch_no.wide_done_list) - sch_member.etcd_members_nb)
+            # pause(600)
 
         finally:
             for i in xrange(nb_node):
