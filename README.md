@@ -46,43 +46,38 @@
 
 # TODO
 
-#### QEMU-KVM doesn't restart itself when invoking systemctl reboot: stay power off 
+* QEMU-KVM doesn't restart itself when invoking systemctl reboot: stay power off 
 
-#### Safe reboot with multi factors
-
-* ignition change
-* GET uuid / mac on API to confirm
+* Safe reboot with multi factors
+    * ignition change
+    * GET uuid / mac on API to confirm
     
 ####     
     
     
 # Backlog / No priority   
 
-#### Keep SSH config (KeyChecking)
+* Keep SSH config (KeyChecking)
 
-#### make assets relink twice
+* make assets relink twice
 
-#### Avoid reset -q after lldp exit
+* Avoid reset -q after lldp exit
 
-#### Refactor the lldp.aci to no depends on old style dgr builds
-
-* lldp/aci-base
-* lldp/aci-debian
-
-
-#### Store the POST discovery data inside a DB
-
-* Etcd with ODM
-* Real db cluster for Documents
+* Refactor the lldp.aci to no depends on old style dgr builds
+    * lldp/aci-base
+    * lldp/aci-debian
 
 
-#### Keep and history of each POST discovery
+* Store the POST discovery data inside a DB
+    * Etcd with ODM
+    * Real db cluster for Documents
 
-* Real db cluster for Documents (capped)
 
-#### Store the scheduling results in DB
+* Keep and history of each POST discovery
+    * Real db cluster for Documents (capped)
 
-* Real db cluster for Documents
+* Store the scheduling results in DB
+    * Real db cluster for Documents
 
 #### rkt stage for KVM-QEMU
 
