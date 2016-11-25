@@ -5,6 +5,7 @@ import unittest
 import os
 
 
+@unittest.skip("Just with env")
 class TestValidateRequirements(unittest.TestCase):
     dev_null = open(os.devnull)
     cwd = os.path.dirname(os.path.abspath(__file__))
