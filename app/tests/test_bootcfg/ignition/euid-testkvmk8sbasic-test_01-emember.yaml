@@ -1,0 +1,59 @@
+---
+systemd:
+  units:
+    - name: fetch-metadata.service
+      enable: true
+      contents: |
+        [Unit]
+        Requires=network-online.target
+        After=network-online.target
+        [Service]
+        Type=oneshot
+        EnvironmentFile=/etc/metadata-endpoints.env
+        Environment=METADATA=/etc/metadata.env
+        # If the file already exist put the unit on failure
+        ExecStartPre=/usr/bin/test ! -f $METADATA
+        ExecStart=/usr/bin/curl ${BOOTCFG_URI}/metadata?${REQUEST_RAW_QUERY} -o $METADATA
+        RemainAfterExit=yes
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: etcd2.service
+      enable: true
+      dropins:
+        - name: 10-standalone.conf
+          contents: |
+            [Unit]
+            After=fetch-metadata.service
+            [Service]
+            ExecStartPre=/bin/cat /etc/metadata.env
+            ExecStartPre=/bin/ls -l /etc/metadata.env
+            EnvironmentFile=/etc/metadata.env
+            Environment=ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379,http://0.0.0.0:4001
+            Environment=ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380,http://0.0.0.0:7001
+
+storage:
+  files:
+    - path: /etc/metadata-endpoints.env
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          # Customs
+          API_URI={{.api_uri}}
+          BOOTCFG_URI={{.bootcfg_uri}}
+          DISCOVERY_ADDRESS={{.api_uri}}/discovery
+
+          # Standards
+          REQUEST_RAW_QUERY="{{.request.raw_query}}"
+
+
+{{ if index . "ssh_authorized_keys" }}
+passwd:
+  users:
+    - name: core
+      ssh_authorized_keys:
+        {{ range $element := .ssh_authorized_keys }}
+        - {{$element}}
+        {{end}}
+{{end}}

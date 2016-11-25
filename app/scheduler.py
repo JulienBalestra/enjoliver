@@ -4,11 +4,17 @@ import os
 import time
 import urllib2
 
+import sys
+
 import generator
 
 
 class CommonScheduler(object):
     __metaclass__ = abc.ABCMeta
+
+    def log(self, func_name, message):
+        os.write(1, "\r%s.%s %s\n\r" % (self.__name__, func_name, message))
+        sys.stdout.flush()
 
     @staticmethod
     def get_machine_boot_ip_mac(discovery):
@@ -105,17 +111,21 @@ class EtcdProxyScheduler(CommonScheduler):
             for machine in discovery:
                 ip_mac = self.get_machine_boot_ip_mac(machine)
                 if ip_mac in self.done_list:
-                    os.write(2, "\r-> Skip because Etcd Proxy %s\n\r" % str(ip_mac))
+                    self.log(self._fall_back_to_proxy.__name__,
+                             "Skip because Etcd Proxy %s" % str(ip_mac))
                 elif ip_mac in self.wide_done_list:
-                    os.write(2, "\r-> Skip because Wide Schedule %s\n\r" % str(ip_mac))
+                    self.log(self._fall_back_to_proxy.__name__,
+                             "Skip because Wide Schedule %s" % str(ip_mac))
                 else:
-                    os.write(2, "\r-> Pending Etcd Proxy %s\n\r" % str(ip_mac))
+                    self.log(self._fall_back_to_proxy.__name__,
+                             "Pending Etcd Proxy %s" % str(ip_mac))
                     self._pending_etcd_proxy.add(ip_mac)
         else:
-            os.write(2, "\r-> no machine 0 %s\n\r" % len(self._pending_etcd_proxy))
+            self.log(self._fall_back_to_proxy.__name__,
+                     "no machine 0 %s" % len(self._pending_etcd_proxy))
 
     def _apply_proxy(self):
-        os.write(2, "\r-> %s.%s in progress...\n\r" % (self.__name__, self._apply_proxy.__name__))
+        self.log(self._apply_proxy.__name__, "in progress...")
 
         marker = "%s%sproxy" % (self.bootcfg_prefix, "e")  # e for Etcd
 
@@ -140,8 +150,7 @@ class EtcdProxyScheduler(CommonScheduler):
             self._gen.dumps()
             self._done_etcd_proxy.add(nic)
             new_pending = self._pending_etcd_proxy - self._done_etcd_proxy
-            os.write(2, "\r-> %s.%s selector {mac: %s}\n\r" % (
-                self.__name__, self._apply_proxy.__name__, nic))
+            self.log(self._apply_proxy.__name__, "selector {mac: %s}" % nic[1])
 
         if self._pending_etcd_proxy - self._done_etcd_proxy:
             raise AssertionError("self._pending_etcd_proxy - self._done_etcd_proxy have to return an empty set")
@@ -154,10 +163,7 @@ class EtcdProxyScheduler(CommonScheduler):
         if len(self._pending_etcd_proxy) > 0:
             self._apply_proxy()
 
-        os.write(2, "\r-> %s.%s total %d\n\r" % (
-            self.__name__,
-            self.apply.__name__,
-            len(self._done_etcd_proxy)))
+        self.log(self.apply.__name__, " total %d" % len(self._done_etcd_proxy))
         return len(self._done_etcd_proxy)
 
     @property
@@ -226,17 +232,21 @@ class K8sNodeScheduler(CommonScheduler):
             for machine in discovery:
                 ip_mac = self.get_machine_boot_ip_mac(machine)
                 if ip_mac in self._done_k8s_node:
-                    os.write(2, "\r-> Skip because K8s Node %s\n\r" % str(ip_mac))
+                    self.log(self._fall_back_to_node.__name__,
+                             "Skip because K8s Node %s" % str(ip_mac))
                 elif ip_mac in self.wide_done_list:
-                    os.write(2, "\r-> Skip because in Wide Schedule %s\n\r" % str(ip_mac))
+                    self.log(self._fall_back_to_node.__name__,
+                             "Skip because in Wide Schedule %s" % str(ip_mac))
                 else:
-                    os.write(2, "\r-> Pending K8s Node %s\n\r" % str(ip_mac))
+                    self.log(self._fall_back_to_node.__name__,
+                             "Pending K8s Node %s" % str(ip_mac))
                     self._pending_k8s_node.add(ip_mac)
         else:
-            os.write(2, "\r-> no machine 0 %s\n\r" % len(self._pending_k8s_node))
+            self.log(self._fall_back_to_node.__name__,
+                     "no machine 0 %s" % len(self._pending_k8s_node))
 
     def _apply_k8s_node(self):
-        os.write(2, "\r-> %s.%s in progress...\n\r" % (self.__name__, self._apply_k8s_node.__name__))
+        self.log(self._apply_k8s_node.__name__, "in progress...")
 
         marker = "%s%snode" % (self.bootcfg_prefix, "k8s")
 
@@ -256,14 +266,14 @@ class K8sNodeScheduler(CommonScheduler):
                     "etcd_initial_cluster": self.etcd_initial_cluster,
                     "etcd_advertise_client_urls": "http://%s:2379" % nic[0],
                     "etcd_proxy": "on",
+                    "k8s_advertise_ip": "%s" % nic[0],
                     "k8s_endpoint": ",".join(self._k8s_control_plane_instance.k8s_endpoint)
                 }
             )
             self._gen.dumps()
             self._done_k8s_node.add(nic)
             new_pending = self._pending_k8s_node - self._done_k8s_node
-            os.write(2, "\r-> %s.%s selector {mac: %s}\n\r" % (
-                self.__name__, self._apply_k8s_node.__name__, nic))
+            self.log(self._apply_k8s_node.__name__, "selector {mac: %s}" % nic[1])
 
         if self._pending_k8s_node - self._done_k8s_node:
             raise AssertionError("self._pending_k8s_node - self._done_k8s_node have to return an empty set")
@@ -276,10 +286,7 @@ class K8sNodeScheduler(CommonScheduler):
         if len(self._pending_k8s_node) > 0:
             self._apply_k8s_node()
 
-        os.write(2, "\r-> %s.%s total %d\n\r" % (
-            self.__name__,
-            self.apply.__name__,
-            len(self._done_k8s_node)))
+        self.log(self.apply.__name__, "total %d" % len(self._done_k8s_node))
         return len(self._done_k8s_node)
 
     @property
@@ -340,32 +347,38 @@ class K8sControlPlaneScheduler(CommonScheduler):
 
     def _fifo_control_plane_simple(self, discovery):
         if not discovery or len(discovery) == 0:
-            os.write(2, "\r-> no machine 0/%d\n\r" % self.control_plane_nb)
+            self.log(self._fifo_control_plane_simple.__name__,
+                     "no machine 0/%d" % self.control_plane_nb)
             return self._pending_control_plane
 
         elif len(discovery) < self.control_plane_nb:
-            os.write(2, "\r-> not enough machines %d/%d\n\r" % (
-                len(discovery), self.control_plane_nb))
+            self.log(self._fifo_control_plane_simple.__name__,
+                     "not enough machines %d/%d" % (
+                         len(discovery), self.control_plane_nb))
             return self._pending_control_plane
 
         else:
             for machine in discovery:
                 ip_mac = self.get_machine_boot_ip_mac(machine)
                 if ip_mac in self._done_control_plane:
-                    os.write(2, "\r-> Skip because K8s Control Plane -> WARNING %s\n\r" % str(ip_mac))
+                    self.log(self._fifo_control_plane_simple.__name__,
+                             "WARNING Skip because K8s Control Plane  %s" % str(ip_mac))
                 elif ip_mac in self.wide_done_list:
-                    os.write(2, "\r-> Skip because Wide Schedule %s\n\r" % str(ip_mac))
+                    self.log(self._fifo_control_plane_simple.__name__,
+                             "Skip because Wide Schedule %s" % str(ip_mac))
                 elif len(self._pending_control_plane) < self.control_plane_nb:
-                    os.write(2, "\r-> Pending K8s Control Plane %s\n\r" % str(ip_mac))
+                    self.log(self._fifo_control_plane_simple.__name__,
+                             "Pending K8s Control Plane %s" % str(ip_mac))
                     self._pending_control_plane.add(ip_mac)
                 else:
                     break
 
-        os.write(2, "\r-> enough machines %d/%d\n\r" % (len(discovery), self.control_plane_nb))
+        self.log(self._fifo_control_plane_simple.__name__,
+                 "enough machines %d/%d" % (len(discovery), self.control_plane_nb))
         return self._pending_control_plane
 
     def _apply_control_plane(self):
-        os.write(2, "\r-> %s.%s in progress...\n\r" % (self.__name__, self._apply_control_plane.__name__))
+        self.log(self._apply_control_plane.__name__, "in progress...")
 
         marker = "%s%scontrol-plane" % (self.bootcfg_prefix, "k8s")  # e for Etcd
 
@@ -392,8 +405,7 @@ class K8sControlPlaneScheduler(CommonScheduler):
             self._gen.dumps()
             self._done_control_plane.add(nic)
             new_pending = self._pending_control_plane - self._done_control_plane
-            os.write(2, "\r-> %s.%s selector {mac: %s}\n\r" % (
-                self.__name__, self._apply_control_plane.__name__, nic))
+            self.log(self._apply_control_plane.__name__, "selector {mac: %s}" % nic[1])
 
         if self._pending_control_plane - self._done_control_plane:
             raise AssertionError("self._apply_control_plane - self._done_control_plane have to return an empty set")
@@ -409,15 +421,13 @@ class K8sControlPlaneScheduler(CommonScheduler):
                 self._apply_control_plane()
 
         else:
-            os.write(2, "\r-> %s.%s already complete\n\r" %
-                     (self.__name__, self.apply.__name__))
+            self.log(self.apply.__name__, "already complete")
             return True
 
         if len(self._done_control_plane) < self.control_plane_nb:
             return False
         else:
-            os.write(2, "\r-> %s.%s complete\n\r" %
-                     (self.__name__, self.apply.__name__))
+            self.log(self.apply.__name__, "complete")
             return True
 
     @property
@@ -467,12 +477,12 @@ class EtcdMemberScheduler(CommonScheduler):
     def _fifo_members_simple(self, discovery):
 
         if not discovery or len(discovery) == 0:
-            os.write(2, "\r-> no machine 0/%d\n\r" % self.etcd_members_nb)
+            self.log(self._fifo_members_simple.__name__, "no machine 0/%d" % self.etcd_members_nb)
             return self._pending_etcd_member
 
         elif len(discovery) < self.etcd_members_nb:
-            os.write(2, "\r-> not enough machines %d/%d\n\r" % (
-                len(discovery), self.etcd_members_nb))
+            self.log(self._fifo_members_simple.__name__,
+                     "not enough machines %d/%d" % (len(discovery), self.etcd_members_nb))
             return self._pending_etcd_member
 
         else:
@@ -483,11 +493,12 @@ class EtcdMemberScheduler(CommonScheduler):
                 else:
                     break
 
-        os.write(2, "\r-> enough machines %d/%d\n\r" % (len(discovery), self.etcd_members_nb))
+        self.log(self._fifo_members_simple.__name__,
+                 "enough machines %d/%d" % (len(discovery), self.etcd_members_nb))
         return self._pending_etcd_member
 
     def _apply_member(self):
-        os.write(2, "\r-> %s.%s in progress...\n\r" % (self.__name__, self._apply_member.__name__))
+        self.log(self._apply_member.__name__, "in progress...")
 
         marker = "%s%smember" % (self.bootcfg_prefix, "e")  # e for Etcd
 
@@ -516,8 +527,7 @@ class EtcdMemberScheduler(CommonScheduler):
             )
             self._gen.dumps()
             self._done_etcd_member.add(nic)
-            os.write(2, "\r-> %s.%s selector {mac: %s}\n\r" % (
-                self.__name__, self._apply_member.__name__, nic))
+            self.log(self._apply_member.__name__, "selector {mac: %s}" % nic[1])
         self._etcd_initial_cluster = etcd_initial_cluster
 
     @property
@@ -545,13 +555,11 @@ class EtcdMemberScheduler(CommonScheduler):
                 self._apply_member()
 
         else:
-            os.write(2, "\r-> %s.%s already complete\n\r" %
-                     (self.__name__, self.apply.__name__))
+            self.log(self.apply.__name__, "already complete")
             return True
 
         if len(self._done_etcd_member) < self.etcd_members_nb:
             return False
         else:
-            os.write(2, "\r-> %s.%s complete\n\r" %
-                     (self.__name__, self.apply.__name__))
+            self.log(self.apply.__name__, "complete")
             return True
