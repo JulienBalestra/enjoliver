@@ -32,11 +32,18 @@
 
 ## Quick start
 
-    git clone ${REPOSITORY} CaaS
-    cd CaaS
-    make    
-    sudo make acis    
-    make assets   
+    make
+    ----------------------
+    Setup:
+    make submodules
+    sudo make acis
+    make assets
+    make validate
+    ----------------------
+    Testing:
+    make check
+    sudo make check_euid
+    ----------------------   
 
 **If testing:**
 
