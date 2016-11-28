@@ -136,6 +136,9 @@ check_euid_basic_iso: $(PYTHON) $(ISO)
 check_euid_basic_pxe: $(PYTHON)
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/basic/test_kvm_basic_pxe.py
 
+check_euid_kvm_player: $(PYTHON)
+	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/test_kvm_player.py
+
 $(KKK):
 	@echo Run as USER
 	test $(ROOT)
