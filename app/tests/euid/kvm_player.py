@@ -1,15 +1,14 @@
 import json
+import multiprocessing
 import os
 import socket
-import unittest
-import multiprocessing
-
-import time
-
-import sys
-
 import subprocess
+import sys
+import time
+import unittest
 import urllib2
+
+import datetime
 
 from app import generator, api
 
@@ -17,6 +16,8 @@ from app import generator, api
 @unittest.skipIf(os.geteuid() != 0,
                  "TestKVMDiscovery need privilege")
 class KernelVirtualMachinePlayer(unittest.TestCase):
+    __name__ = "KernelVirtualMachinePlayer"
+
     p_bootcfg = multiprocessing.Process
     p_dnsmasq = multiprocessing.Process
     p_api = multiprocessing.Process
@@ -45,10 +46,12 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     dev_null = open("/dev/null", "w")
 
+    kvm_sleep_between_node = 3
+
     @staticmethod
     def pause(t=600):
         try:
-            os.write(2, "\r==> sleep %d...\n\r" % s)
+            os.write(2, "\r==> sleep %d...\n\r" % t)
             time.sleep(t)
         except KeyboardInterrupt:
             pass
@@ -72,7 +75,19 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     @staticmethod
     def process_target_api():
         api.cache.clear()
-        api.app.run(host=KernelVirtualMachinePlayer.api_host, port=KernelVirtualMachinePlayer.api_port)
+        cmd = [
+            "%s/env/bin/gunicorn" % KernelVirtualMachinePlayer.project_path,
+            "--chdir",
+            "%s" % KernelVirtualMachinePlayer.app_path,
+            "api:app",
+            "-b",
+            "0.0.0.0:5000",
+            "--log-level",
+            "debug"
+        ]
+        os.write(1, "PID  -> %s\n"
+                    "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
+        os.execve(cmd[0], cmd, os.environ)
 
     @staticmethod
     def process_target_dnsmasq():
@@ -133,25 +148,6 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         os._exit(2)  # Should not happen
 
     @staticmethod
-    def process_target_create_rack0():
-        cmd = [
-            "%s/rkt_dir/rkt" % KernelVirtualMachinePlayer.tests_path,
-            "--local-config=%s" % KernelVirtualMachinePlayer.tests_path,
-            "run",
-            "quay.io/coreos/dnsmasq:v0.3.0",
-            "--insecure-options=all",
-            "--net=rack0",
-            "--interactive",
-            "--set-env=TERM=%s" % os.getenv("TERM", "xterm"),
-            "--exec",
-            "/bin/true"]
-        os.write(1, "PID  -> %s\n"
-                    "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
-        sys.stdout.flush()
-        os.execve(cmd[0], cmd, os.environ)
-        os._exit(2)  # Should not happen
-
-    @staticmethod
     def dns_masq_running():
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         result = 1
@@ -165,19 +161,6 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         assert result == 0
         os.write(1, "DNSMASQ ready\n\r")
         sys.stdout.flush()
-
-    @classmethod
-    def generator(cls):
-        marker = "%s" % cls.__name__.lower()
-        ignition_file = "sudo-%s.yaml" % marker
-
-        cls.gen = generator.Generator(
-            profile_id="id-%s" % marker,
-            name="name-%s" % marker,
-            ignition_id=ignition_file,
-            bootcfg_path=cls.test_bootcfg_path)
-
-        cls.gen.dumps()
 
     @classmethod
     def check_requirements(cls):
@@ -196,56 +179,77 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     @classmethod
     def set_bootcfg(cls):
-        cls.p_bootcfg = multiprocessing.Process(target=KernelVirtualMachinePlayer.process_target_bootcfg)
+        cls.p_bootcfg = multiprocessing.Process(target=KernelVirtualMachinePlayer.process_target_bootcfg,
+                                                name="bootcfg")
         cls.p_bootcfg.start()
+        time.sleep(0.5)
         assert cls.p_bootcfg.is_alive() is True
         cls.p_list.append(cls.p_bootcfg)
 
     @classmethod
     def set_rack0(cls):
-        p_create_rack0 = multiprocessing.Process(
-            target=KernelVirtualMachinePlayer.process_target_create_rack0)
-        p_create_rack0.start()
-        p_create_rack0.join(5)
-        os.write(1, "\rBridge w/ iptables creation exitcode:%d\n\r" % p_create_rack0.exitcode)
+        ret = subprocess.call([
+            "%s/rkt_dir/rkt" % KernelVirtualMachinePlayer.tests_path,
+            "--local-config=%s" % KernelVirtualMachinePlayer.tests_path,
+            "run",
+            "quay.io/coreos/dnsmasq:v0.3.0",
+            "--insecure-options=all",
+            "--net=rack0",
+            "--interactive",
+            "--set-env=TERM=%s" % os.getenv("TERM", "xterm"),
+            "--exec",
+            "/bin/true"])
+        os.write(1, "\rBridge w/ iptables creation exitcode:%d\n\r" % ret)
         assert subprocess.call(["ip", "link", "show", "rack0"]) == 0
 
     @classmethod
     def set_dnsmasq(cls):
-        cls.p_dnsmasq = multiprocessing.Process(target=KernelVirtualMachinePlayer.process_target_dnsmasq)
+        cls.p_dnsmasq = multiprocessing.Process(target=KernelVirtualMachinePlayer.process_target_dnsmasq,
+                                                name="dnsmasq")
         cls.p_dnsmasq.start()
+        time.sleep(0.5)
         assert cls.p_dnsmasq.is_alive() is True
         cls.dns_masq_running()
         cls.p_list.append(cls.p_dnsmasq)
 
     @classmethod
     def set_api(cls):
-        cls.p_api = multiprocessing.Process(target=KernelVirtualMachinePlayer.process_target_api)
+        cls.p_api = multiprocessing.Process(target=KernelVirtualMachinePlayer.process_target_api, name="api")
         cls.p_api.start()
+        time.sleep(0.5)
         assert cls.p_api.is_alive() is True
         cls.p_list.append(cls.p_api)
 
     @classmethod
     def set_lldp(cls):
         cls.fetch_lldpd()
-        cls.p_lldp = multiprocessing.Process(target=KernelVirtualMachinePlayer.process_target_lldpd)
+        cls.p_lldp = multiprocessing.Process(target=KernelVirtualMachinePlayer.process_target_lldpd, name="lldp")
         cls.p_lldp.start()
+        time.sleep(0.5)
         assert cls.p_lldp.is_alive() is True
         cls.p_list.append(cls.p_lldp)
 
     @classmethod
     def tearDownClass(cls):
         for p in cls.p_list:
-            os.write(1, "\n\rTERM -> %d\n\r" % p.pid)
-            p.terminate()
-            cls.p_bootcfg.join(timeout=2)
+            if p.is_alive():
+                os.write(1, "\n\rTERM -> %d %s\n\r" % (p.pid, p.name))
+                p.terminate()
+                p.join(timeout=4)
+                os.write(1, "\rEND -> %d %s\n\r" % (p.exitcode, p.name))
 
-        # cls.clean_sandbox()
         subprocess.call([
             "%s/rkt_dir/rkt" % KernelVirtualMachinePlayer.tests_path,
             "--local-config=%s" % KernelVirtualMachinePlayer.tests_path,
             "gc",
             "--grace-period=0s"])
+        cls.pause(5)
+        cls.write_ending(cls.__name__)
+
+    @staticmethod
+    def write_ending(message):
+        with open("/tmp/unittest.end", "a") as f:
+            f.write("%s %s\n" % (datetime.datetime.now(), message))
 
     @staticmethod
     def clean_sandbox():
@@ -257,8 +261,21 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     os.write(1, "\r-> remove %s\n\r" % f)
                     os.remove("%s/%s" % (d, f))
 
+    def api_healthz(self, first=True):
+        try:
+            request = urllib2.urlopen("%s/healthz" % self.api_endpoint)
+            response_body = request.read()
+            request.close()
+            health = json.loads(response_body)
+            self.assertTrue(health["global"])
+        except Exception as e:
+            os.write(2, "\r%s: %s\n\r" % (self.api_healthz.__name__, e.message))
+            if first is True:
+                self.api_healthz(False)
+
     def setUp(self):
         self.clean_sandbox()
+        self.api_healthz()
 
     def virsh(self, cmd, assertion=False, v=None):
         if v is not None:
@@ -284,7 +301,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         disco_data = json.loads(response_body)
         return disco_data
 
-    def kvm_restart_off_machines(self, to_start, tries=60):
+    def kvm_restart_off_machines(self, to_start, tries=90):
         for j in xrange(tries):
             if len(to_start) == 0:
                 break
@@ -300,7 +317,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     # virsh raise this
                     pass
 
-            time.sleep(2)
+            time.sleep(1)
         self.assertEqual(len(to_start), 0)
 
     def etcd_endpoint_health(self, ips, tries=15):
@@ -381,7 +398,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         self.assertEqual(len(ips), 0)
 
     @staticmethod
-    def memory_mib():
+    def host_total_memory_mib():
         mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
         mem_gib = mem_bytes / (1024. ** 3)
         return mem_gib * 1024

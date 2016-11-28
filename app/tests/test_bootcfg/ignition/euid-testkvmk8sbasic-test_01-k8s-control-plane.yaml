@@ -302,7 +302,7 @@ storage:
       mode: 0600
       contents:
         inline: |
-          journalctl -u kubelet --no-pager -o short -f
+          journalctl -u kubelet --no-pager -o short -f | grep -v getsockopt
           journalctl -u kubelet --no-pager -o short
 
     - path: /opt/bin/install-cni

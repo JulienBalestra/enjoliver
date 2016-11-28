@@ -53,7 +53,7 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
                     "--name",
                     "%s" % m,
                     "--network=bridge:rack0,model=virtio",
-                    "--memory=%d" % (self.memory_mib() // 2),
+                    "--memory=%d" % (self.host_total_memory_mib() // 2),
                     "--vcpus=2",
                     "--pxe",
                     "--disk",
@@ -64,7 +64,7 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
                     "--boot=network"
                 ]
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
-                time.sleep(5)  # KVM fail to associate nic
+                time.sleep(self.kvm_sleep_between_node)  # KVM fail to associate nic
 
             sch_member = scheduler.EtcdMemberScheduler(
                 api_endpoint=self.api_endpoint,
@@ -74,11 +74,11 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
             )
             sch_member.etcd_members_nb = 1
 
-            time.sleep(20)
-            for i in xrange(30):
+            time.sleep(self.kvm_sleep_between_node * nb_node)
+            for i in xrange(60):
                 if sch_member.apply() is True:
                     break
-                time.sleep(6)
+                time.sleep(self.kvm_sleep_between_node)
 
             self.assertTrue(sch_member.apply())
 
@@ -88,19 +88,20 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
                 apply_first=False
             )
             sch_cp.control_plane_nb = 1
-            for i in xrange(10):
+            for i in xrange(60):
                 if sch_cp.apply() is True:
                     break
-                time.sleep(6)
+                time.sleep(self.kvm_sleep_between_node)
 
             self.assertTrue(sch_cp.apply())
             to_start = copy.deepcopy(nodes)
             self.kvm_restart_off_machines(to_start)
-
+            time.sleep(self.kvm_sleep_between_node * nb_node)
             self.etcd_member_len(sch_member.ip_list[0], sch_member.etcd_members_nb)
             self.etcd_endpoint_health(sch_cp.ip_list)
             self.k8s_api_health(sch_cp.ip_list)
             self.etcd_member_k8s_minions(sch_member.ip_list[0], sch_cp.control_plane_nb)
+            self.write_ending(marker)
 
         finally:
             for i in xrange(nb_node):
@@ -140,7 +141,7 @@ class TestKVMK8SBasic1(TestKVMK8sBasic):
                     "--name",
                     "%s" % m,
                     "--network=bridge:rack0,model=virtio",
-                    "--memory=%d" % (self.memory_mib() // 2),
+                    "--memory=%d" % (self.host_total_memory_mib() // 2),
                     "--vcpus=2",
                     "--pxe",
                     "--disk",
@@ -151,7 +152,7 @@ class TestKVMK8SBasic1(TestKVMK8sBasic):
                     "--boot=network"
                 ]
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
-                time.sleep(3)
+                time.sleep(self.kvm_sleep_between_node)
 
             sch_member = scheduler.EtcdMemberScheduler(
                 api_endpoint=self.api_endpoint,
@@ -160,11 +161,11 @@ class TestKVMK8SBasic1(TestKVMK8sBasic):
                 bootcfg_prefix="%s-" % marker
             )
             sch_member.etcd_members_nb = 1
-
+            time.sleep(self.kvm_sleep_between_node * nb_node)
             for i in xrange(60):
                 if sch_member.apply() is True:
                     break
-                time.sleep(3)
+                time.sleep(self.kvm_sleep_between_node)
 
             self.assertTrue(sch_member.apply())
 
@@ -174,10 +175,10 @@ class TestKVMK8SBasic1(TestKVMK8sBasic):
                 apply_first=False
             )
             sch_cp.control_plane_nb = 1
-            for i in xrange(10):
+            for i in xrange(60):
                 if sch_cp.apply() is True:
                     break
-                time.sleep(6)
+                time.sleep(self.kvm_sleep_between_node)
 
             self.assertTrue(sch_cp.apply())
             sch_no = scheduler.K8sNodeScheduler(
@@ -185,20 +186,20 @@ class TestKVMK8SBasic1(TestKVMK8sBasic):
                 ignition_node="%s-k8s-node" % marker,
                 apply_first=False
             )
-            for i in xrange(10):
+            for i in xrange(60):
                 if sch_no.apply() == 1:
                     break
-                time.sleep(6)
+                time.sleep(self.kvm_sleep_between_node)
 
             to_start = copy.deepcopy(nodes)
             self.kvm_restart_off_machines(to_start)
+            time.sleep(self.kvm_sleep_between_node * nb_node)
 
             self.etcd_member_len(sch_member.ip_list[0], sch_member.etcd_members_nb)
             self.etcd_endpoint_health(sch_cp.ip_list)
             self.k8s_api_health(sch_cp.ip_list)
             self.etcd_member_k8s_minions(sch_member.ip_list[0], len(sch_no.wide_done_list) - sch_member.etcd_members_nb)
-            # pause(600)
-
+            self.write_ending(marker)
         finally:
             for i in xrange(nb_node):
                 machine_marker = "%s-%d" % (marker, i)

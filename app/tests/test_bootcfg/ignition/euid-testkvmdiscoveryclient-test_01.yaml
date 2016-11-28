@@ -29,3 +29,14 @@ systemd:
         ExecStart=/opt/bin/discoveryC
         [Install]
         WantedBy=multi-user.target
+
+
+{{ if index . "ssh_authorized_keys" }}
+passwd:
+  users:
+    - name: core
+      ssh_authorized_keys:
+        {{ range $element := .ssh_authorized_keys }}
+        - {{$element}}
+        {{end}}
+{{end}}
