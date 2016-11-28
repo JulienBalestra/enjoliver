@@ -18,5 +18,11 @@ class TestKernelVirtualMachinePlayer(kvm_player.KernelVirtualMachinePlayer):
         pass
 
 
+# This have to raise
+# class TestKernelVirtualMachinePlayerRaise(kvm_player.KernelVirtualMachinePlayer):
+#     def test(self):
+#         pass
+
+
 if __name__ == '__main__':
     unittest.main()

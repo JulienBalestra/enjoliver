@@ -1,3 +1,4 @@
+import abc
 import json
 import multiprocessing
 import os
@@ -16,6 +17,20 @@ from app import generator, api
 @unittest.skipIf(os.geteuid() != 0,
                  "TestKVMDiscovery need privilege")
 class KernelVirtualMachinePlayer(unittest.TestCase):
+    """
+    This class is used by all Kernel Virtual Machine testing suite
+    Override the setUpClass by selecting your custom environment with the following catalog:
+    >>> @classmethod
+    >>> def setUpClass(cls):
+    >>>     cls.check_requirements()
+    >>>     cls.set_api()
+    >>>     cls.set_bootcfg()
+    >>>     cls.set_dnsmasq()
+    >>>     cls.set_lldp()
+    >>>     cls.set_rack0()
+    >>>     cls.pause(5)
+    Note: you may use 'reset -q' because of Link Layer Discovery Protocol Container's
+    """
     __name__ = "KernelVirtualMachinePlayer"
 
     p_bootcfg = multiprocessing.Process
@@ -50,6 +65,11 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     @staticmethod
     def pause(t=600):
+        """
+        Sleep for eventual side testing or tests/s.sh ...
+        :param t: 10 minutes
+        :return: None
+        """
         try:
             os.write(2, "\r==> sleep %d...\n\r" % t)
             time.sleep(t)
@@ -228,6 +248,10 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         time.sleep(0.5)
         assert cls.p_lldp.is_alive() is True
         cls.p_list.append(cls.p_lldp)
+
+    @classmethod
+    def setUpClass(cls):
+        raise NotImplementedError
 
     @classmethod
     def tearDownClass(cls):
