@@ -12,3 +12,14 @@ systemd:
         ExecStart=/usr/bin/curl -f -XPOST http://172.20.0.1:5050/ok -d "euid-testkvmbasiciso-test_02-0"
         [Install]
         WantedBy=multi-user.target
+
+
+{{ if index . "ssh_authorized_keys" }}
+passwd:
+  users:
+    - name: core
+      ssh_authorized_keys:
+        {{ range $element := .ssh_authorized_keys }}
+        - {{$element}}
+        {{end}}
+{{end}}
