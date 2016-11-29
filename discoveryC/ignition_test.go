@@ -18,8 +18,8 @@ func Test0GetIgnitionJournal(t *testing.T) {
 
 	CONF.IgnitionFile = "tests/run/ignition.journal0"
 	lines := GetIgnitionJournal()
-	if len(lines) != 43 {
-		t.Fail()
+	if len(lines) != 39 {
+		t.Error("")
 	}
 }
 
