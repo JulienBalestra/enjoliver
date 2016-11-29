@@ -296,7 +296,7 @@ class TestAPIAdvanced(unittest.TestCase):
         self.assertEqual(200, f.code)
         response = f.read()
         f.close()
-        self.assertEqual(json.loads(response), {u'total_elt': 2, u'update': False})
+        self.assertEqual(json.loads(response), {u'total_elt': 3, u'update': False})
 
     def test_06_discovery_02(self):
         subprocess.check_output(
@@ -316,4 +316,4 @@ class TestAPIAdvanced(unittest.TestCase):
         self.assertEqual(200, f.code)
         response = f.read()
         f.close()
-        self.assertEqual(json.loads(response), {u'total_elt': 2, u'update': True})
+        self.assertEqual(json.loads(response), {u'total_elt': 3, u'update': True})

@@ -23,15 +23,15 @@ POST_ONE = {
     u'interfaces': [
         {
             u'netmask': 8,
-            u'MAC': u'',
-            u'IPv4': u'127.0.0.1',
-            u'CIDRv4': u'127.0.0.1/8',
+            u"mac": u'',
+            u"ipv4": u'127.0.0.1',
+            u"cidrv4": u'127.0.0.1/8',
             u'name': u'lo'},
         {
             u'netmask': 21,
-            u'MAC': u'52:54:00:ea:93:b7',
-            u'IPv4': u'172.20.0.65',
-            u'CIDRv4': u'172.20.0.65/21',
+            u"mac": u'52:54:00:ea:93:b7',
+            u"ipv4": u'172.20.0.65',
+            u"cidrv4": u'172.20.0.65/21',
             u'name': u'eth0'
         }
     ]
@@ -57,15 +57,15 @@ POST_TWO = {
     u'interfaces': [
         {
             u'netmask': 8,
-            u'MAC': u'',
-            u'IPv4': u'127.0.0.1',
-            u'CIDRv4': u'127.0.0.1/8',
+            u"mac": u'',
+            u"ipv4": u'127.0.0.1',
+            u"cidrv4": u'127.0.0.1/8',
             u'name': u'lo'},
         {
             u'netmask': 21,
-            u'MAC': u'52:54:00:ea:93:02',
-            u'IPv4': u'172.20.0.66',
-            u'CIDRv4': u'172.20.0.66/21',
+            u"mac": u'52:54:00:ea:93:02',
+            u"ipv4": u'172.20.0.66',
+            u"cidrv4": u'172.20.0.66/21',
             u'name': u'eth0'
         }
     ]
@@ -139,8 +139,8 @@ class TestDiscovery(unittest.TestCase):
                 u'is_file': True
             },
             u'interfaces': [
-                {u'netmask': 8, u'MAC': u'', u'IPv4': u'127.0.0.1', u'CIDRv4': u'127.0.0.1/8', u'name': u'lo'},
-                {u'netmask': 21, u'MAC': u'52:54:00:90:c3:9f', u'IPv4': u'172.20.0.81', u'CIDRv4': u'172.20.0.81/21',
+                {u'netmask': 8, u"mac": u'', u"ipv4": u'127.0.0.1', u"cidrv4": u'127.0.0.1/8', u'name': u'lo'},
+                {u'netmask': 21, u"mac": u'52:54:00:90:c3:9f', u"ipv4": u'172.20.0.81', u"cidrv4": u'172.20.0.81/21',
                  u'name': u'eth0'}
             ]
         }
