@@ -257,10 +257,10 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     def tearDownClass(cls):
         for p in cls.p_list:
             if p.is_alive():
-                os.write(1, "\n\rTERM -> %d %s\n\r" % (p.pid, p.name))
+                os.write(1, "\n\rTERM -> %s %s\n\r" % (p.pid, p.name))
                 p.terminate()
                 p.join(timeout=4)
-                os.write(1, "\rEND -> %d %s\n\r" % (p.exitcode, p.name))
+                os.write(1, "\rEND -> %s %s\n\r" % (p.exitcode, p.name))
 
         subprocess.call([
             "%s/rkt_dir/rkt" % KernelVirtualMachinePlayer.tests_path,
