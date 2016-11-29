@@ -116,7 +116,6 @@ storage:
               sleep ${TIMER}
           done
 
-
 {{ if index . "ssh_authorized_keys" }}
 passwd:
   users:
