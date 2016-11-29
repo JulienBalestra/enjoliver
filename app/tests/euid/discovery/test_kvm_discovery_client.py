@@ -29,6 +29,11 @@ class TestKVMDiscoveryClient(kvm_player.KernelVirtualMachinePlayer):
 
 # @unittest.skip("just skip")
 class TestKVMDiscoveryClient00(TestKVMDiscoveryClient):
+    """
+    node_nb: 1
+
+    Interfaces
+    """
     def test_00(self):
         marker = "euid-%s-%s" % (TestKVMDiscoveryClient.__name__.lower(), self.test_00.__name__)
         os.environ["BOOTCFG_IP"] = "172.20.0.1"
@@ -82,14 +87,14 @@ class TestKVMDiscoveryClient00(TestKVMDiscoveryClient):
                 for ifaces in machine:
                     if ifaces["name"] == "lo":
                         self.assertEqual(ifaces["netmask"], 8)
-                        self.assertEqual(ifaces["IPv4"], '127.0.0.1')
-                        self.assertEqual(ifaces["MAC"], '')
-                        self.assertEqual(ifaces["CIDRv4"], '127.0.0.1/8')
+                        self.assertEqual(ifaces["ipv4"], '127.0.0.1')
+                        self.assertEqual(ifaces["mac"], '')
+                        self.assertEqual(ifaces["cidrv4"], '127.0.0.1/8')
                     else:
                         self.assertEqual(ifaces["name"], "eth0")
                         self.assertEqual(ifaces["netmask"], 21)
-                        self.assertEqual(ifaces["IPv4"][:9], '172.20.0.')
-                        self.assertEqual(len(ifaces["MAC"]), 17)
+                        self.assertEqual(ifaces["ipv4"][:9], '172.20.0.')
+                        self.assertEqual(len(ifaces["mac"]), 17)
             self.write_ending(marker)
         finally:
             self.virsh(destroy), os.write(1, "\r")
@@ -98,6 +103,11 @@ class TestKVMDiscoveryClient00(TestKVMDiscoveryClient):
 
 # @unittest.skip("just skip")
 class TestKVMDiscoveryClient01(TestKVMDiscoveryClient):
+    """
+    node_nb: 3
+
+    Interfaces
+    """
     def test_01(self):
         nb_node = 3
         marker = "euid-%s-%s" % (TestKVMDiscoveryClient.__name__.lower(), self.test_01.__name__)
@@ -156,14 +166,14 @@ class TestKVMDiscoveryClient01(TestKVMDiscoveryClient):
                 for ifaces in machine:
                     if ifaces["name"] == "lo":
                         self.assertEqual(ifaces["netmask"], 8)
-                        self.assertEqual(ifaces["IPv4"], '127.0.0.1')
-                        self.assertEqual(ifaces["MAC"], '')
-                        self.assertEqual(ifaces["CIDRv4"], '127.0.0.1/8')
+                        self.assertEqual(ifaces["ipv4"], '127.0.0.1')
+                        self.assertEqual(ifaces["mac"], '')
+                        self.assertEqual(ifaces["cidrv4"], '127.0.0.1/8')
                     else:
                         self.assertEqual(ifaces["name"], "eth0")
                         self.assertEqual(ifaces["netmask"], 21)
-                        self.assertEqual(ifaces["IPv4"][:9], '172.20.0.')
-                        self.assertEqual(len(ifaces["MAC"]), 17)
+                        self.assertEqual(ifaces["ipv4"][:9], '172.20.0.')
+                        self.assertEqual(len(ifaces["mac"]), 17)
             self.write_ending(marker)
 
         finally:
@@ -177,6 +187,12 @@ class TestKVMDiscoveryClient01(TestKVMDiscoveryClient):
 
 # @unittest.skip("just skip")
 class TestKVMDiscoveryClient02(TestKVMDiscoveryClient):
+    """
+    node_nb: 1
+
+    Interfaces
+    LLDP
+    """
     @classmethod
     def setUpClass(cls):
         cls.check_requirements()
@@ -242,20 +258,21 @@ class TestKVMDiscoveryClient02(TestKVMDiscoveryClient):
                 self.assertEqual(lldp_i0["chassis"]["name"][:4], "rkt-")
                 self.assertEqual(len(lldp_i0["chassis"]["id"]), 17)
                 self.assertEqual(len(lldp_i0["port"]["id"]), 17)
+                self.assertEqual(lldp_i0["name"], "eth0")
 
                 # one machine with 2 interfaces [lo, eth0]
                 for ifaces in machine["interfaces"]:
                     if ifaces["name"] == "lo":
                         self.assertEqual(ifaces["netmask"], 8)
-                        self.assertEqual(ifaces["IPv4"], '127.0.0.1')
-                        self.assertEqual(ifaces["MAC"], '')
-                        self.assertEqual(ifaces["CIDRv4"], '127.0.0.1/8')
+                        self.assertEqual(ifaces["ipv4"], '127.0.0.1')
+                        self.assertEqual(ifaces["mac"], '')
+                        self.assertEqual(ifaces["cidrv4"], '127.0.0.1/8')
                     else:
                         # Have to be eth0
                         self.assertEqual(ifaces["name"], "eth0")
                         self.assertEqual(ifaces["netmask"], 21)
-                        self.assertEqual(ifaces["IPv4"][:9], '172.20.0.')
-                        self.assertEqual(len(ifaces["MAC"]), 17)
+                        self.assertEqual(ifaces["ipv4"][:9], '172.20.0.')
+                        self.assertEqual(len(ifaces["mac"]), 17)
             self.write_ending(marker)
         finally:
             self.virsh(destroy), os.write(1, "\r")
@@ -264,6 +281,12 @@ class TestKVMDiscoveryClient02(TestKVMDiscoveryClient):
 
 # @unittest.skip("just skip")
 class TestKVMDiscoveryClient03(TestKVMDiscoveryClient):
+    """
+    node_nb: 3
+
+    Interfaces
+    LLDP
+    """
     @classmethod
     def setUpClass(cls):
         cls.check_requirements()
@@ -338,20 +361,21 @@ class TestKVMDiscoveryClient03(TestKVMDiscoveryClient):
                 self.assertEqual(lldp_i["chassis"]["name"][:4], "rkt-")
                 self.assertEqual(len(lldp_i["chassis"]["id"]), 17)
                 self.assertEqual(len(lldp_i["port"]["id"]), 17)
+                self.assertEqual(lldp_i["name"], "eth0")
 
                 # Each machine with 2 interfaces [lo, eth0]
                 for i in machine["interfaces"]:
                     if i["name"] == "lo":
                         self.assertEqual(i["netmask"], 8)
-                        self.assertEqual(i["IPv4"], '127.0.0.1')
-                        self.assertEqual(i["MAC"], '')
-                        self.assertEqual(i["CIDRv4"], '127.0.0.1/8')
+                        self.assertEqual(i["ipv4"], '127.0.0.1')
+                        self.assertEqual(i["mac"], '')
+                        self.assertEqual(i["cidrv4"], '127.0.0.1/8')
                     else:
                         # Have to be eth0
                         self.assertEqual(i["name"], "eth0")
                         self.assertEqual(i["netmask"], 21)
-                        self.assertEqual(i["IPv4"][:9], '172.20.0.')
-                        self.assertEqual(len(i["MAC"]), 17)
+                        self.assertEqual(i["ipv4"][:9], '172.20.0.')
+                        self.assertEqual(len(i["mac"]), 17)
             self.write_ending(marker)
         finally:
             for i in xrange(nb_node):
@@ -365,6 +389,9 @@ class TestKVMDiscoveryClient03(TestKVMDiscoveryClient):
 
 # @unittest.skip("just skip")
 class TestKVMDiscoveryClient04(TestKVMDiscoveryClient):
+    """
+    Ignition Journal
+    """
     def test_04(self):
         marker = "euid-%s-%s" % (TestKVMDiscoveryClient.__name__.lower(), self.test_04.__name__)
         os.environ["BOOTCFG_IP"] = "172.20.0.1"

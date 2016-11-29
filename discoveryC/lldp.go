@@ -8,7 +8,7 @@ import (
 
 type LLDPData struct {
 	IsFile bool `json:"is_file"`
-	Data XLLDP `json:"data"`
+	Data   XLLDP `json:"data"`
 }
 
 type XLLDP struct {
@@ -16,8 +16,9 @@ type XLLDP struct {
 }
 
 type XInterface struct {
-	Port XPort `xml:"port" json:"port"`
+	Port    XPort `xml:"port" json:"port"`
 	Chassis XChassis `xml:"chassis" json:"chassis"`
+	Name    string `xml:"name,attr" json:"name"`
 }
 
 type XPort struct {
@@ -25,7 +26,7 @@ type XPort struct {
 }
 
 type XChassis struct {
-	Id string `xml:"id" json:"id"`
+	Id   string `xml:"id" json:"id"`
 	Name string `xml:"name" json:"name"`
 }
 

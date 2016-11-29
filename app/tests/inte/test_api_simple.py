@@ -224,10 +224,10 @@ class TestAPI(unittest.TestCase):
                 "mac": "00:00:00:00:00"
             },
             "interfaces": [
-                {"IPv4": "192.168.1.1",
-                 "CIDRv4": "192.168.1.1/24",
+                {"ipv4": "192.168.1.1",
+                 "cidrv4": "192.168.1.1/24",
                  "netmask": 24,
-                 "MAC": "00:00:00:00:00",
+                 "mac": "00:00:00:00:00",
                  "name": "eth0"}]}
         result = self.app.post('/discovery', data=json.dumps(discovery_data),
                                content_type='application/json')
@@ -240,10 +240,10 @@ class TestAPI(unittest.TestCase):
                 "mac": "00:00:00:00:00"
             },
             "interfaces": [
-                {"IPv4": "192.168.1.1",
-                 "CIDRv4": "192.168.1.1/24",
+                {"ipv4": "192.168.1.1",
+                 "cidrv4": "192.168.1.1/24",
                  "netmask": 24,
-                 "MAC": "00:00:00:00:00",
+                 "mac": "00:00:00:00:00",
                  "name": "eth0"}]}
         result = self.app.post('/discovery', data=json.dumps(discovery_data),
                                content_type='application/json')
@@ -257,10 +257,10 @@ class TestAPI(unittest.TestCase):
 
         result = self.app.get("/discovery/interfaces")
         expect = {"interfaces": [
-            [{u'MAC': u'00:00:00:00:00',
+            [{"mac": u'00:00:00:00:00',
               u'netmask': 24,
-              u'IPv4': u'192.168.1.1',
-              u'CIDRv4': u'192.168.1.1/24',
+              "ipv4": u'192.168.1.1',
+              "cidrv4": u'192.168.1.1/24',
               u'name': u'eth0'}]
             ]}
         self.assertEqual(expect, json.loads(result.data))
