@@ -46,3 +46,4 @@ image.aci
 bootcfg/assets/coreos/1214.0.0/
 bootcfg/assets/rkt/v1.19.0/
 bootcfg/assets/setup-network-environment/1.0.1/
+*.sql

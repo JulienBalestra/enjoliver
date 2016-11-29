@@ -24,7 +24,7 @@ class Discovery(object):
             mac = new["boot-info"]["mac"]
             interfaces = new["interfaces"]
             for i in interfaces:
-                if i["MAC"] == mac:
+                if i["mac"] == mac:
                     os.write(2, "\r_look_for_coherence valid MAC spotted %s\n\r" % mac)
                     return mac
         except (KeyError, TypeError) as e:

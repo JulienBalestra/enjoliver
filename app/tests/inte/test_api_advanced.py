@@ -265,52 +265,55 @@ class TestAPIAdvanced(unittest.TestCase):
         discovery_data = {
             "boot-info": {"mac": "00:00:00:00:00"},
             "interfaces": [
-                {"IPv4": "192.168.1.1",
-                 "CIDRv4": "192.168.1.1/24",
+                {"ipv4": "192.168.1.1",
+                 "cidrv4": "192.168.1.1/24",
                  "netmask": 24,
-                 "MAC": "00:00:00:00:00",
+                 "mac": "00:00:00:00:00",
                  "name": "eth0"}]}
         req = urllib2.Request("%s/discovery" % self.api_endpoint, json.dumps(discovery_data),
                               {'Content-Type': 'application/json'})
         f = urllib2.urlopen(req)
+        self.assertEqual(200, f.code)
         response = f.read()
         f.close()
         self.assertEqual(json.loads(response), {u'total_elt': 1, u'update': False})
 
-    def test_06_discovery_02_client(self):
+    def test_06_discovery_01(self):
         subprocess.check_output(
             ["%s/assets/discoveryC/serve/discoveryC" % self.bootcfg_path],
             env={"DISCOVERY_ADDRESS": "%s/discovery" % self.api_endpoint})
         discovery_data = {
             "boot-info": {"mac": "00:00:00:00:01"},
             "interfaces": [
-                {"IPv4": "192.168.1.2",
-                 "CIDRv4": "192.168.1.2/24",
+                {"ipv4": "192.168.1.2",
+                 "cidrv4": "192.168.1.2/24",
                  "netmask": 24,
-                 "MAC": "00:00:00:00:01",
+                 "mac": "00:00:00:00:01",
                  "name": "eth0"}]}
         req = urllib2.Request("%s/discovery" % self.api_endpoint, json.dumps(discovery_data),
                               {'Content-Type': 'application/json'})
         f = urllib2.urlopen(req)
+        self.assertEqual(200, f.code)
         response = f.read()
         f.close()
-        self.assertEqual(json.loads(response), {u'total_elt': 3, u'update': False})
+        self.assertEqual(json.loads(response), {u'total_elt': 2, u'update': False})
 
-    def test_06_discovery_03_client(self):
+    def test_06_discovery_02(self):
         subprocess.check_output(
             ["%s/assets/discoveryC/serve/discoveryC" % self.bootcfg_path],
             env={"DISCOVERY_ADDRESS": "%s/discovery" % self.api_endpoint})
         discovery_data = {
             "boot-info": {"mac": "00:00:00:00:01"},
             "interfaces": [
-                {"IPv4": "192.168.1.2",
-                 "CIDRv4": "192.168.1.2/24",
+                {"ipv4": "192.168.1.2",
+                 "cidrv4": "192.168.1.2/24",
                  "netmask": 24,
-                 "MAC": "00:00:00:00:01",
+                 "mac": "00:00:00:00:01",
                  "name": "eth0"}]}
         req = urllib2.Request("%s/discovery" % self.api_endpoint, json.dumps(discovery_data),
                               {'Content-Type': 'application/json'})
         f = urllib2.urlopen(req)
+        self.assertEqual(200, f.code)
         response = f.read()
         f.close()
-        self.assertEqual(json.loads(response), {u'total_elt': 3, u'update': True})
+        self.assertEqual(json.loads(response), {u'total_elt': 2, u'update': True})

@@ -21,8 +21,8 @@ class CommonScheduler(object):
         mac = discovery["boot-info"]["mac"]
         ipv4 = None
         for i in discovery["interfaces"]:
-            if i["MAC"] == mac:
-                ipv4 = i["IPv4"]
+            if i["mac"] == mac:
+                ipv4 = i["ipv4"]
         if ipv4 is None:
             raise LookupError("%s Lookup failed in %s" % (mac, discovery))
         return ipv4, mac
