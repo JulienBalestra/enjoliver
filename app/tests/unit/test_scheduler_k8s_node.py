@@ -64,16 +64,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
             },
             "interfaces": [
                 {
-                    "CIDRv4": "127.0.0.1/8",
-                    "IPv4": "127.0.0.1",
-                    "MAC": "",
+                    "cidrv4": "127.0.0.1/8",
+                    "ipv4": "127.0.0.1",
+                    "mac": "",
                     "name": "lo",
                     "netmask": 8
                 },
                 {
-                    "CIDRv4": "172.20.0.57/21",
-                    "IPv4": "172.20.0.57",
-                    "MAC": "52:54:00:95:24:0f",
+                    "cidrv4": "172.20.0.57/21",
+                    "ipv4": "172.20.0.57",
+                    "mac": "52:54:00:95:24:0f",
                     "name": "eth0",
                     "netmask": 21
                 }
@@ -106,16 +106,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
             },
             "interfaces": [
                 {
-                    "CIDRv4": "127.0.0.1/8",
-                    "IPv4": "127.0.0.1",
-                    "MAC": "",
+                    "cidrv4": "127.0.0.1/8",
+                    "ipv4": "127.0.0.1",
+                    "mac": "",
                     "name": "lo",
                     "netmask": 8
                 },
                 {
-                    "CIDRv4": "172.20.0.57/21",
-                    "IPv4": "172.20.0.57",
-                    "MAC": "52:54:00:95:24:0f",
+                    "cidrv4": "172.20.0.57/21",
+                    "ipv4": "172.20.0.57",
+                    "mac": "52:54:00:95:24:0f",
                     "name": "eth0",
                     "netmask": 21
                 }
@@ -152,16 +152,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.57/21",
-                            "IPv4": "172.20.0.57",
-                            "MAC": "52:54:00:95:24:0f",
+                            "cidrv4": "172.20.0.57/21",
+                            "ipv4": "172.20.0.57",
+                            "mac": "52:54:00:95:24:0f",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -190,16 +190,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.83/21",
-                            "IPv4": "172.20.0.83",
-                            "MAC": "52:54:00:a4:32:b5",
+                            "cidrv4": "172.20.0.83/21",
+                            "ipv4": "172.20.0.83",
+                            "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -228,16 +228,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.70/21",
-                            "IPv4": "172.20.0.70",
-                            "MAC": "52:54:00:c3:22:c2",
+                            "cidrv4": "172.20.0.70/21",
+                            "ipv4": "172.20.0.70",
+                            "mac": "52:54:00:c3:22:c2",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -302,16 +302,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.57/21",
-                            "IPv4": "172.20.0.57",
-                            "MAC": "52:54:00:95:24:0f",
+                            "cidrv4": "172.20.0.57/21",
+                            "ipv4": "172.20.0.57",
+                            "mac": "52:54:00:95:24:0f",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -340,16 +340,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.83/21",
-                            "IPv4": "172.20.0.83",
-                            "MAC": "52:54:00:a4:32:b5",
+                            "cidrv4": "172.20.0.83/21",
+                            "ipv4": "172.20.0.83",
+                            "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -378,16 +378,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.70/21",
-                            "IPv4": "172.20.0.70",
-                            "MAC": "52:54:00:c3:22:c2",
+                            "cidrv4": "172.20.0.70/21",
+                            "ipv4": "172.20.0.70",
+                            "mac": "52:54:00:c3:22:c2",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -452,16 +452,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.57/21",
-                            "IPv4": "172.20.0.57",
-                            "MAC": "52:54:00:95:24:0f",
+                            "cidrv4": "172.20.0.57/21",
+                            "ipv4": "172.20.0.57",
+                            "mac": "52:54:00:95:24:0f",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -490,16 +490,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.83/21",
-                            "IPv4": "172.20.0.83",
-                            "MAC": "52:54:00:a4:32:b5",
+                            "cidrv4": "172.20.0.83/21",
+                            "ipv4": "172.20.0.83",
+                            "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -528,16 +528,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.70/21",
-                            "IPv4": "172.20.0.70",
-                            "MAC": "52:54:00:c3:22:c2",
+                            "cidrv4": "172.20.0.70/21",
+                            "ipv4": "172.20.0.70",
+                            "mac": "52:54:00:c3:22:c2",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -604,16 +604,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.57/21",
-                            "IPv4": "172.20.0.57",
-                            "MAC": "52:54:00:95:24:0f",
+                            "cidrv4": "172.20.0.57/21",
+                            "ipv4": "172.20.0.57",
+                            "mac": "52:54:00:95:24:0f",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -642,16 +642,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.83/21",
-                            "IPv4": "172.20.0.83",
-                            "MAC": "52:54:00:a4:32:b5",
+                            "cidrv4": "172.20.0.83/21",
+                            "ipv4": "172.20.0.83",
+                            "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -680,16 +680,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.70/21",
-                            "IPv4": "172.20.0.70",
-                            "MAC": "52:54:00:c3:22:c2",
+                            "cidrv4": "172.20.0.70/21",
+                            "ipv4": "172.20.0.70",
+                            "mac": "52:54:00:c3:22:c2",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -757,16 +757,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.57/21",
-                            "IPv4": "172.20.0.57",
-                            "MAC": "52:54:00:95:24:0f",
+                            "cidrv4": "172.20.0.57/21",
+                            "ipv4": "172.20.0.57",
+                            "mac": "52:54:00:95:24:0f",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -795,16 +795,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.83/21",
-                            "IPv4": "172.20.0.83",
-                            "MAC": "52:54:00:a4:32:b5",
+                            "cidrv4": "172.20.0.83/21",
+                            "ipv4": "172.20.0.83",
+                            "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -833,16 +833,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.70/21",
-                            "IPv4": "172.20.0.70",
-                            "MAC": "52:54:00:c3:22:c2",
+                            "cidrv4": "172.20.0.70/21",
+                            "ipv4": "172.20.0.70",
+                            "mac": "52:54:00:c3:22:c2",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -871,16 +871,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.102/21",
-                            "IPv4": "172.20.0.102",
-                            "MAC": "52:54:00:c3:22:c4",
+                            "cidrv4": "172.20.0.102/21",
+                            "ipv4": "172.20.0.102",
+                            "mac": "52:54:00:c3:22:c4",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -943,16 +943,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.57/21",
-                            "IPv4": "172.20.0.57",
-                            "MAC": "52:54:00:95:24:0f",
+                            "cidrv4": "172.20.0.57/21",
+                            "ipv4": "172.20.0.57",
+                            "mac": "52:54:00:95:24:0f",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -981,16 +981,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.83/21",
-                            "IPv4": "172.20.0.83",
-                            "MAC": "52:54:00:a4:32:b5",
+                            "cidrv4": "172.20.0.83/21",
+                            "ipv4": "172.20.0.83",
+                            "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -1019,16 +1019,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.70/21",
-                            "IPv4": "172.20.0.70",
-                            "MAC": "52:54:00:c3:22:c2",
+                            "cidrv4": "172.20.0.70/21",
+                            "ipv4": "172.20.0.70",
+                            "mac": "52:54:00:c3:22:c2",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -1085,16 +1085,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.57/21",
-                            "IPv4": "172.20.0.57",
-                            "MAC": "52:54:00:95:24:0f",
+                            "cidrv4": "172.20.0.57/21",
+                            "ipv4": "172.20.0.57",
+                            "mac": "52:54:00:95:24:0f",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -1123,16 +1123,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.83/21",
-                            "IPv4": "172.20.0.83",
-                            "MAC": "52:54:00:a4:32:b5",
+                            "cidrv4": "172.20.0.83/21",
+                            "ipv4": "172.20.0.83",
+                            "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -1161,16 +1161,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.70/21",
-                            "IPv4": "172.20.0.70",
-                            "MAC": "52:54:00:c3:22:c2",
+                            "cidrv4": "172.20.0.70/21",
+                            "ipv4": "172.20.0.70",
+                            "mac": "52:54:00:c3:22:c2",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -1199,16 +1199,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.100/21",
-                            "IPv4": "172.20.0.100",
-                            "MAC": "52:54:00:c3:22:c4",
+                            "cidrv4": "172.20.0.100/21",
+                            "ipv4": "172.20.0.100",
+                            "mac": "52:54:00:c3:22:c4",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -1237,16 +1237,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.101/21",
-                            "IPv4": "172.20.0.101",
-                            "MAC": "52:54:00:95:24:4f",
+                            "cidrv4": "172.20.0.101/21",
+                            "ipv4": "172.20.0.101",
+                            "mac": "52:54:00:95:24:4f",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -1275,16 +1275,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.105/21",
-                            "IPv4": "172.20.0.105",
-                            "MAC": "52:54:00:95:24:5f",
+                            "cidrv4": "172.20.0.105/21",
+                            "ipv4": "172.20.0.105",
+                            "mac": "52:54:00:95:24:5f",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -1313,16 +1313,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.106/21",
-                            "IPv4": "172.20.0.106",
-                            "MAC": "52:54:01:95:24:5f",
+                            "cidrv4": "172.20.0.106/21",
+                            "ipv4": "172.20.0.106",
+                            "mac": "52:54:01:95:24:5f",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -1377,16 +1377,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.57/21",
-                            "IPv4": "172.20.0.57",
-                            "MAC": "52:54:00:95:24:0f",
+                            "cidrv4": "172.20.0.57/21",
+                            "ipv4": "172.20.0.57",
+                            "mac": "52:54:00:95:24:0f",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -1415,16 +1415,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.83/21",
-                            "IPv4": "172.20.0.83",
-                            "MAC": "52:54:00:a4:32:b5",
+                            "cidrv4": "172.20.0.83/21",
+                            "ipv4": "172.20.0.83",
+                            "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -1453,16 +1453,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.70/21",
-                            "IPv4": "172.20.0.70",
-                            "MAC": "52:54:00:c3:22:c2",
+                            "cidrv4": "172.20.0.70/21",
+                            "ipv4": "172.20.0.70",
+                            "mac": "52:54:00:c3:22:c2",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -1519,16 +1519,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.57/21",
-                            "IPv4": "172.20.0.57",
-                            "MAC": "52:54:00:95:24:0f",
+                            "cidrv4": "172.20.0.57/21",
+                            "ipv4": "172.20.0.57",
+                            "mac": "52:54:00:95:24:0f",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -1557,16 +1557,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.83/21",
-                            "IPv4": "172.20.0.83",
-                            "MAC": "52:54:00:a4:32:b5",
+                            "cidrv4": "172.20.0.83/21",
+                            "ipv4": "172.20.0.83",
+                            "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -1595,16 +1595,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.70/21",
-                            "IPv4": "172.20.0.70",
-                            "MAC": "52:54:00:c3:22:c2",
+                            "cidrv4": "172.20.0.70/21",
+                            "ipv4": "172.20.0.70",
+                            "mac": "52:54:00:c3:22:c2",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -1633,16 +1633,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.100/21",
-                            "IPv4": "172.20.0.100",
-                            "MAC": "52:54:00:c3:22:c4",
+                            "cidrv4": "172.20.0.100/21",
+                            "ipv4": "172.20.0.100",
+                            "mac": "52:54:00:c3:22:c4",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -1671,16 +1671,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.101/21",
-                            "IPv4": "172.20.0.101",
-                            "MAC": "52:54:00:95:24:4f",
+                            "cidrv4": "172.20.0.101/21",
+                            "ipv4": "172.20.0.101",
+                            "mac": "52:54:00:95:24:4f",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -1709,16 +1709,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.105/21",
-                            "IPv4": "172.20.0.105",
-                            "MAC": "52:54:00:95:24:5f",
+                            "cidrv4": "172.20.0.105/21",
+                            "ipv4": "172.20.0.105",
+                            "mac": "52:54:00:95:24:5f",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -1747,16 +1747,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.106/21",
-                            "IPv4": "172.20.0.106",
-                            "MAC": "52:54:01:95:24:5f",
+                            "cidrv4": "172.20.0.106/21",
+                            "ipv4": "172.20.0.106",
+                            "mac": "52:54:01:95:24:5f",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -1809,16 +1809,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.57/21",
-                            "IPv4": "172.20.0.57",
-                            "MAC": "52:54:00:95:24:0f",
+                            "cidrv4": "172.20.0.57/21",
+                            "ipv4": "172.20.0.57",
+                            "mac": "52:54:00:95:24:0f",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -1847,16 +1847,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.83/21",
-                            "IPv4": "172.20.0.83",
-                            "MAC": "52:54:00:a4:32:b5",
+                            "cidrv4": "172.20.0.83/21",
+                            "ipv4": "172.20.0.83",
+                            "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -1885,16 +1885,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.70/21",
-                            "IPv4": "172.20.0.70",
-                            "MAC": "52:54:00:c3:22:c2",
+                            "cidrv4": "172.20.0.70/21",
+                            "ipv4": "172.20.0.70",
+                            "mac": "52:54:00:c3:22:c2",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -1923,16 +1923,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.100/21",
-                            "IPv4": "172.20.0.100",
-                            "MAC": "52:54:00:c3:22:c4",
+                            "cidrv4": "172.20.0.100/21",
+                            "ipv4": "172.20.0.100",
+                            "mac": "52:54:00:c3:22:c4",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -1961,16 +1961,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.101/21",
-                            "IPv4": "172.20.0.101",
-                            "MAC": "52:54:00:95:24:4f",
+                            "cidrv4": "172.20.0.101/21",
+                            "ipv4": "172.20.0.101",
+                            "mac": "52:54:00:95:24:4f",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -1999,16 +1999,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.105/21",
-                            "IPv4": "172.20.0.105",
-                            "MAC": "52:54:00:95:24:5f",
+                            "cidrv4": "172.20.0.105/21",
+                            "ipv4": "172.20.0.105",
+                            "mac": "52:54:00:95:24:5f",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -2037,16 +2037,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.106/21",
-                            "IPv4": "172.20.0.106",
-                            "MAC": "52:54:01:95:24:5f",
+                            "cidrv4": "172.20.0.106/21",
+                            "ipv4": "172.20.0.106",
+                            "mac": "52:54:01:95:24:5f",
                             "name": "eth0",
                             "netmask": 21
                         }
@@ -2075,16 +2075,16 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     },
                     "interfaces": [
                         {
-                            "CIDRv4": "127.0.0.1/8",
-                            "IPv4": "127.0.0.1",
-                            "MAC": "",
+                            "cidrv4": "127.0.0.1/8",
+                            "ipv4": "127.0.0.1",
+                            "mac": "",
                             "name": "lo",
                             "netmask": 8
                         },
                         {
-                            "CIDRv4": "172.20.0.250/21",
-                            "IPv4": "172.20.0.250",
-                            "MAC": "52:11:02:97:24:5f",
+                            "cidrv4": "172.20.0.250/21",
+                            "ipv4": "172.20.0.250",
+                            "mac": "52:11:02:97:24:5f",
                             "name": "eth0",
                             "netmask": 21
                         }

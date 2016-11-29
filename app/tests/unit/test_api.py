@@ -25,15 +25,15 @@ POST_ONE = {
     u'interfaces': [
         {
             u'netmask': 8,
-            u'MAC': u'',
-            u'IPv4': u'127.0.0.1',
-            u'CIDRv4': u'127.0.0.1/8',
+            "mac": u'',
+            "ipv4": u'127.0.0.1',
+            "cidrv4": u'127.0.0.1/8',
             u'name': u'lo'},
         {
             u'netmask': 21,
-            u'MAC': u'52:54:00:ea:93:b7',
-            u'IPv4': u'172.20.0.65',
-            u'CIDRv4': u'172.20.0.65/21',
+            "mac": u'52:54:00:ea:93:b7',
+            "ipv4": u'172.20.0.65',
+            "cidrv4": u'172.20.0.65/21',
             u'name': u'eth0'
         }
     ]
@@ -59,15 +59,15 @@ POST_TWO = {
     u'interfaces': [
         {
             u'netmask': 8,
-            u'MAC': u'',
-            u'IPv4': u'127.0.0.1',
-            u'CIDRv4': u'127.0.0.1/8',
+            "mac": u'',
+            "ipv4": u'127.0.0.1',
+            "cidrv4": u'127.0.0.1/8',
             u'name': u'lo'},
         {
             u'netmask': 21,
-            u'MAC': u'52:54:00:ea:93:02',
-            u'IPv4': u'172.20.0.66',
-            u'CIDRv4': u'172.20.0.66/21',
+            "mac": u'52:54:00:ea:93:02',
+            "ipv4": u'172.20.0.66',
+            "cidrv4": u'172.20.0.66/21',
             u'name': u'eth0'
         }
     ]
@@ -156,10 +156,10 @@ class TestAPI(unittest.TestCase):
     def test_discovery_00(self):
         discovery_data = {
             "interfaces": [
-                {"IPv4": "192.168.1.1",
-                 "CIDRv4": "192.168.1.1/24",
+                {"ipv4": "192.168.1.1",
+                 "cidrv4": "192.168.1.1/24",
                  "netmask": 24,
-                 "MAC": "00:00:00:00:00",
+                 "mac": "00:00:00:00:00",
                  "name": "eth0"}]}
         result = self.app.post('/discovery', data=json.dumps(POST_ONE),
                                content_type='application/json')
