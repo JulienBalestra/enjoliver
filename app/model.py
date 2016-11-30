@@ -8,7 +8,7 @@ Base = declarative_base()
 
 class Machine(Base):
     __tablename__ = 'machine'
-    uuid = Column(String, primary_key=True, autoincrement=False)
+    uuid = Column(String, primary_key=True, autoincrement=False, nullable=False)
 
     interfaces = relationship("MachineInterface", lazy="joined")
 
@@ -71,6 +71,8 @@ class Inject(object):
 
     def _machine(self):
         uuid = self.discovery["boot-info"]["uuid"]
+        if len(uuid) != 36:
+            raise TypeError("uuid: %s in not len(36)" % uuid)
         machine = self.session.query(Machine).filter(Machine.uuid == uuid).first()
         if machine:
             return machine

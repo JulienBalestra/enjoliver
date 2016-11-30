@@ -5,7 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 import model
-import posts
+from common import posts
 
 
 class TestModel(unittest.TestCase):

@@ -1,12 +1,12 @@
 import json
 import os
+import unittest
 
 from sqlalchemy.orm import sessionmaker
 
 import model
-import posts
 from app import api
-import unittest
+from common import posts
 
 
 class TestAPI(unittest.TestCase):
