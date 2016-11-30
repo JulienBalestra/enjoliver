@@ -5,47 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 import model
-
-POST_ONE = {
-    "boot-info": {
-        "mac": "52:54:00:99:38:e9",
-        "uuid": "4422974d-687c-4df2-98b8-95fdf465f0f6"
-    },
-    "lldp": {
-        "data": {
-            "interfaces": [
-                {
-                    "chassis": {
-                        "id": "28:f1:0e:12:20:00",
-                        "name": "rkt-12409f1e-aa8b-47de-8906-fae5be63c808"
-                    },
-                    "port": {
-                        "id": "fe:54:00:99:38:e9"
-                    },
-                    "name": "eth0"
-                }
-            ]
-        },
-        "is_file": True
-    },
-    "interfaces": [
-        {
-            "name": "lo",
-            "mac": "",
-            "netmask": 8,
-            "cidrv4": "127.0.0.1/8",
-            "ipv4": "127.0.0.1"
-        },
-        {
-            "name": "eth0",
-            "mac": "52:54:00:99:38:e9",
-            "netmask": 21,
-            "cidrv4": "172.20.0.91/21",
-            "ipv4": "172.20.0.91"
-        }
-    ],
-    "ignition-journal": None
-}
+import posts
 
 
 class TestModel(unittest.TestCase):
@@ -67,7 +27,22 @@ class TestModel(unittest.TestCase):
         cls.session = session()
 
     def test_00(self):
-        self.assertTrue(model.insert_data(self.session, POST_ONE))
-        self.assertFalse(model.insert_data(self.session, POST_ONE))
-        one = self.session.query(model.Machine).filter(model.Machine.uuid == POST_ONE["boot-info"]["uuid"]).all()
-        self.assertEqual(1, len(one))
+        i = model.Inject(self.session, posts.M1)
+        i.commit()
+
+    def test_01(self):
+        i = model.Inject(self.session, posts.M2)
+        i.commit()
+        i = model.Inject(self.session, posts.M2)
+        i.commit()
+        i.commit()
+
+    def test_02(self):
+        for p in posts.ALL:
+            i = model.Inject(self.session, p)
+            i.commit()
+
+    def test_03(self):
+        for p in posts.ALL:
+            i = model.Inject(self.session, p)
+            i.commit()
