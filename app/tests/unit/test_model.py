@@ -50,3 +50,12 @@ class TestModel(unittest.TestCase):
     def test_04(self):
         i = model.Inject(self.session, posts.M16)
         i.commit()
+
+    def test_05(self):
+        with self.assertRaises(KeyError):
+            i = model.Inject(self.session, {
+                u'boot-info': {},
+                u'lldp': {},
+                u'interfaces': []
+            })
+            i.commit()
