@@ -11,9 +11,9 @@ from multiprocessing import Process
 from sqlalchemy.orm import sessionmaker
 
 import model
-import posts
 from app import api
 from app import generator
+from common import posts
 
 
 class TestAPI(unittest.TestCase):

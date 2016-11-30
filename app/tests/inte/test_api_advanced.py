@@ -2,21 +2,18 @@ import httplib
 import json
 import os
 import subprocess
+import sys
+import time
+import unittest
 import urllib2
 from multiprocessing import Process
-
-import sys
-
-import time
 
 from sqlalchemy.orm import sessionmaker
 
 import model
-import posts
 from app import api
-import unittest
-
 from app import generator
+from common import posts
 
 
 class TestAPIAdvanced(unittest.TestCase):
