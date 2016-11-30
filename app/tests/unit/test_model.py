@@ -60,11 +60,14 @@ class TestModel(unittest.TestCase):
             os.remove(db)
         except OSError:
             pass
-        engine = create_engine('sqlite:///%s' % db, echo=True)
+        engine = create_engine('sqlite:///%s' % db)
         model.Base.metadata.create_all(engine)
 
         session = sessionmaker(bind=engine)
         cls.session = session()
 
     def test_00(self):
-        model.insert_data(self.session, POST_ONE)
+        self.assertTrue(model.insert_data(self.session, POST_ONE))
+        self.assertFalse(model.insert_data(self.session, POST_ONE))
+        one = self.session.query(model.Machine).filter(model.Machine.uuid == POST_ONE["boot-info"]["uuid"]).all()
+        self.assertEqual(1, len(one))
