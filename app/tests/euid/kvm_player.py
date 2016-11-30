@@ -1,4 +1,4 @@
-import abc
+import datetime
 import json
 import multiprocessing
 import os
@@ -8,8 +8,6 @@ import sys
 import time
 import unittest
 import urllib2
-
-import datetime
 
 from app import generator, api
 
@@ -344,7 +342,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             time.sleep(1)
         self.assertEqual(len(to_start), 0)
 
-    def etcd_endpoint_health(self, ips, tries=15):
+    def etcd_endpoint_health(self, ips, tries=30):
         for t in xrange(tries):
             for i, ip in enumerate(ips):
                 try:
@@ -356,11 +354,11 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     sys.stdout.flush()
                     if response_body == {u"health": u"true"}:
                         ips.pop(i)
-                        os.write(1, "\r-> REMAIN %s\n\r" % str(ips))
+                        os.write(1, "\r-> REMAIN %s for %s\n\r" % (str(ips), self.etcd_endpoint_health.__name__))
 
                 except urllib2.URLError:
-                    os.write(2, "\r-> NOT READY %s\n\r" % ip)
-                    time.sleep(6)
+                    os.write(2, "\r-> NOT READY %s for %s\n\r" % (ip, self.etcd_endpoint_health.__name__))
+                    time.sleep(10)
         self.assertEqual(len(ips), 0)
 
     def etcd_member_len(self, ip, members, tries=30):
@@ -378,12 +376,12 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     break
 
             except urllib2.URLError:
-                os.write(2, "\r-> NOT READY %s\n\r" % ip)
+                os.write(2, "\r-> NOT READY %s for %s\n\r" % (ip, self.etcd_member_len.__name__))
                 time.sleep(10)
 
         self.assertEqual(len(result["members"]), members)
 
-    def etcd_member_k8s_minions(self, ip, nodes_nb, tries=30):
+    def etcd_member_k8s_minions(self, ip, nodes_nb, tries=60):
         result = {}
         for t in xrange(tries):
             try:
@@ -397,7 +395,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     break
 
             except urllib2.URLError:
-                os.write(2, "\r-> NOT READY %s\n\r" % ip)
+                os.write(2, "\r-> NOT READY %s %s\n\r" % (ip, self.etcd_member_k8s_minions.__name__))
                 time.sleep(10)
 
         self.assertEqual(len(result["node"]["nodes"]), nodes_nb)
@@ -414,10 +412,10 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     sys.stdout.flush()
                     if response_body == "ok":
                         ips.pop(i)
-                        os.write(1, "\r-> REMAIN %s\n\r" % str(ips))
+                        os.write(1, "\r-> REMAIN %s for %s\n\r" % (str(ips), self.k8s_api_health.__name__))
 
                 except urllib2.URLError:
-                    os.write(2, "\r-> NOT READY %s\n\r" % ip)
+                    os.write(2, "\r-> NOT READY %s for %s\n\r" % (ip, self.k8s_api_health.__name__))
                     time.sleep(10)
         self.assertEqual(len(ips), 0)
 
