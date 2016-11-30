@@ -137,5 +137,11 @@ class Inject(object):
         return chassis_port_list
 
     def commit(self):
+        print "adds", self.adds
         if self.adds != 0:
-            self.session.commit()
+            try:
+                self.session.commit()
+            except Exception as e:
+                self.adds = 0
+                self.session.rollback()
+        return True if self.adds else False
