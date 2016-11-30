@@ -46,3 +46,7 @@ class TestModel(unittest.TestCase):
         for p in posts.ALL:
             i = model.Inject(self.session, p)
             i.commit()
+
+    def test_04(self):
+        i = model.Inject(self.session, posts.M16)
+        i.commit()
