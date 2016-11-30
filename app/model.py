@@ -1,10 +1,7 @@
-import os
-
 from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy import ForeignKey
-from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship, backref
+from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
@@ -14,6 +11,9 @@ class Machine(Base):
     uuid = Column(String, primary_key=True, autoincrement=False)
 
     interfaces = relationship("MachineInterface", lazy="joined")
+
+    def __repr__(self):
+        return "<%s: %s>" % (Machine.__name__, self.uuid)
 
 
 class MachineInterface(Base):
@@ -29,6 +29,9 @@ class MachineInterface(Base):
     machine_uuid = Column(Integer, ForeignKey('machine.uuid'))
     chassis_port = relationship("ChassisPort")
 
+    def __repr__(self):
+        return "<%s: %s %s>" % (MachineInterface.__name__, self.mac, self.cidrv4)
+
 
 class Chassis(Base):
     __tablename__ = 'chassis'
@@ -37,6 +40,9 @@ class Chassis(Base):
     mac = Column(String, nullable=False, primary_key=True)
 
     ports = relationship("ChassisPort", lazy="joined")
+
+    def __repr__(self):
+        return "<%s: %s %s>" % (Chassis.__name__, self.mac, self.name)
 
 
 class ChassisPort(Base):
@@ -47,11 +53,17 @@ class ChassisPort(Base):
 
     machine_interface_mac = Column(String, ForeignKey('machine-interface.mac'))
 
+    def __repr__(self):
+        return "<%s: %s %s>" % (ChassisPort.__name__, self.mac, self.chassis_mac)
+
 
 def insert_data(session, discovery):
     machine = Machine(
         uuid=discovery["boot-info"]["uuid"]
     )
+    if len(session.query(Machine).filter(Machine.uuid == machine.uuid).all()) != 0:
+        return False
+
     session.add(machine)
     interfaces = []
     for i in discovery["interfaces"]:
@@ -83,3 +95,4 @@ def insert_data(session, discovery):
                 session.add(ports)
 
     session.commit()
+    return True
