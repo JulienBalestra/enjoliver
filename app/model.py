@@ -102,6 +102,8 @@ class Inject(object):
 
     def _chassis(self):
         chassis_list = []
+        if self.discovery["lldp"]["is_file"] is False:
+            return chassis_list
         for j in self.discovery["lldp"]["data"]["interfaces"]:
             chassis = self.session.query(Chassis).filter(Chassis.mac == j["chassis"]["id"]).first()
             if not chassis:
@@ -117,6 +119,8 @@ class Inject(object):
 
     def _chassis_port(self):
         chassis_port_list = []
+        if self.discovery["lldp"]["is_file"] is False:
+            return chassis_port_list
         for j in self.discovery["lldp"]["data"]["interfaces"]:
             for machine_interface in self.machine.interfaces:
                 if machine_interface.name == j["name"] and \
