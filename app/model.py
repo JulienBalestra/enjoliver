@@ -85,7 +85,7 @@ class Inject(object):
             return m_interfaces
 
         for i in self.discovery["interfaces"]:
-            if i["mac"] and i["mac"] not in [k.mac for k in m_interfaces]:
+            if i["mac"] and i["mac"]:
                 m_interfaces.append(
                     MachineInterface(
                         name=i["name"],
