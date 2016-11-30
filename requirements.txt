@@ -1,2 +1,3 @@
-flask
-gunicorn
+Flask==0.11.1
+gunicorn==19.6.0
+SQLAlchemy==1.1.4
