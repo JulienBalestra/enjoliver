@@ -36,6 +36,11 @@ func CreateConfig() (Config, error) {
 		c.IgnitionFile = IgnitionFileDefault
 	}
 
-	c.ProcCmdline = "/proc/cmdline"
+	ProcCmdlineDefault := "/proc/cmdline"
+	c.ProcCmdline = os.Getenv("PROC_CMDLINE")
+	if (c.ProcCmdline == "") {
+		log.Printf("Environment PROC_CMDLINE is nil setting default: %s", ProcCmdlineDefault)
+		c.ProcCmdline = ProcCmdlineDefault
+	}
 	return c, nil
 }
