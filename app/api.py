@@ -2,14 +2,27 @@ import os
 import urllib2
 
 from flask import Flask, request, json, jsonify
-from werkzeug.contrib.cache import FileSystemCache, SimpleCache
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from werkzeug.contrib.cache import SimpleCache
 
-import discoverydb
+import model
+from model import Inject
 
 app = application = Flask(__name__)
 
 application.config["BOOTCFG_URI"] = os.getenv(
     "BOOTCFG_URI", "http://127.0.0.1:8080")
+
+application.config["DB_PATH"] = os.getenv(
+    "DB_PATH", 'sqlite:///%s/db.sqlite' % os.path.dirname(os.path.abspath(__file__)))
+
+session_maker = None
+
+if __name__ == '__main__':
+    engine = create_engine(application.config["DB_PATH"])
+    model.Base.metadata.create_all(engine)
+    session_maker = sessionmaker(bind=engine)
 
 # application.config["FS_CACHE"] = os.getenv(
 #     "FS_CACHE", "/tmp")
@@ -33,7 +46,7 @@ def root():
     :return: available routes
     """
     links = [l for l in set([k.rule for k in app.url_map.iter_rules()
-             if "/static/" != k.rule[:8]])]
+                             if "/static/" != k.rule[:8]])]
 
     return json.jsonify(links)
 
@@ -83,25 +96,26 @@ def discovery():
     app.logger.debug("application/json \"%s\"" % r)
 
     print r
-
-    discovery_key = "discovery"
-    discovery_data = cache.get_dict(discovery_key)[discovery_key]
+    session = session_maker()
     try:
-        disco = discoverydb.Discovery(r, discovery_data)
-        discovery_data = disco.refresh_cache()
-        cache.set(key=discovery_key, value=discovery_data, timeout=0)
-
+        i = Inject(
+            session=session,
+            discovery=r
+        )
+        new = i.commit()
         return jsonify(
-            {"total_elt": len(discovery_data),
-             "update": disco.is_update})
-
-    except LookupError:
+            {"total_elt": session.query(model.Machine).count(),
+             "new": new}
+        )
+    except (KeyError, TypeError):
         return jsonify(
             {
                 u'boot-info': {},
                 u'lldp': {},
                 u'interfaces': []
             }), 406
+    finally:
+        session.close()
 
 
 @application.route('/discovery', methods=['GET'])
@@ -120,6 +134,20 @@ def discovery_interfaces():
     if discovery_data:
         interfaces["interfaces"] = [k["interfaces"] for k in discovery_data]
 
+    session = session_maker()
+    interfaces = session.query(model.MachineInterface).all()
+
+    interfaces = [
+        {
+            "mac": k.mac,
+            "name": k.name,
+            "netmask": k.netmask,
+            "ipv4": k.ipv4,
+            "cidrv4": k.cidrv4,
+            "as_boot": k.as_boot
+
+        } for k in interfaces]
+    print "interfaces:", interfaces
     return jsonify(interfaces)
 
 

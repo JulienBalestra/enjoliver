@@ -9,6 +9,10 @@ import sys
 
 import time
 
+from sqlalchemy.orm import sessionmaker
+
+import model
+import posts
 from app import api
 import unittest
 
@@ -20,6 +24,7 @@ class TestAPIAdvanced(unittest.TestCase):
     p_api = Process
 
     func_path = "%s" % os.path.dirname(__file__)
+    dbs_path = "%s/dbs" % func_path
     tests_path = "%s" % os.path.split(func_path)[0]
     app_path = os.path.split(tests_path)[0]
     project_path = os.path.split(app_path)[0]
@@ -60,6 +65,16 @@ class TestAPIAdvanced(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        db_path = "%s/%s.sqlite" % (cls.dbs_path, TestAPIAdvanced.__name__.lower())
+        db = "sqlite:///%s" % db_path
+        try:
+            os.remove(db_path)
+        except OSError:
+            pass
+        engine = api.create_engine(db)
+        model.Base.metadata.create_all(engine)
+        session_maker = sessionmaker(bind=engine)
+        api.session_maker = session_maker
 
         subprocess.check_output(["make"], cwd=cls.project_path)
         if os.path.isfile("%s/bootcfg_dir/bootcfg" % TestAPIAdvanced.tests_path) is False:
@@ -262,58 +277,38 @@ class TestAPIAdvanced(unittest.TestCase):
         self.assertEqual(response_code, 200)
 
     def test_06_discovery_00(self):
-        discovery_data = {
-            "boot-info": {"mac": "00:00:00:00:00"},
-            "interfaces": [
-                {"ipv4": "192.168.1.1",
-                 "cidrv4": "192.168.1.1/24",
-                 "netmask": 24,
-                 "mac": "00:00:00:00:00",
-                 "name": "eth0"}]}
-        req = urllib2.Request("%s/discovery" % self.api_endpoint, json.dumps(discovery_data),
+        req = urllib2.Request("%s/discovery" % self.api_endpoint, json.dumps(posts.M1),
                               {'Content-Type': 'application/json'})
         f = urllib2.urlopen(req)
         self.assertEqual(200, f.code)
         response = f.read()
         f.close()
-        self.assertEqual(json.loads(response), {u'total_elt': 1, u'update': False})
+        self.assertEqual(json.loads(response), {u'total_elt': 1, u'new': True})
 
     def test_06_discovery_01(self):
-        subprocess.check_output(
-            ["%s/assets/discoveryC/serve/discoveryC" % self.bootcfg_path],
-            env={"DISCOVERY_ADDRESS": "%s/discovery" % self.api_endpoint})
-        discovery_data = {
-            "boot-info": {"mac": "00:00:00:00:01"},
-            "interfaces": [
-                {"ipv4": "192.168.1.2",
-                 "cidrv4": "192.168.1.2/24",
-                 "netmask": 24,
-                 "mac": "00:00:00:00:01",
-                 "name": "eth0"}]}
-        req = urllib2.Request("%s/discovery" % self.api_endpoint, json.dumps(discovery_data),
+        # TODO
+        # print "===> ",
+        # ret = subprocess.check_output(
+        #     ["%s/assets/discoveryC/serve/discoveryC" % self.bootcfg_path],
+        #     env={"DISCOVERY_ADDRESS": "%s/discovery" % self.api_endpoint})
+        # print "===> ", ret
+        req = urllib2.Request("%s/discovery" % self.api_endpoint, json.dumps(posts.M2),
                               {'Content-Type': 'application/json'})
         f = urllib2.urlopen(req)
         self.assertEqual(200, f.code)
         response = f.read()
         f.close()
-        self.assertEqual(json.loads(response), {u'total_elt': 3, u'update': False})
+        self.assertEqual(json.loads(response), {u'total_elt': 2, u'new': True})
 
     def test_06_discovery_02(self):
-        subprocess.check_output(
-            ["%s/assets/discoveryC/serve/discoveryC" % self.bootcfg_path],
-            env={"DISCOVERY_ADDRESS": "%s/discovery" % self.api_endpoint})
-        discovery_data = {
-            "boot-info": {"mac": "00:00:00:00:01"},
-            "interfaces": [
-                {"ipv4": "192.168.1.2",
-                 "cidrv4": "192.168.1.2/24",
-                 "netmask": 24,
-                 "mac": "00:00:00:00:01",
-                 "name": "eth0"}]}
-        req = urllib2.Request("%s/discovery" % self.api_endpoint, json.dumps(discovery_data),
+        # TODO
+        # subprocess.check_output(
+        #     ["%s/assets/discoveryC/serve/discoveryC" % self.bootcfg_path],
+        #     env={"DISCOVERY_ADDRESS": "%s/discovery" % self.api_endpoint})
+        req = urllib2.Request("%s/discovery" % self.api_endpoint, json.dumps(posts.M3),
                               {'Content-Type': 'application/json'})
         f = urllib2.urlopen(req)
         self.assertEqual(200, f.code)
         response = f.read()
         f.close()
-        self.assertEqual(json.loads(response), {u'total_elt': 3, u'update': True})
+        self.assertEqual(json.loads(response), {u'total_elt': 3, u'new': True})

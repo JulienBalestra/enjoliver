@@ -1,82 +1,30 @@
 import json
+import os
 
+from sqlalchemy.orm import sessionmaker
+
+import model
+import posts
 from app import api
 import unittest
 
 
-
-POST_ONE = {
-    u'boot-info': {
-        u'mac': u'52:54:00:ea:93:b7',
-        u'uuid': u'769ea7b-6192-433d-a775-b215d5fbd64f'},
-    u'lldp': {
-        u'data': {
-            u'interfaces': [
-                {
-                    u'chassis': {
-                        u'id': u'28:f1:0e:12:20:00',
-                        u'name': u'E7470'},
-                    u'port': {
-                        u'id': u'fe:54:00:ea:93:b7'}
-                }
-            ]
-        },
-        u'is_file': True},
-    u'interfaces': [
-        {
-            u'netmask': 8,
-            "mac": u'',
-            "ipv4": u'127.0.0.1',
-            "cidrv4": u'127.0.0.1/8',
-            u'name': u'lo'},
-        {
-            u'netmask': 21,
-            "mac": u'52:54:00:ea:93:b7',
-            "ipv4": u'172.20.0.65',
-            "cidrv4": u'172.20.0.65/21',
-            u'name': u'eth0'
-        }
-    ]
-}
-
-POST_TWO = {
-    u'boot-info': {
-        u'mac': u'52:54:00:ea:93:02',
-        u'uuid': u'769ea7b-6192-433d-a775-b215d5fbd64f'},
-    u'lldp': {
-        u'data': {
-            u'interfaces': [
-                {
-                    u'chassis': {
-                        u'id': u'28:f1:0e:12:20:00',
-                        u'name': u'E7470'},
-                    u'port': {
-                        u'id': u'fe:54:00:ea:93:02'}
-                }
-            ]
-        },
-        u'is_file': True},
-    u'interfaces': [
-        {
-            u'netmask': 8,
-            "mac": u'',
-            "ipv4": u'127.0.0.1',
-            "cidrv4": u'127.0.0.1/8',
-            u'name': u'lo'},
-        {
-            u'netmask': 21,
-            "mac": u'52:54:00:ea:93:02',
-            "ipv4": u'172.20.0.66',
-            "cidrv4": u'172.20.0.66/21',
-            u'name': u'eth0'
-        }
-    ]
-}
-
-
 class TestAPI(unittest.TestCase):
+    unit_path = os.path.dirname(os.path.abspath(__file__))
+    dbs_path = "%s/dbs" % unit_path
+
     @classmethod
     def setUpClass(cls):
+        db_path = "%s/%s.sqlite" % (cls.dbs_path, TestAPI.__name__.lower())
+        db = "sqlite:///%s" % db_path
+        try:
+            os.remove(db_path)
+        except OSError:
+            pass
+        engine = api.create_engine(db)
+        model.Base.metadata.create_all(engine)
+        session_maker = sessionmaker(bind=engine)
+        api.session_maker = session_maker
         cls.app = api.app.test_client()
         cls.app.testing = True
 
@@ -154,21 +102,14 @@ class TestAPI(unittest.TestCase):
             u'/'])
 
     def test_discovery_00(self):
-        discovery_data = {
-            "interfaces": [
-                {"ipv4": "192.168.1.1",
-                 "cidrv4": "192.168.1.1/24",
-                 "netmask": 24,
-                 "mac": "00:00:00:00:00",
-                 "name": "eth0"}]}
-        result = self.app.post('/discovery', data=json.dumps(POST_ONE),
+        result = self.app.post('/discovery', data=json.dumps(posts.M1),
                                content_type='application/json')
         self.assertEqual(result.status_code, 200)
-        self.assertEqual(json.loads(result.data), {u'total_elt': 1, u'update': False})
-        result = self.app.post('/discovery', data=json.dumps(POST_TWO),
+        self.assertEqual(json.loads(result.data), {u'total_elt': 1, u'new': True})
+        result = self.app.post('/discovery', data=json.dumps(posts.M2),
                                content_type='application/json')
         self.assertEqual(result.status_code, 200)
-        self.assertEqual(json.loads(result.data), {u'total_elt': 2, u'update': False})
+        self.assertEqual(json.loads(result.data), {u'total_elt': 2, u'new': True})
 
     def test_discovery_01(self):
         discovery_data = "bad"

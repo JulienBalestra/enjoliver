@@ -2,16 +2,17 @@ import httplib
 import json
 import os
 import subprocess
+import sys
+import time
+import unittest
 import urllib2
 from multiprocessing import Process
 
-import sys
+from sqlalchemy.orm import sessionmaker
 
-import time
-
+import model
+import posts
 from app import api
-import unittest
-
 from app import generator
 
 
@@ -19,6 +20,7 @@ class TestAPI(unittest.TestCase):
     p_bootcfg = Process
 
     func_path = "%s" % os.path.dirname(__file__)
+    dbs_path = "%s/dbs" % func_path
     tests_path = "%s" % os.path.split(func_path)[0]
     app_path = os.path.split(tests_path)[0]
     project_path = os.path.split(app_path)[0]
@@ -49,6 +51,16 @@ class TestAPI(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        db_path = "%s/%s.sqlite" % (cls.dbs_path, TestAPI.__name__.lower())
+        db = "sqlite:///%s" % db_path
+        try:
+            os.remove(db_path)
+        except OSError:
+            pass
+        engine = api.create_engine(db)
+        model.Base.metadata.create_all(engine)
+        session_maker = sessionmaker(bind=engine)
+        api.session_maker = session_maker
         api.cache.clear()
         cls.app = api.app.test_client()
         cls.app.testing = True
@@ -213,56 +225,40 @@ class TestAPI(unittest.TestCase):
         result = self.app.post('/discovery', data="ok")
         self.assertEqual(result.status_code, 400)
 
-    def test_06_discovery_interfaces(self):
+    def test_06_discovery(self):
         result = self.app.get("/discovery/interfaces")
-        expect = {"interfaces": None}
-        self.assertEqual(json.loads(result.data), expect)
+        self.assertEqual(json.loads(result.data), [])
 
     def test_06_discovery_00(self):
-        discovery_data = {
-            "boot-info": {
-                "mac": "00:00:00:00:00"
-            },
-            "interfaces": [
-                {"ipv4": "192.168.1.1",
-                 "cidrv4": "192.168.1.1/24",
-                 "netmask": 24,
-                 "mac": "00:00:00:00:00",
-                 "name": "eth0"}]}
-        result = self.app.post('/discovery', data=json.dumps(discovery_data),
+        result = self.app.post('/discovery', data=json.dumps(posts.M1),
                                content_type='application/json')
-        self.assertEqual(json.loads(result.data), {u'total_elt': 1, u'update': False})
+        self.assertEqual(json.loads(result.data), {u'total_elt': 1, u'new': True})
         self.assertEqual(result.status_code, 200)
 
     def test_06_discovery_01(self):
-        discovery_data = {
-            "boot-info": {
-                "mac": "00:00:00:00:00"
-            },
-            "interfaces": [
-                {"ipv4": "192.168.1.1",
-                 "cidrv4": "192.168.1.1/24",
-                 "netmask": 24,
-                 "mac": "00:00:00:00:00",
-                 "name": "eth0"}]}
-        result = self.app.post('/discovery', data=json.dumps(discovery_data),
+        result = self.app.post('/discovery', data=json.dumps(posts.M2),
                                content_type='application/json')
-        self.assertEqual(json.loads(result.data), {u'total_elt': 1, u'update': False})
+        self.assertEqual(json.loads(result.data), {u'total_elt': 2, u'new': True})
         self.assertEqual(result.status_code, 200)
 
-        result = self.app.post('/discovery', data=json.dumps(discovery_data),
+        result = self.app.post('/discovery', data=json.dumps(posts.M2),
                                content_type='application/json')
-        self.assertEqual(json.loads(result.data), {u'total_elt': 1, u'update': True})
+        self.assertEqual(json.loads(result.data), {u'total_elt': 2, u'new': False})
         self.assertEqual(result.status_code, 200)
 
         result = self.app.get("/discovery/interfaces")
-        expect = {"interfaces": [
-            [{"mac": u'00:00:00:00:00',
-              u'netmask': 24,
-              "ipv4": u'192.168.1.1',
-              "cidrv4": u'192.168.1.1/24',
-              u'name': u'eth0'}]
-            ]}
+        expect = [
+            {u'name': u'eth0',
+             u'as_boot': True,
+             u'netmask': 21,
+             u'mac': u'52:54:00:e8:32:5b',
+             u'ipv4': u'172.20.0.65',
+             u'cidrv4': u'172.20.0.65/21'},
+
+            {u'name': u'eth0', u'as_boot': True,
+             u'netmask': 21, u'mac': u'52:54:00:a5:24:f5',
+             u'ipv4': u'172.20.0.51', u'cidrv4': u'172.20.0.51/21'}
+        ]
         self.assertEqual(expect, json.loads(result.data))
 
     def test_07_404_fake(self):
