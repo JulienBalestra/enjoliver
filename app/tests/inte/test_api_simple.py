@@ -59,8 +59,7 @@ class TestAPI(unittest.TestCase):
             pass
         engine = api.create_engine(db)
         model.Base.metadata.create_all(engine)
-        session_maker = sessionmaker(bind=engine)
-        api.session_maker = session_maker
+        api.engine = engine
         api.cache.clear()
         cls.app = api.app.test_client()
         cls.app.testing = True
@@ -161,7 +160,13 @@ class TestAPI(unittest.TestCase):
         expect = [
             u'/discovery',
             u'/discovery/interfaces',
-            u'/boot.ipxe', u'/boot.ipxe.0', u'/healthz', u'/', u'/ipxe']
+            u'/discovery/ignition-journal/<string:uuid>',
+            u'/boot.ipxe',
+            u'/boot.ipxe.0',
+            u'/healthz',
+            u'/',
+            u'/ipxe'
+        ]
         result = self.app.get('/')
         content = json.loads(result.data)
         self.assertEqual(result.status_code, 200)
@@ -230,18 +235,18 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(json.loads(result.data), [])
 
     def test_06_discovery_00(self):
-        result = self.app.post('/discovery', data=json.dumps(posts.M1),
+        result = self.app.post('/discovery', data=json.dumps(posts.M01),
                                content_type='application/json')
         self.assertEqual(json.loads(result.data), {u'total_elt': 1, u'new': True})
         self.assertEqual(result.status_code, 200)
 
     def test_06_discovery_01(self):
-        result = self.app.post('/discovery', data=json.dumps(posts.M2),
+        result = self.app.post('/discovery', data=json.dumps(posts.M02),
                                content_type='application/json')
         self.assertEqual(json.loads(result.data), {u'total_elt': 2, u'new': True})
         self.assertEqual(result.status_code, 200)
 
-        result = self.app.post('/discovery', data=json.dumps(posts.M2),
+        result = self.app.post('/discovery', data=json.dumps(posts.M02),
                                content_type='application/json')
         self.assertEqual(json.loads(result.data), {u'total_elt': 2, u'new': False})
         self.assertEqual(result.status_code, 200)
@@ -253,13 +258,21 @@ class TestAPI(unittest.TestCase):
              u'netmask': 21,
              u'mac': u'52:54:00:e8:32:5b',
              u'ipv4': u'172.20.0.65',
+             u'machine': u'b7f5f93a-b029-475f-b3a4-479ba198cb8a',
+             'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
              u'cidrv4': u'172.20.0.65/21'},
 
-            {u'name': u'eth0', u'as_boot': True,
-             u'netmask': 21, u'mac': u'52:54:00:a5:24:f5',
-             u'ipv4': u'172.20.0.51', u'cidrv4': u'172.20.0.51/21'}
+            {u'name': u'eth0',
+             u'as_boot': True,
+             u'machine': u'a21a9123-302d-488d-976c-5d6ded84a32d',
+             'chassis_name': None,
+             u'netmask': 21,
+             u'mac': u'52:54:00:a5:24:f5',
+             u'ipv4': u'172.20.0.51',
+             u'cidrv4': u'172.20.0.51/21'}
         ]
-        self.assertEqual(expect, json.loads(result.data))
+        result_data = json.loads(result.data)
+        self.assertEqual(expect, result_data)
 
     def test_07_404_fake(self):
         result = self.app.get('/fake')

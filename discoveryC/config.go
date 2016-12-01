@@ -10,6 +10,7 @@ type Config struct {
 	// http://IP:PORT
 	DiscoveryAddress string
 	ProcCmdline      string
+	ProcBootId      string
 	LLDPFile         string
 	IgnitionFile     string
 }
@@ -41,6 +42,13 @@ func CreateConfig() (Config, error) {
 	if (c.ProcCmdline == "") {
 		log.Printf("Environment PROC_CMDLINE is nil setting default: %s", ProcCmdlineDefault)
 		c.ProcCmdline = ProcCmdlineDefault
+	}
+
+	BootIdDefault := "/proc/sys/kernel/random/boot_id"
+	c.ProcBootId = os.Getenv("PROC_BOOT_ID")
+	if (c.ProcBootId == "") {
+		log.Printf("Environment PROC_BOOT_ID is nil setting default: %s", BootIdDefault)
+		c.ProcBootId = BootIdDefault
 	}
 	return c, nil
 }

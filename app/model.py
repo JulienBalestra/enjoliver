@@ -1,4 +1,6 @@
-from sqlalchemy import Column, Integer, String, Boolean
+import datetime
+
+from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy import ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -11,9 +13,33 @@ class Machine(Base):
     uuid = Column(String, primary_key=True, autoincrement=False, nullable=False)
 
     interfaces = relationship("MachineInterface", lazy="joined")
+    created_date = Column(DateTime, default=datetime.datetime.utcnow)
 
     def __repr__(self):
         return "<%s: %s>" % (Machine.__name__, self.uuid)
+
+
+class IgnitionJournal(Base):
+    __tablename__ = 'ignition-journal'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    boot_id = Column(String, nullable=True)
+
+    lines = relationship("JournalLine")
+
+    created_date = Column(DateTime, default=datetime.datetime.utcnow)
+    machine_uuid = Column(Integer, ForeignKey('machine.uuid'))
+
+    def __repr__(self):
+        return "<%s: %s %s>" % (IgnitionJournal.__name__, self.id, self.created_date)
+
+
+class JournalLine(Base):
+    __tablename__ = 'journal-line'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    ignition_journal = Column(Integer, ForeignKey('ignition-journal.id'))
+    line = Column(String)
 
 
 class MachineInterface(Base):
@@ -55,95 +81,3 @@ class ChassisPort(Base):
 
     def __repr__(self):
         return "<%s: %s %s>" % (ChassisPort.__name__, self.mac, self.chassis_mac)
-
-
-class Inject(object):
-    def __init__(self, session, discovery):
-        self.session = session
-        self.adds = 0
-        self.discovery = discovery
-
-        self.machine = self._machine()
-        self.interfaces = self._machine_interfaces()
-
-        self.chassis = self._chassis()
-        self.chassis_port = self._chassis_port()
-
-    def _machine(self):
-        uuid = self.discovery["boot-info"]["uuid"]
-        if len(uuid) != 36:
-            raise TypeError("uuid: %s in not len(36)" % uuid)
-        machine = self.session.query(Machine).filter(Machine.uuid == uuid).first()
-        if machine:
-            return machine
-        machine = Machine(uuid=uuid)
-        self.session.add(machine)
-        self.adds += 1
-        return machine
-
-    def _machine_interfaces(self):
-        m_interfaces = self.machine.interfaces
-        if m_interfaces:
-            return m_interfaces
-
-        for i in self.discovery["interfaces"]:
-            if i["mac"]:
-                m_interfaces.append(
-                    MachineInterface(
-                        name=i["name"],
-                        netmask=i["netmask"],
-                        mac=i["mac"],
-                        ipv4=i["ipv4"],
-                        cidrv4=i["cidrv4"],
-                        as_boot=True if i["mac"] == self.discovery["boot-info"]["mac"] else False,
-                        machine_uuid=self.machine.uuid)
-                )
-                self.adds += 1
-
-        return m_interfaces
-
-    def _chassis(self):
-        chassis_list = []
-        if self.discovery["lldp"]["is_file"] is False:
-            return chassis_list
-        for j in self.discovery["lldp"]["data"]["interfaces"]:
-            chassis = self.session.query(Chassis).filter(Chassis.mac == j["chassis"]["id"]).first()
-            if not chassis:
-                chassis = Chassis(
-                    name=j["chassis"]["name"],
-                    mac=j["chassis"]["id"]
-                )
-                self.session.add(chassis)
-                self.adds += 1
-            chassis_list.append(chassis)
-
-        return chassis_list
-
-    def _chassis_port(self):
-        chassis_port_list = []
-        if self.discovery["lldp"]["is_file"] is False:
-            return chassis_port_list
-        for j in self.discovery["lldp"]["data"]["interfaces"]:
-            for machine_interface in self.machine.interfaces:
-                if machine_interface.name == j["name"] and \
-                        not self.session.query(ChassisPort.mac == j["port"]["id"]).first():
-                    chassis = self.session.query(Chassis).filter(Chassis.mac == j["chassis"]["id"]).first()
-                    chassis_port = ChassisPort(
-                        mac=j["port"]["id"],
-                        chassis_mac=chassis.mac,
-                        machine_interface_mac=machine_interface.mac
-                    )
-                    self.session.add(chassis_port)
-                    self.adds += 1
-                    chassis_port_list.append(chassis_port)
-        return chassis_port_list
-
-    def commit(self):
-        print "adds", self.adds
-        if self.adds != 0:
-            try:
-                self.session.commit()
-            except Exception as e:
-                self.adds = 0
-                self.session.rollback()
-        return True if self.adds else False
