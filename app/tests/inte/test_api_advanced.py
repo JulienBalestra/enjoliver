@@ -70,8 +70,7 @@ class TestAPIAdvanced(unittest.TestCase):
             pass
         engine = api.create_engine(db)
         model.Base.metadata.create_all(engine)
-        session_maker = sessionmaker(bind=engine)
-        api.session_maker = session_maker
+        api.engine = engine
 
         subprocess.check_output(["make"], cwd=cls.project_path)
         if os.path.isfile("%s/bootcfg_dir/bootcfg" % TestAPIAdvanced.tests_path) is False:
@@ -201,6 +200,7 @@ class TestAPIAdvanced(unittest.TestCase):
         expect = [
             u'/discovery',
             u'/discovery/interfaces',
+            u'/discovery/ignition-journal/<string:uuid>',
             u'/boot.ipxe',
             u'/boot.ipxe.0',
             u'/healthz',
@@ -274,13 +274,61 @@ class TestAPIAdvanced(unittest.TestCase):
         self.assertEqual(response_code, 200)
 
     def test_06_discovery_00(self):
-        req = urllib2.Request("%s/discovery" % self.api_endpoint, json.dumps(posts.M1),
+        req = urllib2.Request("%s/discovery" % self.api_endpoint, json.dumps(posts.M01),
                               {'Content-Type': 'application/json'})
         f = urllib2.urlopen(req)
         self.assertEqual(200, f.code)
         response = f.read()
         f.close()
         self.assertEqual(json.loads(response), {u'total_elt': 1, u'new': True})
+        req = urllib2.Request("%s/discovery/interfaces" % self.api_endpoint)
+        f = urllib2.urlopen(req)
+        self.assertEqual(200, f.code)
+        response = json.loads(f.read())
+        expect = [
+            {
+                "as_boot": True,
+                "chassis_name": "rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4",
+                "cidrv4": "172.20.0.65/21",
+                "ipv4": "172.20.0.65",
+                "mac": "52:54:00:e8:32:5b",
+                "machine": "b7f5f93a-b029-475f-b3a4-479ba198cb8a",
+                "name": "eth0",
+                "netmask": 21
+            }
+        ]
+        f.close()
+        self.assertEqual(expect, response)
+
+        req = urllib2.Request("%s/discovery" % self.api_endpoint)
+        f = urllib2.urlopen(req)
+        self.assertEqual(200, f.code)
+        response = json.loads(f.read())
+        expect = [
+            {
+                u'boot-info': {
+                    u'mac': u'52:54:00:e8:32:5b',
+                    u'uuid': u'b7f5f93a-b029-475f-b3a4-479ba198cb8a'
+                },
+                u'interfaces': [
+                    {
+                        u'name': u'eth0',
+                        u'as_boot': True,
+                        u'netmask': 21,
+                        u'mac': u'52:54:00:e8:32:5b',
+                        u'ipv4': u'172.20.0.65',
+                        u'cidrv4': u'172.20.0.65/21'
+                    }
+                ]
+            }
+        ]
+        f.close()
+        self.assertEqual(expect, response)
+        req = urllib2.Request("%s/discovery/ignition-journal/b7f5f93a-b029-475f-b3a4-479ba198cb8a" % self.api_endpoint)
+        f = urllib2.urlopen(req)
+        self.assertEqual(200, f.code)
+        response = json.loads(f.read())
+        self.assertEqual(39, len(response))
 
     def test_06_discovery_01(self):
         # TODO
@@ -289,7 +337,7 @@ class TestAPIAdvanced(unittest.TestCase):
         #     ["%s/assets/discoveryC/serve/discoveryC" % self.bootcfg_path],
         #     env={"DISCOVERY_ADDRESS": "%s/discovery" % self.api_endpoint})
         # print "===> ", ret
-        req = urllib2.Request("%s/discovery" % self.api_endpoint, json.dumps(posts.M2),
+        req = urllib2.Request("%s/discovery" % self.api_endpoint, json.dumps(posts.M02),
                               {'Content-Type': 'application/json'})
         f = urllib2.urlopen(req)
         self.assertEqual(200, f.code)
@@ -302,7 +350,7 @@ class TestAPIAdvanced(unittest.TestCase):
         # subprocess.check_output(
         #     ["%s/assets/discoveryC/serve/discoveryC" % self.bootcfg_path],
         #     env={"DISCOVERY_ADDRESS": "%s/discovery" % self.api_endpoint})
-        req = urllib2.Request("%s/discovery" % self.api_endpoint, json.dumps(posts.M3),
+        req = urllib2.Request("%s/discovery" % self.api_endpoint, json.dumps(posts.M03),
                               {'Content-Type': 'application/json'})
         f = urllib2.urlopen(req)
         self.assertEqual(200, f.code)

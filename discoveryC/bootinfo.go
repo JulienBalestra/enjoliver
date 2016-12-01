@@ -8,8 +8,9 @@ import (
 )
 
 type BootInfo struct {
-	Uuid string `json:"uuid"`
-	Mac  string `json:"mac"`
+	Uuid     string `json:"uuid"`
+	Mac      string `json:"mac"`
+	RandomId string `json:"random-id"`
 }
 
 func getCoreosConfigUrl(b []byte) (string, error) {
@@ -23,6 +24,18 @@ func getCoreosConfigUrl(b []byte) (string, error) {
 		}
 	}
 	return "", errors.New("No coreos.config.url=")
+}
+
+func getRandomId() string {
+	b, err := ioutil.ReadFile(CONF.ProcBootId)
+	if err != nil {
+		log.Println(err)
+		return ""
+	}
+	str := string(b)
+	str = strings.Trim(str, "\n")
+	return str
+
 }
 
 func getBootInfo(url string) (BootInfo, error) {
@@ -44,6 +57,7 @@ func getBootInfo(url string) (BootInfo, error) {
 			bi.Mac = strings.Replace(bi.Mac, "-", ":", -1)
 		}
 	}
+	bi.RandomId = getRandomId()
 	return bi, nil
 }
 

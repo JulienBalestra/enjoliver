@@ -3,11 +3,10 @@ import urllib2
 
 from flask import Flask, request, json, jsonify
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 from werkzeug.contrib.cache import SimpleCache
 
+import crud
 import model
-from model import Inject
 
 app = application = Flask(__name__)
 
@@ -17,12 +16,11 @@ application.config["BOOTCFG_URI"] = os.getenv(
 application.config["DB_PATH"] = os.getenv(
     "DB_PATH", 'sqlite:///%s/db.sqlite' % os.path.dirname(os.path.abspath(__file__)))
 
-session_maker = None
+engine = None
 
-if __name__ == '__main__':
+if __name__ == '__main__' or (os.getenv("SERVER_SOFTWARE") is not None and "gunicorn" in os.getenv("SERVER_SOFTWARE")):
     engine = create_engine(application.config["DB_PATH"])
     model.Base.metadata.create_all(engine)
-    session_maker = sessionmaker(bind=engine)
 
 # application.config["FS_CACHE"] = os.getenv(
 #     "FS_CACHE", "/tmp")
@@ -96,17 +94,11 @@ def discovery():
     app.logger.debug("application/json \"%s\"" % r)
 
     print r
-    session = session_maker()
     try:
-        i = Inject(
-            session=session,
-            discovery=r
-        )
+        i = crud.Inject(engine=engine, discovery=r)
         new = i.commit()
-        return jsonify(
-            {"total_elt": session.query(model.Machine).count(),
-             "new": new}
-        )
+        return jsonify({"total_elt": new[0], "new": new[1]})
+
     except (KeyError, TypeError):
         return jsonify(
             {
@@ -114,41 +106,30 @@ def discovery():
                 u'lldp': {},
                 u'interfaces': []
             }), 406
-    finally:
-        session.close()
 
 
 @application.route('/discovery', methods=['GET'])
 def discovery_get():
-    discovery_key = "discovery"
-    discovery_data = cache.get_dict(discovery_key)[discovery_key]
+    fetch = crud.Fetch(engine=engine)
+    all_data = fetch.get_all()
 
-    return jsonify(discovery_data)
+    return jsonify(all_data)
 
 
 @application.route('/discovery/interfaces', methods=['GET'])
 def discovery_interfaces():
-    discovery_key = "discovery"
-    discovery_data = cache.get_dict(discovery_key)[discovery_key]
-    interfaces = {"interfaces": None}
-    if discovery_data:
-        interfaces["interfaces"] = [k["interfaces"] for k in discovery_data]
+    fetch = crud.Fetch(engine=engine)
+    interfaces = fetch.get_all_interfaces()
 
-    session = session_maker()
-    interfaces = session.query(model.MachineInterface).all()
-
-    interfaces = [
-        {
-            "mac": k.mac,
-            "name": k.name,
-            "netmask": k.netmask,
-            "ipv4": k.ipv4,
-            "cidrv4": k.cidrv4,
-            "as_boot": k.as_boot
-
-        } for k in interfaces]
-    print "interfaces:", interfaces
     return jsonify(interfaces)
+
+
+@application.route('/discovery/ignition-journal/<string:uuid>', methods=['GET'])
+def discovery_ignition_journal(uuid):
+    fetch = crud.Fetch(engine=engine)
+    lines = fetch.get_ignition_journal(uuid)
+
+    return jsonify(lines)
 
 
 @application.route('/boot.ipxe', methods=['GET'])

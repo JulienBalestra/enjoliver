@@ -2,8 +2,6 @@ import json
 import os
 import unittest
 
-from sqlalchemy.orm import sessionmaker
-
 import model
 from app import api
 from common import posts
@@ -23,8 +21,7 @@ class TestAPI(unittest.TestCase):
             pass
         engine = api.create_engine(db)
         model.Base.metadata.create_all(engine)
-        session_maker = sessionmaker(bind=engine)
-        api.session_maker = session_maker
+        api.engine = engine
         cls.app = api.app.test_client()
         cls.app.testing = True
 
@@ -96,17 +93,18 @@ class TestAPI(unittest.TestCase):
             u'/boot.ipxe.0',
             u'/discovery',
             u'/discovery/interfaces',
+            u'/discovery/ignition-journal/<string:uuid>',
             u'/boot.ipxe',
             u'/healthz',
             u'/ipxe',
             u'/'])
 
     def test_discovery_00(self):
-        result = self.app.post('/discovery', data=json.dumps(posts.M1),
+        result = self.app.post('/discovery', data=json.dumps(posts.M01),
                                content_type='application/json')
         self.assertEqual(result.status_code, 200)
         self.assertEqual(json.loads(result.data), {u'total_elt': 1, u'new': True})
-        result = self.app.post('/discovery', data=json.dumps(posts.M2),
+        result = self.app.post('/discovery', data=json.dumps(posts.M02),
                                content_type='application/json')
         self.assertEqual(result.status_code, 200)
         self.assertEqual(json.loads(result.data), {u'total_elt': 2, u'new': True})

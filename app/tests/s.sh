@@ -7,7 +7,7 @@ then
 
     PS3='ssh: '
     options=($(curl -s http://172.20.0.1:5000/discovery/interfaces | \
-        jq -re ".interfaces [$i][$i].ipv4"  2>/dev/null | grep -v "127.0.0.1" | sort))
+        jq -re ".[$i].ipv4"  2>/dev/null | sort))
     if [ $? -ne 0 ]
     then
         echo "Fail, try later..."
