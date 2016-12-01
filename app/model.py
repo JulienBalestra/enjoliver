@@ -68,7 +68,7 @@ class Chassis(Base):
     ports = relationship("ChassisPort", lazy="joined")
 
     def __repr__(self):
-        return "<%s: %s %s>" % (Chassis.__name__, self.mac, self.name)
+        return "<%s: mac:%s name:%s>" % (Chassis.__name__, self.mac, self.name)
 
 
 class ChassisPort(Base):
@@ -80,4 +80,4 @@ class ChassisPort(Base):
     machine_interface_mac = Column(String, ForeignKey('machine-interface.mac'))
 
     def __repr__(self):
-        return "<%s: %s %s>" % (ChassisPort.__name__, self.mac, self.chassis_mac)
+        return "<%s: mac:%s chassis_mac:%s>" % (ChassisPort.__name__, self.mac, self.chassis_mac)

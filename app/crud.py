@@ -20,6 +20,9 @@ class Fetch(object):
 
         return None
 
+    def close(self):
+        self.session.close()
+
     def get_all_interfaces(self):
         return [
             {
@@ -99,11 +102,9 @@ class Inject(object):
 
     def _machine_interfaces(self):
         m_interfaces = self.machine.interfaces
-        if m_interfaces:
-            return m_interfaces
 
         for i in self.discovery["interfaces"]:
-            if i["mac"]:
+            if i["mac"] and self.session.query(MachineInterface).filter(MachineInterface.mac == i["mac"]).count() == 0:
                 m_interfaces.append(
                     MachineInterface(
                         name=i["name"],
@@ -123,8 +124,8 @@ class Inject(object):
         if self.discovery["lldp"]["is_file"] is False:
             return chassis_list
         for j in self.discovery["lldp"]["data"]["interfaces"]:
-            chassis = self.session.query(Chassis).filter(Chassis.mac == j["chassis"]["id"]).first()
-            if not chassis:
+            chassis = self.session.query(Chassis).filter(Chassis.mac == j["chassis"]["id"]).count()
+            if chassis == 0:
                 chassis = Chassis(
                     name=j["chassis"]["name"],
                     mac=j["chassis"]["id"]
@@ -135,23 +136,33 @@ class Inject(object):
 
         return chassis_list
 
+    def __get_mac_by_name(self, name):
+        for i in self.discovery["interfaces"]:
+            if i["name"] == name:
+                return i["mac"]
+
     def _chassis_port(self):
         chassis_port_list = []
         if self.discovery["lldp"]["is_file"] is False:
             return chassis_port_list
-        for j in self.discovery["lldp"]["data"]["interfaces"]:
-            for machine_interface in self.machine.interfaces:
-                if machine_interface.name == j["name"] \
-                        and not self.session.query(ChassisPort.mac == j["port"]["id"]).first():
-                    chassis = self.session.query(Chassis).filter(Chassis.mac == j["chassis"]["id"]).first()
-                    chassis_port = ChassisPort(
-                        mac=j["port"]["id"],
-                        chassis_mac=chassis.mac,
-                        machine_interface_mac=machine_interface.mac
-                    )
-                    self.session.add(chassis_port)
-                    self.adds += 1
-                    chassis_port_list.append(chassis_port)
+
+        for entry in self.discovery["lldp"]["data"]["interfaces"]:
+            exist = self.session.query(ChassisPort).filter(ChassisPort.mac == entry["port"]["id"]).count()
+            # The ChassisPort doesn't exist
+            if exist == 0:
+
+                # Get the mac address of the MachineInterface by his name inside the DiscoveryPOST
+                machine_interface_mac = self.__get_mac_by_name(entry["name"])
+
+                chassis_port = ChassisPort(
+                    mac=entry["port"]["id"],
+                    chassis_mac=entry["chassis"]["id"],
+                    machine_interface_mac=machine_interface_mac
+                )
+                self.session.add(chassis_port)
+                self.adds += 1
+                chassis_port_list.append(chassis_port)
+
         return chassis_port_list
 
     def _ignition_journal(self):
@@ -163,7 +174,7 @@ class Inject(object):
 
         if self.session.query(IgnitionJournal).filter(
                                 IgnitionJournal.boot_id == boot_id and
-                                IgnitionJournal.machine_uuid == uuid).all():
+                                IgnitionJournal.machine_uuid == uuid).first():
             return
 
         ign = IgnitionJournal(
@@ -184,7 +195,7 @@ class Inject(object):
         self.session.add_all(lines)
         self.adds += len(lines)
 
-    def commit(self):
+    def commit_and_close(self):
         try:
             if self.adds != 0:
                 try:

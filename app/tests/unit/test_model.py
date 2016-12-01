@@ -20,65 +20,143 @@ class TestModel(unittest.TestCase):
             os.remove(db)
         except OSError:
             pass
+        assert os.path.isfile(db) is False
         cls.engine = create_engine('sqlite:///%s' % db)
         model.Base.metadata.create_all(cls.engine)
 
+    # @unittest.skip("")
     def test_00(self):
         i = crud.Inject(self.engine, posts.M01)
-        i.commit()
+        i.commit_and_close()
         fetch = crud.Fetch(self.engine)
         interfaces = fetch.get_all_interfaces()
         self.assertEqual([
-            {'name': u'eth0',
-             'as_boot': True,
-             'netmask': 21,
-             'mac': u'52:54:00:e8:32:5b',
-             'ipv4': u'172.20.0.65',
-             'machine': u'b7f5f93a-b029-475f-b3a4-479ba198cb8a',
-             'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
-             'cidrv4': u'172.20.0.65/21'}
+            {
+                'name': u'eth0',
+                'as_boot': True,
+                'netmask': 21,
+                'mac': u'52:54:00:e8:32:5b',
+                'ipv4': u'172.20.0.65',
+                'machine': u'b7f5f93a-b029-475f-b3a4-479ba198cb8a',
+                'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
+                'cidrv4': u'172.20.0.65/21'
+            }
         ], interfaces)
+        journal = fetch.get_ignition_journal(posts.M01["boot-info"]["uuid"])
+        fetch.close()
+        self.assertEqual(len(journal), len(posts.M01["ignition-journal"]))
+
+    # @unittest.skip("")
+    def test_00_1(self):
+        i = crud.Inject(self.engine, posts.M01)
+        i.commit_and_close()
+        fetch = crud.Fetch(self.engine)
+        interfaces = fetch.get_all_interfaces()
+        self.assertEqual([
+            {
+                'name': u'eth0',
+                'as_boot': True,
+                'netmask': 21,
+                'mac': u'52:54:00:e8:32:5b',
+                'ipv4': u'172.20.0.65',
+                'machine': u'b7f5f93a-b029-475f-b3a4-479ba198cb8a',
+                'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
+                'cidrv4': u'172.20.0.65/21'
+            }
+        ], interfaces)
+        journal = fetch.get_ignition_journal(posts.M01["boot-info"]["uuid"])
+        fetch.close()
+        self.assertEqual(len(journal), len(posts.M01["ignition-journal"]))
 
     def test_01(self):
         i = crud.Inject(self.engine, posts.M02)
-        i.commit()
-        i = crud.Inject(self.engine, posts.M02)
-        i.commit()
+        i.commit_and_close()
         fetch = crud.Fetch(self.engine)
         interfaces = fetch.get_all_interfaces()
         self.assertEqual(len(interfaces), 2)
-        self.assertEqual(len(fetch.get_ignition_journal(posts.M01["boot-info"]["uuid"])), 39)
+        self.assertEqual(len(fetch.get_ignition_journal(posts.M02["boot-info"]["uuid"])), 39)
+        self.assertEqual([
+            {
+                'machine': u'b7f5f93a-b029-475f-b3a4-479ba198cb8a',
+                'mac': u'52:54:00:e8:32:5b',
+                'name': u'eth0',
+                'cidrv4': u'172.20.0.65/21',
+                'as_boot': True,
+                'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
+                'netmask': 21,
+                'ipv4': u'172.20.0.65'
+            },
+            {
+                'machine': u'a21a9123-302d-488d-976c-5d6ded84a32d',
+                'mac': u'52:54:00:a5:24:f5',
+                'name': u'eth0',
+                'cidrv4': u'172.20.0.51/21',
+                'as_boot': True,
+                'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
+                'netmask': 21,
+                'ipv4': u'172.20.0.51'
+            }
+        ], interfaces)
+        fetch.close()
 
     def test_02(self):
-        for p in posts.ALL:
-            i = crud.Inject(self.engine, p)
-            i.commit()
+        m1 = crud.Inject(self.engine, posts.M01)
+        m1.commit_and_close()
+        i = crud.Inject(self.engine, posts.M02)
+        i.commit_and_close()
+        i = crud.Inject(self.engine, posts.M02)
+        i.commit_and_close()
         fetch = crud.Fetch(self.engine)
         interfaces = fetch.get_all_interfaces()
-        self.assertEqual(len(posts.ALL), len(interfaces))
-        # print fetch.get_all_interfaces()
+        self.assertEqual(len(interfaces), 2)
+        self.assertEqual(len(fetch.get_ignition_journal(posts.M02["boot-info"]["uuid"])), 39)
+        self.assertEqual([
+            {'machine': u'b7f5f93a-b029-475f-b3a4-479ba198cb8a', 'mac': u'52:54:00:e8:32:5b', 'name': u'eth0',
+             'cidrv4': u'172.20.0.65/21', 'as_boot': True, 'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
+             'netmask': 21, 'ipv4': u'172.20.0.65'},
+            {'machine': u'a21a9123-302d-488d-976c-5d6ded84a32d', 'mac': u'52:54:00:a5:24:f5', 'name': u'eth0',
+             'cidrv4': u'172.20.0.51/21', 'as_boot': True, 'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
+             'netmask': 21, 'ipv4': u'172.20.0.51'}
+        ], interfaces)
+        fetch.close()
 
     def test_03(self):
+        i = crud.Inject(self.engine, posts.M03)
+        i.commit_and_close()
+        fetch = crud.Fetch(self.engine)
+        interfaces = fetch.get_all_interfaces()
+        self.assertEqual(len(interfaces), 3)
+        self.assertEqual(len(fetch.get_ignition_journal(posts.M03["boot-info"]["uuid"])), 39)
+
+    def test_04(self):
         for p in posts.ALL:
             i = crud.Inject(self.engine, p)
-            i.commit()
+            i.commit_and_close()
+        fetch = crud.Fetch(self.engine)
+        interfaces = fetch.get_all_interfaces()
+        self.assertEqual(len(posts.ALL), len(interfaces))
+
+    def test_05(self):
+        for p in posts.ALL:
+            i = crud.Inject(self.engine, p)
+            i.commit_and_close()
 
         fetch = crud.Fetch(self.engine)
         interfaces = fetch.get_all_interfaces()
         self.assertEqual(len(posts.ALL), len(interfaces))
 
-    def test_04(self):
+    def test_06(self):
         i = crud.Inject(self.engine, posts.M16)
-        i.commit()
+        i.commit_and_close()
 
-    def test_05(self):
+    def test_07(self):
         with self.assertRaises(KeyError):
             i = crud.Inject(self.engine, {
                 u'boot-info': {},
                 u'lldp': {},
                 u'interfaces': []
             })
-            i.commit()
+            i.commit_and_close()
         fetch = crud.Fetch(self.engine)
         interfaces = fetch.get_all_interfaces()
         self.assertEqual(len(posts.ALL), len(interfaces))
@@ -90,3 +168,10 @@ class TestModel(unittest.TestCase):
             line_nb += len(fetch.get_ignition_journal(m["boot-info"]["uuid"]))
 
         self.assertEqual(587, line_nb)
+
+    def test_08(self):
+        fetch = crud.Fetch(self.engine)
+        all_data = fetch.get_all_interfaces()
+        chassis_names = [k["chassis_name"] for k in all_data]
+        self.assertEqual(4, chassis_names.count(None))
+        self.assertEqual(19, chassis_names.count("rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4"))

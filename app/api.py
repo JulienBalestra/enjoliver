@@ -96,7 +96,7 @@ def discovery():
     print r
     try:
         i = crud.Inject(engine=engine, discovery=r)
-        new = i.commit()
+        new = i.commit_and_close()
         return jsonify({"total_elt": new[0], "new": new[1]})
 
     except (KeyError, TypeError):
