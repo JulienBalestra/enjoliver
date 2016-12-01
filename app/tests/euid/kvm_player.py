@@ -9,7 +9,7 @@ import time
 import unittest
 import urllib2
 
-from app import generator, api
+from app import generator, api, model
 
 
 @unittest.skipIf(os.geteuid() != 0,
@@ -93,6 +93,13 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     @staticmethod
     def process_target_api():
         api.cache.clear()
+        db_path = "%s/euid.sqlite" % (KernelVirtualMachinePlayer.euid_path)
+        db = "sqlite:///%s" % db_path
+        try:
+            os.remove(db_path)
+        except OSError:
+            pass
+        os.environ["DB_PATH"] = db
         cmd = [
             "%s/env/bin/gunicorn" % KernelVirtualMachinePlayer.project_path,
             "--chdir",
@@ -317,6 +324,14 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     def fetch_discovery(self):
         request = urllib2.urlopen("%s/discovery" % self.api_endpoint)
+        response_body = request.read()
+        request.close()
+        self.assertEqual(request.code, 200)
+        disco_data = json.loads(response_body)
+        return disco_data
+
+    def fetch_discovery_ignition_journal(self, uuid):
+        request = urllib2.urlopen("%s/discovery/ignition-journal/%s" % (self.api_endpoint, uuid))
         response_body = request.read()
         request.close()
         self.assertEqual(request.code, 200)

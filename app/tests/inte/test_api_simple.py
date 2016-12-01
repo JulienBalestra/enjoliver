@@ -265,7 +265,7 @@ class TestAPI(unittest.TestCase):
             {u'name': u'eth0',
              u'as_boot': True,
              u'machine': u'a21a9123-302d-488d-976c-5d6ded84a32d',
-             'chassis_name': None,
+             'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
              u'netmask': 21,
              u'mac': u'52:54:00:a5:24:f5',
              u'ipv4': u'172.20.0.51',
