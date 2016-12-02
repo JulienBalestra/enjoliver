@@ -26,7 +26,7 @@ class TestKVMBasicPXE(kvm_player.KernelVirtualMachinePlayer):
         cls.set_bootcfg()
         cls.set_dnsmasq()
         cls.set_api()
-        cls.pause(5)
+        cls.pause(cls.wait_setup_teardown)
 
     # @unittest.skip("just skip")
     def test_00(self):
