@@ -10,7 +10,9 @@ Base = declarative_base()
 
 class Machine(Base):
     __tablename__ = 'machine'
-    uuid = Column(String, primary_key=True, autoincrement=False, nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    uuid = Column(String, nullable=False)
 
     interfaces = relationship("MachineInterface", lazy="joined")
     created_date = Column(DateTime, default=datetime.datetime.utcnow)
@@ -21,15 +23,16 @@ class Machine(Base):
 
 class MachineInterface(Base):
     __tablename__ = 'machine-interface'
+    id = Column(Integer, primary_key=True, autoincrement=True)
 
-    mac = Column(String, nullable=False, primary_key=True, autoincrement=False)
+    mac = Column(String, nullable=False)
     name = Column(String, nullable=False)
     netmask = Column(Integer, nullable=False)
     ipv4 = Column(String, nullable=False)
     cidrv4 = Column(String, nullable=False)
     as_boot = Column(Boolean, default=False)
 
-    machine_uuid = Column(Integer, ForeignKey('machine.uuid'))
+    machine_id = Column(Integer, ForeignKey('machine.id'))
     chassis_port = relationship("ChassisPort")
 
     def __repr__(self):
@@ -38,9 +41,10 @@ class MachineInterface(Base):
 
 class Chassis(Base):
     __tablename__ = 'chassis'
+    id = Column(Integer, primary_key=True, autoincrement=True)
 
     name = Column(String, nullable=False)
-    mac = Column(String, nullable=False, primary_key=True)
+    mac = Column(String, nullable=False)
 
     ports = relationship("ChassisPort", lazy="joined")
 
@@ -50,11 +54,12 @@ class Chassis(Base):
 
 class ChassisPort(Base):
     __tablename__ = 'chassis-port'
+    id = Column(Integer, primary_key=True, autoincrement=True)
 
-    mac = Column(String, primary_key=True, autoincrement=False)
-    chassis_mac = Column(String, ForeignKey('chassis.mac'))
+    mac = Column(String, nullable=False)
+    chassis_id = Column(Integer, ForeignKey('chassis.id'))
 
-    machine_interface_mac = Column(String, ForeignKey('machine-interface.mac'))
+    machine_interface_id = Column(Integer, ForeignKey('machine-interface.id'))
 
     def __repr__(self):
-        return "<%s: mac:%s chassis_mac:%s>" % (ChassisPort.__name__, self.mac, self.chassis_mac)
+        return "<%s: mac:%s chassis_mac:%s>" % (ChassisPort.__name__, self.mac, self.chassis_id)
