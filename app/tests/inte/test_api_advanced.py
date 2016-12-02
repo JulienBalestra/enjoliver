@@ -9,7 +9,7 @@ import unittest
 import urllib2
 from multiprocessing import Process
 
-import model
+from app import model
 from app import api
 from app import generator
 from common import posts

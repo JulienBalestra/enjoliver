@@ -9,10 +9,8 @@ import unittest
 import urllib2
 from multiprocessing import Process
 
-from sqlalchemy.orm import sessionmaker
-
-import model
 from app import api
+from app import model
 from app import generator
 from common import posts
 
