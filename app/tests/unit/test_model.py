@@ -4,8 +4,8 @@ import unittest
 
 from sqlalchemy import create_engine
 
-import crud
-import model
+from app import crud
+from app import model
 from common import posts
 
 
