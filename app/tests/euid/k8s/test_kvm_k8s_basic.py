@@ -22,6 +22,7 @@ class TestKVMK8sBasic(kvm_player.KernelVirtualMachinePlayer):
         cls.set_bootcfg()
         cls.set_dnsmasq()
         cls.set_lldp()
+        cls.pause(cls.wait_setup_teardown)
 
 
 # @unittest.skip("skip")
@@ -113,6 +114,7 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
                 self.virsh(undefine), os.write(1, "\r")
 
 
+# @unittest.skip("")
 @unittest.skipIf(os.geteuid() != 0,
                  "TestKVMDiscovery need privilege")
 class TestKVMK8SBasic1(TestKVMK8sBasic):
