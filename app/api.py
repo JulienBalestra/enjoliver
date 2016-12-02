@@ -16,11 +16,16 @@ application.config["BOOTCFG_URI"] = os.getenv(
 application.config["DB_PATH"] = os.getenv(
     "DB_PATH", 'sqlite:///%s/db.sqlite' % os.path.dirname(os.path.abspath(__file__)))
 
+application.config["IGNITION_JOURNAL_DIR"] = os.getenv(
+    "IGNITION_JOURNAL_DIR", '%s/ignition_journal' % os.path.dirname(os.path.abspath(__file__)))
+
 engine = None
+ignition_journal = None
 
 if __name__ == '__main__' or (os.getenv("SERVER_SOFTWARE") is not None and "gunicorn" in os.getenv("SERVER_SOFTWARE")):
     engine = create_engine(application.config["DB_PATH"])
     model.Base.metadata.create_all(engine)
+    ignition_journal = application.config["IGNITION_JOURNAL_DIR"]
 
 # application.config["FS_CACHE"] = os.getenv(
 #     "FS_CACHE", "/tmp")
@@ -95,7 +100,9 @@ def discovery():
 
     print r
     try:
-        i = crud.Inject(engine=engine, discovery=r)
+        i = crud.Inject(engine=engine,
+                        ignition_journal=ignition_journal,
+                        discovery=r)
         new = i.commit_and_close()
         return jsonify({"total_elt": new[0], "new": new[1]})
 
@@ -110,7 +117,8 @@ def discovery():
 
 @application.route('/discovery', methods=['GET'])
 def discovery_get():
-    fetch = crud.Fetch(engine=engine)
+    fetch = crud.Fetch(engine=engine,
+                       ignition_journal=ignition_journal)
     all_data = fetch.get_all()
 
     return jsonify(all_data)
@@ -118,7 +126,8 @@ def discovery_get():
 
 @application.route('/discovery/interfaces', methods=['GET'])
 def discovery_interfaces():
-    fetch = crud.Fetch(engine=engine)
+    fetch = crud.Fetch(engine=engine,
+                       ignition_journal=ignition_journal)
     interfaces = fetch.get_all_interfaces()
 
     return jsonify(interfaces)
@@ -126,7 +135,8 @@ def discovery_interfaces():
 
 @application.route('/discovery/ignition-journal/<string:uuid>', methods=['GET'])
 def discovery_ignition_journal(uuid):
-    fetch = crud.Fetch(engine=engine)
+    fetch = crud.Fetch(engine=engine,
+                       ignition_journal=ignition_journal)
     lines = fetch.get_ignition_journal(uuid)
 
     return jsonify(lines)

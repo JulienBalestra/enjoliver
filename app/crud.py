@@ -13,11 +13,11 @@ class Fetch(object):
 
     def _get_chassis_name(self, machine_interface):
         chassis_port = self.session.query(ChassisPort).filter(
-            ChassisPort.machine_interface_mac == machine_interface.mac
+            ChassisPort.machine_interface_id == machine_interface.id
         ).first()
         if chassis_port:
             chassis_name = self.session.query(Chassis).filter(
-                Chassis.mac == chassis_port.chassis_mac
+                Chassis.id == chassis_port.chassis_id
             ).first().name
             return chassis_name
 
@@ -35,13 +35,14 @@ class Fetch(object):
                 "ipv4": i.ipv4,
                 "cidrv4": i.cidrv4,
                 "as_boot": i.as_boot,
-                "machine": i.machine_uuid,
+                "machine": self.session.query(Machine).filter(Machine.id == i.machine_id).first().uuid,
                 "chassis_name": self._get_chassis_name(i)
             } for i in self.session.query(MachineInterface)]
 
     def get_ignition_journal(self, uuid, boot_id=None):
         lines = []
-        if len(uuid) != 36:
+
+        if type(uuid) is not str and len(uuid) != 36:
             return lines
         uuid_directory = "%s/%s" % (self.ignition_journal, uuid)
 
@@ -71,7 +72,7 @@ class Fetch(object):
                     "cidrv4": k.cidrv4,
                     "as_boot": k.as_boot} for k in machine.interfaces]
             interface_boot = self.session.query(MachineInterface).filter(
-                MachineInterface.machine_uuid == machine.uuid and
+                MachineInterface.machine_id == machine.id and
                 MachineInterface.as_boot is True).first()
 
             m["boot-info"] = {
@@ -130,7 +131,7 @@ class Inject(object):
                         ipv4=i["ipv4"],
                         cidrv4=i["cidrv4"],
                         as_boot=True if i["mac"] == self.discovery["boot-info"]["mac"] else False,
-                        machine_uuid=self.machine.uuid)
+                        machine_id=self.machine.id)
                 )
                 self.adds += 1
 
@@ -165,16 +166,17 @@ class Inject(object):
 
         for entry in self.discovery["lldp"]["data"]["interfaces"]:
             exist = self.session.query(ChassisPort).filter(ChassisPort.mac == entry["port"]["id"]).count()
+            chassis = self.session.query(Chassis).filter(Chassis.mac == entry["chassis"]["id"]).first()
             # The ChassisPort doesn't exist
             if exist == 0:
-
                 # Get the mac address of the MachineInterface by his name inside the DiscoveryPOST
                 machine_interface_mac = self.__get_mac_by_name(entry["name"])
-
+                machine_interface = self.session.query(MachineInterface).filter(
+                    MachineInterface.mac == machine_interface_mac).first()
                 chassis_port = ChassisPort(
                     mac=entry["port"]["id"],
-                    chassis_mac=entry["chassis"]["id"],
-                    machine_interface_mac=machine_interface_mac
+                    chassis_id=chassis.id,
+                    machine_interface_id=machine_interface.id
                 )
                 self.session.add(chassis_port)
                 self.adds += 1
