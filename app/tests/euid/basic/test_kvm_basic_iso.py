@@ -32,7 +32,7 @@ class TestKVMBasicISO(kvm_player.KernelVirtualMachinePlayer):
         cls.set_bootcfg()
         cls.set_dnsmasq()
         cls.set_api()
-        cls.pause(5)
+        cls.pause(cls.wait_setup_teardown)
 
     def test_00(self):
         marker = "euid-%s-%s" % (TestKVMBasicISO.__name__.lower(), self.test_00.__name__)
