@@ -1,5 +1,6 @@
 CHECK=check
 CHECK_EUID=check_euid
+CHECK_EUID_KVM_PLAYER=check_euid_kvm_player
 
 default: help
 
@@ -15,6 +16,11 @@ help:
 	@echo ----------------------
 	@echo Testing:
 	@echo make $(CHECK)
+	@echo
+	@echo Ready for KVM:
+	@echo sudo make $(CHECK_EUID_KVM_PLAYER)
+	@echo
+	@echo KVM - very long:
 	@echo sudo make $(CHECK_EUID)
 	@echo ----------------------
 
@@ -56,6 +62,10 @@ $(CHECK):
 $(CHECK_EUID):
 	test $(shell id -u -r) -eq 0
 	make -C app/tests/ $(CHECK_EUID)
+
+$(CHECK_EUID_KVM_PLAYER):
+	test $(shell id -u -r) -eq 0
+	make -C app/tests/ $(CHECK_EUID_KVM_PLAYER)
 
 submodules:
 	git submodule init
