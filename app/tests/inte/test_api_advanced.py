@@ -1,14 +1,13 @@
 import httplib
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
 import unittest
 import urllib2
 from multiprocessing import Process
-
-from sqlalchemy.orm import sessionmaker
 
 import model
 from app import api
@@ -20,11 +19,11 @@ class TestAPIAdvanced(unittest.TestCase):
     p_bootcfg = Process
     p_api = Process
 
-    func_path = "%s" % os.path.dirname(__file__)
-    dbs_path = "%s/dbs" % func_path
-    tests_path = "%s" % os.path.split(func_path)[0]
-    app_path = os.path.split(tests_path)[0]
-    project_path = os.path.split(app_path)[0]
+    inte_path = "%s" % os.path.dirname(__file__)
+    dbs_path = "%s/dbs" % inte_path
+    tests_path = "%s" % os.path.dirname(inte_path)
+    app_path = os.path.dirname(tests_path)
+    project_path = os.path.dirname(app_path)
     bootcfg_path = "%s/bootcfg" % project_path
     assets_path = "%s/bootcfg/assets" % project_path
 
@@ -62,14 +61,24 @@ class TestAPIAdvanced(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        time.sleep(0.1)
         db_path = "%s/%s.sqlite" % (cls.dbs_path, TestAPIAdvanced.__name__.lower())
         db = "sqlite:///%s" % db_path
+        journal = "%s/ignition_journal" % cls.inte_path
         try:
             os.remove(db_path)
         except OSError:
             pass
+
+        try:
+            shutil.rmtree(journal)
+        except OSError:
+            pass
+
+        assert os.path.isdir(journal) is False
         engine = api.create_engine(db)
         model.Base.metadata.create_all(engine)
+        assert os.path.isfile(db_path)
         api.engine = engine
 
         subprocess.check_output(["make"], cwd=cls.project_path)
@@ -94,6 +103,7 @@ class TestAPIAdvanced(unittest.TestCase):
         cls.p_bootcfg.join(timeout=5)
         cls.p_api.terminate()
         cls.p_api.join(timeout=5)
+        time.sleep(0.1)
 
     @staticmethod
     def bootcfg_running(bootcfg_endpoint, p_bootcfg):
