@@ -55,9 +55,6 @@ func Test1ParseCommandLine(t *testing.T) {
 	if bi.Mac != "52:54:00:90:c3:9f" {
 		t.Error(bi.Mac)
 	}
-	if bi.RandomId != "3492b948-cec6-4d6f-b008-cc98bf03c9d3" {
-		t.Error(bi.RandomId)
-	}
 }
 
 func Test2ParseCommandLine(t *testing.T) {
@@ -81,9 +78,6 @@ func Test2ParseCommandLine(t *testing.T) {
 	}
 	if bi.Mac != "52:54:00:71:83:ea" {
 		t.Error(bi.Mac)
-	}
-	if bi.RandomId != "3492b948-cec6-4d6f-b008-cc98bf03c9d3" {
-		t.Error(bi.RandomId)
 	}
 }
 
