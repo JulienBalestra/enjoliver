@@ -21,11 +21,11 @@ class TestKVMDiscoveryScheduler(kvm_player.KernelVirtualMachinePlayer):
     @classmethod
     def setUpClass(cls):
         cls.check_requirements()
+        cls.set_rack0()
         cls.set_api()
         cls.set_bootcfg()
         cls.set_dnsmasq()
         cls.set_lldp()
-        cls.set_rack0()
         cls.pause(5)
 
 
@@ -34,7 +34,7 @@ class TestKVMDiscoveryScheduler(kvm_player.KernelVirtualMachinePlayer):
                  "TestKVMDiscovery need privilege")
 class TestKVMDiscoveryScheduler0(TestKVMDiscoveryScheduler):
     def test_00(self):
-        self.assertIsNone(self.fetch_discovery_interfaces()["interfaces"])
+        self.assertEqual(self.fetch_discovery_interfaces(), [])
         nb_node = 3
         marker = "euid-%s-%s" % (TestKVMDiscoveryScheduler.__name__.lower(), self.test_00.__name__)
         os.environ["BOOTCFG_IP"] = "172.20.0.1"
@@ -139,7 +139,7 @@ class TestKVMDiscoveryScheduler0(TestKVMDiscoveryScheduler):
                  "TestKVMDiscovery need privilege")
 class TestKVMDiscoveryScheduler1(TestKVMDiscoveryScheduler):
     def test_01(self):
-        self.assertIsNone(self.fetch_discovery_interfaces()["interfaces"])
+        self.assertEqual(self.fetch_discovery_interfaces(), [])
         nb_node = 3
         marker = "euid-%s-%s" % (TestKVMDiscoveryScheduler.__name__.lower(), self.test_01.__name__)
         os.environ["BOOTCFG_IP"] = "172.20.0.1"
@@ -241,7 +241,7 @@ class TestKVMDiscoveryScheduler1(TestKVMDiscoveryScheduler):
                  "TestKVMDiscovery need privilege")
 class TestKVMDiscoveryScheduler2(TestKVMDiscoveryScheduler):
     def test_02(self):
-        self.assertIsNone(self.fetch_discovery_interfaces()["interfaces"])
+        self.assertEqual(self.fetch_discovery_interfaces(), [])
         nb_node = 3
         marker = "euid-%s-%s" % (TestKVMDiscoveryScheduler.__name__.lower(), self.test_02.__name__)
         os.environ["BOOTCFG_IP"] = "172.20.0.1"
@@ -337,7 +337,7 @@ class TestKVMDiscoveryScheduler2(TestKVMDiscoveryScheduler):
                  "TestKVMDiscovery need privilege")
 class TestKVMDiscoveryScheduler3(TestKVMDiscoveryScheduler):
     def test_03(self):
-        self.assertIsNone(self.fetch_discovery_interfaces()["interfaces"])
+        self.assertEqual(self.fetch_discovery_interfaces(), [])
         nb_node = 3
         marker = "euid-%s-%s" % (TestKVMDiscoveryScheduler.__name__.lower(), self.test_03.__name__)
         nodes = ["%s-%d" % (marker, i) for i in xrange(nb_node)]
@@ -430,7 +430,7 @@ class TestKVMDiscoveryScheduler3(TestKVMDiscoveryScheduler):
                  "TestKVMDiscovery need privilege")
 class TestKVMDiscoveryScheduler4(TestKVMDiscoveryScheduler):
     def test_04(self):
-        self.assertIsNone(self.fetch_discovery_interfaces()["interfaces"])
+        self.assertEqual(self.fetch_discovery_interfaces(), [])
         nb_node = 4
         marker = "euid-%s-%s" % (TestKVMDiscoveryScheduler.__name__.lower(), self.test_04.__name__)
         nodes = ["%s-%d" % (marker, i) for i in xrange(nb_node)]
@@ -530,7 +530,7 @@ class TestKVMDiscoveryScheduler4(TestKVMDiscoveryScheduler):
                  "TestKVMDiscovery need privilege")
 class TestKVMDiscoveryScheduler5(TestKVMDiscoveryScheduler):
     def test_05(self):
-        self.assertIsNone(self.fetch_discovery_interfaces()["interfaces"])
+        self.assertEqual(self.fetch_discovery_interfaces(), [])
         nb_node = 5
         marker = "euid-%s-%s" % (TestKVMDiscoveryScheduler.__name__.lower(), self.test_05.__name__)
         nodes = ["%s-%d" % (marker, i) for i in xrange(nb_node)]
@@ -631,7 +631,7 @@ class TestKVMDiscoveryScheduler5(TestKVMDiscoveryScheduler):
                  "TestKVMDiscovery need privilege")
 class TestKVMDiscoveryScheduler6(TestKVMDiscoveryScheduler):
     def test_06(self):
-        self.assertIsNone(self.fetch_discovery_interfaces()["interfaces"])
+        self.assertEqual(self.fetch_discovery_interfaces(), [])
         nb_node = 5
         marker = "euid-%s-%s" % (TestKVMDiscoveryScheduler.__name__.lower(), self.test_06.__name__)
         nodes = ["%s-%d" % (marker, i) for i in xrange(nb_node)]
