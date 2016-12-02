@@ -1,12 +1,15 @@
+import os
+
 from sqlalchemy.orm import sessionmaker, subqueryload
 
-from model import ChassisPort, Chassis, MachineInterface, Machine, IgnitionJournal, JournalLine
+from model import ChassisPort, Chassis, MachineInterface, Machine
 
 
 class Fetch(object):
-    def __init__(self, engine):
+    def __init__(self, engine, ignition_journal):
         sm = sessionmaker(bind=engine)
         self.session = sm()
+        self.ignition_journal = ignition_journal
 
     def _get_chassis_name(self, machine_interface):
         chassis_port = self.session.query(ChassisPort).filter(
@@ -36,11 +39,24 @@ class Fetch(object):
                 "chassis_name": self._get_chassis_name(i)
             } for i in self.session.query(MachineInterface)]
 
-    def get_ignition_journal(self, uuid):
-        for j in self.session.query(IgnitionJournal).filter(
-                        IgnitionJournal.machine_uuid == uuid):
-            return [l.line for l in j.lines]
-        return []
+    def get_ignition_journal(self, uuid, boot_id=None):
+        lines = []
+        if len(uuid) != 36:
+            return lines
+        uuid_directory = "%s/%s" % (self.ignition_journal, uuid)
+
+        if boot_id is None and os.path.isdir(uuid_directory):
+            boot_id_list = []
+            for d in os.listdir(uuid_directory):
+                boot_id_list.append((d, os.stat("%s/%s" % (uuid_directory, d)).st_ctime))
+
+            boot_id_list.sort(key=lambda uplet: uplet[1])
+
+            with open("%s/%s" % (uuid_directory, boot_id_list[0][0]), "r") as log:
+                lines = log.readlines()
+            return lines
+
+        return lines
 
     def get_all(self):
         all_data = []
@@ -69,9 +85,10 @@ class Fetch(object):
 
 
 class Inject(object):
-    def __init__(self, engine, discovery):
+    def __init__(self, engine, ignition_journal, discovery):
         sm = sessionmaker(bind=engine)
         self.session = sm()
+        self.ignition_journal = ignition_journal
         self.adds = 0
 
         self.discovery = discovery
@@ -166,34 +183,16 @@ class Inject(object):
         return chassis_port_list
 
     def _ignition_journal(self):
-        lines = []
         boot_id = self.discovery["boot-info"]["random-id"]
         uuid = self.discovery["boot-info"]["uuid"]
         if self.discovery["ignition-journal"] is None:
             return
 
-        if self.session.query(IgnitionJournal).filter(
-                                IgnitionJournal.boot_id == boot_id and
-                                IgnitionJournal.machine_uuid == uuid).first():
-            return
+        if os.path.isdir("%s/%s" % (self.ignition_journal, uuid)) is False:
+            os.makedirs("%s/%s" % (self.ignition_journal, uuid))
 
-        ign = IgnitionJournal(
-            machine_uuid=self.machine.uuid,
-            boot_id=boot_id
-        )
-        self.session.add(ign)
-        self.session.flush([ign])
-
-        self.adds += 1
-        for line in self.discovery["ignition-journal"]:
-            lines.append(
-                JournalLine(
-                    line=line,
-                    ignition_journal=ign.id
-                )
-            )
-        self.session.add_all(lines)
-        self.adds += len(lines)
+        with open("%s/%s/%s" % (self.ignition_journal, uuid, boot_id), "w") as f:
+            f.write("\n".join(self.discovery["ignition-journal"]))
 
     def commit_and_close(self):
         try:

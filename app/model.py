@@ -19,29 +19,6 @@ class Machine(Base):
         return "<%s: %s>" % (Machine.__name__, self.uuid)
 
 
-class IgnitionJournal(Base):
-    __tablename__ = 'ignition-journal'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    boot_id = Column(String, nullable=True)
-
-    lines = relationship("JournalLine")
-
-    created_date = Column(DateTime, default=datetime.datetime.utcnow)
-    machine_uuid = Column(Integer, ForeignKey('machine.uuid'))
-
-    def __repr__(self):
-        return "<%s: %s %s>" % (IgnitionJournal.__name__, self.id, self.created_date)
-
-
-class JournalLine(Base):
-    __tablename__ = 'journal-line'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    ignition_journal = Column(Integer, ForeignKey('ignition-journal.id'))
-    line = Column(String)
-
-
 class MachineInterface(Base):
     __tablename__ = 'machine-interface'
 
