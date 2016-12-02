@@ -1,6 +1,7 @@
 import httplib
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -19,11 +20,11 @@ from common import posts
 class TestAPI(unittest.TestCase):
     p_bootcfg = Process
 
-    func_path = "%s" % os.path.dirname(__file__)
-    dbs_path = "%s/dbs" % func_path
-    tests_path = "%s" % os.path.split(func_path)[0]
-    app_path = os.path.split(tests_path)[0]
-    project_path = os.path.split(app_path)[0]
+    int_path = "%s" % os.path.dirname(__file__)
+    dbs_path = "%s/dbs" % int_path
+    tests_path = "%s" % os.path.dirname(int_path)
+    app_path = os.path.dirname(tests_path)
+    project_path = os.path.dirname(app_path)
     bootcfg_path = "%s/bootcfg" % project_path
     assets_path = "%s/bootcfg/assets" % project_path
 
@@ -51,7 +52,9 @@ class TestAPI(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        time.sleep(0.1)
         db_path = "%s/%s.sqlite" % (cls.dbs_path, TestAPI.__name__.lower())
+        journal = "%s/ignition_journal" % cls.int_path
         db = "sqlite:///%s" % db_path
         try:
             os.remove(db_path)
@@ -61,9 +64,18 @@ class TestAPI(unittest.TestCase):
         model.Base.metadata.create_all(engine)
         api.engine = engine
         api.cache.clear()
+
+        assert os.path.isfile(db_path)
+
+        try:
+            shutil.rmtree(journal)
+        except OSError:
+            pass
+
+        assert os.path.isdir(journal) is False
+        api.ignition_journal = journal
         cls.app = api.app.test_client()
         cls.app.testing = True
-        # cls.app.application.cache.clear()
 
         subprocess.check_output(["make"], cwd=cls.project_path)
         if os.path.isfile("%s/bootcfg_dir/bootcfg" % TestAPI.tests_path) is False:
@@ -81,6 +93,7 @@ class TestAPI(unittest.TestCase):
         sys.stdout.flush()
         cls.p_bootcfg.terminate()
         cls.p_bootcfg.join(timeout=5)
+        time.sleep(0.1)
 
     @staticmethod
     def bootcfg_running(bootcfg_endpoint, p_bootcfg):
