@@ -24,7 +24,7 @@ class TestKVMDiscoveryClient(kvm_player.KernelVirtualMachinePlayer):
         cls.set_api()
         cls.set_bootcfg()
         cls.set_dnsmasq()
-        cls.pause(3)
+        cls.pause(cls.wait_setup_teardown)
 
 
 # @unittest.skip("just skip")
@@ -179,7 +179,7 @@ class TestKVMDiscoveryClient02(TestKVMDiscoveryClient):
         cls.set_bootcfg()
         cls.set_dnsmasq()
         cls.set_lldp()
-        cls.pause(5)
+        cls.pause(cls.wait_setup_teardown)
 
     def test_02(self):
         marker = "euid-%s-%s" % (TestKVMDiscoveryClient.__name__.lower(), self.test_02.__name__)
@@ -253,7 +253,7 @@ class TestKVMDiscoveryClient03(TestKVMDiscoveryClient):
         cls.set_bootcfg()
         cls.set_dnsmasq()
         cls.set_lldp()
-        cls.pause(3)
+        cls.pause(cls.wait_setup_teardown)
 
     def test_03(self):
         nb_node = 3

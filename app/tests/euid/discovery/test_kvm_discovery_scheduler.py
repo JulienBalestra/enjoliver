@@ -26,7 +26,7 @@ class TestKVMDiscoveryScheduler(kvm_player.KernelVirtualMachinePlayer):
         cls.set_bootcfg()
         cls.set_dnsmasq()
         cls.set_lldp()
-        cls.pause(5)
+        cls.pause(cls.wait_setup_teardown)
 
 
 # @unittest.skip("skip")

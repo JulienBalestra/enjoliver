@@ -82,7 +82,7 @@ class TestBootConfigCommon(TestCase):
 
     @classmethod
     def setUpClass(cls):
-
+        time.sleep(0.1)
         cls.clean_sandbox()
 
         subprocess.check_output(["make"], cwd=cls.project_path)
@@ -103,6 +103,7 @@ class TestBootConfigCommon(TestCase):
         cls.p_bootcfg.terminate()
         cls.p_bootcfg.join(timeout=5)
         cls.clean_sandbox()
+        time.sleep(0.1)
 
     @staticmethod
     def clean_sandbox():
