@@ -9,7 +9,7 @@ import time
 import unittest
 import urllib2
 
-from app import generator, api, model
+from app import generator, api
 
 
 @unittest.skipIf(os.geteuid() != 0,
@@ -60,6 +60,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     dev_null = open("/dev/null", "w")
 
     kvm_sleep_between_node = 3
+    wait_setup_teardown = 3
 
     @staticmethod
     def pause(t=600):
@@ -93,13 +94,22 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     @staticmethod
     def process_target_api():
         api.cache.clear()
-        db_path = "%s/euid.sqlite" % (KernelVirtualMachinePlayer.euid_path)
+        db_path = "%s/euid.sqlite" % KernelVirtualMachinePlayer.euid_path
         db = "sqlite:///%s" % db_path
+        journal = "%s/ignition_journal" % KernelVirtualMachinePlayer.euid_path
+
         try:
             os.remove(db_path)
         except OSError:
             pass
+
+        try:
+            os.removedirs(journal)
+        except OSError:
+            pass
+
         os.environ["DB_PATH"] = db
+        os.environ["IGNITION_JOURNAL_DIR"] = journal
         cmd = [
             "%s/env/bin/gunicorn" % KernelVirtualMachinePlayer.project_path,
             "--chdir",
@@ -264,7 +274,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             if p.is_alive():
                 os.write(1, "\n\rTERM -> %s %s\n\r" % (p.pid, p.name))
                 p.terminate()
-                p.join(timeout=4)
+                p.join(timeout=cls.wait_setup_teardown)
                 os.write(1, "\rEND -> %s %s\n\r" % (p.exitcode, p.name))
 
         subprocess.call([
@@ -272,7 +282,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "--local-config=%s" % KernelVirtualMachinePlayer.tests_path,
             "gc",
             "--grace-period=0s"])
-        cls.pause(5)
+        cls.pause(cls.wait_setup_teardown)
         cls.write_ending(cls.__name__)
 
     @staticmethod
