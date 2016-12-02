@@ -2,8 +2,8 @@ import json
 import os
 import unittest
 
-import model
 from app import api
+from app import model
 from common import posts
 
 

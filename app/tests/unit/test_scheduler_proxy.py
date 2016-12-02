@@ -3,8 +3,6 @@ import os
 import subprocess
 import unittest
 
-import time
-
 from app import scheduler
 
 
