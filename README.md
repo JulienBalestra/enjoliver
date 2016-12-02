@@ -32,18 +32,7 @@
 
 ## Quick start
 
-    make
-    ----------------------
-    Setup:
-    make submodules
-    sudo make acis
-    make assets
-    make validate
-    ----------------------
-    Testing:
-    make check
-    sudo make check_euid
-    ----------------------   
+    make   
 
 **If testing:**
 
@@ -66,7 +55,7 @@
 
 * Keep SSH config (KeyChecking)
 
-* make assets relink twice
+* make assets relink twice -> because of make re 
 
 * Avoid reset -q after lldp exit
 
@@ -74,17 +63,11 @@
     * lldp/aci-base
     * lldp/aci-debian
 
-
-* Store the POST discovery data inside a DB
-    * Etcd with ODM
-    * Real db cluster for Documents
-
-
 * Keep and history of each POST discovery
     * Real db cluster for Documents (capped)
 
 * Store the scheduling results in DB
-    * Real db cluster for Documents
+    
 
 #### rkt stage for KVM-QEMU
 
