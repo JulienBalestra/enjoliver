@@ -16,6 +16,7 @@ except ImportError:
 class TestKVMK8sBasic(kvm_player.KernelVirtualMachinePlayer):
     @classmethod
     def setUpClass(cls):
+        cls.check_requirements()
         cls.set_rack0()
         cls.set_api()
         cls.set_bootcfg()
@@ -29,7 +30,7 @@ class TestKVMK8sBasic(kvm_player.KernelVirtualMachinePlayer):
 class TestKVMK8SBasic0(TestKVMK8sBasic):
     # @unittest.skip("just skip")
     def test_00(self):
-        self.assertIsNone(self.fetch_discovery_interfaces()["interfaces"])
+        self.assertEqual(self.fetch_discovery_interfaces(), [])
         nb_node = 2
         marker = "euid-%s-%s" % (TestKVMK8sBasic.__name__.lower(), self.test_00.__name__)
         nodes = ["%s-%d" % (marker, i) for i in xrange(nb_node)]
@@ -117,7 +118,7 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
 class TestKVMK8SBasic1(TestKVMK8sBasic):
     # @unittest.skip("just skip")
     def test_01(self):
-        self.assertIsNone(self.fetch_discovery_interfaces()["interfaces"])
+        self.assertEqual(self.fetch_discovery_interfaces(), [])
         nb_node = 3
         marker = "euid-%s-%s" % (TestKVMK8sBasic.__name__.lower(), self.test_01.__name__)
         nodes = ["%s-%d" % (marker, i) for i in xrange(nb_node)]

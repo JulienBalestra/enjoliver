@@ -22,9 +22,9 @@ class TestKVMBasicPXE(kvm_player.KernelVirtualMachinePlayer):
     @classmethod
     def setUpClass(cls):
         cls.check_requirements()
+        cls.set_rack0()
         cls.set_bootcfg()
         cls.set_dnsmasq()
-        cls.set_rack0()
         cls.set_api()
         cls.pause(5)
 

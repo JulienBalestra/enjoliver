@@ -19,12 +19,12 @@ except ImportError:
 class TestKVMDiscoveryClient(kvm_player.KernelVirtualMachinePlayer):
     @classmethod
     def setUpClass(cls):
+        cls.set_rack0()
         cls.check_requirements()
         cls.set_api()
         cls.set_bootcfg()
         cls.set_dnsmasq()
-        cls.set_rack0()
-        cls.pause(5)
+        cls.pause(3)
 
 
 # @unittest.skip("just skip")
@@ -174,11 +174,11 @@ class TestKVMDiscoveryClient02(TestKVMDiscoveryClient):
     @classmethod
     def setUpClass(cls):
         cls.check_requirements()
+        cls.set_rack0()
         cls.set_api()
         cls.set_bootcfg()
         cls.set_dnsmasq()
         cls.set_lldp()
-        cls.set_rack0()
         cls.pause(5)
 
     def test_02(self):
@@ -248,12 +248,12 @@ class TestKVMDiscoveryClient03(TestKVMDiscoveryClient):
     @classmethod
     def setUpClass(cls):
         cls.check_requirements()
+        cls.set_rack0()
         cls.set_api()
         cls.set_bootcfg()
         cls.set_dnsmasq()
         cls.set_lldp()
-        cls.set_rack0()
-        cls.pause(5)
+        cls.pause(3)
 
     def test_03(self):
         nb_node = 3
