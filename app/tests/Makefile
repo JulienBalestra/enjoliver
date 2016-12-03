@@ -25,7 +25,7 @@ PYTHON=$(PROJECT)/$(ENV_NAME)/bin/python
 
 TESTING_RSA=testing.id_rsa
 
-default: $(BOOTCFG) $(RKT) $(PYTHON) $(KKK) $(ISO)
+default: $(BOOTCFG) $(RKT) $(PYTHON) 
 
 bootcfg_assets:
 	@echo Run as USER
@@ -133,7 +133,7 @@ check_euid_basic: $(PYTHON)
 check_euid_basic_iso: $(PYTHON) $(ISO)
 	KVM_ISO=run PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/basic/test_kvm_basic_iso.py
 
-check_euid_basic_pxe: $(PYTHON)
+check_euid_basic_pxe: $(PYTHON) 
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/basic/test_kvm_basic_pxe.py
 
 check_euid_kvm_player: $(PYTHON)
