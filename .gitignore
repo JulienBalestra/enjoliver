@@ -50,3 +50,4 @@ bootcfg/assets/setup-network-environment/1.0.1/
 /app/tests/unit/ignition_journal/
 /app/tests/euid/ignition_journal/
 /app/tests/inte/ignition_journal/
+*.tar.gz
