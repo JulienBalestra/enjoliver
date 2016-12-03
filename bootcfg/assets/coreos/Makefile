@@ -21,17 +21,17 @@ $(VERSION):
 	mkdir -pv $(VERSION)
 
 $(KEY): $(VERSION)
-	curl -f https://coreos.com/security/image-signing-key/$(ASC) -o $(KEY)
+	curl -Lf https://coreos.com/security/image-signing-key/$(ASC) -o $(KEY)
 	$(GPG) --logger-fd 1 --import < $(KEY)
 
 $(KERNEL): $(KEY) $(VERSION)
-	curl -f $(CHANNEL)/$(KERNEL) -o $(KERNEL)
-	curl -f $(CHANNEL)/$(KERNEL).sig -o $(KERNEL).sig
+	curl -Lf $(CHANNEL)/$(KERNEL) -o $(KERNEL)
+	curl -Lf $(CHANNEL)/$(KERNEL).sig -o $(KERNEL).sig
 	$(GPG) --logger-fd 1 --verify $(KERNEL).sig
 
 $(INITRD): $(KEY) $(VERSION)
-	curl -f $(CHANNEL)/$(INITRD) -o $(INITRD)
-	curl -f $(CHANNEL)/$(INITRD).sig -o $(INITRD).sig
+	curl -Lf $(CHANNEL)/$(INITRD) -o $(INITRD)
+	curl -Lf $(CHANNEL)/$(INITRD).sig -o $(INITRD).sig
 	$(GPG)  --logger-fd 1 --verify $(KERNEL).sig
 
 clean:
