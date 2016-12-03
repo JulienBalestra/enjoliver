@@ -1,8 +1,8 @@
-VERSION=77
+VERSION=v78
 CWD=$(shell pwd)
 
 GITHUB_REPO=https://github.com/blablacar/dgr/releases/download
-TAR=dgr-linux-amd64-$(VERSION).tar.gz
+TAR=dgr-$(VERSION)-linux-amd64.tar.gz
 GITHUB_DGR=$(GITHUB_REPO)/$(VERSION)/$(TAR)
 
 BIN=bin
@@ -17,10 +17,8 @@ RKT_RELEASE=https://github.com/coreos/rkt/releases/download/v1.19.0/rkt-v1.19.0.
 DGR_CONFIG=config.yml
 
 
-default: $(DGR) $(RKT) conf
+default: $(DGR) $(RKT)
 
-conf:
-	$(CWD)/gen_config.py
 
 $(RKT):
 	mkdir -pv $(RKT_DIR)
@@ -36,7 +34,8 @@ $(DGR):
 	curl -LO $(GITHUB_DGR)
 	mkdir -pv $(BIN)
 	mkdir -pv $(DGR_TARGET)
-	tar -C $(BIN) -xzf $(TAR)
+	tar -C $(BIN) -xzf $(TAR) --strip-components=1
+	$(CWD)/gen_config.py
 
 fclean:
 	$(CWD)/$(RKT) --local-config=$(CWD) image gc --grace-period=0s
