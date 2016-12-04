@@ -113,7 +113,7 @@ systemd:
     - name: etcd2.service
       enable: true
       dropins:
-        - name: 10-standalone.conf
+        - name: 10-cluster.conf
           contents: |
             [Unit]
             After=fetch-metadata.service
@@ -157,6 +157,9 @@ systemd:
 
         [Install]
         WantedBy=multi-user.target
+
+    - name: fleet.service
+      enable: true
 
 
 storage:
