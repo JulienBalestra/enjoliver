@@ -7,7 +7,7 @@ BOOTCFG_RELEASE=https://github.com/coreos/coreos-baremetal/releases/download/v0.
 RKT_DIR=rkt_dir
 RKT_DIR_DATA=$(RKT_DIR)/data
 RKT=$(RKT_DIR)/rkt
-RKT_RELEASE=https://github.com/coreos/rkt/releases/download/v1.17.0/rkt-v1.17.0.tar.gz
+RKT_RELEASE=https://github.com/coreos/rkt/releases/download/v1.19.0/rkt-v1.19.0.tar.gz
 
 
 CHAIN_IP_PORT=172.20.0.1:5000
@@ -25,7 +25,7 @@ PYTHON=$(PROJECT)/$(ENV_NAME)/bin/python
 
 TESTING_RSA=testing.id_rsa
 
-default: $(BOOTCFG) $(RKT) $(PYTHON) 
+default: $(BOOTCFG) $(RKT) $(PYTHON) $(TESTING_RSA)
 
 bootcfg_assets:
 	@echo Run as USER
