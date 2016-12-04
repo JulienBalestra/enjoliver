@@ -21,7 +21,7 @@ systemd:
     - name: etcd2.service
       enable: true
       dropins:
-        - name: 10-standalone.conf
+        - name: 10-cluster.conf
           contents: |
             [Unit]
             After=fetch-metadata.service
@@ -31,6 +31,10 @@ systemd:
             EnvironmentFile=/etc/metadata.env
             Environment=ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379,http://0.0.0.0:4001
             Environment=ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380,http://0.0.0.0:7001
+
+    - name: fleet.service
+      enable: true
+
 
 storage:
   files:
