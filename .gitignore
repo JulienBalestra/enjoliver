@@ -3,7 +3,7 @@ coreos_production_pxe_image.cpio.gz.sig
 coreos_production_pxe.vmlinuz.sig
 CoreOS_Image_Signing_Key.asc
 coreos_production_pxe.vmlinuz
-/.idea
+*.idea
 /bootcfg/assets/setup-network-environment/1.0.1/setup-network-environment
 /bootcfg/assets/setup-network-environment/1.0.1/setup-network-environment.sha512
 serve
@@ -12,14 +12,13 @@ serve
 /app/tests/test_bootcfg/misc/network-environment
 /app/tests/test_bootcfg/profiles/*.json
 /app/tests/test_bootcfg/groups/*.json
-/*.iml
+*.iml
 /app/tests/rkt_dir/
 /app/tests/bootcfg_dir/
 *.pyc
 /env/
 /app/tests/ipxe.iso
 /app/tests/undionly.kkkpxe
-/discoveryC/discoveryC.iml
 /discoveryC/discoveryC
 /bootcfg/assets/discoveryC/discoveryC
 /dgr/dgr-linux-amd64-77.tar.gz
