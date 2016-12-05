@@ -1,4 +1,6 @@
 CHECK=check
+CHECK_ASSETS=check_assets
+CHECK_FAST=check_fast
 CHECK_EUID=check_euid
 CHECK_EUID_KVM_PLAYER=check_euid_kvm_player
 
@@ -16,11 +18,17 @@ help:
 	@echo ----------------------
 	@echo Testing:
 	@echo make $(CHECK)
+	@echo 
+	@echo Skip: $(CHECK_ASSETS)
+	@echo make $(CHECK_FAST)
+	@echo
+	@echo Only: $(CHECK_ASSETS)
+	@echo make  $(CHECK_ASSETS)
 	@echo
 	@echo Ready for KVM:
 	@echo sudo make $(CHECK_EUID_KVM_PLAYER)
 	@echo
-	@echo KVM - very long:
+	@echo KVM - long:
 	@echo sudo make $(CHECK_EUID)
 	@echo ----------------------
 
@@ -58,6 +66,13 @@ clean:
 $(CHECK):
 	make -C discoveryC/ $(CHECK)
 	make -C app/tests/ $(CHECK)
+
+$(CHECK_FAST):
+	make -C discoveryC/ $(CHECK)
+	make -C app/tests/ $(CHECK_FAST)
+
+$(CHECK_ASSETS):
+	make -C app/tests/ $(CHECK_ASSETS)
 
 $(CHECK_EUID):
 	test $(shell id -u -r) -eq 0
