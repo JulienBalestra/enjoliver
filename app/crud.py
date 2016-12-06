@@ -1,5 +1,6 @@
 import os
 
+import datetime
 from sqlalchemy.orm import sessionmaker, subqueryload
 
 from model import ChassisPort, Chassis, MachineInterface, Machine
@@ -112,6 +113,8 @@ class Inject(object):
             raise TypeError("uuid: %s in not len(36)" % uuid)
         machine = self.session.query(Machine).filter(Machine.uuid == uuid).first()
         if machine:
+            machine.update_date = datetime.datetime.utcnow()
+            self.session.add(machine)
             return machine
         machine = Machine(uuid=uuid)
         self.session.add(machine)

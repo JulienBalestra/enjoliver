@@ -16,6 +16,7 @@ class Machine(Base):
 
     interfaces = relationship("MachineInterface", lazy="joined")
     created_date = Column(DateTime, default=datetime.datetime.utcnow)
+    update_date = Column(DateTime, default=None)
 
     def __repr__(self):
         return "<%s: %s>" % (Machine.__name__, self.uuid)
