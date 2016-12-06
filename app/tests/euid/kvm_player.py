@@ -386,7 +386,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     time.sleep(10)
         self.assertEqual(len(ips), 0)
 
-    def etcd_member_len(self, ip, members, tries=30):
+    def etcd_member_len(self, ip, members_nb, tries=30):
         result = {}
         for t in xrange(tries):
             try:
@@ -397,14 +397,14 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 result = json.loads(content)
                 os.write(1, "\r-> RESULT %s %s\n\r" % (endpoint, result))
                 sys.stdout.flush()
-                if len(result["members"]) == members:
+                if len(result["members"]) == members_nb:
                     break
 
             except urllib2.URLError:
                 os.write(2, "\r-> NOT READY %s for %s\n\r" % (ip, self.etcd_member_len.__name__))
                 time.sleep(10)
 
-        self.assertEqual(len(result["members"]), members)
+        self.assertEqual(len(result["members"]), members_nb)
 
     def etcd_member_k8s_minions(self, ip, nodes_nb, tries=60):
         result = {}
