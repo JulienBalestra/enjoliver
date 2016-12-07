@@ -406,7 +406,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
         self.assertEqual(len(result["members"]), members_nb)
 
-    def etcd_member_k8s_minions(self, ip, nodes_nb, tries=60):
+    def etcd_member_k8s_minions(self, ip, nodes_nb, tries=120):
         result = {}
         for t in xrange(tries):
             try:
@@ -420,12 +420,13 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     break
 
             except urllib2.URLError:
-                os.write(2, "\r-> NOT READY %s %s\n\r" % (ip, self.etcd_member_k8s_minions.__name__))
-                time.sleep(10)
+                pass
+            os.write(2, "\r-> NOT READY %s %s\n\r" % (ip, self.etcd_member_k8s_minions.__name__))
+            time.sleep(10)
 
         self.assertEqual(len(result["node"]["nodes"]), nodes_nb)
 
-    def k8s_api_health(self, ips, tries=90):
+    def k8s_api_health(self, ips, tries=120):
         for t in xrange(tries):
             for i, ip in enumerate(ips):
                 try:
@@ -445,7 +446,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         self.assertEqual(len(ips), 0)
 
     @staticmethod
-    def host_total_memory_mib():
+    def get_optimized_memory():
         mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
         mem_gib = mem_bytes / (1024. ** 3)
-        return mem_gib * 1024
+        return mem_gib * 1024 if mem_gib > 3 else 3 * 1024
