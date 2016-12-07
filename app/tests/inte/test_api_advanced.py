@@ -341,12 +341,6 @@ class TestAPIAdvanced(unittest.TestCase):
         self.assertEqual(39, len(response))
 
     def test_06_discovery_01(self):
-        # TODO
-        # print "===> ",
-        # ret = subprocess.check_output(
-        #     ["%s/assets/discoveryC/serve/discoveryC" % self.bootcfg_path],
-        #     env={"DISCOVERY_ADDRESS": "%s/discovery" % self.api_endpoint})
-        # print "===> ", ret
         req = urllib2.Request("%s/discovery" % self.api_endpoint, json.dumps(posts.M02),
                               {'Content-Type': 'application/json'})
         f = urllib2.urlopen(req)
@@ -356,10 +350,6 @@ class TestAPIAdvanced(unittest.TestCase):
         self.assertEqual(json.loads(response), {u'total_elt': 2, u'new': True})
 
     def test_06_discovery_02(self):
-        # TODO
-        # subprocess.check_output(
-        #     ["%s/assets/discoveryC/serve/discoveryC" % self.bootcfg_path],
-        #     env={"DISCOVERY_ADDRESS": "%s/discovery" % self.api_endpoint})
         req = urllib2.Request("%s/discovery" % self.api_endpoint, json.dumps(posts.M03),
                               {'Content-Type': 'application/json'})
         f = urllib2.urlopen(req)
@@ -367,3 +357,15 @@ class TestAPIAdvanced(unittest.TestCase):
         response = f.read()
         f.close()
         self.assertEqual(json.loads(response), {u'total_elt': 3, u'new': True})
+        all_machines = urllib2.urlopen("%s/discovery" % self.api_endpoint)
+        content = json.loads(all_machines.read())
+        all_machines.close()
+
+        req = urllib2.Request("%s/discovery" % self.api_endpoint, json.dumps(posts.M01),
+                              {'Content-Type': 'application/json'})
+        f = urllib2.urlopen(req)
+        self.assertEqual(200, f.code)
+        response = f.read()
+        f.close()
+        self.assertEqual(json.loads(response), {u'total_elt': 3, u'new': False})
+        self.assertEqual(posts.M01["boot-info"]["uuid"], content[0]["boot-info"]["uuid"])
