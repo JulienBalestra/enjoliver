@@ -1,6 +1,6 @@
+import datetime
 import os
 
-import datetime
 from sqlalchemy.orm import sessionmaker, subqueryload
 
 from model import ChassisPort, Chassis, MachineInterface, Machine
@@ -62,7 +62,8 @@ class Fetch(object):
 
     def get_all(self):
         all_data = []
-        for machine in self.session.query(Machine).options(subqueryload(Machine.interfaces)):
+        for machine in self.session.query(Machine).order_by(Machine.updated_date.desc()).options(
+                subqueryload(Machine.interfaces)):
             m = dict()
             m["interfaces"] = [
                 {
@@ -71,7 +72,8 @@ class Fetch(object):
                     "netmask": k.netmask,
                     "ipv4": k.ipv4,
                     "cidrv4": k.cidrv4,
-                    "as_boot": k.as_boot} for k in machine.interfaces]
+                    "as_boot": k.as_boot
+                } for k in machine.interfaces]
             interface_boot = self.session.query(MachineInterface).filter(
                 MachineInterface.machine_id == machine.id and
                 MachineInterface.as_boot is True).first()
@@ -92,6 +94,7 @@ class Inject(object):
         self.session = sm()
         self.ignition_journal = ignition_journal
         self.adds = 0
+        self.updates = 0
 
         self.discovery = discovery
 
@@ -113,8 +116,9 @@ class Inject(object):
             raise TypeError("uuid: %s in not len(36)" % uuid)
         machine = self.session.query(Machine).filter(Machine.uuid == uuid).first()
         if machine:
-            machine.update_date = datetime.datetime.utcnow()
+            machine.updated_date = datetime.datetime.utcnow()
             self.session.add(machine)
+            self.updates += 1
             return machine
         machine = Machine(uuid=uuid)
         self.session.add(machine)
@@ -201,12 +205,12 @@ class Inject(object):
 
     def commit_and_close(self):
         try:
-            if self.adds != 0:
+            if self.adds != 0 or self.updates != 0:
                 try:
                     self.session.commit()
 
                 except Exception:
-                    self.adds = 0
+                    self.adds, self.updates = 0, 0
                     self.session.rollback()
                     raise
         finally:
