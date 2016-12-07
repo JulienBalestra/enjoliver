@@ -20,7 +20,7 @@ application.config["IGNITION_JOURNAL_DIR"] = os.getenv(
     "IGNITION_JOURNAL_DIR", '%s/ignition_journal' % os.path.dirname(os.path.abspath(__file__)))
 
 engine = None
-ignition_journal = None
+ignition_journal = application.config["IGNITION_JOURNAL_DIR"]
 
 if __name__ == '__main__' or (os.getenv("SERVER_SOFTWARE") is not None and "gunicorn" in os.getenv("SERVER_SOFTWARE")):
     engine = create_engine(application.config["DB_PATH"])
