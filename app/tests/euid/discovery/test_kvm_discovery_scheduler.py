@@ -95,34 +95,11 @@ class TestKVMDiscoveryScheduler0(TestKVMDiscoveryScheduler):
                 self.virsh(start), os.write(1, "\r")
                 time.sleep(self.kvm_sleep_between_node)
             os.write(2, "\r-> start reboot asked\n\r")
+
             time.sleep(nb_node * self.kvm_sleep_between_node)
 
-            ips = sch.ip_list
-
-            one_etcd = False
-            for i in xrange(60):
-                for ip in ips:
-                    try:
-                        endpoint = "http://%s:2379/health" % ip
-                        request = urllib2.urlopen(endpoint)
-                        response_body = json.loads(request.read())
-                        request.close()
-                        if response_body == {u'health': u'true'}:
-                            # one_etcd = Just One
-                            self.assertFalse(one_etcd)
-                            one_etcd = True
-                            os.write(2, "\r%s %s\n\r" % (endpoint, response_body))
-                            break
-
-                    except urllib2.URLError:
-                        pass
-
-                if one_etcd is True:
-                    break
-
-                time.sleep(self.kvm_sleep_between_node)
-
-            self.assertTrue(one_etcd)
+            self.etcd_endpoint_health(sch.ip_list)
+            self.etcd_member_len(sch.ip_list[0], sch.etcd_members_nb)
             self.write_ending(marker)
 
         finally:
@@ -177,17 +154,17 @@ class TestKVMDiscoveryScheduler1(TestKVMDiscoveryScheduler):
                 time.sleep(self.kvm_sleep_between_node)  # KVM fail to associate nic
 
             time.sleep(nb_node * self.kvm_sleep_between_node)
-            sch = scheduler.EtcdMemberScheduler(
+            sch_member = scheduler.EtcdMemberScheduler(
                 api_endpoint=self.api_endpoint,
                 bootcfg_path=self.test_bootcfg_path,
                 ignition_member="%s-emember" % marker,
                 bootcfg_prefix="%s-" % marker
             )
             for i in xrange(60):
-                if sch.apply() is True:
+                if sch_member.apply() is True:
                     break
                 time.sleep(self.kvm_sleep_between_node)
-            self.assertTrue(sch.apply())
+            self.assertTrue(sch_member.apply())
 
             os.write(2, "\r-> start reboot nodes\n\r")
             for i in xrange(nb_node):
@@ -199,32 +176,13 @@ class TestKVMDiscoveryScheduler1(TestKVMDiscoveryScheduler):
                 self.virsh(start), os.write(1, "\r")
                 time.sleep(self.kvm_sleep_between_node)
             os.write(2, "\r-> start reboot asked\n\r")
+
             time.sleep(nb_node * self.kvm_sleep_between_node)
 
-            ips = sch.ip_list
-
-            etcd = 0
-            for i in xrange(60):
-                for ip in ips:
-                    try:
-                        endpoint = "http://%s:2379/health" % ip
-                        request = urllib2.urlopen(endpoint)
-                        response_body = json.loads(request.read())
-                        request.close()
-                        if response_body == {u'health': u'true'}:
-                            etcd += 1
-                            os.write(2, "\r%s %s\n\r" % (endpoint, response_body))
-                            if etcd == nb_node:
-                                break
-
-                    except urllib2.URLError:
-                        pass
-
-                if etcd == nb_node:
-                    break
-
-                time.sleep(self.kvm_sleep_between_node)
-            self.assertTrue(etcd == nb_node)
+            self.etcd_endpoint_health(sch_member.ip_list)
+            # regarding the ignition deployment, all etcd are solo even in clustering scheduler
+            for etcd_solo in sch_member.ip_list:
+                self.etcd_member_len(etcd_solo, 1)
             self.write_ending(marker)
 
         finally:
@@ -278,17 +236,17 @@ class TestKVMDiscoveryScheduler2(TestKVMDiscoveryScheduler):
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
                 time.sleep(self.kvm_sleep_between_node)  # KVM fail to associate nic
             time.sleep(nb_node * self.kvm_sleep_between_node)
-            sch = scheduler.EtcdMemberScheduler(
+            sch_member = scheduler.EtcdMemberScheduler(
                 api_endpoint=self.api_endpoint,
                 bootcfg_path=self.test_bootcfg_path,
                 ignition_member="%s-emember" % marker,
                 bootcfg_prefix="%s-" % marker
             )
             for i in xrange(60):
-                if sch.apply() is True:
+                if sch_member.apply() is True:
                     break
                 time.sleep(self.kvm_sleep_between_node)
-            self.assertTrue(sch.apply())
+            self.assertTrue(sch_member.apply())
 
             os.write(2, "\r-> start reboot nodes\n\r")
             for i in xrange(nb_node):
@@ -301,26 +259,10 @@ class TestKVMDiscoveryScheduler2(TestKVMDiscoveryScheduler):
                 time.sleep(self.kvm_sleep_between_node)
             os.write(2, "\r-> start reboot asked\n\r")
 
-            ips_collected = sch.ip_list
             time.sleep(nb_node * self.kvm_sleep_between_node)
-            for i in xrange(60):
-                try:
-                    endpoint = "http://%s:2379/v2/members" % ips_collected[0]
-                    request = urllib2.urlopen(endpoint)
-                    response_body = json.loads(request.read())
-                    request.close()
-                    if len(response_body["members"]) == nb_node:
-                        break
-                except urllib2.URLError:
-                    pass
 
-                time.sleep(self.kvm_sleep_between_node)
-
-            endpoint = "http://%s:2379/v2/members" % ips_collected[0]
-            request = urllib2.urlopen(endpoint)
-            response_body = json.loads(request.read())
-            request.close()
-            self.assertEqual(len(response_body["members"]), nb_node)
+            self.etcd_endpoint_health(sch_member.ip_list)
+            self.etcd_member_len(sch_member.ip_list[0], sch_member.etcd_members_nb)
             self.write_ending(marker)
 
         finally:
@@ -374,7 +316,7 @@ class TestKVMDiscoveryScheduler3(TestKVMDiscoveryScheduler):
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
                 time.sleep(self.kvm_sleep_between_node)  # KVM fail to associate nic
 
-            sch = scheduler.EtcdMemberScheduler(
+            sch_member = scheduler.EtcdMemberScheduler(
                 api_endpoint=self.api_endpoint,
                 bootcfg_path=self.test_bootcfg_path,
                 ignition_member="%s-emember" % marker,
@@ -382,34 +324,18 @@ class TestKVMDiscoveryScheduler3(TestKVMDiscoveryScheduler):
             )
             time.sleep(nb_node * self.kvm_sleep_between_node)
             for i in xrange(60):
-                if sch.apply() is True:
+                if sch_member.apply() is True:
                     break
                 time.sleep(self.kvm_sleep_between_node)
-            self.assertTrue(sch.apply())
+            self.assertTrue(sch_member.apply())
 
             to_start = copy.deepcopy(nodes)
             self.kvm_restart_off_machines(to_start)
-            ips_collected = sch.ip_list
 
             time.sleep(nb_node * self.kvm_sleep_between_node)
-            for i in xrange(60):
-                try:
-                    endpoint = "http://%s:2379/v2/members" % ips_collected[0]
-                    request = urllib2.urlopen(endpoint)
-                    response_body = json.loads(request.read())
-                    request.close()
-                    if len(response_body["members"]) == nb_node:
-                        break
-                except urllib2.URLError:
-                    pass
 
-                time.sleep(self.kvm_sleep_between_node)
-
-            endpoint = "http://%s:2379/v2/members" % ips_collected[0]
-            request = urllib2.urlopen(endpoint)
-            response_body = json.loads(request.read())
-            request.close()
-            self.assertEqual(len(response_body["members"]), nb_node)
+            self.etcd_endpoint_health(sch_member.ip_list)
+            self.etcd_member_len(sch_member.ip_list[0], sch_member.etcd_members_nb)
             self.write_ending(marker)
 
         finally:
@@ -421,9 +347,10 @@ class TestKVMDiscoveryScheduler3(TestKVMDiscoveryScheduler):
                 self.virsh(undefine), os.write(1, "\r")
 
 
-#
-# => Below KVM Instance will auto shutdown and testing suite will reboot them
-#
+"""
+=> Below KVM Instance will auto shutdown and testing suite will reboot them
+"""
+
 
 # @unittest.skip("skip")
 @unittest.skipIf(os.geteuid() != 0,
@@ -496,23 +423,10 @@ class TestKVMDiscoveryScheduler4(TestKVMDiscoveryScheduler):
             to_start = copy.deepcopy(nodes)
             self.kvm_restart_off_machines(to_start)
 
-            ips_collected = sch_member.ip_list
-
-            response_body = {}
             time.sleep(nb_node * self.kvm_sleep_between_node)
-            for i in xrange(60):
-                try:
-                    endpoint = "http://%s:2379/v2/members" % ips_collected[0]
-                    request = urllib2.urlopen(endpoint)
-                    response_body = json.loads(request.read())
-                    request.close()
-                    if len(response_body["members"]) == sch_member.etcd_members_nb:
-                        break
-                except urllib2.URLError:
-                    pass
-                time.sleep(self.kvm_sleep_between_node)
 
-            self.assertEqual(len(response_body["members"]), sch_member.etcd_members_nb)
+            self.etcd_endpoint_health(sch_member.ip_list)
+            self.etcd_member_len(sch_member.ip_list[0], sch_member.etcd_members_nb)
             self.etcd_endpoint_health(sch_proxy.ip_list)
             self.write_ending(marker)
 
@@ -596,24 +510,10 @@ class TestKVMDiscoveryScheduler5(TestKVMDiscoveryScheduler):
             to_start = copy.deepcopy(nodes)
             self.kvm_restart_off_machines(to_start)
 
-            ips_collected = sch_member.ip_list
-
             time.sleep(nb_node * self.kvm_sleep_between_node)
-            response_body = {}
-            for i in xrange(60):
-                try:
-                    endpoint = "http://%s:2379/v2/members" % ips_collected[0]
-                    request = urllib2.urlopen(endpoint)
-                    response_body = json.loads(request.read())
-                    request.close()
-                    if len(response_body["members"]) == sch_member.etcd_members_nb:
-                        break
-                except urllib2.URLError:
-                    pass
 
-                time.sleep(self.kvm_sleep_between_node)
-
-            self.assertEqual(len(response_body["members"]), sch_member.etcd_members_nb)
+            self.etcd_endpoint_health(sch_member.ip_list)
+            self.etcd_member_len(sch_member.ip_list[0], sch_member.etcd_members_nb)
             self.etcd_endpoint_health(sch_proxy.ip_list)
             self.write_ending(marker)
 
@@ -698,24 +598,10 @@ class TestKVMDiscoveryScheduler6(TestKVMDiscoveryScheduler):
             to_start = copy.deepcopy(nodes)
             self.kvm_restart_off_machines(to_start)
 
-            ips_collected = sch_member.ip_list
-
             time.sleep(nb_node * self.kvm_sleep_between_node)
-            response_body = {}
-            for i in xrange(60):
-                try:
-                    endpoint = "http://%s:2379/v2/members" % ips_collected[0]
-                    request = urllib2.urlopen(endpoint)
-                    response_body = json.loads(request.read())
-                    request.close()
-                    if len(response_body["members"]) == sch_member.etcd_members_nb:
-                        break
-                except urllib2.URLError:
-                    pass
 
-                time.sleep(self.kvm_sleep_between_node)
-
-            self.assertEqual(len(response_body["members"]), sch_member.etcd_members_nb)
+            self.etcd_endpoint_health(sch_member.ip_list)
+            self.etcd_member_len(sch_member.ip_list[0], sch_member.etcd_members_nb)
             self.etcd_endpoint_health(sch_proxy.ip_list)
             self.write_ending(marker)
 
@@ -729,4 +615,4 @@ class TestKVMDiscoveryScheduler6(TestKVMDiscoveryScheduler):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main(failfast=True)
