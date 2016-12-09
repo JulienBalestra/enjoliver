@@ -16,7 +16,7 @@ aci:
         value: "http://127.0.0.1:8080"
 
       - name: DB_PATH
-        value: "/var/lib/enjoliver/db.sqlite"
+        value: "sqlite:///var/lib/enjoliver/db.sqlite"
 
       - name: IGNITION_JOURNAL_DIR
         value: "/var/lib/enjoliver/ignition-journal"
@@ -25,8 +25,11 @@ aci:
         value: "/var/lib/bootcfg"
 
     mountPoints:
-      - name: bootcfg-path
-        path: /var/lib/bootcfg
+      - name: bootcfg-groups
+        path: /var/lib/bootcfg/groups
+
+      - name: bootcfg-profiles
+        path: /var/lib/bootcfg/profiles
 
       - name: enjoliver-path
         path: /var/lib/enjoliver
