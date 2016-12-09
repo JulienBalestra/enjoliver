@@ -11,9 +11,11 @@ import urllib2
 
 from app import generator, api
 
+virtinstall = subprocess.call(["virt-install", "--version"])
 
-@unittest.skipIf(os.geteuid() != 0,
-                 "TestKVMDiscovery need privilege")
+
+@unittest.skipIf(os.geteuid() != 0 and virtinstall == 0,
+                 "TestKVMDiscovery need privilege and virt-install")
 class KernelVirtualMachinePlayer(unittest.TestCase):
     """
     This class is used by all Kernel Virtual Machine testing suite
