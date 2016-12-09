@@ -1,0 +1,32 @@
+name: static-aci-enjoliver:0
+builder:
+  dependencies:
+    - static-aci-debian:8
+
+  mountPoints:
+    - {from: ../../, to: /opt/source-project}
+
+aci:
+  dependencies:
+    - static-aci-debian:8
+
+  app:
+    environment:
+      - name: BOOTCFG_URI
+        value: "http://127.0.0.1:8080"
+
+      - name: DB_PATH
+        value: "/var/lib/enjoliver/db.sqlite"
+
+      - name: IGNITION_JOURNAL_DIR
+        value: "/var/lib/enjoliver/ignition-journal"
+
+      - name: BOOTCFG_PATH
+        value: "/var/lib/bootcfg"
+
+    mountPoints:
+      - name: bootcfg-path
+        path: /var/lib/bootcfg
+
+      - name: enjoliver-path
+        path: /var/lib/enjoliver
