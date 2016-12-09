@@ -12,14 +12,14 @@ SOURCE_PROJECT=/opt/source-project
 
 
 apt-get update
-apt-get install -y curl python build-essential python-virtualenv python-dev git file openssh-client
+apt-get install -y curl python build-essential python-virtualenv python-dev git file openssh-client tar rsync
 ln -vs /usr/lib/python2.7/dist-packages/virtualenv.py /usr/local/bin/virtualenv
 chmod +x /usr/local/bin/virtualenv
 
 
 ### CoreOS Baremetal ###
 BOOTCFG_VERSION=v0.4.0
-BOOTCFG_DIR=${ROOTFS}/usr/local/bin
+BOOTCFG_DIR=${ROOTFS}/usr/bin
 BOOTCFG_INSTALL=/opt/bootcfg_install
 
 BOOTCFG=${BOOTCFG_DIR}/bootcfg
@@ -65,19 +65,14 @@ go version
 ### Enjoliver setup ###
 
 cd -P ${ENJOLIVER}
-
 useradd enjoliver -d ${ENJOLIVER}
-
 chown -R enjoliver ${ENJOLIVER}
-
 su - enjoliver -c "make submodules"
-
 
 for artifact in lldp/static-aci-lldp-0.aci hyperkube/workspace/hyperkube
 do
     su - enjoliver -c "cp -v ${SOURCE_PROJECT}/${artifact} ${ENJOLIVER}/${artifact}"
 done
-
 
 su - enjoliver -c "make assets"
 make validate
@@ -86,8 +81,6 @@ su - enjoliver -c "make check"
 make validate
 
 make check_clean
-
-ln -sv ${ENJOLIVER}/bootcfg ${ROOTFS}/var/lib
 
 chown -R root: ${ENJOLIVER}
 make validate

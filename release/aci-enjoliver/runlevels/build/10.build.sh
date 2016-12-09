@@ -8,10 +8,11 @@ export LANG=C
 export DEBIAN_FRONTEND=noninteractive
 
 apt-get update
-apt-get install -y python python-pip
+apt-get install -y python python-pip python-dev build-essential
 
 ENJOLIVER=/opt/enjoliver
 
+ln -sv ${ENJOLIVER}/bootcfg /var/lib/bootcfg
 pip install -r ${ENJOLIVER}/requirements.txt
 
 pip freeze

@@ -1,11 +1,11 @@
-# CoreOS as a Service
+# Enjoliver
 
-## Linux checkout
+## Linux checkout and local run
 
 #### Requirements
 
-
 * coreutils
+* file
 * git
 * make
 * curl
@@ -13,7 +13,7 @@
 * python (2.7)
 * virtualenv
 * KVM-QEMU
-* Go
+* Go > 1.3
 * iptables-restore (optional)
 
 
@@ -40,6 +40,13 @@
     sudo make check_euid
 
 
+## Release
+
+    sudo make acis
+    sudo make release
+    ls -lh release/*.aci
+
+
 # TODO
 
 * QEMU-KVM doesn't restart itself when invoking systemctl reboot: stay power off 
@@ -47,6 +54,10 @@
 * Safe reboot with multi factors
     * ignition change
     * GET uuid / mac on API to confirm
+    
+* Use a real disk and add the selector (e.g: &os=installing)
+
+* Way to easily release and run
     
 ####     
     

@@ -39,14 +39,19 @@ $(ENJOLIVER): $(DEBIAN) $(BOOTCFG)
 	$(CWD)/squash_manifest.py
 	tar -C $(RENDER) -cf $(ENJOLIVER) manifest rootfs
 	file $(ENJOLIVER)
+	ls -lh $(CWD)/$(ENJOLIVER)
 	$(RKT) --local-config=$(DGR) fetch --insecure-options=all $(ENJOLIVER)
 
 clean:
+	rm -Rfv $(RENDER) target || true
 	IMAGE=$(CWD)/aci-enjoliver make -C $(DGR) clean
 	$(RKT) --local-config=$(DGR) image gc --grace-period=0s
+	$(RKT) --local-config=$(DGR) gc --grace-period=0s
 
 fclean: clean
 	IMAGE=$(DGR)/aci-$(BASE) make -C $(DGR) clean
 	IMAGE=$(DGR)/aci-$(DEBIAN) make -C $(DGR) clean
 	rm -Rf $(RENDER) || true
 	rm -v $(ENJOLIVER) || true
+
+re: clean default
