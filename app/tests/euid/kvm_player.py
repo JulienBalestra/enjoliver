@@ -11,10 +11,19 @@ import urllib2
 
 from app import generator, api
 
-virtinstall = subprocess.call(["virt-install", "--version"])
+
+def is_virtinstall():
+    with open("/dev/null", "w") as f:
+        virtinstall = 2
+        try:
+            virtinstall = subprocess.call(["virt-install", "--version"],
+                                          stdout=f, stderr=f)
+        except OSError:
+            pass
+    return virtinstall
 
 
-@unittest.skipIf(os.geteuid() != 0 and virtinstall == 0,
+@unittest.skipIf(os.geteuid() != 0 and is_virtinstall() == 0,
                  "TestKVMDiscovery need privilege and virt-install")
 class KernelVirtualMachinePlayer(unittest.TestCase):
     """
