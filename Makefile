@@ -57,7 +57,7 @@ assets:
 	make -C bootcfg/assets/lldp
 	make -C bootcfg/assets/hyperkube
 
-clean:
+clean: check_clean
 	make -C bootcfg/assets/cni fclean
 	make -C bootcfg/assets/coreos fclean
 	make -C bootcfg/assets/discoveryC fclean
@@ -65,6 +65,9 @@ clean:
 	make -C bootcfg/assets/lldp fclean
 	make -C bootcfg/assets/rkt fclean
 	make -C bootcfg/assets/setup-network-environment fclean
+
+check_clean:
+	make -C app/tests/ fclean
 
 $(CHECK):
 	make -C discoveryC/ $(CHECK)
@@ -77,7 +80,7 @@ $(CHECK_FAST):
 $(CHECK_ASSETS):
 	make -C app/tests/ $(CHECK_ASSETS)
 
-$(CHECK_EUID):
+$(CHECK_EUID): validate
 	test $(shell id -u -r) -eq 0
 	make -C app/tests/ $(CHECK_EUID)
 
@@ -92,5 +95,5 @@ submodules:
 validate:
 	@./validate.py
 
-release: acis
+release_aci:
 	make -C release
