@@ -23,8 +23,7 @@ engine = None
 ignition_journal = application.config["IGNITION_JOURNAL_DIR"]
 
 if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "foreign"):
-    app.logger.setLevel("DEBUG")
-    app.logger.debug("Create engine: %s" % application.config["DB_PATH"])
+    print "Create engine: %s" % application.config["DB_PATH"]
     engine = create_engine(application.config["DB_PATH"])
     model.Base.metadata.create_all(engine)
 
