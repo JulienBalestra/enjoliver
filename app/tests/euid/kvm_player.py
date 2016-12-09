@@ -23,7 +23,7 @@ def is_virtinstall():
     return virtinstall
 
 
-@unittest.skipIf(os.geteuid() != 0 and is_virtinstall() == 0,
+@unittest.skipIf(os.geteuid() != 0 and is_virtinstall() != 0,
                  "TestKVMDiscovery need privilege and virt-install")
 class KernelVirtualMachinePlayer(unittest.TestCase):
     """
