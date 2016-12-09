@@ -22,10 +22,11 @@ application.config["IGNITION_JOURNAL_DIR"] = os.getenv(
 engine = None
 ignition_journal = application.config["IGNITION_JOURNAL_DIR"]
 
-if __name__ == '__main__' or (os.getenv("SERVER_SOFTWARE") is not None and "gunicorn" in os.getenv("SERVER_SOFTWARE")):
+if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "foreign"):
+    app.logger.setLevel("DEBUG")
+    app.logger.debug("Create engine: %s" % application.config["DB_PATH"])
     engine = create_engine(application.config["DB_PATH"])
     model.Base.metadata.create_all(engine)
-    ignition_journal = application.config["IGNITION_JOURNAL_DIR"]
 
 # application.config["FS_CACHE"] = os.getenv(
 #     "FS_CACHE", "/tmp")
