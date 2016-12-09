@@ -5,7 +5,7 @@ import unittest
 
 class TestValidateBootcfgAssets(unittest.TestCase):
     cwd = os.path.dirname(os.path.abspath(__file__))
-    bootcfg = os.getenv("BOOTCFG_PATH", "%s/bootcfg" % cwd)
+    bootcfg = os.getenv("CHECK_BOOTCFG_PATH", "%s/bootcfg" % cwd)
     assets = "%s/assets" % bootcfg
 
     def test_cni(self):
