@@ -14,7 +14,7 @@ application.config["BOOTCFG_URI"] = os.getenv(
     "BOOTCFG_URI", "http://127.0.0.1:8080")
 
 application.config["DB_PATH"] = os.getenv(
-    "DB_PATH", 'sqlite:///%s/db.sqlite' % os.path.dirname(os.path.abspath(__file__)))
+    "DB_PATH", 'sqlite:///%s/enjoliver.sqlite' % os.path.dirname(os.path.abspath(__file__)))
 
 application.config["IGNITION_JOURNAL_DIR"] = os.getenv(
     "IGNITION_JOURNAL_DIR", '%s/ignition_journal' % os.path.dirname(os.path.abspath(__file__)))

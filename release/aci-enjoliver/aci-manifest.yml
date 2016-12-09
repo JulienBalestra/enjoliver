@@ -16,7 +16,7 @@ aci:
         value: "http://127.0.0.1:8080"
 
       - name: DB_PATH
-        value: "sqlite:///var/lib/enjoliver/db.sqlite"
+        value: "sqlite:////var/lib/enjoliver/db.sqlite"
 
       - name: IGNITION_JOURNAL_DIR
         value: "/var/lib/enjoliver/ignition-journal"
