@@ -91,14 +91,14 @@ $(TESTING_RSA):
 	cp -v $(CWD)/$(TESTING_RSA).pub $(CWD)/test_bootcfg/ssh_authorized_keys/
 
 clean:
-	rm -Rfv $(BOOTCFG_DIR)
-	rm -Rfv $(RKT_DIR)
-	rm -v $(ISO)
-	rm -v $(KKK)
-	rm -v $(TESTING_RSA)*
-	rm -Rfv test_bootcfg/ssh_authorized_keys
-	rm -v paths.d/*.json
-	make -C $(PROJECT)/chain clean
+	rm -Rfv $(BOOTCFG_DIR) || true
+	rm -Rfv $(RKT_DIR) || true
+	rm -v $(ISO) || true
+	rm -v $(KKK) || true
+	rm -v $(TESTING_RSA)* || true
+	rm -Rfv test_bootcfg/ssh_authorized_keys || true
+	rm -v paths.d/*.json || true
+	make -C $(PROJECT)/chain clean || true
 
 fclean: clean gci gc
 
