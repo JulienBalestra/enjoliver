@@ -42,4 +42,4 @@ done
 time make hyperkube
 
 ls -lh _output/local/go/bin/
-cp -a _output/local/go/bin/hyperkube /opt/workspace
+cp -a _output/local/go/bin/hyperkube ${ACI_HOME}
