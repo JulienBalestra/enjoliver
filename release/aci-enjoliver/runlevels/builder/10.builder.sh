@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -ex
 . /dgr/bin/functions.sh
 isLevelEnabled "debug" && set -x
 
@@ -19,7 +19,7 @@ chmod +x /usr/local/bin/virtualenv
 
 ### CoreOS Baremetal ###
 BOOTCFG_VERSION=v0.4.0
-BOOTCFG_DIR=${ROOTFS}/opt/bin/
+BOOTCFG_DIR=${ROOTFS}/usr/local/bin
 BOOTCFG_INSTALL=/opt/bootcfg_install
 
 BOOTCFG=${BOOTCFG_DIR}/bootcfg
@@ -35,12 +35,13 @@ ${BOOTCFG} --version
 
 
 ### Git Bundle ###
-cd -P ${SOURCE_PROJECT}
+cd -P ${SOURCE_PROJECT}/bundles
 
 HEAD=$(git rev-parse HEAD)
 BRANCH=$(git symbolic-ref -q HEAD)
 BRANCH=${BRANCH##refs/heads/}
-git bundle create ${HEAD}.bundle ${BRANCH}
+git bundle create ${HEAD}.bundle ${BRANCH} --
+git bundle verify ${HEAD}.bundle
 
 git clone ${HEAD}.bundle ${ENJOLIVER}
 cd -P ${ENJOLIVER}
@@ -84,6 +85,9 @@ make validate
 su - enjoliver -c "make check"
 make validate
 
+make check_clean
+
 ln -sv ${ENJOLIVER}/bootcfg ${ROOTFS}/var/lib
 
 chown -R root: ${ENJOLIVER}
+make validate
