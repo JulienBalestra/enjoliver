@@ -57,3 +57,4 @@ bootcfg/assets/setup-network-environment/1.0.1/
 /discoveryC/dist/
 /release/aci-enjoliver/target/
 /release/enjoliver.render/
+/app/ignition_journal/
