@@ -100,6 +100,12 @@ clean:
 	rm -v paths.d/*.json || true
 	rm -Rfv $(PROJECT)/$(ENV_NAME) || true
 	make -C $(PROJECT)/chain clean || true
+	rm -Rfv euid/ignition_journal || true
+	rm -Rfv euid/euid.sqlite || true
+	rm -Rfv inte/ignition_journal || true
+	rm -Rfv inte/dbs || true
+	rm -Rfv unit/ignition_journal || true
+	rm -Rfv unit/dbs || true
 
 fclean: clean gci gc
 
