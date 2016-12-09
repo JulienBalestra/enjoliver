@@ -50,3 +50,10 @@ bootcfg/assets/setup-network-environment/1.0.1/
 /app/tests/euid/ignition_journal/
 /app/tests/inte/ignition_journal/
 *.tar.gz
+/release/aci-enjoliver/files/opt/bootcfg_install/
+/release/aci-enjoliver/files/opt/bin/
+*.aci
+*.bundle
+/discoveryC/dist/
+/release/aci-enjoliver/target/
+/release/enjoliver.render/

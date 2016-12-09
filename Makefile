@@ -58,10 +58,13 @@ assets:
 	make -C bootcfg/assets/hyperkube
 
 clean:
+	make -C bootcfg/assets/cni fclean
 	make -C bootcfg/assets/coreos fclean
-	make -C bootcfg/assets/setup-network-environment fclean
 	make -C bootcfg/assets/discoveryC fclean
+	make -C bootcfg/assets/hyperkube fclean
 	make -C bootcfg/assets/lldp fclean
+	make -C bootcfg/assets/rkt fclean
+	make -C bootcfg/assets/setup-network-environment fclean
 
 $(CHECK):
 	make -C discoveryC/ $(CHECK)
@@ -88,3 +91,6 @@ submodules:
 
 validate:
 	@./validate.py
+
+release: acis
+	make -C release

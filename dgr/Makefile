@@ -37,9 +37,7 @@ $(DGR):
 	tar -C $(BIN) -xzf $(TAR) --strip-components=1
 	$(CWD)/gen_config.py
 
-fclean:
-	$(CWD)/$(RKT) --local-config=$(CWD) image gc --grace-period=0s
-	$(CWD)/$(RKT) --local-config=$(CWD) gc --grace-period=0s
+fclean: gc gci
 	rm -Rfv $(BIN) $(TAR) $(DGR_TARGET) || true
 	rm -Rfv $(RKT_DIR) $(RKT_DIR_DATA) || true
 	rm -v config.yml || true
@@ -62,3 +60,9 @@ clean: $(DGR)
 	@echo ENV eg: IMAGE=dgr/examples/aci-base/
 	test $(IMAGE)
 	$(CWD)/$(DGR) -H $(CWD) clean -W $(IMAGE)
+
+gc:
+	$(CWD)/$(RKT) --local-config=$(CWD) gc --grace-period=0s
+
+gci:
+	$(CWD)/$(RKT) --local-config=$(CWD) image gc --grace-period=0s

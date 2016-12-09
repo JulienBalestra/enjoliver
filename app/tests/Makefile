@@ -88,7 +88,7 @@ gci:
 $(TESTING_RSA):
 	ssh-keygen -f $(CWD)/$(TESTING_RSA) -t rsa -N ''
 	mkdir -vp $(CWD)/test_bootcfg/ssh_authorized_keys/
-	ln -sv $(CWD)/$(TESTING_RSA).pub $(CWD)/test_bootcfg/ssh_authorized_keys/
+	cp -v $(CWD)/$(TESTING_RSA).pub $(CWD)/test_bootcfg/ssh_authorized_keys/
 
 clean:
 	rm -Rfv $(BOOTCFG_DIR)
