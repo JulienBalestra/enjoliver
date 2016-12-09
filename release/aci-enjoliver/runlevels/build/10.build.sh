@@ -12,4 +12,10 @@ apt-get install -y python python-pip
 
 ENJOLIVER=/opt/enjoliver
 
-pip install -r ${ENJOLIVER}/requirements.txt || bash
+pip install -r ${ENJOLIVER}/requirements.txt
+
+pip freeze
+
+${ENJOLIVER}/validate.py
+
+bootcfg --version
