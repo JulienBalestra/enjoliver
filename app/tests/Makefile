@@ -98,6 +98,7 @@ clean:
 	rm -v $(TESTING_RSA)* || true
 	rm -Rfv test_bootcfg/ssh_authorized_keys || true
 	rm -v paths.d/*.json || true
+	rm -Rfv $(PROJECT)/$(ENV_NAME) || true
 	make -C $(PROJECT)/chain clean || true
 
 fclean: clean gci gc
