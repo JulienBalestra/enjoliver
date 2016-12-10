@@ -55,3 +55,14 @@ fclean: clean
 	rm -v $(ENJOLIVER) || true
 
 re: clean default
+
+run:
+	$(RKT) --local-config=$(DGR) \
+		run --interactive \
+		--net=host \
+		--volume=enjoliver-path,kind=host,source=$(CWD),readOnly=false \
+		static-aci-enjoliver \
+		--exec /usr/local/bin/gunicorn -- \
+		--chdir /opt/enjoliver/app \
+		--log-level debug \
+		api:application
