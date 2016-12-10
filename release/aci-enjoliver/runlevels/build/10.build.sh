@@ -17,6 +17,8 @@ pip install -r ${ENJOLIVER}/requirements.txt
 
 pip freeze
 
+ln -s /usr/local/bin/gunicorn /usr/bin/gunicorn
+
 ${ENJOLIVER}/validate.py
 
 bootcfg --version
