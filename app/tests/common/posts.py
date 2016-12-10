@@ -1,3 +1,8 @@
+import argparse
+import json
+
+import requests
+
 M01 = {
     u'boot-info': {
         "random-id": "3492b948-cec6-4d6f-b008-cc98bf03c901",
@@ -127,3 +132,16 @@ ALL = [
     M22,
     M23,
 ]
+
+if __name__ == '__main__':
+    args = argparse.ArgumentParser()
+    args.add_argument("-e", '--endpoint', default="http://127.0.0.1:8000/discovery", help="The API endpoint")
+    args.add_argument('-p', '--post', type=str, default="ALL", help='Select the post to send')
+    data = args.parse_args().post
+    data = globals()[data]
+    if type(data) is not list:
+        data = [data]
+    for p in data:
+        print "POST", p
+        r = requests.post(args.parse_args().endpoint, data=json.dumps(p))
+        assert r.status_code == 200
