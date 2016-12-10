@@ -4,6 +4,8 @@ import os
 import kvm_player
 
 
+@unittest.skipIf(os.geteuid() != 0 and kvm_player.virt_install != 0,
+                 "TestKVMDiscovery need privilege and virt-install")
 class TestKernelVirtualMachinePlayer(kvm_player.KernelVirtualMachinePlayer):
     @classmethod
     def setUpClass(cls):
