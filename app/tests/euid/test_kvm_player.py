@@ -1,7 +1,12 @@
 import unittest
 import os
+import sys
 
-import kvm_player
+try:
+    import kvm_player
+except ImportError:
+    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+    import kvm_player
 
 
 @unittest.skipIf(os.geteuid() != 0 or kvm_player.virt_install != 0,
