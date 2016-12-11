@@ -9,6 +9,8 @@ import unittest
 import urllib2
 from multiprocessing import Process
 
+import requests
+
 from app import model
 from app import api
 from app import generator
@@ -369,3 +371,31 @@ class TestAPIAdvanced(unittest.TestCase):
         f.close()
         self.assertEqual(json.loads(response), {u'total_elt': 3, u'new': False})
         self.assertEqual(posts.M01["boot-info"]["uuid"], content[0]["boot-info"]["uuid"])
+
+    def test_06_discovery_03(self):
+        """
+        The db have already M01, M02, M03
+        :return:
+        """
+        for i, p in enumerate(posts.ALL):
+            req = urllib2.Request("%s/discovery" % self.api_endpoint, json.dumps(p),
+                                  {'Content-Type': 'application/json'})
+            f = urllib2.urlopen(req)
+            self.assertEqual(200, f.code)
+            response = f.read()
+            f.close()
+            pn = i + 1
+            if pn == 1 or pn == 2 or pn == 3:
+                self.assertEqual(json.loads(response), {u'total_elt': 3, u'new': False})
+            else:
+                self.assertEqual(json.loads(response), {u'total_elt': pn, u'new': True})
+
+    def test_07_get(self):
+        now = time.time()
+        nb = 1000
+        for i in xrange(nb):
+            r = requests.get("%s/discovery" % self.api_endpoint)
+            l = len(json.loads(r.content))
+            r.close()
+            self.assertEqual(l, len(posts.ALL))
+        self.assertTrue(now + (nb // 100) > time.time())

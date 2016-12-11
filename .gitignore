@@ -58,3 +58,6 @@ bootcfg/assets/setup-network-environment/1.0.1/
 /release/aci-enjoliver/target/
 /release/enjoliver.render/
 /app/ignition_journal/
+/release/ignition-journal/
+/app/tests/unit/test_resources/
+/app/tests/unit/test_resources/test_00/
