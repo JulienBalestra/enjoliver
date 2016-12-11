@@ -61,3 +61,6 @@ bootcfg/assets/setup-network-environment/1.0.1/
 /release/ignition-journal/
 /app/tests/unit/test_resources/
 /app/tests/unit/test_resources/test_00/
+/app/tests/unit/unittest_resources/test_00
+/app/tests/unit/unittest_resources/test_01
+/app/tests/unit/unittest_resources/test_00.downloaded
