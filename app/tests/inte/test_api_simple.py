@@ -175,6 +175,7 @@ class TestAPI(unittest.TestCase):
             u'/boot.ipxe',
             u'/boot.ipxe.0',
             u'/healthz',
+            u'/backup/db',
             u'/',
             u'/ipxe'
         ]
