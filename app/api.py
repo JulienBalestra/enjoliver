@@ -27,6 +27,7 @@ if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "foreign
     engine = create_engine(application.config["DB_PATH"])
     model.Base.metadata.create_all(engine)
 
+# Switch to FS cache
 # application.config["FS_CACHE"] = os.getenv(
 #     "FS_CACHE", "/tmp")
 
@@ -104,6 +105,7 @@ def discovery():
                         ignition_journal=ignition_journal,
                         discovery=r)
         new = i.commit_and_close()
+        cache.delete("discovery")
         return jsonify({"total_elt": new[0], "new": new[1]})
 
     except (KeyError, TypeError):
@@ -117,9 +119,15 @@ def discovery():
 
 @application.route('/discovery', methods=['GET'])
 def discovery_get():
-    fetch = crud.Fetch(engine=engine,
-                       ignition_journal=ignition_journal)
-    all_data = fetch.get_all()
+    key = "discovery"
+    all_data = cache.get(key)
+    if all_data is None:
+        fetch = crud.Fetch(
+            engine=engine,
+            ignition_journal=ignition_journal
+        )
+        all_data = fetch.get_all()
+        cache.set(key, all_data, timeout=30)
 
     return jsonify(all_data)
 
@@ -187,11 +195,8 @@ def ipxe():
                 request.full_path))
         resp_list = bootcfg_resp.readlines()
         bootcfg_resp.close()
-        # [ipxe, kernel, initrd, boot]
         if len(resp_list) == 4:
             resp_list.insert(1, "echo start /ipxe\n")
-            # resp_list.insert(2, ":retry_dhcp\n")
-            # resp_list.insert(3, "dhcp || reboot\n")
         else:
             app.logger.warning("iPXE response is not coherent")
 

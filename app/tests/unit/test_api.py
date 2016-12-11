@@ -79,6 +79,10 @@ class TestAPI(unittest.TestCase):
         content = result.data
         self.assertEqual(content, expect)
 
+    def test_ipxe(self):
+        result = self.app.get('/ipxe?uuid=fake?mac=fake')
+        self.assertEqual(result.status_code, 404)
+
     def test_404(self):
         result = self.app.get('/fake')
         self.assertEqual(result.status_code, 404)
@@ -115,3 +119,31 @@ class TestAPI(unittest.TestCase):
                                content_type='application/json')
         self.assertEqual(result.status_code, 406)
         self.assertEqual(json.loads(result.data), {u'boot-info': {}, u'interfaces': [], u'lldp': {}})
+
+    def test_discovery_02(self):
+        for i in xrange(5):
+            r = self.app.get("/discovery")
+            self.assertEqual(200, r.status_code)
+            data = json.loads(r.data)
+            self.assertEqual(2, len(data))
+
+    def test_discovery_03(self):
+        r = self.app.get("/discovery/interfaces")
+        self.assertEqual(200, r.status_code)
+        data = json.loads(r.data)
+        self.assertEqual(2, len(data))
+
+    def test_discovery_04(self):
+        uuid = posts.M01["boot-info"]["uuid"]
+        r = self.app.get("/discovery/ignition-journal/%s" % uuid)
+        self.assertEqual(200, r.status_code)
+        data = json.loads(r.data)
+        self.assertEqual(39, len(data))
+
+    def test_discovery_05(self):
+        r = self.app.get("/discovery")
+
+        for m in json.loads(r.data):
+            uuid = m["boot-info"]["uuid"]
+            r = self.app.get("/discovery/ignition-journal/%s" % uuid)
+            self.assertEqual(200, r.status_code)
