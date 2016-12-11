@@ -168,11 +168,16 @@ def backup_database():
         "size": 0,
         "ts": now
     }
+    if cache.get(application.config["BACKUP_LOCK_KEY"]):
+        return jsonify(b)
     try:
-        cache.set(application.config["BACKUP_LOCK_KEY"], b["dest_fs"], timeout=10)
+        source_st = os.stat(b["source_fs"])
+        timeout = math.ceil(source_st.st_size / (1024 * 1024.))
+        app.logger.info("Backup lock key set for %d" % timeout)
+        cache.set(application.config["BACKUP_LOCK_KEY"], b["dest_fs"], timeout=timeout)
         shutil.copy2(db_path, b["dest_fs"])
-        s = os.stat(b["dest_fs"])
-        b["size"] = s.st_size
+        dest_st = os.stat(b["dest_fs"])
+        b["size"] = dest_st.st_size
         b["copy"] = True
     except Exception as e:
         app.logger.error("%s: %s" % (e, e.message))

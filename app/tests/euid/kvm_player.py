@@ -109,7 +109,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     def process_target_api():
         api.cache.clear()
         db_path = "%s/euid.sqlite" % KernelVirtualMachinePlayer.euid_path
-        db = "sqlite:///%s" % db_path
+        # db = "sqlite:///%s" % db_path
         journal = "%s/ignition_journal" % KernelVirtualMachinePlayer.euid_path
 
         try:
@@ -122,7 +122,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         except OSError:
             pass
 
-        os.environ["DB_PATH"] = db
+        os.environ["DB_PATH"] = db_path
         os.environ["IGNITION_JOURNAL_DIR"] = journal
         cmd = [
             "%s/env/bin/gunicorn" % KernelVirtualMachinePlayer.project_path,
