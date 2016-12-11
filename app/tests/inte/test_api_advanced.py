@@ -1,5 +1,6 @@
 import httplib
 import json
+import math
 import os
 import shutil
 import subprocess
@@ -11,9 +12,9 @@ from multiprocessing import Process
 
 import requests
 
-from app import model
 from app import api
 from app import generator
+from app import model
 from common import posts
 
 
@@ -79,6 +80,7 @@ class TestAPIAdvanced(unittest.TestCase):
 
         assert os.path.isdir(journal) is False
         engine = api.create_engine(db)
+        api.app.config["DB_PATH"] = db_path
         model.Base.metadata.create_all(engine)
         assert os.path.isfile(db_path)
         api.engine = engine
@@ -216,6 +218,7 @@ class TestAPIAdvanced(unittest.TestCase):
             u'/boot.ipxe',
             u'/boot.ipxe.0',
             u'/healthz',
+            u'/backup/db',
             u'/',
             u'/ipxe']
         request = urllib2.urlopen("%s/" % self.api_endpoint)
@@ -391,11 +394,26 @@ class TestAPIAdvanced(unittest.TestCase):
                 self.assertEqual(json.loads(response), {u'total_elt': pn, u'new': True})
 
     def test_07_get(self):
+        r = requests.get("%s/discovery" % self.api_endpoint)
+        l = len(json.loads(r.content))
+        r.close()
+        self.assertEqual(l, len(posts.ALL))
         now = time.time()
-        nb = 1000
+        nb = 100
         for i in xrange(nb):
             r = requests.get("%s/discovery" % self.api_endpoint)
-            l = len(json.loads(r.content))
             r.close()
-            self.assertEqual(l, len(posts.ALL))
         self.assertTrue(now + (nb // 100) > time.time())
+        r = requests.get("%s/discovery" % self.api_endpoint)
+        l = len(json.loads(r.content))
+        r.close()
+        self.assertEqual(l, len(posts.ALL))
+
+    def test_08_backup(self):
+        n = int(math.floor(time.time()))
+        r = requests.post("%s/backup/db" % self.api_endpoint)
+        s = json.loads(r.content)
+        r.close()
+        self.assertTrue(s["copy"])
+        self.assertTrue(os.path.isfile(s["dest_fs"]))
+        self.assertTrue(n < s["ts"])

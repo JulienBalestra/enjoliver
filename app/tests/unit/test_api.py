@@ -101,6 +101,7 @@ class TestAPI(unittest.TestCase):
             u'/boot.ipxe',
             u'/healthz',
             u'/ipxe',
+            u'/backup/db',
             u'/'])
 
     def test_discovery_00(self):
