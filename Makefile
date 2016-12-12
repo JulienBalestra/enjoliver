@@ -101,3 +101,8 @@ validate:
 
 release_aci:
 	make -C release
+
+config:
+	mkdir -pv $(HOME)/.config/enjoliver
+	touch $(HOME)/.config/enjoliver/config.env
+	touch $(HOME)/.config/enjoliver/config.json

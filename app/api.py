@@ -27,10 +27,10 @@ application.config["IGNITION_JOURNAL_DIR"] = os.getenv(
     "IGNITION_JOURNAL_DIR", '%s/ignition_journal' % os.path.dirname(os.path.abspath(__file__)))
 
 application.config["BACKUP_BUCKET_NAME"] = os.getenv(
-    "BACKUP_BUCKET")
+    "BACKUP_BUCKET_NAME")
 
 application.config["BACKUP_BUCKET_DIRECTORY"] = os.getenv(
-    "BACKUP_DIRECTORY", "enjoliver")
+    "BACKUP_BUCKET_DIRECTORY", "enjoliver")
 
 application.config["BACKUP_LOCK_KEY"] = "backup_lock"
 
@@ -194,14 +194,14 @@ def backup_database():
             app.logger.error("copy is False")
             raise IOError(b["dest_fs"])
 
-        so = s3.S3Operator(application.config["BACKUP_BUCKET"])
+        so = s3.S3Operator(application.config["BACKUP_BUCKET_NAME"])
         so.upload(["dest_fs"], b["dest_s3"])
         b["upload"] = True
     except Exception as e:
-        app.logger.error("%s: %s" % (e, e.message))
+        app.logger.error("<%s %s>: %s" % (e, type(e), e.message))
 
     b["backup_duration"] = time.time() - start
-    app.logger.debug("backup duration: %ss" % b["backup_duration"])
+    app.logger.info("backup duration: %ss" % b["backup_duration"])
     return jsonify(b)
 
 

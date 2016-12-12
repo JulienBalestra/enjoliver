@@ -1,0 +1,281 @@
+
+Adapter #0
+
+Enclosure Device ID: N/A
+Slot Number: 2
+Drive's position: DiskGroup: 0, Span: 0, Arm: 0
+Enclosure position: N/A
+Device Id: 2
+WWN: 500a0751031f24e2
+Sequence Number: 2
+Media Error Count: 0
+Other Error Count: 0
+Predictive Failure Count: 0
+Last Predictive Failure Event Seq Number: 0
+PD Type: SATA
+
+Raw Size: 238.474 GB [0x1dcf32b0 Sectors]
+Non Coerced Size: 237.974 GB [0x1dbf32b0 Sectors]
+Coerced Size: 237.875 GB [0x1dbc0000 Sectors]
+Sector Size:  0
+Firmware state: Online, Spun Up
+Device Firmware Level: 0005
+Shield Counter: 0
+Successful diagnostics completion on :  N/A
+SAS Address(0): 0x4433221105000000
+Connected Port Number: 4(path0)
+Inquiry Data:         1146031F24E2MTFDBAK256MAG-1G1                       0005
+FDE Capable: Not Capable
+FDE Enable: Disable
+Secured: Unsecured
+Locked: Unlocked
+Needs EKM Attention: No
+Foreign State: None
+Device Speed: 3.0Gb/s
+Link Speed: 3.0Gb/s
+Media Type: Solid State Device
+Drive:  Not Certified
+Drive Temperature : N/A
+PI Eligibility:  No
+Drive is formatted for PI information:  No
+PI: No PI
+Drive's NCQ setting : N/A
+Port-0 :
+Port status: Active
+Port's Linkspeed: 3.0Gb/s
+Drive has flagged a S.M.A.R.T alert : No
+
+
+
+Enclosure Device ID: N/A
+Slot Number: 3
+Drive's position: DiskGroup: 0, Span: 0, Arm: 1
+Enclosure position: N/A
+Device Id: 3
+WWN: 50010f0000000000
+Sequence Number: 2
+Media Error Count: 0
+Other Error Count: 0
+Predictive Failure Count: 0
+Last Predictive Failure Event Seq Number: 0
+PD Type: SATA
+
+Raw Size: 238.474 GB [0x1dcf32b0 Sectors]
+Non Coerced Size: 237.974 GB [0x1dbf32b0 Sectors]
+Coerced Size: 237.875 GB [0x1dbc0000 Sectors]
+Sector Size:  0
+Firmware state: Online, Spun Up
+Device Firmware Level: 7H1Q
+Shield Counter: 0
+Successful diagnostics completion on :  N/A
+SAS Address(0): 0x4433221104000000
+Connected Port Number: 2(path0)
+Inquiry Data: S0NVNEAB904060      SAMSUNG MZ7PA256HMDR-010H1              AXM07H1Q
+FDE Capable: Not Capable
+FDE Enable: Disable
+Secured: Unsecured
+Locked: Unlocked
+Needs EKM Attention: No
+Foreign State: None
+Device Speed: 3.0Gb/s
+Link Speed: 3.0Gb/s
+Media Type: Solid State Device
+Drive:  Not Certified
+Drive Temperature : N/A
+PI Eligibility:  No
+Drive is formatted for PI information:  No
+PI: No PI
+Drive's NCQ setting : N/A
+Port-0 :
+Port status: Active
+Port's Linkspeed: 3.0Gb/s
+Drive has flagged a S.M.A.R.T alert : No
+
+
+
+Enclosure Device ID: N/A
+Slot Number: 4
+Drive's position: DiskGroup: 1, Span: 0, Arm: 0
+Enclosure position: N/A
+Device Id: 4
+WWN: 5000cca369e34b6e
+Sequence Number: 2
+Media Error Count: 0
+Other Error Count: 0
+Predictive Failure Count: 0
+Last Predictive Failure Event Seq Number: 0
+PD Type: SATA
+
+Raw Size: 1.819 TB [0xe8e088b0 Sectors]
+Non Coerced Size: 1.818 TB [0xe8d088b0 Sectors]
+Coerced Size: 1.818 TB [0xe8d00000 Sectors]
+Sector Size:  0
+Firmware state: Online, Spun Up
+Device Firmware Level: A5C0
+Shield Counter: 0
+Successful diagnostics completion on :  N/A
+SAS Address(0): 0x4433221103000000
+Connected Port Number: 3(path0)
+Inquiry Data:       MN1220F32HMY5DHitachi HDS723020BLA642                 MN6OA5C0
+FDE Capable: Not Capable
+FDE Enable: Disable
+Secured: Unsecured
+Locked: Unlocked
+Needs EKM Attention: No
+Foreign State: None
+Device Speed: 6.0Gb/s
+Link Speed: 6.0Gb/s
+Media Type: Hard Disk Device
+Drive:  Not Certified
+Drive Temperature : N/A
+PI Eligibility:  No
+Drive is formatted for PI information:  No
+PI: No PI
+Drive's NCQ setting : N/A
+Port-0 :
+Port status: Active
+Port's Linkspeed: 6.0Gb/s
+Drive has flagged a S.M.A.R.T alert : No
+
+
+
+Enclosure Device ID: N/A
+Slot Number: 5
+Drive's position: DiskGroup: 1, Span: 0, Arm: 1
+Enclosure position: N/A
+Device Id: 5
+WWN: 5000cca369e38b56
+Sequence Number: 2
+Media Error Count: 0
+Other Error Count: 0
+Predictive Failure Count: 0
+Last Predictive Failure Event Seq Number: 0
+PD Type: SATA
+
+Raw Size: 1.819 TB [0xe8e088b0 Sectors]
+Non Coerced Size: 1.818 TB [0xe8d088b0 Sectors]
+Coerced Size: 1.818 TB [0xe8d00000 Sectors]
+Sector Size:  0
+Firmware state: Online, Spun Up
+Device Firmware Level: A5C0
+Shield Counter: 0
+Successful diagnostics completion on :  N/A
+SAS Address(0): 0x4433221102000000
+Connected Port Number: 1(path0)
+Inquiry Data:       MN1220F32J5YXDHitachi HDS723020BLA642                 MN6OA5C0
+FDE Capable: Not Capable
+FDE Enable: Disable
+Secured: Unsecured
+Locked: Unlocked
+Needs EKM Attention: No
+Foreign State: None
+Device Speed: 6.0Gb/s
+Link Speed: 6.0Gb/s
+Media Type: Hard Disk Device
+Drive:  Not Certified
+Drive Temperature : N/A
+PI Eligibility:  No
+Drive is formatted for PI information:  No
+PI: No PI
+Drive's NCQ setting : N/A
+Port-0 :
+Port status: Active
+Port's Linkspeed: 6.0Gb/s
+Drive has flagged a S.M.A.R.T alert : No
+
+
+
+Enclosure Device ID: N/A
+Slot Number: 6
+Drive's position: DiskGroup: 1, Span: 1, Arm: 0
+Enclosure position: N/A
+Device Id: 6
+WWN: 5000cca369de36ba
+Sequence Number: 2
+Media Error Count: 0
+Other Error Count: 0
+Predictive Failure Count: 0
+Last Predictive Failure Event Seq Number: 0
+PD Type: SATA
+
+Raw Size: 1.819 TB [0xe8e088b0 Sectors]
+Non Coerced Size: 1.818 TB [0xe8d088b0 Sectors]
+Coerced Size: 1.818 TB [0xe8d00000 Sectors]
+Sector Size:  0
+Firmware state: Online, Spun Up
+Device Firmware Level: A5C0
+Shield Counter: 0
+Successful diagnostics completion on :  N/A
+SAS Address(0): 0x4433221101000000
+Connected Port Number: 5(path0)
+Inquiry Data:       MN1220F324GEWDHitachi HDS723020BLA642                 MN6OA5C0
+FDE Capable: Not Capable
+FDE Enable: Disable
+Secured: Unsecured
+Locked: Unlocked
+Needs EKM Attention: No
+Foreign State: None
+Device Speed: 6.0Gb/s
+Link Speed: 6.0Gb/s
+Media Type: Hard Disk Device
+Drive:  Not Certified
+Drive Temperature : N/A
+PI Eligibility:  No
+Drive is formatted for PI information:  No
+PI: No PI
+Drive's NCQ setting : N/A
+Port-0 :
+Port status: Active
+Port's Linkspeed: 6.0Gb/s
+Drive has flagged a S.M.A.R.T alert : No
+
+
+
+Enclosure Device ID: N/A
+Slot Number: 7
+Drive's position: DiskGroup: 1, Span: 1, Arm: 1
+Enclosure position: N/A
+Device Id: 7
+WWN: 5000cca369e39cda
+Sequence Number: 2
+Media Error Count: 0
+Other Error Count: 0
+Predictive Failure Count: 0
+Last Predictive Failure Event Seq Number: 0
+PD Type: SATA
+
+Raw Size: 1.819 TB [0xe8e088b0 Sectors]
+Non Coerced Size: 1.818 TB [0xe8d088b0 Sectors]
+Coerced Size: 1.818 TB [0xe8d00000 Sectors]
+Sector Size:  0
+Firmware state: Online, Spun Up
+Device Firmware Level: A5C0
+Shield Counter: 0
+Successful diagnostics completion on :  N/A
+SAS Address(0): 0x4433221100000000
+Connected Port Number: 0(path0)
+Inquiry Data:       MN1220F32JAMKDHitachi HDS723020BLA642                 MN6OA5C0
+FDE Capable: Not Capable
+FDE Enable: Disable
+Secured: Unsecured
+Locked: Unlocked
+Needs EKM Attention: No
+Foreign State: None
+Device Speed: 6.0Gb/s
+Link Speed: 6.0Gb/s
+Media Type: Hard Disk Device
+Drive:  Not Certified
+Drive Temperature : N/A
+PI Eligibility:  No
+Drive is formatted for PI information:  No
+PI: No PI
+Drive's NCQ setting : N/A
+Port-0 :
+Port status: Active
+Port's Linkspeed: 6.0Gb/s
+Drive has flagged a S.M.A.R.T alert : No
+
+
+
+
+Exit Code: 0x00
