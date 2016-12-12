@@ -4,6 +4,7 @@ import unittest
 
 
 @unittest.skipIf(os.getenv("PYCHARM_HOSTED"), "PYCHARM_HOSTED")
+@unittest.skipIf(os.getenv("SKIP_ASSETS"), "SKIP_ASSETS")
 class TestAssetsCoreOS(unittest.TestCase):
     func_path = "%s" % os.path.dirname(__file__)
     tests_path = "%s" % os.path.split(func_path)[0]
