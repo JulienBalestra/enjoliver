@@ -394,6 +394,9 @@ class TestAPIAdvanced(unittest.TestCase):
                 self.assertEqual(json.loads(response), {u'total_elt': pn, u'new': True})
 
     def test_07_get(self):
+        """
+        Cache non regression
+        """
         r = requests.get("%s/discovery" % self.api_endpoint)
         l = len(json.loads(r.content))
         r.close()
@@ -416,4 +419,5 @@ class TestAPIAdvanced(unittest.TestCase):
         r.close()
         self.assertTrue(s["copy"])
         self.assertTrue(os.path.isfile(s["dest_fs"]))
+        os.remove(s["dest_fs"])
         self.assertTrue(n < s["ts"])
