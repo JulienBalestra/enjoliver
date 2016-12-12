@@ -11,7 +11,7 @@ try:
         conf = json.load(f)
         os.environ["AWS_ACCESS_KEY_ID"] = conf["AWS_ACCESS_KEY_ID"]
         os.environ["AWS_SECRET_ACCESS_KEY"] = conf["AWS_SECRET_ACCESS_KEY"]
-except IOError:
+except (IOError, ValueError):
     pass
 
 
