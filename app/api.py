@@ -1,3 +1,4 @@
+import ctypes
 import os
 import shutil
 import time
@@ -34,6 +35,7 @@ application.config["BACKUP_BUCKET_DIRECTORY"] = os.getenv(
 
 application.config["BACKUP_LOCK_KEY"] = "backup_lock"
 
+libc = ctypes.CDLL("libc.so.6")  # TODO
 engine = None
 ignition_journal = application.config["IGNITION_JOURNAL_DIR"]
 
@@ -178,6 +180,7 @@ def backup_database():
         timeout = math.ceil(source_st.st_size / (1024 * 1024.))
         app.logger.info("Backup lock key set for %d" % timeout)
         cache.set(application.config["BACKUP_LOCK_KEY"], b["dest_fs"], timeout=timeout)
+        libc.sync()
         shutil.copy2(db_path, b["dest_fs"])
         dest_st = os.stat(b["dest_fs"])
         b["size"] = dest_st.st_size
