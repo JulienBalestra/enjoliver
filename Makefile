@@ -31,6 +31,10 @@ help:
 	@echo KVM - long:
 	@echo sudo make $(CHECK_EUID)
 	@echo ----------------------
+	@echo Release:
+	@echo sudo make acis
+	@echo sudo make release_aci
+	@echo ----------------------
 
 apt:
 	test $(shell id -u -r) -eq 0
