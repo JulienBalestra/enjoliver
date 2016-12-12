@@ -110,8 +110,7 @@ clean:
 fclean: clean gci gc
 
 check_fast: default $(PYTHON)
-	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover unit/
-	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover inte/
+	SKIP_ASSETS=TRUE PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover ./
 
 check: default $(PYTHON)
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover ./
