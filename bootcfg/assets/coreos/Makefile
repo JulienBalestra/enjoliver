@@ -34,12 +34,12 @@ $(KERNEL): $(KEY) $(VERSION)
 	$(GPG) --logger-fd 1 --verify $(KERNEL).sig
 
 $(INITRD): $(KEY) $(VERSION)
-	curl -f $(CHANNEL)/$(INITRD) -o $(INITRD)
-	curl -f $(CHANNEL)/$(INITRD).sig -o $(INITRD).sig
+	curl -Lf $(CHANNEL)/$(INITRD) -o $(INITRD)
+	curl -Lf $(CHANNEL)/$(INITRD).sig -o $(INITRD).sig
 	$(GPG)  --logger-fd 1 --verify $(INITRD).sig
 
 $(TEXT_VERSION): $(VERSION)
-	curl -f $(CHANNEL)/$(TEXT_VERSION) -o $(TEXT_VERSION)
+	curl -Lf $(CHANNEL)/$(TEXT_VERSION) -o $(TEXT_VERSION)
 
 $(IMAGE): $(VERSION)
 	curl -Lf $(CHANNEL)/$(INITRD) -o $(INITRD)
