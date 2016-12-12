@@ -47,6 +47,7 @@ clean:
 	IMAGE=$(CWD)/aci-enjoliver make -C $(DGR) clean
 	$(RKT) --local-config=$(DGR) image gc --grace-period=0s
 	$(RKT) --local-config=$(DGR) gc --grace-period=0s
+	rm -v db.sqlite db.sqlite-*bak
 
 fclean: clean
 	IMAGE=$(DGR)/aci-$(BASE) make -C $(DGR) clean
@@ -62,6 +63,7 @@ run:
 	$(RKT) --local-config=$(DGR) \
 		run --interactive \
 		--net=host \
+		--set-env-file=$(ENJOLIVER_EF) \
 		--volume=enjoliver-path,kind=host,source=$(CWD),readOnly=false \
 		static-aci-enjoliver \
 		--exec /usr/local/bin/gunicorn -- \
