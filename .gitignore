@@ -3,6 +3,7 @@ coreos_production_pxe_image.cpio.gz.sig
 coreos_production_pxe.vmlinuz.sig
 CoreOS_Image_Signing_Key.asc
 coreos_production_pxe.vmlinuz
+# Carefull of the Environment Variable in the IDE
 *.idea
 /bootcfg/assets/setup-network-environment/1.0.1/setup-network-environment
 /bootcfg/assets/setup-network-environment/1.0.1/setup-network-environment.sha512
@@ -65,3 +66,4 @@ bootcfg/assets/setup-network-environment/1.0.1/
 /app/tests/unit/unittest_resources/test_01
 /app/tests/unit/unittest_resources/test_00.downloaded
 /app/tests/inte/dbs/testapiadvanced.sqlite*.bak
+/app/tests/inte/test_resources/
