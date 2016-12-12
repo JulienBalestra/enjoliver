@@ -40,7 +40,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     >>>     cls.set_dnsmasq()
     >>>     cls.set_lldp()
     >>>     cls.set_rack0()
-    >>>     cls.pause(5)
+    >>>     cls.pause(cls.wait_setup_teardown)
     Note: you may use 'reset -q' because of Link Layer Discovery Protocol Container's
     """
     __name__ = "KernelVirtualMachinePlayer"
