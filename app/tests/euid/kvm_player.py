@@ -26,8 +26,8 @@ def is_virtinstall():
 virt_install = is_virtinstall()
 
 
-@unittest.skipIf(os.geteuid() != 0 or virt_install != 0,
-                 "TestKVMDiscovery need privilege and virt-install")
+@unittest.skipIf(os.geteuid() != 0, "TestKVMDiscovery need privilege")
+@unittest.skipIf(virt_install != 0, "TestKVMDiscovery need virt-install")
 class KernelVirtualMachinePlayer(unittest.TestCase):
     """
     This class is used by all Kernel Virtual Machine testing suite

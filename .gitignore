@@ -67,3 +67,4 @@ bootcfg/assets/setup-network-environment/1.0.1/
 /app/tests/unit/unittest_resources/test_00.downloaded
 /app/tests/inte/dbs/testapiadvanced.sqlite*.bak
 /app/tests/inte/test_resources/
+/release/db.sqlite-*.bak
