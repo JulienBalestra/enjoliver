@@ -33,7 +33,6 @@ class S3Operator(object):
         }
         for k, v in metadata.iteritems():
             key.set_metadata(k, v)
-        print key.metadata
         key.set_contents_from_filename(source)
 
     def download(self, source, dest):
@@ -47,7 +46,7 @@ class S3Operator(object):
             key.get_metadata("uploaded")
             keys.append(key)
 
-        keys.sort(key=lambda x: x.metadata["uploaded"])
+        keys.sort(key=lambda x: - float(x.metadata["uploaded"]))
         latest = keys[0]
 
-        return latest.key
+        return latest.key.name

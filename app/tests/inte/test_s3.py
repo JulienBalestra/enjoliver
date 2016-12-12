@@ -2,8 +2,17 @@ import os
 import unittest
 
 import shutil
+import json
 
 from app import s3
+
+try:
+    with open("%s/.config/enjoliver/config.json" % os.getenv("HOME")) as f:
+        conf = json.load(f)
+        os.environ["AWS_ACCESS_KEY_ID"] = conf["AWS_ACCESS_KEY_ID"]
+        os.environ["AWS_SECRET_ACCESS_KEY"] = conf["AWS_SECRET_ACCESS_KEY"]
+except IOError:
+    pass
 
 
 @unittest.skipIf(os.getenv("AWS_ACCESS_KEY_ID") is None, "Missing env AWS_ACCESS_KEY_ID")
@@ -11,9 +20,9 @@ from app import s3
 class TestS3Operator(unittest.TestCase):
     testing_bucket = "bbcenjoliver-dev"
 
-    unit_path = os.path.dirname(os.path.abspath(__file__))
-    s3_resource_dir_name = "unittest_resources"
-    s3_resource_dir = os.path.join(unit_path, s3_resource_dir_name)
+    inte_path = os.path.dirname(os.path.abspath(__file__))
+    s3_resource_dir_name = "test_resources"
+    s3_resource_dir = os.path.join(inte_path, s3_resource_dir_name)
 
     @classmethod
     def setUpClass(cls):
