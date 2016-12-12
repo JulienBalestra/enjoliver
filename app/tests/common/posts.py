@@ -143,6 +143,6 @@ if __name__ == '__main__':
     if type(data) is not list:
         data = [data]
     for p in data:
-        print "POST", p
+        print "POST", p["boot-info"]["uuid"]
         r = requests.post(args.parse_args().endpoint, data=json.dumps(p))
-        assert r.status_code == 200
+        print r.content, "code: %d" % r.status_code
