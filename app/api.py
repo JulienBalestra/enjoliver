@@ -152,21 +152,24 @@ def discovery_get():
 
 @application.route('/backup/db', methods=['POST'])
 def backup_database():
-    now = int(math.ceil(time.time()))
-    dest_s3 = "%s/%s.db" % (application.config["BACKUP_BUCKET_DIRECTORY"], now)
+    start = time.time()
+    now_rounded = int(math.ceil(start))
+    dest_s3 = "%s/%s.db" % (application.config["BACKUP_BUCKET_DIRECTORY"], now_rounded)
     db_path = application.config["DB_PATH"].replace("sqlite:///", "")
     bucket_name = application.config["BACKUP_BUCKET_NAME"]
     b = {
         "copy": False,
         "upload": False,
         "source_fs": db_path,
-        "dest_fs": "%s-%s.bak" % (db_path, now),
+        "dest_fs": "%s-%s.bak" % (db_path, now_rounded),
         "dest_s3": dest_s3 if bucket_name else None,
         "bucket_name": bucket_name,
         "bucket_uri": "s3://%s/%s" % (bucket_name, dest_s3) if application.config[
             "BACKUP_BUCKET_NAME"] else None,
         "size": 0,
-        "ts": now
+        "ts": now_rounded,
+        "backup_duration": None,
+        "lock_duration": None,
     }
     if cache.get(application.config["BACKUP_LOCK_KEY"]):
         return jsonify(b)
@@ -183,9 +186,12 @@ def backup_database():
         app.logger.error("%s: %s" % (e, e.message))
     finally:
         cache.delete(application.config["BACKUP_LOCK_KEY"])
+        b["lock_duration"] = time.time() - start
+        app.logger.debug("lock duration: %ss" % b["lock_duration"])
 
     try:
         if b["copy"] is False:
+            app.logger.error("copy is False")
             raise IOError(b["dest_fs"])
 
         so = s3.S3Operator(application.config["BACKUP_BUCKET"])
@@ -194,6 +200,8 @@ def backup_database():
     except Exception as e:
         app.logger.error("%s: %s" % (e, e.message))
 
+    b["backup_duration"] = time.time() - start
+    app.logger.debug("backup duration: %ss" % b["backup_duration"])
     return jsonify(b)
 
 
