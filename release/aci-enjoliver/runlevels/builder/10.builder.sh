@@ -49,7 +49,7 @@ git checkout ${BRANCH}
 
 
 ### Golang ###
-curl -L https://storage.googleapis.com/golang/go1.7.4.linux-amd64.tar.gz -o /tmp/go1.7.4.linux-amd64.tar.gz
+curl -Lf https://storage.googleapis.com/golang/go1.7.4.linux-amd64.tar.gz -o /tmp/go1.7.4.linux-amd64.tar.gz
 tar -C /usr/local/ -xzvf /tmp/go1.7.4.linux-amd64.tar.gz
 
 export GOROOT=/usr/local/go
@@ -77,7 +77,7 @@ done
 su - enjoliver -c "make assets"
 make validate
 
-su - enjoliver -c "make check"
+su - enjoliver -c "SKIP_ASSETS=TRUE make check"
 make validate
 
 make check_clean
