@@ -13,15 +13,7 @@ except ImportError:
     import kvm_player
 
 
-def skip_iso():
-    if os.geteuid() == 0 and os.getenv("KVM_ISO"):
-        return False
-    return True
-
-
-# @unittest.skip("Skip because of stickyB")
-@unittest.skipIf(skip_iso(),
-                 "TestKVMBasicISO need privilege and env KVM_ISO=whatever")
+@unittest.skipIf(os.getenv("KVM_ISO", None) is None, "TestKVMBasicISO need env KVM_ISO=whatever")
 class TestKVMBasicISO(kvm_player.KernelVirtualMachinePlayer):
     flask_ok_port = 5050
 

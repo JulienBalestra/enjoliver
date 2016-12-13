@@ -1,10 +1,8 @@
 import copy
-import json
 import os
 import sys
 import time
 import unittest
-import urllib2
 
 from app import generator, scheduler
 
@@ -15,8 +13,7 @@ except ImportError:
     import kvm_player
 
 
-@unittest.skipIf(os.geteuid() != 0,
-                 "TestKVMDiscovery need privilege")
+@unittest.skipIf(os.geteuid() != 0, "TestKVMDiscovery need privilege")
 class TestKVMDiscoveryScheduler(kvm_player.KernelVirtualMachinePlayer):
     @classmethod
     def setUpClass(cls):
