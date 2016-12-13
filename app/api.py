@@ -3,8 +3,8 @@ import os
 import shutil
 import time
 import urllib2
-
 import math
+
 from flask import Flask, request, json, jsonify
 from sqlalchemy import create_engine
 from werkzeug.contrib.cache import SimpleCache
@@ -14,43 +14,11 @@ import model
 import s3
 
 app = application = Flask(__name__)
+cache = SimpleCache()
 
 application.config["BOOTCFG_URI"] = os.getenv(
     "BOOTCFG_URI", "http://127.0.0.1:8080")
-
-application.config["DB_PATH"] = os.getenv(
-    "DB_PATH", '%s/enjoliver.sqlite' % os.path.dirname(os.path.abspath(__file__)))
-
-application.config["DB_URI"] = os.getenv(
-    "DB_URI", 'sqlite:///%s' % application.config["DB_PATH"])
-
-application.config["IGNITION_JOURNAL_DIR"] = os.getenv(
-    "IGNITION_JOURNAL_DIR", '%s/ignition_journal' % os.path.dirname(os.path.abspath(__file__)))
-
-application.config["BACKUP_BUCKET_NAME"] = os.getenv(
-    "BACKUP_BUCKET_NAME")
-
-application.config["BACKUP_BUCKET_DIRECTORY"] = os.getenv(
-    "BACKUP_BUCKET_DIRECTORY", "enjoliver")
-
-application.config["BACKUP_LOCK_KEY"] = "backup_lock"
-
-libc = ctypes.CDLL("libc.so.6")  # TODO
-engine = None
-ignition_journal = application.config["IGNITION_JOURNAL_DIR"]
-
-if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "foreign"):
-    print "Create engine: %s" % application.config["DB_URI"]
-    engine = create_engine(application.config["DB_URI"])
-    model.Base.metadata.create_all(engine)
-
-# Switch to FS cache
-# application.config["FS_CACHE"] = os.getenv(
-#     "FS_CACHE", "/tmp")
-
-# cache = FileSystemCache(application.config["FS_CACHE"])
-
-cache = SimpleCache()
+app.logger.info("BOOTCFG_URI=%s" % application.config["BOOTCFG_URI"])
 
 application.config["BOOTCFG_URLS"] = [
     "/",
@@ -58,6 +26,40 @@ application.config["BOOTCFG_URLS"] = [
     "/boot.ipxe.0",
     "/assets"
 ]
+app.logger.info("BOOTCFG_URLS=%s" % application.config["BOOTCFG_URLS"])
+
+application.config["DB_PATH"] = os.getenv(
+    "DB_PATH", '%s/enjoliver.sqlite' % os.path.dirname(os.path.abspath(__file__)))
+app.logger.info("DB_PATH=%s" % application.config["DB_PATH"])
+
+application.config["DB_URI"] = os.getenv(
+    "DB_URI", 'sqlite:///%s' % application.config["DB_PATH"])
+app.logger.info("DB_URI=%s" % application.config["DB_URI"])
+
+ignition_journal = application.config["IGNITION_JOURNAL_DIR"] = os.getenv(
+    "IGNITION_JOURNAL_DIR", '%s/ignition_journal' % os.path.dirname(os.path.abspath(__file__)))
+app.logger.info("IGNITION_JOURNAL_DIR=%s" % application.config["IGNITION_JOURNAL_DIR"])
+
+application.config["BACKUP_BUCKET_NAME"] = os.getenv(
+    "BACKUP_BUCKET_NAME", "")
+app.logger.info("BACKUP_BUCKET_NAME=%s" % application.config["BACKUP_BUCKET_NAME"])
+
+application.config["BACKUP_BUCKET_DIRECTORY"] = os.getenv(
+    "BACKUP_BUCKET_DIRECTORY", "enjoliver")
+app.logger.info("BACKUP_BUCKET_DIRECTORY=%s" % application.config["BACKUP_BUCKET_DIRECTORY"])
+
+application.config["BACKUP_LOCK_KEY"] = "backup_lock"
+app.logger.info("BACKUP_LOCK_KEY=%s" % application.config["BACKUP_LOCK_KEY"])
+
+libc = ctypes.CDLL("libc.so.6")  # TODO
+engine = None
+
+if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "foreign"):
+    app.logger.info("Create engine %s" % application.config["DB_URI"])
+    engine = create_engine(application.config["DB_URI"])
+    app.logger.debug("Engine with <driver: %s> " % engine.driver)
+    app.logger.info("Create model %s" % application.config["DB_URI"])
+    model.Base.metadata.create_all(engine)
 
 
 @application.route('/', methods=['GET'])
@@ -66,9 +68,9 @@ def root():
     Map the API
     :return: available routes
     """
-    links = [l for l in set([k.rule for k in app.url_map.iter_rules()
-                             if "/static/" != k.rule[:8]])]
-
+    links = [l for l in set(
+        [k.rule for k in app.url_map.iter_rules() if "/static/" != k.rule[:8]])
+             ]
     return json.jsonify(links)
 
 
@@ -117,6 +119,7 @@ def discovery():
     app.logger.debug("application/json \"%s\"" % r)
 
     while cache.get(application.config["BACKUP_LOCK_KEY"]) is not None:
+        app.logger.debug("Cache backup is not None")
         time.sleep(0.1)
 
     print r
@@ -178,7 +181,7 @@ def backup_database():
     try:
         source_st = os.stat(b["source_fs"])
         timeout = math.ceil(source_st.st_size / (1024 * 1024.))
-        app.logger.info("Backup lock key set for %d" % timeout)
+        app.logger.info("Backup lock key set for %ss" % timeout)
         cache.set(application.config["BACKUP_LOCK_KEY"], b["dest_fs"], timeout=timeout)
         libc.sync()
         shutil.copy2(db_path, b["dest_fs"])
@@ -186,7 +189,7 @@ def backup_database():
         b["size"] = dest_st.st_size
         b["copy"] = True
     except Exception as e:
-        app.logger.error("%s: %s" % (e, e.message))
+        app.logger.error("<%s %s>: %s" % (e, type(e), e.message))
     finally:
         cache.delete(application.config["BACKUP_LOCK_KEY"])
         b["lock_duration"] = time.time() - start
@@ -194,7 +197,7 @@ def backup_database():
 
     try:
         if b["copy"] is False:
-            app.logger.error("copy is False")
+            app.logger.error("copy is False: %s" % b["dest_fs"])
             raise IOError(b["dest_fs"])
 
         so = s3.S3Operator(application.config["BACKUP_BUCKET_NAME"])
