@@ -3,6 +3,7 @@ import os
 
 from sqlalchemy.orm import sessionmaker, subqueryload
 
+import logger
 from model import ChassisPort, Chassis, MachineInterface, Machine
 
 
@@ -89,6 +90,8 @@ class Fetch(object):
 
 
 class Inject(object):
+    log = logger.get_logger(__file__)
+
     def __init__(self, engine, ignition_journal, discovery):
         sm = sessionmaker(bind=engine)
         self.session = sm()
@@ -106,16 +109,19 @@ class Inject(object):
             self.chassis_port = self._chassis_port()
 
             self._ignition_journal()
-        except Exception:
+        except Exception as e:
+            self.log.error("init raise: %s %s %s" % (type(e), e, e.message))
             self.session.close()
             raise
 
     def _machine(self):
         uuid = self.discovery["boot-info"]["uuid"]
         if len(uuid) != 36:
+            self.log.error("uuid: %s in not len(36)")
             raise TypeError("uuid: %s in not len(36)" % uuid)
         machine = self.session.query(Machine).filter(Machine.uuid == uuid).first()
         if machine:
+            self.log.debug("machine %s already in db" % uuid)
             machine.updated_date = datetime.datetime.utcnow()
             self.session.add(machine)
             self.updates += 1
@@ -130,6 +136,7 @@ class Inject(object):
 
         for i in self.discovery["interfaces"]:
             if i["mac"] and self.session.query(MachineInterface).filter(MachineInterface.mac == i["mac"]).count() == 0:
+                self.log.debug("mac not in db: %s adding" % i["mac"])
                 m_interfaces.append(
                     MachineInterface(
                         name=i["name"],
@@ -151,6 +158,7 @@ class Inject(object):
         for j in self.discovery["lldp"]["data"]["interfaces"]:
             chassis = self.session.query(Chassis).filter(Chassis.mac == j["chassis"]["id"]).count()
             if chassis == 0:
+                self.log.debug("chassis %s %s not in db" % (j["chassis"]["name"], j["chassis"]["id"]))
                 chassis = Chassis(
                     name=j["chassis"]["name"],
                     mac=j["chassis"]["id"]
@@ -207,13 +215,17 @@ class Inject(object):
         try:
             if self.adds != 0 or self.updates != 0:
                 try:
+                    self.log.debug("commiting")
                     self.session.commit()
 
-                except Exception:
+                except Exception as e:
+                    self.log.error("%s %s %s adds=%s updates=%s" % (type(e), e, e.message, self.adds, self.updates))
                     self.adds, self.updates = 0, 0
+                    self.log.warning("rollback the sessions")
                     self.session.rollback()
                     raise
         finally:
             machine_nb = self.session.query(Machine).count()
+            self.log.debug("closing")
             self.session.close()
             return machine_nb, True if self.adds else False
