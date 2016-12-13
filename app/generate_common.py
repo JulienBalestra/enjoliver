@@ -5,6 +5,8 @@ import re
 import sys
 import abc
 
+import logger
+
 
 class GenerateCommon(object):
     """
@@ -27,13 +29,11 @@ class GenerateCommon(object):
 
     _raise_enof = IOError
 
+    log = logger.get_logger("Generator")
+
     @abc.abstractmethod
     def generate(self):
         return
-
-    def log_stderr(self, message):
-        os.write(2, "\r%s %s\n" % (self, message))
-        sys.stderr.flush()
 
     @property
     def target_data(self):
@@ -53,9 +53,9 @@ class GenerateCommon(object):
                     ip = l.split("DEFAULT_IPV4=")[1].replace("\n", "")
                     match = re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip)
                     if match is not None:
-                        self.log_stderr("correct IP address")
+                        self.log.debug("correct IP address")
                         return ip
-                    self.log_stderr("ERROR incorrect IP address")
+                    self.log.error("ERROR incorrect IP address")
         raise ImportError("Error in module %s" % out)
 
     @property
@@ -65,12 +65,12 @@ class GenerateCommon(object):
         :return: IP address
         """
         if self._api_ip is not None:
-            self.log_stderr("return %s" % self._api_ip)
+            self.log.debug("return %s" % self._api_ip)
             return self._api_ip
         api_ip = os.getenv("API_IP")
         if api_ip and re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", api_ip):
             self._api_ip = api_ip
-            self.log_stderr("env -> API_IP=%s" % self._api_ip)
+            self.log.debug("env -> API_IP=%s" % self._api_ip)
         else:
             self._api_ip = self.get_ip_from_setup_network_environment()
 
@@ -83,12 +83,12 @@ class GenerateCommon(object):
         :return: IP address
         """
         if self._bootcfg_ip is not None:
-            self.log_stderr("return %s" % self._bootcfg_ip)
+            self.log.debug("return %s" % self._bootcfg_ip)
             return self._bootcfg_ip
         bootcfg_ip = os.getenv("BOOTCFG_IP")
         if bootcfg_ip and re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", bootcfg_ip):
             self._bootcfg_ip = bootcfg_ip
-            self.log_stderr("env -> BOOTCFG_IP=%s" % self._api_ip)
+            self.log.debug("env -> BOOTCFG_IP=%s" % self._api_ip)
         else:
             self._bootcfg_ip = self.get_ip_from_setup_network_environment()
 

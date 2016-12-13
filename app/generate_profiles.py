@@ -15,7 +15,7 @@ class GenerateProfile(GenerateCommon):
         try:
             self.ensure_file("%s/ignition/%s" % (bootcfg_path, ignition_id))
         except Warning:
-            os.write(2, "Warning: not here %s/ignition/%s\n" % (bootcfg_path, ignition_id))
+            self.log.warning("not here %s/ignition/%s\n" % (bootcfg_path, ignition_id))
 
         self.target_path = self.ensure_directory("%s/profiles" % bootcfg_path)
         self._target_data = {
@@ -41,5 +41,5 @@ class GenerateProfile(GenerateCommon):
 
     def generate(self):
         self._boot()
-        self.log_stderr("generate")
+        self.log.info("done")
         return self.target_data
