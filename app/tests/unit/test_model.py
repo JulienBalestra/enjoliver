@@ -2,7 +2,6 @@ import os
 import shutil
 import unittest
 
-import time
 from sqlalchemy import create_engine
 
 from app import crud
