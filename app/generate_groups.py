@@ -51,7 +51,7 @@ class GenerateGroup(GenerateCommon):
         self._target_data["metadata"]["ssh_authorized_keys"] = self._get_ssh_authorized_keys()
 
         for k, v in self.extra_metadata.iteritems():
-            self.log_stderr("add %s: %s in metadata" % (k, v))
+            self.log.debug("add %s: %s in metadata" % (k, v))
             self._target_data["metadata"][k] = v
 
     def _selector(self):
@@ -76,5 +76,5 @@ class GenerateGroup(GenerateCommon):
     def generate(self):
         self._metadata()
         self._selector()
-        self.log_stderr("generate")
+        self.log.info("done")
         return self.target_data
