@@ -42,6 +42,9 @@ class GenerateCommon(object):
         return self.generate()
 
     def get_ip_from_setup_network_environment(self):
+        """
+        This method have to be removed
+        """
         # This only work on Linux and if the DEFAULT_IPV4 is listening bootcfg address
         out = "%s/misc/network-environment" % self.bootcfg_path
         subprocess.check_call(
