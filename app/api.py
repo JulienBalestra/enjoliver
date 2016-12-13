@@ -12,13 +12,15 @@ from werkzeug.contrib.cache import SimpleCache
 import crud
 import model
 import s3
+import logger
+
+LOGGER = logger.get_logger(__file__)
 
 app = application = Flask(__name__)
 cache = SimpleCache()
 
 application.config["BOOTCFG_URI"] = os.getenv(
     "BOOTCFG_URI", "http://127.0.0.1:8080")
-app.logger.info("BOOTCFG_URI=%s" % application.config["BOOTCFG_URI"])
 
 application.config["BOOTCFG_URLS"] = [
     "/",
@@ -26,40 +28,42 @@ application.config["BOOTCFG_URLS"] = [
     "/boot.ipxe.0",
     "/assets"
 ]
-app.logger.info("BOOTCFG_URLS=%s" % application.config["BOOTCFG_URLS"])
 
 application.config["DB_PATH"] = os.getenv(
     "DB_PATH", '%s/enjoliver.sqlite' % os.path.dirname(os.path.abspath(__file__)))
-app.logger.info("DB_PATH=%s" % application.config["DB_PATH"])
 
 application.config["DB_URI"] = os.getenv(
     "DB_URI", 'sqlite:///%s' % application.config["DB_PATH"])
-app.logger.info("DB_URI=%s" % application.config["DB_URI"])
 
 ignition_journal = application.config["IGNITION_JOURNAL_DIR"] = os.getenv(
     "IGNITION_JOURNAL_DIR", '%s/ignition_journal' % os.path.dirname(os.path.abspath(__file__)))
-app.logger.info("IGNITION_JOURNAL_DIR=%s" % application.config["IGNITION_JOURNAL_DIR"])
 
 application.config["BACKUP_BUCKET_NAME"] = os.getenv(
     "BACKUP_BUCKET_NAME", "")
-app.logger.info("BACKUP_BUCKET_NAME=%s" % application.config["BACKUP_BUCKET_NAME"])
 
 application.config["BACKUP_BUCKET_DIRECTORY"] = os.getenv(
     "BACKUP_BUCKET_DIRECTORY", "enjoliver")
-app.logger.info("BACKUP_BUCKET_DIRECTORY=%s" % application.config["BACKUP_BUCKET_DIRECTORY"])
 
 application.config["BACKUP_LOCK_KEY"] = "backup_lock"
-app.logger.info("BACKUP_LOCK_KEY=%s" % application.config["BACKUP_LOCK_KEY"])
 
 libc = ctypes.CDLL("libc.so.6")  # TODO
 engine = None
 
 if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "foreign"):
-    app.logger.info("Create engine %s" % application.config["DB_URI"])
+    LOGGER.info("BOOTCFG_URI=%s" % application.config["BOOTCFG_URI"])
+    LOGGER.info("BOOTCFG_URLS=%s" % application.config["BOOTCFG_URLS"])
+    LOGGER.info("DB_PATH=%s" % application.config["DB_PATH"])
+    LOGGER.info("DB_URI=%s" % application.config["DB_URI"])
+    LOGGER.info("IGNITION_JOURNAL_DIR=%s" % application.config["IGNITION_JOURNAL_DIR"])
+    LOGGER.info("BACKUP_BUCKET_NAME=%s" % application.config["BACKUP_BUCKET_NAME"])
+    LOGGER.info("BACKUP_BUCKET_DIRECTORY=%s" % application.config["BACKUP_BUCKET_DIRECTORY"])
+    LOGGER.info("BACKUP_LOCK_KEY=%s" % application.config["BACKUP_LOCK_KEY"])
+
+    LOGGER.info("Create engine %s" % application.config["DB_URI"])
     engine = create_engine(application.config["DB_URI"])
-    app.logger.debug("Engine with <driver: %s> " % engine.driver)
-    app.logger.info("Create model %s" % application.config["DB_URI"])
+    LOGGER.info("Create model %s" % application.config["DB_URI"])
     model.Base.metadata.create_all(engine)
+    LOGGER.info("Engine with <driver: %s> " % engine.driver)
 
 
 @application.route('/', methods=['GET'])
