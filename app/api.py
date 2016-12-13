@@ -126,7 +126,8 @@ def discovery():
         app.logger.debug("Cache backup is not None")
         time.sleep(0.1)
 
-    print r
+    # Another logger
+    LOGGER.debug(r)
     try:
         i = crud.Inject(engine=engine,
                         ignition_journal=ignition_journal,
