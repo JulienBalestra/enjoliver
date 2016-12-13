@@ -201,7 +201,7 @@ def backup_database():
             raise IOError(b["dest_fs"])
 
         so = s3.S3Operator(application.config["BACKUP_BUCKET_NAME"])
-        so.upload(["dest_fs"], b["dest_s3"])
+        so.upload(b["dest_fs"], b["dest_s3"])
         b["upload"] = True
     except Exception as e:
         app.logger.error("<%s %s>: %s" % (e, type(e), e.message))
