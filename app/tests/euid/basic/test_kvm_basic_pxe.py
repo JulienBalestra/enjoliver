@@ -14,8 +14,6 @@ except ImportError:
     import kvm_player
 
 
-@unittest.skipIf(os.geteuid() != 0,
-                 "TestKVM need privilege")
 class TestKVMBasicPXE(kvm_player.KernelVirtualMachinePlayer):
     flask_ok_port = 5050
 

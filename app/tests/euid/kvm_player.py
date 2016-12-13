@@ -16,18 +16,15 @@ def is_virtinstall():
     with open("/dev/null", "w") as f:
         virtinstall = 2
         try:
-            virtinstall = subprocess.call(["virt-install", "--version"],
-                                          stdout=f, stderr=f)
+            virtinstall = subprocess.call(
+                ["virt-install", "--version"], stdout=f, stderr=f)
         except OSError:
             pass
     return virtinstall
 
 
-virt_install = is_virtinstall()
-
-
 @unittest.skipIf(os.geteuid() != 0, "TestKVMDiscovery need privilege")
-@unittest.skipIf(virt_install != 0, "TestKVMDiscovery need virt-install")
+@unittest.skipIf(is_virtinstall() != 0, "TestKVMDiscovery need virt-install")
 class KernelVirtualMachinePlayer(unittest.TestCase):
     """
     This class is used by all Kernel Virtual Machine testing suite
@@ -53,9 +50,9 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     gen = generator.Generator
 
     euid_path = "%s" % os.path.dirname(os.path.abspath(__file__))
-    tests_path = "%s" % os.path.split(euid_path)[0]
-    app_path = os.path.split(tests_path)[0]
-    project_path = os.path.split(app_path)[0]
+    tests_path = "%s" % os.path.dirname(euid_path)
+    app_path = os.path.dirname(tests_path)
+    project_path = os.path.dirname(app_path)
     bootcfg_path = "%s/bootcfg" % project_path
     assets_path = "%s/bootcfg/assets" % project_path
 
@@ -109,7 +106,6 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     def process_target_api():
         api.cache.clear()
         db_path = "%s/euid.sqlite" % KernelVirtualMachinePlayer.euid_path
-        # db = "sqlite:///%s" % db_path
         journal = "%s/ignition_journal" % KernelVirtualMachinePlayer.euid_path
 
         try:

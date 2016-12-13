@@ -26,8 +26,6 @@ class TestKVMK8sBasic(kvm_player.KernelVirtualMachinePlayer):
 
 
 # @unittest.skip("skip")
-@unittest.skipIf(os.geteuid() != 0,
-                 "TestKVMDiscovery need privilege")
 class TestKVMK8SBasic0(TestKVMK8sBasic):
     # @unittest.skip("just skip")
     def test_00(self):
@@ -115,8 +113,6 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
 
 
 # @unittest.skip("")
-@unittest.skipIf(os.geteuid() != 0,
-                 "TestKVMDiscovery need privilege")
 class TestKVMK8SBasic1(TestKVMK8sBasic):
     # @unittest.skip("just skip")
     def test_01(self):

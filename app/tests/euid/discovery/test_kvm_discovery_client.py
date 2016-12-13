@@ -1,9 +1,7 @@
-import json
 import os
 import sys
 import time
 import unittest
-import urllib2
 
 from app import generator
 
@@ -14,8 +12,6 @@ except ImportError:
     import kvm_player
 
 
-@unittest.skipIf(os.geteuid() != 0,
-                 "TestKVMDiscovery need privilege")
 class TestKVMDiscoveryClient(kvm_player.KernelVirtualMachinePlayer):
     @classmethod
     def setUpClass(cls):
