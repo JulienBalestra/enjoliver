@@ -100,4 +100,4 @@ run_enter:
 		--volume=bootcfg-groups,kind=host,source=$(CWD)/var_lib_bootcfg/groups,readOnly=false \
 		--volume=bootcfg-profiles,kind=host,source=$(CWD)/var_lib_bootcfg/profiles,readOnly=false \
 		static-aci-enjoliver \
-		--exec /bin/bash
+		--exec /opt/enjoliver/app/plans/all_in_one.py

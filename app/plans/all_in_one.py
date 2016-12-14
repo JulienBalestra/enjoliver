@@ -29,6 +29,6 @@ def k8s_all_in_one(marker):
 
 
 if __name__ == '__main__':
-    assert os.getenv("BOOTCFG_IP", None) is not None
-    assert os.getenv("API_IP", None) is not None
+    assert os.getenv("BOOTCFG_URI", None) is not None
+    assert os.getenv("API_IP_PORT", None) is not None
     k8s_all_in_one("k8s-all-in-one")
