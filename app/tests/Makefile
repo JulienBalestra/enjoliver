@@ -142,6 +142,9 @@ check_euid_basic_iso: $(PYTHON) $(ISO)
 check_euid_basic_pxe: $(PYTHON) 
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/basic/test_kvm_basic_pxe.py
 
+check_euid_plans_all_in_one: $(PYTHON)
+	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/plans/test_kvm_plan_all_in_one.py
+
 check_euid_kvm_player: $(PYTHON)
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/test_kvm_player.py
 
