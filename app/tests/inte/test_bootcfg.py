@@ -118,7 +118,7 @@ class TestBootConfigCommon(TestCase):
     def setUp(self):
         self.assertTrue(self.p_bootcfg.is_alive())
         try:
-            self.assertEqual(self.gen.group.api_ip, self.gen.profile.api_ip)
+            self.assertEqual(self.gen.group.api_uri, self.gen.profile.api_uri)
         except AttributeError:
             # gen not declared
             pass

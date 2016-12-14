@@ -17,6 +17,8 @@ class TestEtcdSchedulerMember(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         subprocess.check_output(["make", "-C", cls.project_path])
+        os.environ["BOOTCFG_URI"] = "http://127.0.0.1:8080"
+        os.environ["API_URI"] = "http://127.0.0.1:5000"
 
     @staticmethod
     def clean_sandbox():

@@ -1,9 +1,6 @@
+import abc
 import json
 import os
-import subprocess
-import re
-import sys
-import abc
 
 import logger
 
@@ -20,13 +17,8 @@ class GenerateCommon(object):
     bootcfg_path = "%s/bootcfg" % project_path
 
     _target_data = None
-
-    _bootcfg_ip = None
-    _bootcfg_port = int(os.getenv("BOOTCFG_PORT", "8080"))
-
-    _api_ip = None
-    _api_port = int(os.getenv("API_PORT", "5000"))  # Flask
-
+    _bootcfg_uri = None
+    _api_uri = None
     _raise_enof = IOError
 
     log = logger.get_logger("Generator")
@@ -41,69 +33,41 @@ class GenerateCommon(object):
             return self._target_data
         return self.generate()
 
-    def get_ip_from_setup_network_environment(self):
-        """
-        This method have to be removed
-        """
-        # This only work on Linux and if the DEFAULT_IPV4 is listening bootcfg address
-        out = "%s/misc/network-environment" % self.bootcfg_path
-        subprocess.check_call(
-            ["%s/assets/setup-network-environment/serve/setup-network-environment" %
-             self.bootcfg_path, "-o", "%s" % out])
-        with open("%s" % out, mode='r') as fd:
-            for l in fd:
-                if "DEFAULT_IPV4=" in l:
-                    ip = l.split("DEFAULT_IPV4=")[1].replace("\n", "")
-                    match = re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip)
-                    if match is not None:
-                        self.log.debug("correct IP address")
-                        return ip
-                    self.log.error("ERROR incorrect IP address")
-        raise ImportError("Error in module %s" % out)
-
-    @property
-    def api_ip(self):
-        """
-        :rtype: str
-        :return: IP address
-        """
-        if self._api_ip is not None:
-            self.log.debug("return %s" % self._api_ip)
-            return self._api_ip
-        api_ip = os.getenv("API_IP")
-        if api_ip and re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", api_ip):
-            self._api_ip = api_ip
-            self.log.debug("env -> API_IP=%s" % self._api_ip)
-        else:
-            self._api_ip = self.get_ip_from_setup_network_environment()
-
-        return self._api_ip
-
-    @property
-    def bootcfg_ip(self):
-        """
-        :rtype: str
-        :return: IP address
-        """
-        if self._bootcfg_ip is not None:
-            self.log.debug("return %s" % self._bootcfg_ip)
-            return self._bootcfg_ip
-        bootcfg_ip = os.getenv("BOOTCFG_IP")
-        if bootcfg_ip and re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", bootcfg_ip):
-            self._bootcfg_ip = bootcfg_ip
-            self.log.debug("env -> BOOTCFG_IP=%s" % self._api_ip)
-        else:
-            self._bootcfg_ip = self.get_ip_from_setup_network_environment()
-
-        return self._bootcfg_ip
-
     @property
     def api_uri(self):
-        return "http://%s:%s" % (self.api_ip, self._api_port)
+        """
+        :rtype: str
+        :return: URI address
+        """
+        if self._api_uri is not None:
+            self.log.debug("return %s" % self._api_uri)
+            return self._api_uri
+        api_uri = os.getenv("API_URI", None)
+        if api_uri is not None:
+            self._api_uri = api_uri
+            self.log.debug("env -> API_URI=%s" % self._api_uri)
+        else:
+            raise AttributeError("API_URI == %s" % api_uri)
+
+        return self._api_uri
 
     @property
     def bootcfg_uri(self):
-        return "http://%s:%s" % (self.bootcfg_ip, self._bootcfg_port)
+        """
+        :rtype: str
+        :return: URI address
+        """
+        if self._bootcfg_uri is not None:
+            self.log.debug("return %s" % self._bootcfg_uri)
+            return self._bootcfg_uri
+        bootcfg_uri = os.getenv("BOOTCFG_URI", None)
+        if bootcfg_uri is not None:
+            self._bootcfg_uri = bootcfg_uri
+            self.log.debug("env -> BOOTCFG_URI=%s" % self._api_uri)
+        else:
+            raise AttributeError("BOOTCFG_URI == %s" % bootcfg_uri)
+
+        return self._bootcfg_uri
 
     def render(self, indent=2):
         self.generate()

@@ -61,7 +61,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     bootcfg_port = int(os.getenv("BOOTCFG_PORT", "8080"))
 
     bootcfg_address = "0.0.0.0:%d" % bootcfg_port
-    bootcfg_uri = "http://localhost:%d" % bootcfg_port
+    bootcfg_uri = "http://172.20.0.1:%d" % bootcfg_port
 
     api_port = int(os.getenv("API_PORT", "5000"))
 
@@ -72,6 +72,9 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     kvm_sleep_between_node = 3
     wait_setup_teardown = 3
+
+    os.environ["API_URI"] = api_uri
+    os.environ["BOOTCFG_URI"] = bootcfg_uri
 
     @staticmethod
     def pause(t=600):
@@ -120,8 +123,6 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
         os.environ["DB_PATH"] = db_path
         os.environ["IGNITION_JOURNAL_DIR"] = journal
-        os.environ["API_URI"] = KernelVirtualMachinePlayer.api_uri
-        os.environ["BOOTCFG_URI"] = KernelVirtualMachinePlayer.bootcfg_uri
         cmd = [
             "%s/env/bin/gunicorn" % KernelVirtualMachinePlayer.project_path,
             "--chdir",
@@ -361,6 +362,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         return disco_data
 
     def kvm_restart_off_machines(self, to_start, tries=90):
+        assert type(to_start) is list
+        assert len(to_start) > 0
         for j in xrange(tries):
             if len(to_start) == 0:
                 break
@@ -380,6 +383,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         self.assertEqual(len(to_start), 0)
 
     def etcd_endpoint_health(self, ips, tries=30):
+        assert type(ips) is list
+        assert len(ips) > 0
         for t in xrange(tries):
             for i, ip in enumerate(ips):
                 try:
@@ -400,6 +405,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     def etcd_member_len(self, ip, members_nb, tries=30):
         result = {}
+        assert type(ip) is str
         for t in xrange(tries):
             try:
                 endpoint = "http://%s:2379/v2/members" % ip
@@ -420,6 +426,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     def etcd_member_k8s_minions(self, ip, nodes_nb, tries=120):
         result = {}
+        assert type(ip) is str
         for t in xrange(tries):
             try:
                 endpoint = "http://%s:2379/v2/keys/registry/minions" % ip

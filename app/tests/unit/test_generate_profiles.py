@@ -2,8 +2,6 @@ import os
 import subprocess
 from unittest import TestCase
 
-import re
-
 from app import generate_profiles, generate_common
 
 
@@ -15,6 +13,9 @@ class IOErrorToWarning(object):
         generate_common.GenerateCommon._raise_enof = IOError
 
 
+
+
+
 class TestGenerateProfiles(TestCase):
     gen = generate_profiles.GenerateProfile
     network_environment = "%s/misc/network-environment" % gen.bootcfg_path
@@ -22,10 +23,10 @@ class TestGenerateProfiles(TestCase):
     tests_path = "%s" % os.path.split(unit_path)[0]
     test_bootcfg_path = "%s/test_bootcfg" % tests_path
 
-    bootcfg_port = os.getenv("BOOTCFG_PORT", "8080")
-
     @classmethod
     def setUpClass(cls):
+        os.environ["BOOTCFG_URI"] = "http://127.0.0.1:8080"
+        os.environ["API_URI"] = "http://127.0.0.1:5000"
         subprocess.check_output(["make", "-C", cls.gen.project_path])
         # generate_common.GenerateCommon._raise_enof = Warning  # Skip the ignition isfile
         with IOErrorToWarning():
@@ -33,20 +34,6 @@ class TestGenerateProfiles(TestCase):
                 _id="etcd-proxy", name="etcd-proxy", ignition_id="etcd-proxy.yaml")
         # generate_common.GenerateCommon._raise_enof = IOError
         cls.gen.profiles_path = "%s/test_resources" % cls.tests_path
-        if os.path.isfile("%s" % cls.network_environment):
-            os.remove("%s" % cls.network_environment)
-
-    @classmethod
-    def tearDownClass(cls):
-        if os.path.isfile("%s" % cls.network_environment):
-            os.remove("%s" % cls.network_environment)
-
-    def test_00_ip_address(self):
-        self.assertFalse(os.path.isfile("%s" % self.network_environment))
-        ip = self.gen.api_ip
-        match = re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip)
-        self.assertIsNotNone(match)
-        self.assertTrue(os.path.isfile("%s" % self.network_environment))
 
     def test_01_boot(self):
         expect = {
