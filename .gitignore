@@ -69,3 +69,6 @@ bootcfg/assets/setup-network-environment/1.0.1/
 /app/tests/inte/test_resources/
 /release/db.sqlite-*.bak
 *.sqlite-*.bak
+/release/var_lib_bootcfg/groups/*.json
+/release/var_lib_bootcfg/profiles/*.json
+/release/var_lib_enjoliver/ignition-journal/
