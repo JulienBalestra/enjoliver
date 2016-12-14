@@ -61,7 +61,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     bootcfg_port = int(os.getenv("BOOTCFG_PORT", "8080"))
 
     bootcfg_address = "0.0.0.0:%d" % bootcfg_port
-    bootcfg_endpoint = "http://localhost:%d" % bootcfg_port
+    bootcfg_uri = "http://localhost:%d" % bootcfg_port
 
     api_port = int(os.getenv("API_PORT", "5000"))
 
@@ -120,7 +120,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
         os.environ["DB_PATH"] = db_path
         os.environ["IGNITION_JOURNAL_DIR"] = journal
-        os.environ["API_IP_PORT"] = "%s:%s" % (KernelVirtualMachinePlayer.api_ip, KernelVirtualMachinePlayer.api_port)
+        os.environ["API_URI"] = KernelVirtualMachinePlayer.api_uri
+        os.environ["BOOTCFG_URI"] = KernelVirtualMachinePlayer.bootcfg_uri
         cmd = [
             "%s/env/bin/gunicorn" % KernelVirtualMachinePlayer.project_path,
             "--chdir",

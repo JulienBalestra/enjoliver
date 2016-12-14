@@ -31,7 +31,7 @@ class TestAPI(unittest.TestCase):
     bootcfg_port = int(os.getenv("BOOTCFG_PORT", "8080"))
 
     bootcfg_address = "0.0.0.0:%d" % bootcfg_port
-    bootcfg_endpoint = "http://localhost:%d" % bootcfg_port
+    bootcfg_uri = "http://localhost:%d" % bootcfg_port
 
     @staticmethod
     def process_target():
@@ -62,6 +62,8 @@ class TestAPI(unittest.TestCase):
         model.Base.metadata.create_all(engine)
         api.engine = engine
         api.cache.clear()
+        api.application.config["API_URI"] = "http://localhost"
+        api.application.config["BOOTCFG_URI"] = cls.bootcfg_uri
 
         assert os.path.isfile(db_path)
 
@@ -83,7 +85,7 @@ class TestAPI(unittest.TestCase):
         cls.p_bootcfg.start()
         assert cls.p_bootcfg.is_alive() is True
 
-        cls.bootcfg_running(cls.bootcfg_endpoint, cls.p_bootcfg)
+        cls.bootcfg_running(cls.bootcfg_uri, cls.p_bootcfg)
 
     @classmethod
     def tearDownClass(cls):

@@ -35,12 +35,12 @@ class TestAPIAdvanced(unittest.TestCase):
     bootcfg_port = int(os.getenv("BOOTCFG_PORT", "8080"))
 
     bootcfg_address = "0.0.0.0:%d" % bootcfg_port
-    bootcfg_endpoint = "http://localhost:%d" % bootcfg_port
+    bootcfg_uri = "http://localhost:%d" % bootcfg_port
 
     api_port = int(os.getenv("API_PORT", "5000"))
 
     api_address = "0.0.0.0:%d" % api_port
-    api_endpoint = "http://localhost:%d" % api_port
+    api_uri = "http://localhost:%d" % api_port
 
     @staticmethod
     def process_target_bootcfg():
@@ -82,6 +82,8 @@ class TestAPIAdvanced(unittest.TestCase):
         assert os.path.isdir(journal) is False
         engine = api.create_engine(db)
         api.app.config["DB_PATH"] = db_path
+        api.app.config["API_URI"] = cls.api_uri
+        api.app.config["BOOTCFG_URI"] = cls.bootcfg_uri
         model.Base.metadata.create_all(engine)
         assert os.path.isfile(db_path)
         api.engine = engine
@@ -97,8 +99,8 @@ class TestAPIAdvanced(unittest.TestCase):
         cls.p_api.start()
         assert cls.p_api.is_alive() is True
 
-        cls.bootcfg_running(cls.bootcfg_endpoint, cls.p_bootcfg)
-        cls.api_running(cls.api_endpoint, cls.p_api)
+        cls.bootcfg_running(cls.bootcfg_uri, cls.p_bootcfg)
+        cls.api_running(cls.api_uri, cls.p_api)
 
     @classmethod
     def tearDownClass(cls):
@@ -176,7 +178,7 @@ class TestAPIAdvanced(unittest.TestCase):
                 u'/boot.ipxe.0': True,
                 u'/assets': True
             }}
-        request = urllib2.urlopen("%s/healthz" % self.api_endpoint)
+        request = urllib2.urlopen("%s/healthz" % self.api_uri)
         response_body = request.read()
         response_code = request.code
         request.close()
@@ -190,7 +192,7 @@ class TestAPIAdvanced(unittest.TestCase):
             ":retry_dhcp\n" \
             "dhcp || goto retry_dhcp\n" \
             "chain http://localhost:5000/ipxe?uuid=${uuid}&mac=${net0/mac:hexhyp}&domain=${domain}&hostname=${hostname}&serial=${serial}\n"
-        request = urllib2.urlopen("%s/boot.ipxe" % self.api_endpoint)
+        request = urllib2.urlopen("%s/boot.ipxe" % self.api_uri)
         response_body = request.read()
         response_code = request.code
         request.close()
@@ -204,7 +206,7 @@ class TestAPIAdvanced(unittest.TestCase):
             ":retry_dhcp\n" \
             "dhcp || goto retry_dhcp\n" \
             "chain http://localhost:5000/ipxe?uuid=${uuid}&mac=${net0/mac:hexhyp}&domain=${domain}&hostname=${hostname}&serial=${serial}\n"
-        request = urllib2.urlopen("%s/boot.ipxe" % self.api_endpoint)
+        request = urllib2.urlopen("%s/boot.ipxe" % self.api_uri)
         response_body = request.read()
         response_code = request.code
         request.close()
@@ -222,7 +224,7 @@ class TestAPIAdvanced(unittest.TestCase):
             u'/backup/db',
             u'/',
             u'/ipxe']
-        request = urllib2.urlopen("%s/" % self.api_endpoint)
+        request = urllib2.urlopen("%s/" % self.api_uri)
         response_body = request.read()
         response_code = request.code
         request.close()
@@ -232,7 +234,7 @@ class TestAPIAdvanced(unittest.TestCase):
 
     def test_03_ipxe_404(self):
         with self.assertRaises(urllib2.HTTPError):
-            urllib2.urlopen("%s/404" % self.api_endpoint)
+            urllib2.urlopen("%s/404" % self.api_uri)
 
     def test_04_ipxe(self):
         marker = "%s-%s" % (TestAPIAdvanced.__name__.lower(), self.test_04_ipxe.__name__)
@@ -243,7 +245,7 @@ class TestAPIAdvanced(unittest.TestCase):
             ignition_id=ignition_file,
             bootcfg_path=self.test_bootcfg_path)
         gen.dumps()
-        request = urllib2.urlopen("%s/ipxe" % self.api_endpoint)
+        request = urllib2.urlopen("%s/ipxe" % self.api_uri)
         response_body = request.read()
         response_code = request.code
         request.close()
@@ -272,9 +274,9 @@ class TestAPIAdvanced(unittest.TestCase):
             bootcfg_path=self.test_bootcfg_path)
         gen.dumps()
         with self.assertRaises(urllib2.HTTPError):
-            urllib2.urlopen("%s/ipxe" % self.api_endpoint)
+            urllib2.urlopen("%s/ipxe" % self.api_uri)
 
-        request = urllib2.urlopen("%s/ipxe?mac=%s" % (self.api_endpoint, mac))
+        request = urllib2.urlopen("%s/ipxe?mac=%s" % (self.api_uri, mac))
         response_body = request.read()
         response_code = request.code
         request.close()
@@ -290,14 +292,14 @@ class TestAPIAdvanced(unittest.TestCase):
         self.assertEqual(response_code, 200)
 
     def test_06_discovery_00(self):
-        req = urllib2.Request("%s/discovery" % self.api_endpoint, json.dumps(posts.M01),
+        req = urllib2.Request("%s/discovery" % self.api_uri, json.dumps(posts.M01),
                               {'Content-Type': 'application/json'})
         f = urllib2.urlopen(req)
         self.assertEqual(200, f.code)
         response = f.read()
         f.close()
         self.assertEqual(json.loads(response), {u'total_elt': 1, u'new': True})
-        req = urllib2.Request("%s/discovery/interfaces" % self.api_endpoint)
+        req = urllib2.Request("%s/discovery/interfaces" % self.api_uri)
         f = urllib2.urlopen(req)
         self.assertEqual(200, f.code)
         response = json.loads(f.read())
@@ -316,7 +318,7 @@ class TestAPIAdvanced(unittest.TestCase):
         f.close()
         self.assertEqual(expect, response)
 
-        req = urllib2.Request("%s/discovery" % self.api_endpoint)
+        req = urllib2.Request("%s/discovery" % self.api_uri)
         f = urllib2.urlopen(req)
         self.assertEqual(200, f.code)
         response = json.loads(f.read())
@@ -340,14 +342,14 @@ class TestAPIAdvanced(unittest.TestCase):
         ]
         f.close()
         self.assertEqual(expect, response)
-        req = urllib2.Request("%s/discovery/ignition-journal/b7f5f93a-b029-475f-b3a4-479ba198cb8a" % self.api_endpoint)
+        req = urllib2.Request("%s/discovery/ignition-journal/b7f5f93a-b029-475f-b3a4-479ba198cb8a" % self.api_uri)
         f = urllib2.urlopen(req)
         self.assertEqual(200, f.code)
         response = json.loads(f.read())
         self.assertEqual(39, len(response))
 
     def test_06_discovery_01(self):
-        req = urllib2.Request("%s/discovery" % self.api_endpoint, json.dumps(posts.M02),
+        req = urllib2.Request("%s/discovery" % self.api_uri, json.dumps(posts.M02),
                               {'Content-Type': 'application/json'})
         f = urllib2.urlopen(req)
         self.assertEqual(200, f.code)
@@ -356,18 +358,18 @@ class TestAPIAdvanced(unittest.TestCase):
         self.assertEqual(json.loads(response), {u'total_elt': 2, u'new': True})
 
     def test_06_discovery_02(self):
-        req = urllib2.Request("%s/discovery" % self.api_endpoint, json.dumps(posts.M03),
+        req = urllib2.Request("%s/discovery" % self.api_uri, json.dumps(posts.M03),
                               {'Content-Type': 'application/json'})
         f = urllib2.urlopen(req)
         self.assertEqual(200, f.code)
         response = f.read()
         f.close()
         self.assertEqual(json.loads(response), {u'total_elt': 3, u'new': True})
-        all_machines = urllib2.urlopen("%s/discovery" % self.api_endpoint)
+        all_machines = urllib2.urlopen("%s/discovery" % self.api_uri)
         content = json.loads(all_machines.read())
         all_machines.close()
 
-        req = urllib2.Request("%s/discovery" % self.api_endpoint, json.dumps(posts.M01),
+        req = urllib2.Request("%s/discovery" % self.api_uri, json.dumps(posts.M01),
                               {'Content-Type': 'application/json'})
         f = urllib2.urlopen(req)
         self.assertEqual(200, f.code)
@@ -382,7 +384,7 @@ class TestAPIAdvanced(unittest.TestCase):
         :return:
         """
         for i, p in enumerate(posts.ALL):
-            req = urllib2.Request("%s/discovery" % self.api_endpoint, json.dumps(p),
+            req = urllib2.Request("%s/discovery" % self.api_uri, json.dumps(p),
                                   {'Content-Type': 'application/json'})
             f = urllib2.urlopen(req)
             self.assertEqual(200, f.code)
@@ -398,24 +400,24 @@ class TestAPIAdvanced(unittest.TestCase):
         """
         Cache non regression
         """
-        r = requests.get("%s/discovery" % self.api_endpoint)
+        r = requests.get("%s/discovery" % self.api_uri)
         l = len(json.loads(r.content))
         r.close()
         self.assertEqual(l, len(posts.ALL))
         now = time.time()
         nb = 100
         for i in xrange(nb):
-            r = requests.get("%s/discovery" % self.api_endpoint)
+            r = requests.get("%s/discovery" % self.api_uri)
             r.close()
         self.assertTrue(now + (nb // 100) > time.time())
-        r = requests.get("%s/discovery" % self.api_endpoint)
+        r = requests.get("%s/discovery" % self.api_uri)
         l = len(json.loads(r.content))
         r.close()
         self.assertEqual(l, len(posts.ALL))
 
     def test_08_backup(self):
         n = int(math.floor(time.time()))
-        r = requests.post("%s/backup/db" % self.api_endpoint)
+        r = requests.post("%s/backup/db" % self.api_uri)
         s = json.loads(r.content)
         r.close()
         self.assertTrue(s["copy"])

@@ -20,10 +20,10 @@ app = application = Flask(__name__)
 cache = SimpleCache()
 
 application.config["BOOTCFG_URI"] = os.getenv(
-    "BOOTCFG_URI", "http://127.0.0.1:8080")
+    "BOOTCFG_URI", None)
 
-application.config["API_IP_PORT"] = os.getenv(
-    "API_IP_PORT", None)
+application.config["API_URI"] = os.getenv(
+    "API_URI", None)
 
 application.config["BOOTCFG_URLS"] = [
     "/",
@@ -53,8 +53,8 @@ libc = ctypes.CDLL("libc.so.6")  # TODO deep inside the SQLITE sync
 engine = None
 
 if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "foreign"):
-    # API IP
-    LOGGER.info("API_IP_PORT=%s" % application.config["API_IP_PORT"])
+    # API URI
+    LOGGER.info("API_URI=%s" % application.config["API_URI"])
 
     # bootcfg == Coreos-Baremetal
     LOGGER.info("BOOTCFG_URI=%s" % application.config["BOOTCFG_URI"])
@@ -104,10 +104,12 @@ def healthz():
         "bootcfg": {
             k: False for k in application.config["BOOTCFG_URLS"]}
     }
+    if app.config["BOOTCFG_URI"] is None:
+        application.logger.error("BOOTCFG_URI is None")
     for k in status["bootcfg"]:
         try:
             bootcfg_resp = urllib2.urlopen(
-                "%s%s" % (app.config["BOOTCFG_URI"], k))
+                "%s/%s" % (app.config["BOOTCFG_URI"], k))
             assert bootcfg_resp.code == 200
             status["bootcfg"][k] = True
         except Exception:
@@ -269,18 +271,17 @@ def boot_ipxe():
     :return: str
     """
     try:
-        flask_ip = application.config["API_IP_PORT"]
-        if flask_ip is None:
-            raise AttributeError("API_IP_PORT is None")
-        flask_uri = "%s://%s" % (
-            request.environ.get('wsgi.url_scheme'),
-            flask_ip)
+        flask_uri = application.config["API_URI"]
+        if flask_uri is None:
+            raise AttributeError("API_URI is None")
         app.logger.debug("%s" % flask_uri)
 
     except Exception as e:
         flask_uri = application.config["BOOTCFG_URI"]
         app.logger.error("<%s %s>: %s" % (e, type(e), e.message))
         app.logger.warning("Fall back to BOOTCFG_URI: %s" % flask_uri)
+        if flask_uri is None:
+            raise AttributeError("BOTH API_URI and BOOTCFG_URI are None")
 
     response = \
         "#!ipxe\n" \
