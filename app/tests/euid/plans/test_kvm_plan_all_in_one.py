@@ -33,21 +33,19 @@ class TestKVMAllInOne(TestKVMK8sBasic):
         os.environ["BOOTCFG_IP"] = "172.20.0.1"
         os.environ["API_IP"] = "172.20.0.1"
         os.environ["BOOTCFG_PATH"] = self.test_bootcfg_path
-        all_in_one.all_in_one(marker)
+        all_in_one.k8s_all_in_one(marker)
         destroy, undefine = ["virsh", "destroy", marker], \
                             ["virsh", "undefine", marker]
         self.virsh(destroy, v=self.dev_null), self.virsh(undefine, v=self.dev_null)
         try:
             virt_install = [
                 "virt-install",
-                "--name",
-                "%s" % marker,
+                "--name", "%s" % marker,
                 "--network=bridge:rack0,model=virtio",
                 "--memory=10240",
                 "--vcpus=4",
                 "--pxe",
-                "--disk",
-                "none",
+                "--disk", "none",
                 "--os-type=linux",
                 "--os-variant=generic",
                 "--noautoconsole",
