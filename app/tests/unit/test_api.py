@@ -22,7 +22,9 @@ class TestAPI(unittest.TestCase):
         engine = api.create_engine(db)
         model.Base.metadata.create_all(engine)
         api.engine = engine
+        api.application.config["API_IP_PORT"] = "localhost"
         cls.app = api.app.test_client()
+
         cls.app.testing = True
 
     @classmethod

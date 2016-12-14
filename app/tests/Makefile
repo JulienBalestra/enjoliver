@@ -73,11 +73,13 @@ dnsmasq:
 	$(CWD)/$(RKT) \
 		--interactive \
 		--mount volume=config,target=/etc/dnsmasq.conf \
+		--mount volume=resolv,target=/etc/resolv.conf \
 		--local-config=$(CWD) \
 		run --insecure-options=all \
 		quay.io/coreos/dnsmasq:v0.3.0 \
 		--net=host \
-		--volume config,kind=host,source=$(CWD)/dnsmasq-rack0.conf
+		--volume config,kind=host,source=$(CWD)/dnsmasq-rack0.conf \
+		--volume resolv,kind=host,source=/etc/resolv.conf
 
 gc:
 	test ! -e $(CWD)/$(RKT) || $(CWD)/$(RKT) --local-config=$(CWD) gc --grace-period=0s

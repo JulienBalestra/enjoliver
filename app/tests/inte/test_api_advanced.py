@@ -60,6 +60,7 @@ class TestAPIAdvanced(unittest.TestCase):
     @staticmethod
     def process_target_api():
         api.cache.clear()
+        api.application.config["API_IP_PORT"] = "localhost:5000"
         api.app.run(host="localhost", port=TestAPIAdvanced.api_port)
 
     @classmethod
