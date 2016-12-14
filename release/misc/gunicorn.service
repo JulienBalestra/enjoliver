@@ -1,0 +1,20 @@
+[Service]
+Environment=ENJOLIVER_EF=/etc/enjoliver.env
+
+ExecStartPre=/bin/mkdir -p /var/lib/enjoliver
+ExecStartPre=/bin/mkdir -p /var/lib/bootcfg/groups
+ExecStartPre=/bin/mkdir -p /var/lib/bootcfg/profiles
+
+ExecStart=/usr/bin/rkt \
+    run --interactive \
+    --net=host \
+    --set-env-file=${ENJOLIVER_EF} \
+    --volume=enjoliver-path,kind=host,source=/var/lib/enjoliver,readOnly=false \
+    --volume=bootcfg-groups,kind=host,source=/var/lib/bootcfg/groups,readOnly=false \
+    --volume=bootcfg-profiles,kind=host,source=/var/lib/bootcfg/profiles,readOnly=false \
+    static-aci-enjoliver \
+    --exec /usr/local/bin/gunicorn -- \
+    --chdir /opt/enjoliver/app \
+    --log-level debug \
+    -b 0.0.0.0:5000 \
+    api:application
