@@ -89,7 +89,7 @@ run_bootcfg:
 		-log-level debug \
 		-address 0.0.0.0:8080
 
-run_enter:
+run_all_in_one:
 	$(RKT) --local-config=$(DGR) image cat-manifest static-aci-enjoliver || \
 		$(RKT) --local-config=$(DGR) fetch --insecure-options=all $(ENJOLIVER)
 	$(RKT) --local-config=$(DGR) \
