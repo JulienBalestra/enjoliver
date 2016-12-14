@@ -46,7 +46,7 @@ application.config["BACKUP_BUCKET_DIRECTORY"] = os.getenv(
 
 application.config["BACKUP_LOCK_KEY"] = "backup_lock"
 
-libc = ctypes.CDLL("libc.so.6")  # TODO
+libc = ctypes.CDLL("libc.so.6")  # TODO deep inside the SQLITE sync
 engine = None
 
 if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "foreign"):
