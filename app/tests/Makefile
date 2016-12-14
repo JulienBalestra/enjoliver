@@ -120,6 +120,9 @@ check: default $(PYTHON)
 check_assets: default $(PYTHON)
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover assets/
 
+check_euid_fail_fast: $(PYTHON)
+	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover euid/ -f
+
 check_euid: $(PYTHON)
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover euid/
 
