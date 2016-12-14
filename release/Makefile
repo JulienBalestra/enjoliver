@@ -47,7 +47,7 @@ clean:
 	IMAGE=$(CWD)/aci-enjoliver make -C $(DGR) clean
 	$(RKT) --local-config=$(DGR) image gc --grace-period=0s
 	$(RKT) --local-config=$(DGR) gc --grace-period=0s
-	rm -v db.sqlite db.sqlite-*bak
+	rm -v db.sqlite db.sqlite-*bak || true
 
 fclean: clean
 	IMAGE=$(DGR)/aci-$(BASE) make -C $(DGR) clean
