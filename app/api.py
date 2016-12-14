@@ -50,15 +50,23 @@ libc = ctypes.CDLL("libc.so.6")  # TODO
 engine = None
 
 if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "foreign"):
+    # bootcfg == Coreos-Baremetal
     LOGGER.info("BOOTCFG_URI=%s" % application.config["BOOTCFG_URI"])
     LOGGER.info("BOOTCFG_URLS=%s" % application.config["BOOTCFG_URLS"])
+
+    # Database config
     LOGGER.info("DB_PATH=%s" % application.config["DB_PATH"])
     LOGGER.info("DB_URI=%s" % application.config["DB_URI"])
     LOGGER.info("IGNITION_JOURNAL_DIR=%s" % application.config["IGNITION_JOURNAL_DIR"])
+
+    # Backup
     LOGGER.info("BACKUP_BUCKET_NAME=%s" % application.config["BACKUP_BUCKET_NAME"])
     LOGGER.info("BACKUP_BUCKET_DIRECTORY=%s" % application.config["BACKUP_BUCKET_DIRECTORY"])
+    LOGGER.info("AWS_ACCESS_KEY_ID=len(%d)" % len(os.getenv("AWS_ACCESS_KEY_ID", "")))
+    LOGGER.info("AWS_SECRET_ACCESS_KEY=len(%d)" % len(os.getenv("AWS_SECRET_ACCESS_KEY", "")))
     LOGGER.info("BACKUP_LOCK_KEY=%s" % application.config["BACKUP_LOCK_KEY"])
 
+    # Start the db
     LOGGER.info("Create engine %s" % application.config["DB_URI"])
     engine = create_engine(application.config["DB_URI"])
     LOGGER.info("Create model %s" % application.config["DB_URI"])
