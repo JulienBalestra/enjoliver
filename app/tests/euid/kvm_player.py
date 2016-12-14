@@ -65,8 +65,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     api_port = int(os.getenv("API_PORT", "5000"))
 
-    api_host = "172.20.0.1"
-    api_endpoint = "http://%s:%d" % (api_host, api_port)
+    api_ip = "172.20.0.1"
+    api_uri = "http://%s:%d" % (api_ip, api_port)
 
     dev_null = open("/dev/null", "w")
 
@@ -120,6 +120,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
         os.environ["DB_PATH"] = db_path
         os.environ["IGNITION_JOURNAL_DIR"] = journal
+        os.environ["API_IP_PORT"] = "%s:%s" % (KernelVirtualMachinePlayer.api_ip, KernelVirtualMachinePlayer.api_port)
         cmd = [
             "%s/env/bin/gunicorn" % KernelVirtualMachinePlayer.project_path,
             "--chdir",
@@ -312,7 +313,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     def api_healthz(self, first=True):
         try:
-            request = urllib2.urlopen("%s/healthz" % self.api_endpoint)
+            request = urllib2.urlopen("%s/healthz" % self.api_uri)
             response_body = request.read()
             request.close()
             health = json.loads(response_body)
@@ -335,7 +336,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             raise RuntimeError("\"%s\"" % " ".join(cmd))
 
     def fetch_discovery_interfaces(self):
-        request = urllib2.urlopen("%s/discovery/interfaces" % self.api_endpoint)
+        request = urllib2.urlopen("%s/discovery/interfaces" % self.api_uri)
         response_body = request.read()
         request.close()
         self.assertEqual(request.code, 200)
@@ -343,7 +344,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         return interfaces
 
     def fetch_discovery(self):
-        request = urllib2.urlopen("%s/discovery" % self.api_endpoint)
+        request = urllib2.urlopen("%s/discovery" % self.api_uri)
         response_body = request.read()
         request.close()
         self.assertEqual(request.code, 200)
@@ -351,7 +352,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         return disco_data
 
     def fetch_discovery_ignition_journal(self, uuid):
-        request = urllib2.urlopen("%s/discovery/ignition-journal/%s" % (self.api_endpoint, uuid))
+        request = urllib2.urlopen("%s/discovery/ignition-journal/%s" % (self.api_uri, uuid))
         response_body = request.read()
         request.close()
         self.assertEqual(request.code, 200)

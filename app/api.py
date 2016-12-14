@@ -22,6 +22,9 @@ cache = SimpleCache()
 application.config["BOOTCFG_URI"] = os.getenv(
     "BOOTCFG_URI", "http://127.0.0.1:8080")
 
+application.config["API_IP_PORT"] = os.getenv(
+    "API_IP_PORT", None)
+
 application.config["BOOTCFG_URLS"] = [
     "/",
     "/boot.ipxe",
@@ -50,6 +53,9 @@ libc = ctypes.CDLL("libc.so.6")  # TODO deep inside the SQLITE sync
 engine = None
 
 if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "foreign"):
+    # API IP
+    LOGGER.info("API_IP_PORT=%s" % application.config["API_IP_PORT"])
+
     # bootcfg == Coreos-Baremetal
     LOGGER.info("BOOTCFG_URI=%s" % application.config["BOOTCFG_URI"])
     LOGGER.info("BOOTCFG_URLS=%s" % application.config["BOOTCFG_URLS"])
@@ -263,9 +269,12 @@ def boot_ipxe():
     :return: str
     """
     try:
+        flask_ip = application.config["API_IP_PORT"]
+        if flask_ip is None:
+            raise AttributeError("API_IP_PORT is None")
         flask_uri = "%s://%s" % (
             request.environ.get('wsgi.url_scheme'),
-            request.environ.get('HTTP_HOST'))
+            flask_ip)
         app.logger.debug("%s" % flask_uri)
 
     except Exception as e:

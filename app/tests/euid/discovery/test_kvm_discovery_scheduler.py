@@ -70,7 +70,7 @@ class TestKVMDiscoveryScheduler0(TestKVMDiscoveryScheduler):
 
             time.sleep(nb_node * self.kvm_sleep_between_node)
             sch = scheduler.EtcdMemberScheduler(
-                api_endpoint=self.api_endpoint,
+                api_endpoint=self.api_uri,
                 bootcfg_path=self.test_bootcfg_path,
                 ignition_member="%s-emember" % marker,
                 bootcfg_prefix="%s-" % marker
@@ -152,7 +152,7 @@ class TestKVMDiscoveryScheduler1(TestKVMDiscoveryScheduler):
 
             time.sleep(nb_node * self.kvm_sleep_between_node)
             sch_member = scheduler.EtcdMemberScheduler(
-                api_endpoint=self.api_endpoint,
+                api_endpoint=self.api_uri,
                 bootcfg_path=self.test_bootcfg_path,
                 ignition_member="%s-emember" % marker,
                 bootcfg_prefix="%s-" % marker
@@ -234,7 +234,7 @@ class TestKVMDiscoveryScheduler2(TestKVMDiscoveryScheduler):
                 time.sleep(self.kvm_sleep_between_node)  # KVM fail to associate nic
             time.sleep(nb_node * self.kvm_sleep_between_node)
             sch_member = scheduler.EtcdMemberScheduler(
-                api_endpoint=self.api_endpoint,
+                api_endpoint=self.api_uri,
                 bootcfg_path=self.test_bootcfg_path,
                 ignition_member="%s-emember" % marker,
                 bootcfg_prefix="%s-" % marker
@@ -314,7 +314,7 @@ class TestKVMDiscoveryScheduler3(TestKVMDiscoveryScheduler):
                 time.sleep(self.kvm_sleep_between_node)  # KVM fail to associate nic
 
             sch_member = scheduler.EtcdMemberScheduler(
-                api_endpoint=self.api_endpoint,
+                api_endpoint=self.api_uri,
                 bootcfg_path=self.test_bootcfg_path,
                 ignition_member="%s-emember" % marker,
                 bootcfg_prefix="%s-" % marker
@@ -392,7 +392,7 @@ class TestKVMDiscoveryScheduler4(TestKVMDiscoveryScheduler):
                 time.sleep(self.kvm_sleep_between_node)  # KVM fail to associate nic
 
             sch_member = scheduler.EtcdMemberScheduler(
-                api_endpoint=self.api_endpoint,
+                api_endpoint=self.api_uri,
                 bootcfg_path=self.test_bootcfg_path,
                 ignition_member="%s-emember" % marker,
                 bootcfg_prefix="%s-" % marker
@@ -479,7 +479,7 @@ class TestKVMDiscoveryScheduler5(TestKVMDiscoveryScheduler):
                 time.sleep(self.kvm_sleep_between_node)  # KVM fail to associate nic
 
             sch_member = scheduler.EtcdMemberScheduler(
-                api_endpoint=self.api_endpoint,
+                api_endpoint=self.api_uri,
                 bootcfg_path=self.test_bootcfg_path,
                 ignition_member="%s-emember" % marker,
                 bootcfg_prefix="%s-" % marker
@@ -566,7 +566,7 @@ class TestKVMDiscoveryScheduler6(TestKVMDiscoveryScheduler):
                 time.sleep(self.kvm_sleep_between_node)  # KVM fail to associate nic
 
             sch_member = scheduler.EtcdMemberScheduler(
-                api_endpoint=self.api_endpoint,
+                api_endpoint=self.api_uri,
                 bootcfg_path=self.test_bootcfg_path,
                 ignition_member="%s-emember" % marker,
                 bootcfg_prefix="%s-" % marker
