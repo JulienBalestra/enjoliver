@@ -29,8 +29,6 @@ class TestKVMBasicPXE(kvm_player.KernelVirtualMachinePlayer):
     # @unittest.skip("just skip")
     def test_00(self):
         marker = "euid-%s-%s" % (TestKVMBasicPXE.__name__.lower(), self.test_00.__name__)
-        os.environ["BOOTCFG_IP"] = "172.20.0.1"
-        os.environ["API_IP"] = "172.20.0.1"
         gen = generator.Generator(
             profile_id="%s" % marker,
             name="%s" % marker,
@@ -83,8 +81,6 @@ class TestKVMBasicPXE(kvm_player.KernelVirtualMachinePlayer):
     def test_01(self):
         nb_node = 3
         marker = "euid-%s-%s" % (TestKVMBasicPXE.__name__.lower(), self.test_01.__name__)
-        os.environ["BOOTCFG_IP"] = "172.20.0.1"
-        os.environ["API_IP"] = "172.20.0.1"
         gen = generator.Generator(
             profile_id="%s" % marker,
             name="%s" % marker,

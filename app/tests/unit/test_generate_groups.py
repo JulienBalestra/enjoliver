@@ -18,6 +18,8 @@ class TestGenerateGroups(TestCase):
 
     @classmethod
     def setUpClass(cls):
+        os.environ["BOOTCFG_URI"] = "http://127.0.0.1:8080"
+        os.environ["API_URI"] = "http://127.0.0.1:5000"
         subprocess.check_output(["make", "-C", cls.gen.project_path])
         cls.gen = generate_groups.GenerateGroup(
             _id="etcd-proxy", name="etcd-proxy", profile="TestGenerateProfiles")
@@ -30,12 +32,9 @@ class TestGenerateGroups(TestCase):
         if os.path.isfile("%s" % cls.network_environment):
             os.remove("%s" % cls.network_environment)
 
-    def test_00_ip_address(self):
-        self.assertFalse(os.path.isfile("%s" % self.network_environment))
-        ip = self.gen.api_ip
-        match = re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip)
-        self.assertIsNotNone(match)
-        self.assertTrue(os.path.isfile("%s" % self.network_environment))
+    def test_00_uri(self):
+        ip = self.gen.api_uri
+        self.assertIsNotNone(ip)
 
     def test_01_metadata(self):
         expect = {'etcd_initial_cluster': '',
@@ -84,6 +83,8 @@ class TestGenerateGroupsSelectorLower(TestCase):
 
     @classmethod
     def setUpClass(cls):
+        os.environ["BOOTCFG_URI"] = "http://127.0.0.1:8080"
+        os.environ["API_URI"] = "http://127.0.0.1:5000"
         subprocess.check_output(["make", "-C", cls.gen.project_path])
         cls.gen = generate_groups.GenerateGroup(
             _id="etcd-proxy",
@@ -100,12 +101,9 @@ class TestGenerateGroupsSelectorLower(TestCase):
         if os.path.isfile("%s" % cls.network_environment):
             os.remove("%s" % cls.network_environment)
 
-    def test_00_ip_address(self):
-        self.assertFalse(os.path.isfile("%s" % self.network_environment))
-        ip = self.gen.api_ip
-        match = re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip)
-        self.assertIsNotNone(match)
-        self.assertTrue(os.path.isfile("%s" % self.network_environment))
+    def test_00_api_uri(self):
+        ip = self.gen.api_uri
+        self.assertIsNotNone(ip)
 
     def test_01_metadata(self):
         expect = {'etcd_initial_cluster': '', 'api_uri': "%s" % self.gen.api_uri,
@@ -164,6 +162,8 @@ class TestGenerateGroupsSelectorUpper(TestCase):
 
     @classmethod
     def setUpClass(cls):
+        os.environ["BOOTCFG_URI"] = "http://127.0.0.1:8080"
+        os.environ["API_URI"] = "http://127.0.0.1:5000"
         subprocess.check_output(["make", "-C", cls.gen.project_path])
         cls.gen = generate_groups.GenerateGroup(
             _id="etcd-proxy",
@@ -181,11 +181,8 @@ class TestGenerateGroupsSelectorUpper(TestCase):
             os.remove("%s" % cls.network_environment)
 
     def test_00_ip_address(self):
-        self.assertFalse(os.path.isfile("%s" % self.network_environment))
-        ip = self.gen.api_ip
-        match = re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip)
-        self.assertIsNotNone(match)
-        self.assertTrue(os.path.isfile("%s" % self.network_environment))
+        ip = self.gen.api_uri
+        self.assertIsNotNone(ip)
 
     def test_01_metadata(self):
         expect = {'etcd_initial_cluster': '', 'api_uri': "%s" % self.gen.api_uri,
@@ -244,6 +241,8 @@ class TestGenerateGroupsExtraMetadata(TestCase):
 
     @classmethod
     def setUpClass(cls):
+        os.environ["BOOTCFG_URI"] = "http://127.0.0.1:8080"
+        os.environ["API_URI"] = "http://127.0.0.1:5000"
         subprocess.check_output(["make", "-C", cls.gen.project_path])
         cls.gen = generate_groups.GenerateGroup(
             _id="etcd-proxy",
@@ -262,12 +261,10 @@ class TestGenerateGroupsExtraMetadata(TestCase):
         if os.path.isfile("%s" % cls.network_environment):
             os.remove("%s" % cls.network_environment)
 
-    def test_00_ip_address(self):
+    def test_00_api_uri(self):
         self.assertFalse(os.path.isfile("%s" % self.network_environment))
-        ip = self.gen.api_ip
-        match = re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip)
-        self.assertIsNotNone(match)
-        self.assertTrue(os.path.isfile("%s" % self.network_environment))
+        ip = self.gen.api_uri
+        self.assertIsNotNone(ip)
 
     def test_01_metadata(self):
         expect = {'etcd_initial_cluster': 'static0=http://192.168.1.1:2379',
