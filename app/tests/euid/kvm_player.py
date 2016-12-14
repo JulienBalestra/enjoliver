@@ -437,6 +437,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         self.assertEqual(len(result["node"]["nodes"]), nodes_nb)
 
     def k8s_api_health(self, ips, tries=120):
+        assert type(ips) is list
+        assert len(ips) > 0
         for t in xrange(tries):
             for i, ip in enumerate(ips):
                 try:
