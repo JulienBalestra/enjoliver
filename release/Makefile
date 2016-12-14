@@ -57,16 +57,47 @@ fclean: clean
 
 re: clean default
 
-run:
+run_gunicorn:
 	$(RKT) --local-config=$(DGR) image cat-manifest static-aci-enjoliver || \
 		$(RKT) --local-config=$(DGR) fetch --insecure-options=all $(ENJOLIVER)
 	$(RKT) --local-config=$(DGR) \
 		run --interactive \
 		--net=host \
 		--set-env-file=$(ENJOLIVER_EF) \
-		--volume=enjoliver-path,kind=host,source=$(CWD),readOnly=false \
+		--volume=enjoliver-path,kind=host,source=$(CWD)/var_lib_enjoliver,readOnly=false \
+		--volume=bootcfg-groups,kind=host,source=$(CWD)/var_lib_bootcfg/groups,readOnly=false \
+		--volume=bootcfg-profiles,kind=host,source=$(CWD)/var_lib_bootcfg/profiles,readOnly=false \
 		static-aci-enjoliver \
 		--exec /usr/local/bin/gunicorn -- \
 		--chdir /opt/enjoliver/app \
 		--log-level debug \
+		-b 0.0.0.0:5000 \
 		api:application
+
+run_bootcfg:
+	$(RKT) --local-config=$(DGR) image cat-manifest static-aci-enjoliver || \
+		$(RKT) --local-config=$(DGR) fetch --insecure-options=all $(ENJOLIVER)
+	$(RKT) --local-config=$(DGR) \
+		run --interactive \
+		--net=host \
+		--set-env-file=$(ENJOLIVER_EF) \
+		--volume=enjoliver-path,kind=host,source=$(CWD)/var_lib_enjoliver,readOnly=false \
+		--volume=bootcfg-groups,kind=host,source=$(CWD)/var_lib_bootcfg/groups,readOnly=false \
+		--volume=bootcfg-profiles,kind=host,source=$(CWD)/var_lib_bootcfg/profiles,readOnly=false \
+		static-aci-enjoliver \
+		--exec /usr/bin/bootcfg -- \
+		-log-level debug \
+		-address 0.0.0.0:8080
+
+run_enter:
+	$(RKT) --local-config=$(DGR) image cat-manifest static-aci-enjoliver || \
+		$(RKT) --local-config=$(DGR) fetch --insecure-options=all $(ENJOLIVER)
+	$(RKT) --local-config=$(DGR) \
+		run --interactive \
+		--net=host \
+		--set-env-file=$(ENJOLIVER_EF) \
+		--volume=enjoliver-path,kind=host,source=$(CWD)/var_lib_enjoliver,readOnly=false \
+		--volume=bootcfg-groups,kind=host,source=$(CWD)/var_lib_bootcfg/groups,readOnly=false \
+		--volume=bootcfg-profiles,kind=host,source=$(CWD)/var_lib_bootcfg/profiles,readOnly=false \
+		static-aci-enjoliver \
+		--exec /bin/bash
