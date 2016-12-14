@@ -10,7 +10,7 @@ except ImportError:
     import generator
 
 
-def all_in_one(marker):
+def k8s_all_in_one(marker):
     gen = generator.Generator(
         profile_id="%s" % marker,
         name="%s" % marker,
@@ -22,14 +22,13 @@ def all_in_one(marker):
             "etcd_initial_advertise_peer_urls": "http://127.0.0.1:2380",
             "etcd_advertise_client_urls": "http://127.0.0.1:2379",
             "k8s_apiserver_count": 1,
-            "k8s_advertise_ip": "0.0.0.0",
+            "k8s_advertise_ip": "127.0.0.1",
         }
     )
     gen.dumps()
 
 
 if __name__ == '__main__':
-    marker = "k8s-all-in-one"
     assert os.getenv("BOOTCFG_IP", None) is not None
     assert os.getenv("API_IP", None) is not None
-    all_in_one(marker)
+    k8s_all_in_one("k8s-all-in-one")
