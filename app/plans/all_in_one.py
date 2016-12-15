@@ -22,7 +22,7 @@ def k8s_all_in_one(marker):
             "etcd_initial_advertise_peer_urls": "http://127.0.0.1:2380",
             "etcd_advertise_client_urls": "http://127.0.0.1:2379",
             "k8s_apiserver_count": 1,
-            "k8s_advertise_ip": "127.0.0.1",
+            "k8s_advertise_ip": "0.0.0.0",
         }
     )
     gen.dumps()
