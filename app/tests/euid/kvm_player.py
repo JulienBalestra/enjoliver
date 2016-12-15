@@ -405,7 +405,6 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     def etcd_member_len(self, ip, members_nb, tries=30):
         result = {}
-        assert type(ip) is str
         for t in xrange(tries):
             try:
                 endpoint = "http://%s:2379/v2/members" % ip
@@ -426,7 +425,6 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     def etcd_member_k8s_minions(self, ip, nodes_nb, tries=120):
         result = {}
-        assert type(ip) is str
         for t in xrange(tries):
             try:
                 endpoint = "http://%s:2379/v2/keys/registry/minions" % ip
