@@ -45,7 +45,14 @@
     sudo make acis
     sudo make release
     ls -lh release/*.aci
+    
+#### Release and quick all_in_one
 
+    sudo make run_gunicorn
+    sudo make run_bootcfg
+    sudo make run_all_in_one
+    
+    # You may need a bridge and a dnsmasq to chain loading to the API/BOOTCFG URI
 
 # TODO
 
