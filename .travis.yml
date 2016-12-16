@@ -5,7 +5,7 @@ sudo: required
 
 before_install:
   - sudo apt-get update -q
-  - DEBIAN_FRONTEND=noninteractive sudo apt-get install -y curl python python-virtualenv jq liblzma-dev mkisofs isolinux file make
+  - DEBIAN_FRONTEND=noninteractive sudo apt-get install -y curl python python-virtualenv jq file make
 
 script:
   - sudo make acis
