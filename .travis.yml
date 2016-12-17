@@ -4,13 +4,17 @@ os:
 sudo: required
 dist: trusty
 
+
 before_install:
+  - git checkout ${TRAVIS_BRANCH}
+
+install:
   - sudo apt-get update -q
   - DEBIAN_FRONTEND=noninteractive sudo apt-get install -y curl python python-virtualenv jq file make
 
 before_script:
-  - git checkout -b reattach-${TRAVIS_BRANCH}
+  - make submodules
+  - sudo make acis
 
 script:
-  - sudo make acis
   - sudo make release_aci
