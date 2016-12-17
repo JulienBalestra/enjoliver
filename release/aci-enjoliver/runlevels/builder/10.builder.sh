@@ -38,8 +38,10 @@ ${BOOTCFG} --version
 cd -P ${SOURCE_PROJECT}/bundles
 
 HEAD=$(git rev-parse HEAD)
-BRANCH=$(git symbolic-ref -q HEAD)
-BRANCH=${BRANCH##refs/heads/}
+
+# If in a detached HEAD symbolic-ref fail
+BRANCH=$(git symbolic-ref -q HEAD --short) || BRANCH=$(git branch --contains ${HEAD} | tr -d '* ')
+
 git bundle create ${HEAD}.bundle ${BRANCH} --
 git bundle verify ${HEAD}.bundle
 
