@@ -8,6 +8,6 @@ export LANG=C
 export TERM=xterm
 export DEBIAN_FRONTEND=noninteractive
 
-apt-get update
-apt-get install -y lldpd
+apt-get update -q
+apt-get install -y -q lldpd
 
