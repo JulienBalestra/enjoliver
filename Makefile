@@ -93,8 +93,7 @@ $(CHECK_EUID_KVM_PLAYER):
 	make -C app/tests/ $(CHECK_EUID_KVM_PLAYER)
 
 submodules:
-	git submodule init
-	git submodule update
+	git submodule update --init --recursive
 
 validate:
 	@./validate.py
