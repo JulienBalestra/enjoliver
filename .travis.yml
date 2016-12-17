@@ -16,6 +16,11 @@ install:
 before_script:
   - make submodules
   - sudo make acis
+  - make assets
+  - make validate
+  - make check
+  - make validate
+
 
 script:
   - sudo make release_aci
