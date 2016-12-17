@@ -8,6 +8,9 @@ before_install:
   - sudo apt-get update -q
   - DEBIAN_FRONTEND=noninteractive sudo apt-get install -y curl python python-virtualenv jq file make
 
+before_script:
+  - git checkout -b reattach-${TRAVIS_BRANCH}
+
 script:
   - sudo make acis
   - sudo make release_aci
