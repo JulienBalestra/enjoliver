@@ -4,15 +4,15 @@ set -ex
 . /dgr/bin/functions.sh
 isLevelEnabled "debug" && set -x
 
-export LANG=C
+export LC_ALL=C
 export DEBIAN_FRONTEND=noninteractive
 
 ENJOLIVER=${ROOTFS}/opt/enjoliver
 SOURCE_PROJECT=/opt/source-project
 
 
-apt-get update
-apt-get install -y curl python build-essential python-virtualenv python-dev git file openssh-client tar rsync
+apt-get update -q
+apt-get install -y -q curl python build-essential python-virtualenv python-dev git file openssh-client tar rsync
 ln -vs /usr/lib/python2.7/dist-packages/virtualenv.py /usr/local/bin/virtualenv
 chmod +x /usr/local/bin/virtualenv
 
@@ -50,13 +50,13 @@ git checkout ${BRANCH}
 
 ### Golang ###
 curl -Lf https://storage.googleapis.com/golang/go1.7.4.linux-amd64.tar.gz -o /tmp/go1.7.4.linux-amd64.tar.gz
-tar -C /usr/local/ -xzvf /tmp/go1.7.4.linux-amd64.tar.gz
+tar -C /usr/local/ -xzf /tmp/go1.7.4.linux-amd64.tar.gz
 
 export GOROOT=/usr/local/go
 
 for b in $(ls ${GOROOT}/bin/)
 do
-    ln -s ${GOROOT}/bin/${b} /usr/local/bin/${b}
+    ln -sv ${GOROOT}/bin/${b} /usr/local/bin/${b}
 done
 
 go version
