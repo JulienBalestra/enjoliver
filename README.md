@@ -84,7 +84,12 @@
 * Keep and history of each POST discovery
     * Real db cluster for Documents (capped)
 
-* Store the scheduling results in DB
+* Scheduling with persistence if Lifecycle
+    * Store results in DB: the fs is always a sync representation of the db
+        * staling
+
+    * Import the fs files as persistence: backup to implement
+        * concurrency limit
     
 
 #### rkt stage for KVM-QEMU
