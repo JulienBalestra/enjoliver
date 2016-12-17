@@ -7,8 +7,8 @@ isLevelEnabled "debug" && set -x
 export LC_ALL=C
 export DEBIAN_FRONTEND=noninteractive
 
-apt-get update
-apt-get install -y python python-pip python-dev build-essential
+apt-get update -q
+apt-get install -y -q python python-pip python-dev build-essential
 
 ENJOLIVER=/opt/enjoliver
 
