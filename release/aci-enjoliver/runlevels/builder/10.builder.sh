@@ -39,10 +39,8 @@ cd -P ${SOURCE_PROJECT}/bundles
 
 HEAD=$(git rev-parse HEAD)
 
-# If in a detached HEAD symbolic-ref fail
-BRANCH=$(git symbolic-ref -q HEAD --short) || \
-    BRANCH=$(git branch --contains ${HEAD} | grep -v detached | tr -d ' ')
-
+# If in a detached HEAD symbolic-ref fail - reattach it in a new branch
+BRANCH=$(git symbolic-ref -q HEAD --short)
 git bundle create ${HEAD}.bundle ${BRANCH} --
 git bundle verify ${HEAD}.bundle
 
