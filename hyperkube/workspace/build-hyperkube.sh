@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -exv
+set -ex
 set -o pipefail
 
 export DEBIAN_FRONTEND=noninteractive
@@ -24,7 +24,7 @@ go get -u github.com/jteeuwen/go-bindata/go-bindata
 
 # Fetch sources
 WORK_DIR="${GOPATH}/k8s.io/kubernetes"
-mkdir -p ${WORK_DIR}
+mkdir -pv ${WORK_DIR}
 curl -fL "https://github.com/kubernetes/kubernetes/archive/${VVERSION}.tar.gz" \
     | tar xzf - -C ${WORK_DIR} --strip 1
 cd ${WORK_DIR}
@@ -42,4 +42,4 @@ done
 time make hyperkube
 
 ls -lh _output/local/go/bin/
-cp -a _output/local/go/bin/hyperkube ${ACI_HOME}
+cp -av _output/local/go/bin/hyperkube ${ACI_HOME}
