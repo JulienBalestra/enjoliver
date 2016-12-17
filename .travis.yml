@@ -6,7 +6,7 @@ dist: trusty
 
 
 before_install:
-  - git checkout ${TRAVIS_BRANCH}
+  - git checkout -- .
 
 install:
   - sudo apt-get update -q
