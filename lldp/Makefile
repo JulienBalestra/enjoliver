@@ -1,7 +1,10 @@
 CWD=$(shell pwd)
 
-DGR=$(CWD)/../dgr
-RKT=$(DGR)/rkt_dir/rkt
+PROJECT=$(CWD)/..
+RUNTIME=$(PROJECT)/runtime
+DGR=$(RUNTIME)/dgr/dgr
+RKT=$(RUNTIME)/rkt/rkt
+ACI=$(PROJECT)/aci
 
 BASE=base
 DEBIAN=debian
@@ -11,34 +14,39 @@ LLDP=static-aci-lldp-$(LLDP_VERSION).aci
 
 LLDP_IMAGE=static-aci-lldp:$(LLDP_VERSION)
 
-RENDER=lldp.render
+RENDERS=$(RUNTIME)/renders
+SQUASH=$(RENDERS)/squash_manifest.py
+LLDP_RENDER=$(RENDERS)/lldp.render
 
 default: $(LLDP)
 
 $(BASE):
-	@echo ENV IMAGE=$(CWD)/aci-lldp
-	IMAGE=$(DGR)/aci-$(BASE) make -C $(DGR) install
+	@echo ENV IMAGE=$(ACI)/aci-$(BASE)
+	IMAGE=$(ACI)/aci-$(BASE) make -C $(RUNTIME) install
 
 $(DEBIAN): $(BASE)
-	@echo ENV IMAGE=$(CWD)/aci-lldp
-	IMAGE=$(DGR)/aci-$(DEBIAN) make -C $(DGR) install
+	@echo ENV IMAGE=$(ACI)/aci-$(DEBIAN)
+	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) install
 
-$(LLDP): $(DEBIAN)
-	@echo ENV IMAGE=$(CWD)/aci-lldp
-	IMAGE=$(CWD)/aci-lldp make -C $(DGR) install
-	$(RKT) --local-config=$(DGR) image render $(LLDP_IMAGE) $(RENDER) --overwrite
-	chmod +rx $(RENDER)/manifest
-	$(CWD)/squash_manifest.py
-	tar -C $(RENDER) -cf $(LLDP) manifest rootfs
+install: $(DEBIAN)
+	@echo ENV IMAGE=$(ACI)/aci-lldp
+	IMAGE=$(ACI)/aci-lldp make -C $(RUNTIME) install
+
+$(LLDP): install
+	$(RKT) --local-config=$(RUNTIME) image render $(LLDP_IMAGE) $(LLDP_RENDER) --overwrite
+	chmod +r $(LLDP_RENDER)/manifest
+	$(SQUASH) $(LLDP_RENDER)/manifest
+	tar -C $(LLDP_RENDER) -cf $(LLDP) manifest rootfs
 	file $(LLDP)
-	$(RKT) --local-config=$(DGR) fetch --insecure-options=all $(LLDP)
+	$(RKT) --local-config=$(RUNTIME) fetch --insecure-options=all $(LLDP)
 
 clean:
-	IMAGE=$(CWD)/aci-lldp make -C $(DGR) clean
-	$(RKT) --local-config=$(DGR) image gc --grace-period=0s
+	IMAGE=$(CWD)/aci-lldp make -C $(RUNTIME) clean
+	$(RKT) --local-config=$(RUNTIME) image gc --grace-period=0s
 
 fclean: clean
-	IMAGE=$(DGR)/aci-$(BASE) make -C $(DGR) clean
-	IMAGE=$(DGR)/aci-$(DEBIAN) make -C $(DGR) clean
-	rm -Rf $(RENDER) || true
+	IMAGE=$(ACI)/aci-$(BASE) make -C $(RUNTIME) clean
+	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) clean
 	rm -v $(LLDP) || true
+
+re: clean default

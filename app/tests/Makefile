@@ -1,14 +1,5 @@
 CWD=$(shell pwd)
 
-BOOTCFG_DIR=bootcfg_dir
-BOOTCFG=$(BOOTCFG_DIR)/bootcfg
-BOOTCFG_RELEASE=https://github.com/coreos/coreos-baremetal/releases/download/v0.4.0/coreos-baremetal-v0.4.0-linux-amd64.tar.gz
-
-RKT_DIR=rkt_dir
-RKT_DIR_DATA=$(RKT_DIR)/data
-RKT=$(RKT_DIR)/rkt
-RKT_RELEASE=https://github.com/coreos/rkt/releases/download/v1.19.0/rkt-v1.19.0.tar.gz
-
 
 CHAIN_IP_PORT=172.20.0.1:5000
 KKK=undionly.kkkpxe
@@ -20,17 +11,18 @@ ifneq ($(EUID), 0)
 endif
 
 PROJECT=$(CWD)/../..
+RUNTIME=$(PROJECT)/runtime
+RKT=$(RUNTIME)/rkt/rkt
+
 ENV_NAME=env
 PYTHON=$(PROJECT)/$(ENV_NAME)/bin/python
 
 TESTING_RSA=testing.id_rsa
 
-default: $(BOOTCFG) $(RKT) $(PYTHON) $(TESTING_RSA)
+default: runtime validate $(PYTHON) $(TESTING_RSA)
 
-bootcfg_assets:
-	@echo Run as USER
-	test $(ROOT)
-	make -C $(PROJECT) assets
+validate:
+	make -C $(PROJECT) validate
 
 $(PYTHON):
 	@echo Run as USER
@@ -41,36 +33,15 @@ $(PYTHON):
 	$(PROJECT)/$(ENV_NAME)/bin/pip install -r $(PROJECT)/requirements.txt
 	$(PYTHON) --version
 
+runtime:
+	make -C $(RUNTIME)
+	$(CWD)/config.py
 
-$(BOOTCFG):
-	@echo Run as USER
-	test $(ROOT)
-	mkdir -pv $(BOOTCFG_DIR)
-	curl -Lf $(BOOTCFG_RELEASE) -o $(BOOTCFG).tar.gz
-	tar -C $(BOOTCFG_DIR) -xzf $(BOOTCFG).tar.gz --strip-components=1
-	file $(BOOTCFG)
-
-$(RKT):
-	@echo Run as USER
-	test $(ROOT)
-	mkdir -pv $(RKT_DIR)
-	mkdir -pv $(RKT_DIR_DATA)
-	curl -Lf $(RKT_RELEASE) -o $(RKT).tar.gz
-	tar -C $(RKT_DIR) -xzf $(RKT).tar.gz --strip-components=1
-	$(CWD)/gen_config.py
-	$(CWD)/$(RKT) --local-config=$(CWD) fetch \
-    		--insecure-options=all $(RKT_DIR)/stage1-coreos.aci
-	$(CWD)/$(RKT) --local-config=$(CWD) image list
-
-fetch: $(RKT)
-	$(CWD)/$(RKT) --local-config=$(CWD) fetch \
-		--insecure-options=all quay.io/coreos/dnsmasq:v0.3.0
-	$(CWD)/$(RKT) --local-config=$(CWD) image list
 
 dnsmasq:
 	@file $(RKT)
 	@cat $(CWD)/dnsmasq-rack0.conf
-	$(CWD)/$(RKT) \
+	$(RKT) \
 		--interactive \
 		--mount volume=config,target=/etc/dnsmasq.conf \
 		--mount volume=resolv,target=/etc/resolv.conf \
@@ -84,7 +55,7 @@ dnsmasq:
 create_rack0:
 	@file $(RKT)
 	@cat $(CWD)/dnsmasq-rack0.conf
-	$(CWD)/$(RKT) \
+	$(RKT) \
 		--interactive \
 		--local-config=$(CWD) \
 		--net=rack0 \
@@ -93,10 +64,10 @@ create_rack0:
 		--exec /bin/true
 
 gc:
-	test ! -e $(CWD)/$(RKT) || $(CWD)/$(RKT) --local-config=$(CWD) gc --grace-period=0s
+	$(RKT) --local-config=$(CWD) gc --grace-period=0s
 
 gci:
-	test ! -e $(CWD)/$(RKT) || $(CWD)/$(RKT) --local-config=$(CWD) image gc --grace-period=0s
+	$(RKT) --local-config=$(CWD) image gc --grace-period=0s
 
 $(TESTING_RSA):
 	ssh-keygen -f $(CWD)/$(TESTING_RSA) -t rsa -N ''
@@ -104,15 +75,11 @@ $(TESTING_RSA):
 	cp -v $(CWD)/$(TESTING_RSA).pub $(CWD)/test_bootcfg/ssh_authorized_keys/
 
 clean:
-	rm -Rfv $(BOOTCFG_DIR) || true
-	rm -Rfv $(RKT_DIR) || true
 	rm -v $(ISO) || true
 	rm -v $(KKK) || true
 	rm -v $(TESTING_RSA)* || true
 	rm -Rfv test_bootcfg/ssh_authorized_keys || true
 	rm -v paths.d/*.json || true
-	rm -Rfv $(PROJECT)/$(ENV_NAME) || true
-	make -C $(PROJECT)/chain clean || true
 	rm -Rfv euid/ignition_journal || true
 	rm -Rfv euid/euid.sqlite || true
 	rm -Rfv inte/ignition_journal || true
