@@ -56,6 +56,10 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     bootcfg_path = "%s/bootcfg" % project_path
     assets_path = "%s/bootcfg/assets" % project_path
 
+    runtime_path = "%s/runtime" % project_path
+    rkt_bin = "%s/rkt/rkt" % runtime_path
+    bootcfg_bin = "%s/bootcfg/bootcfg" % runtime_path
+
     test_bootcfg_path = "%s/test_bootcfg" % tests_path
 
     bootcfg_port = int(os.getenv("BOOTCFG_PORT", "8080"))
@@ -94,7 +98,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     @staticmethod
     def process_target_bootcfg():
         cmd = [
-            "%s/bootcfg_dir/bootcfg" % KernelVirtualMachinePlayer.tests_path,
+            "%s" % KernelVirtualMachinePlayer.bootcfg_bin,
             "-data-path", "%s" % KernelVirtualMachinePlayer.test_bootcfg_path,
             "-assets-path", "%s" % KernelVirtualMachinePlayer.assets_path,
             "-address", "%s" % KernelVirtualMachinePlayer.bootcfg_address,
@@ -140,7 +144,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     @staticmethod
     def process_target_dnsmasq():
         cmd = [
-            "%s/rkt_dir/rkt" % KernelVirtualMachinePlayer.tests_path,
+            "%s" % KernelVirtualMachinePlayer.rkt_bin,
             "--local-config=%s" % KernelVirtualMachinePlayer.tests_path,
             "--mount",
             "volume=config,target=/etc/dnsmasq.conf",
@@ -167,7 +171,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     @staticmethod
     def fetch_lldpd():
         cmd = [
-            "%s/rkt_dir/rkt" % KernelVirtualMachinePlayer.tests_path,
+            "%s" % KernelVirtualMachinePlayer.rkt_bin,
             "--local-config=%s" % KernelVirtualMachinePlayer.tests_path,
             "fetch",
             "--insecure-options=all",
@@ -177,7 +181,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     @staticmethod
     def process_target_lldpd():
         cmd = [
-            "%s/rkt_dir/rkt" % KernelVirtualMachinePlayer.tests_path,
+            "%s" % KernelVirtualMachinePlayer.rkt_bin,
             "--local-config=%s" % KernelVirtualMachinePlayer.tests_path,
             "run",
             "static-aci-lldp",
@@ -217,11 +221,11 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
         cls.clean_sandbox()
 
-        if os.path.isfile("%s/rkt_dir/rkt" % KernelVirtualMachinePlayer.tests_path) is False or \
-                        os.path.isfile("%s/bootcfg_dir/bootcfg" % KernelVirtualMachinePlayer.tests_path) is False:
-            os.write(2, "Call 'make' as user for:\n"
-                        "- %s/rkt_dir/rkt\n" % KernelVirtualMachinePlayer.tests_path +
-                     "- %s/bootcfg_dir/bootcfg\n" % KernelVirtualMachinePlayer.tests_path)
+        if os.path.isfile("%s" % KernelVirtualMachinePlayer.rkt_bin) is False or \
+                        os.path.isfile("%s" % KernelVirtualMachinePlayer.bootcfg_bin) is False:
+            os.write(2, "Call 'make runtime' as user for:\n"
+                        "- %s\n" % KernelVirtualMachinePlayer.rkt_bin +
+                     "- %s\n" % KernelVirtualMachinePlayer.bootcfg_bin)
             exit(2)
         os.write(1, "PPID -> %s\n" % os.getpid())
 
@@ -237,7 +241,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     @classmethod
     def set_rack0(cls):
         ret = subprocess.call([
-            "%s/rkt_dir/rkt" % KernelVirtualMachinePlayer.tests_path,
+            "%s" % KernelVirtualMachinePlayer.rkt_bin,
             "--local-config=%s" % KernelVirtualMachinePlayer.tests_path,
             "run",
             "quay.io/coreos/dnsmasq:v0.3.0",
@@ -291,7 +295,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 os.write(1, "\rEND -> %s %s\n\r" % (p.exitcode, p.name))
 
         subprocess.call([
-            "%s/rkt_dir/rkt" % KernelVirtualMachinePlayer.tests_path,
+            "%s" % KernelVirtualMachinePlayer.rkt_bin,
             "--local-config=%s" % KernelVirtualMachinePlayer.tests_path,
             "gc",
             "--grace-period=0s"])
