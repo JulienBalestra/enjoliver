@@ -1,7 +1,9 @@
 CWD=$(shell pwd)
 
-DGR=$(CWD)/../dgr
-RKT=$(DGR)/rkt_dir/rkt
+RUNTIME=$(CWD)/../runtime/
+DGR=$(RUNTIME)/dgr/dgr
+RKT=$(RUNTIME)/rkt/rkt
+ACI=$(CWD)/aci
 WS=workspace
 
 BASE=base
@@ -13,15 +15,15 @@ default: $(HYPERKUBE)
 
 $(BASE):
 	@echo ENV IMAGE=$(CWD)/aci-$(BASE)
-	IMAGE=$(DGR)/aci-$(BASE) make -C $(DGR) install
+	IMAGE=$(ACI)/aci-$(BASE) make -C $(DGR) install
 
 $(DEBIAN): $(BASE)
 	@echo ENV IMAGE=$(CWD)/aci-$(DEBIAN)
-	IMAGE=$(DGR)/aci-$(DEBIAN) make -C $(DGR) install
+	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(DGR) install
 
 $(BUILDER_K8S): $(DEBIAN)
 	@echo ENV IMAGE=$(CWD)/aci-$(BUILDER_K8S)
-	IMAGE=$(CWD)/aci-$(BUILDER_K8S) make -C $(DGR) install
+	IMAGE=$(ACI)/aci-$(BUILDER_K8S) make -C $(DGR) install
 
 $(HYPERKUBE): $(BUILDER_K8S) clean
 	$(RKT) --local-config=$(DGR) gc --grace-period=0s
@@ -45,7 +47,7 @@ clean:
 
 fclean: clean gc
 	IMAGE=$(CWD)/aci-$(BUILDER_K8S) make -C $(DGR) clean
-	IMAGE=$(DGR)/aci-$(BASE) make -C $(DGR) clean
-	IMAGE=$(DGR)/aci-$(DEBIAN) make -C $(DGR) clean
+	IMAGE=$(ACI)/aci-$(BASE) make -C $(DGR) clean
+	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(DGR) clean
 
 re: fclean $(HYPERKUBE)

@@ -30,6 +30,10 @@ class TestAPIAdvanced(unittest.TestCase):
     bootcfg_path = "%s/bootcfg" % project_path
     assets_path = "%s/bootcfg/assets" % project_path
 
+    runtime_path = "%s/runtime" % project_path
+    rkt_bin = "%s/rkt/rkt" % runtime_path
+    bootcfg_bin = "%s/bootcfg/bootcfg" % runtime_path
+
     test_bootcfg_path = "%s/test_bootcfg" % tests_path
 
     bootcfg_port = int(os.getenv("BOOTCFG_PORT", "8080"))
@@ -45,7 +49,7 @@ class TestAPIAdvanced(unittest.TestCase):
     @staticmethod
     def process_target_bootcfg():
         cmd = [
-            "%s/bootcfg_dir/bootcfg" % TestAPIAdvanced.tests_path,
+            "%s" % TestAPIAdvanced.bootcfg_bin,
             "-data-path", "%s" % TestAPIAdvanced.test_bootcfg_path,
             "-assets-path", "%s" % TestAPIAdvanced.assets_path,
             "-address", "%s" % TestAPIAdvanced.bootcfg_address,
@@ -88,9 +92,9 @@ class TestAPIAdvanced(unittest.TestCase):
         assert os.path.isfile(db_path)
         api.engine = engine
 
-        subprocess.check_output(["make"], cwd=cls.project_path)
-        if os.path.isfile("%s/bootcfg_dir/bootcfg" % TestAPIAdvanced.tests_path) is False:
-            subprocess.check_output(["make"], cwd=cls.tests_path)
+        # subprocess.check_output(["make"], cwd=cls.project_path)
+        if os.path.isfile("%s" % TestAPIAdvanced.bootcfg_bin) is False:
+            raise IOError("%s" % TestAPIAdvanced.bootcfg_bin)
         cls.p_bootcfg = Process(target=TestAPIAdvanced.process_target_bootcfg)
         cls.p_api = Process(target=TestAPIAdvanced.process_target_api)
         os.write(1, "PPID -> %s\n" % os.getpid())

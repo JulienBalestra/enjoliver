@@ -21,7 +21,7 @@ $(IPXE):
 
 $(EMBED_SCRIPT):
 	@echo "CHAIN_IP_PORT=$(CHAIN_IP_PORT)"
-	@test $(CHAIN_IP_PORT)
+	test $(CHAIN_IP_PORT)
 	sed s/CHAIN_IP_PORT/$(CHAIN_IP_PORT)/g chain.ipxe.template > $(EMBED_SCRIPT)
 	@rm -v $(ISO) || true
 
