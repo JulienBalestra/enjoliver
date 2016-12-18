@@ -1,9 +1,14 @@
 CWD=$(shell pwd)
 
-RUNTIME=$(CWD)/../runtime/
+PROJECT=$(CWD)/..
+RUNTIME=$(PROJECT)/runtime
 DGR=$(RUNTIME)/dgr/dgr
 RKT=$(RUNTIME)/rkt/rkt
-ACI=$(CWD)/aci
+ACI=$(PROJECT)/aci
+
+BASE=base
+DEBIAN=debian
+
 WS=workspace
 
 BASE=base
@@ -14,20 +19,20 @@ HYPERKUBE=$(WS)/hyperkube
 default: $(HYPERKUBE)
 
 $(BASE):
-	@echo ENV IMAGE=$(CWD)/aci-$(BASE)
-	IMAGE=$(ACI)/aci-$(BASE) make -C $(DGR) install
+	@echo ENV IMAGE=$(ACI)/aci-$(BASE)
+	IMAGE=$(ACI)/aci-$(BASE) make -C $(RUNTIME) install
 
 $(DEBIAN): $(BASE)
-	@echo ENV IMAGE=$(CWD)/aci-$(DEBIAN)
-	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(DGR) install
+	@echo ENV IMAGE=$(ACI)/aci-$(DEBIAN)
+	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) install
 
 $(BUILDER_K8S): $(DEBIAN)
-	@echo ENV IMAGE=$(CWD)/aci-$(BUILDER_K8S)
-	IMAGE=$(ACI)/aci-$(BUILDER_K8S) make -C $(DGR) install
+	@echo ENV IMAGE=$(ACI)/aci-$(BUILDER_K8S)
+	IMAGE=$(ACI)/aci-$(BUILDER_K8S) make -C $(RUNTIME) install
 
 $(HYPERKUBE): $(BUILDER_K8S) clean
-	$(RKT) --local-config=$(DGR) gc --grace-period=0s
-	$(RKT) --local-config=$(DGR) run \
+	$(RKT) --local-config=$(RUNTIME) gc --grace-period=0s
+	$(RKT) --local-config=$(RUNTIME) run \
 	    --interactive \
 	    --insecure-options=all \
 	    --net=host \
@@ -39,15 +44,15 @@ $(HYPERKUBE): $(BUILDER_K8S) clean
 	ls -lh $(HYPERKUBE)
 
 gc:
-	$(RKT) --local-config=$(DGR) gc --grace-period=0s
-	$(RKT) --local-config=$(DGR) image gc --grace-period=0s
+	$(RKT) --local-config=$(RUNTIME) gc --grace-period=0s
+	$(RKT) --local-config=$(RUNTIME) image gc --grace-period=0s
 
 clean:
 	rm -v $(HYPERKUBE) || true
 
 fclean: clean gc
 	IMAGE=$(CWD)/aci-$(BUILDER_K8S) make -C $(DGR) clean
-	IMAGE=$(ACI)/aci-$(BASE) make -C $(DGR) clean
-	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(DGR) clean
+	IMAGE=$(ACI)/aci-$(BASE) make -C $(RUNTIME) clean
+	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) clean
 
-re: fclean $(HYPERKUBE)
+re: clean $(HYPERKUBE)
