@@ -32,6 +32,10 @@ class TestBootConfigCommon(TestCase):
     bootcfg_path = "%s/bootcfg" % project_path
     assets_path = "%s/bootcfg/assets" % project_path
 
+    runtime_path = "%s/runtime" % project_path
+    rkt_bin = "%s/rkt/rkt" % runtime_path
+    bootcfg_bin = "%s/bootcfg/bootcfg" % runtime_path
+
     test_bootcfg_path = "%s/test_bootcfg" % tests_path
 
     bootcfg_port = int(os.getenv("BOOTCFG_PORT", "8080"))
@@ -42,7 +46,7 @@ class TestBootConfigCommon(TestCase):
     @staticmethod
     def process_target():
         cmd = [
-            "%s/bootcfg_dir/bootcfg" % TestBootConfigCommon.tests_path,
+            "%s" % TestBootConfigCommon.bootcfg_bin,
             "-data-path", "%s" % TestBootConfigCommon.test_bootcfg_path,
             "-assets-path", "%s" % TestBootConfigCommon.assets_path,
             "-address", "%s" % TestBootConfigCommon.bootcfg_address,
@@ -86,8 +90,8 @@ class TestBootConfigCommon(TestCase):
         cls.clean_sandbox()
 
         subprocess.check_output(["make"], cwd=cls.project_path)
-        if os.path.isfile("%s/bootcfg_dir/bootcfg" % TestBootConfigCommon.tests_path) is False:
-            subprocess.check_output(["make"], cwd=cls.tests_path)
+        if os.path.isfile("%s" % TestBootConfigCommon.bootcfg_bin) is False:
+            raise IOError("%s" % TestBootConfigCommon.bootcfg_bin)
         cls.p_bootcfg = Process(target=TestBootConfigCommon.process_target)
         os.write(1, "PPID -> %s\n" % os.getpid())
         cls.p_bootcfg.start()
