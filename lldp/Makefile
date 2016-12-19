@@ -2,7 +2,6 @@ CWD=$(shell pwd)
 
 PROJECT=$(CWD)/..
 RUNTIME=$(PROJECT)/runtime
-DGR=$(RUNTIME)/dgr/dgr
 RKT=$(RUNTIME)/rkt/rkt
 ACI=$(PROJECT)/aci
 
