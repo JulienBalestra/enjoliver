@@ -11,11 +11,16 @@ before_install:
 
 install:
   - sudo apt-get update -q
-  - DEBIAN_FRONTEND=noninteractive sudo apt-get install -y curl python python-virtualenv jq file make
+#  - DEBIAN_FRONTEND=noninteractive sudo apt-get install -y curl python python-virtualenv jq file make
 
 script:
+  - sudo make apt
+
   - make submodules
+  - make runner
+
   - sudo make acis
+
   - make assets
   - make validate
   - make check
