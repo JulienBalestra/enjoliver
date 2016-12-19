@@ -40,7 +40,7 @@ $(HYPERKUBE): $(BUILDER_K8S) clean
 	    --volume $(WS),kind=host,source=$(CWD)/$(WS) \
 	    --mount volume=$(WS),target=/opt/$(WS) \
 	    --exec /opt/$(WS)/build-hyperkube.sh ; \
-	    $(RKT) --local-config=$(DGR) gc --grace-period=0s
+	    $(RKT) --local-config=$(RUNTIME) gc --grace-period=0s
 	ls -lh $(HYPERKUBE)
 
 gc:
