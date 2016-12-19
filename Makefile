@@ -12,6 +12,7 @@ help:
 	@echo Setup:
 	@echo sudo make apt
 	@echo make submodules
+	@echo make runner
 	@echo sudo make acis
 	@echo make assets
 	@echo make validate
@@ -97,6 +98,9 @@ submodules:
 
 validate:
 	@./validate.py
+
+runner:
+	make -C runtime
 
 release_aci:
 	make -C release
