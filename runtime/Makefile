@@ -55,14 +55,14 @@ $(RKT_DOWNLOAD_TAR):
 	curl -fL $(RKT_GITHUB) -o $(RKT_DOWNLOAD_TAR)
 
 $(RKT): $(RKT_DOWNLOAD_TAR)
-	tar -C $(RKT_DIR) -xzf $(RKT_DOWNLOAD_TAR) --strip-components=1
+	$(RKT) version || tar -C $(RKT_DIR) -xzf $(RKT_DOWNLOAD_TAR) --strip-components=1
 	$(CWD)/config.py
 	$(RKT) --local-config=$(CWD) fetch \
     		--insecure-options=all $(RKT_DIR)/stage1-coreos.aci
 	$(RKT) --local-config=$(CWD) image list
 
 
-setup: $(RKT) $(DGR)
+setup: $(RKT) $(DGR) $(BOOTCFG)
 
 gc:
 	$(RKT) --local-config=$(CWD) gc --grace-period=0s
@@ -95,5 +95,7 @@ fclean:
 	rm -Rf $(DGR_DIR) || true
 	rm -Rf $(RKT_DIR) || true
 	rm -Rf data || true
+	rm -Rf renders/*.render || true
+	rm -Rf target || true
 
 .PHONY: $(DGR) $(RKT) setup build install clean fclean
