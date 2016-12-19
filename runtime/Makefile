@@ -62,7 +62,7 @@ $(RKT): $(RKT_DOWNLOAD_TAR)
 	$(RKT) --local-config=$(CWD) image list
 
 
-setup: $(RKT) $(DGR)
+setup: $(RKT) $(DGR) $(BOOTCFG)
 
 gc:
 	$(RKT) --local-config=$(CWD) gc --grace-period=0s
