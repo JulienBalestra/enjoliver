@@ -2,7 +2,6 @@ CWD=$(shell pwd)
 
 PROJECT=$(CWD)/..
 RUNTIME=$(PROJECT)/runtime
-DGR=$(RUNTIME)/dgr/dgr
 RKT=$(RUNTIME)/rkt/rkt
 ACI=$(PROJECT)/aci
 
@@ -40,7 +39,7 @@ $(HYPERKUBE): $(BUILDER_K8S) clean
 	    --volume $(WS),kind=host,source=$(CWD)/$(WS) \
 	    --mount volume=$(WS),target=/opt/$(WS) \
 	    --exec /opt/$(WS)/build-hyperkube.sh ; \
-	    $(RKT) --local-config=$(DGR) gc --grace-period=0s
+	    $(RKT) --local-config=$(RUNTIME) gc --grace-period=0s
 	ls -lh $(HYPERKUBE)
 
 gc:
@@ -51,7 +50,7 @@ clean:
 	rm -v $(HYPERKUBE) || true
 
 fclean: clean gc
-	IMAGE=$(CWD)/aci-$(BUILDER_K8S) make -C $(DGR) clean
+	IMAGE=$(CWD)/aci-$(BUILDER_K8S) make -C $(RUNTIME) clean
 	IMAGE=$(ACI)/aci-$(BASE) make -C $(RUNTIME) clean
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) clean
 
