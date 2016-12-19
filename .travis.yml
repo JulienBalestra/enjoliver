@@ -4,14 +4,8 @@ os:
 sudo: required
 dist: trusty
 
-
-before_install:
-  - git checkout ${TRAVIS_BRANCH}
-  - git pull
-
 install:
   - sudo apt-get update -q
-#  - DEBIAN_FRONTEND=noninteractive sudo apt-get install -y curl python python-virtualenv jq file make
 
 script:
   - sudo make apt
