@@ -96,5 +96,6 @@ fclean:
 	rm -Rf $(RKT_DIR) || true
 	rm -Rf data || true
 	rm -Rf renders/*.render || true
+	rm -Rf target || true
 
 .PHONY: $(DGR) $(RKT) setup build install clean fclean
