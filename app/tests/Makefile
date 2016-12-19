@@ -19,7 +19,7 @@ PYTHON=$(PROJECT)/$(ENV_NAME)/bin/python
 
 TESTING_RSA=testing.id_rsa
 
-default: runtime validate $(PYTHON) $(TESTING_RSA)
+default: validate $(PYTHON) $(TESTING_RSA)
 
 validate:
 	make -C $(PROJECT) validate
