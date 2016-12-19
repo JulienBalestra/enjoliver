@@ -2,7 +2,6 @@ CWD=$(shell pwd)
 
 PROJECT=$(CWD)/..
 RUNTIME=$(PROJECT)/runtime
-DGR=$(RUNTIME)/dgr/dgr
 RKT=$(RUNTIME)/rkt/rkt
 ACI=$(PROJECT)/aci
 
@@ -51,7 +50,7 @@ clean:
 	rm -v $(HYPERKUBE) || true
 
 fclean: clean gc
-	IMAGE=$(CWD)/aci-$(BUILDER_K8S) make -C $(DGR) clean
+	IMAGE=$(CWD)/aci-$(BUILDER_K8S) make -C $(RUNTIME) clean
 	IMAGE=$(ACI)/aci-$(BASE) make -C $(RUNTIME) clean
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) clean
 
