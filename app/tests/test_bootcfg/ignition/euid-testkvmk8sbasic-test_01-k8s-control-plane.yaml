@@ -186,7 +186,7 @@ storage:
               - --etcd-servers=http://127.0.0.1:2379
               - --allow-privileged=true
               - --service-cluster-ip-range=172.20.0.0/19
-              - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota
+              - --admission-control=NamespaceLifecycle,LimitRanger,DefaultStorageClass,ResourceQuota
               - --runtime-config=extensions/v1beta1/networkpolicies=true
               livenessProbe:
                 httpGet:
