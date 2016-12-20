@@ -56,7 +56,7 @@ $(HYPERKUBE_BIN): $(BUILDER_K8S) clean
 	    $(RKT) --local-config=$(RUNTIME) gc --grace-period=0s
 	ls -lh $(HYPERKUBE_BIN)
 
-install: $(DEBIAN) $(HYPERKUBE)
+install: $(DEBIAN) $(HYPERKUBE_BIN)
 	@echo ENV IMAGE=$(ACI)/aci-lldp
 	IMAGE=$(ACI)/aci-hyperkube make -C $(RUNTIME) install
 
