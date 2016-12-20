@@ -58,6 +58,19 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
+    - name: cni-dhcp.service
+      enable: true
+      contents: |
+        [Unit]
+        Requires=install-cni.service
+        After=install-cni.service
+
+        [Service]
+        ExecStartPre=-/bin/rm -v /run/cni/dhcp.sock
+        ExecStart=/opt/cni/bin/dhcp daemon
+        [Install]
+        WantedBy=multi-user.target
+
     - name: install-hyperkube.service
       enable: true
       contents: |
@@ -131,6 +144,10 @@ systemd:
         After=fetch-metadata.service
         After=installs.target
         Requires=installs.target
+        After=cni-dhcp.service
+        Requires=cni-dhcp.service
+        After=rkt-api.service
+        Requires=rkt-api.service
 
         [Service]
         EnvironmentFile=/etc/metadata.env
@@ -198,12 +215,7 @@ storage:
             "type": "macvlan",
             "master": "eth0",
             "ipam": {
-              "type": "host-local",
-              "subnet": "172.20.0.0/19",
-              "rangeStart": "172.20.1.10",
-              "rangeStart": "172.20.1.50",
-              "gateway": "172.20.0.1",
-              "routes": [{"dst":"0.0.0.0/0"}]
+              "type": "dhcp"
             }
           }
 
