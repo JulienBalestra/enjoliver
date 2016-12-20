@@ -71,7 +71,7 @@ chown -R enjoliver ${ENJOLIVER}
 su - enjoliver -c "make submodules"
 su - enjoliver -c "make runner"
 
-for artifact in lldp/static-aci-lldp-0.aci hyperkube/workspace/hyperkube
+for artifact in lldp/static-aci-lldp-0.aci hyperkube/hyperkube hyperkube/static-aci-hyperkube-0.aci
 do
     su - enjoliver -c "cp -v ${SOURCE_PROJECT}/${artifact} ${ENJOLIVER}/${artifact}"
 done
