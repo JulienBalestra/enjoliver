@@ -6,14 +6,14 @@ set -o pipefail
 export DEBIAN_FRONTEND=noninteractive
 export GODEBUG=netdns=cgo
 
-ACI_HOME=/opt/workspace
+ROOT_VOL=/opt/hyperkube
 
-cd ${ACI_HOME}
+cd -P $(dirname $0)
 
 export GOPATH=/go
 export PATH=$PATH:/go/bin:/usr/local/go/bin
 
-VERSION=1.4.5
+VERSION=1.5.1
 VVERSION="v${VERSION}"
 
 mkdir -pv ${GOPATH}
@@ -30,7 +30,7 @@ curl -fL "https://github.com/kubernetes/kubernetes/archive/${VVERSION}.tar.gz" \
 cd ${WORK_DIR}
 
 # Apply custom patches
-PATCHES_DIR="$ACI_HOME/patches"
+PATCHES_DIR="${ROOT_VOL}/workspace/patches"
 for patch in $(ls $PATCHES_DIR); do
     patch -p1 < "$PATCHES_DIR/$patch" || {
         echo >&2 "Unable to apply patch ${patch}"
@@ -42,4 +42,4 @@ done
 time make hyperkube
 
 ls -lh _output/local/go/bin/
-cp -av _output/local/go/bin/hyperkube ${ACI_HOME}
+cp -av _output/local/go/bin/hyperkube ${ROOT_VOL}

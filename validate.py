@@ -27,6 +27,7 @@ class TestValidateBootcfgAssets(unittest.TestCase):
         rule = "%s/%s/serve" % (self.assets, self.test_hyperkube.__name__.replace("test_", ""))
         list_dir = os.listdir(rule)
         self.assertIn("hyperkube", list_dir)
+        self.assertIn("static-aci-hyperkube-0.aci", list_dir)
 
     def test_lldp(self):
         rule = "%s/%s/serve" % (self.assets, self.test_lldp.__name__.replace("test_", ""))
