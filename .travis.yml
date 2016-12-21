@@ -10,12 +10,6 @@ install:
 script:
   - sudo make apt
 
-  - make submodules
-  - make runner
-
-  - sudo make acis
-
-  - make assets
-  - make validate
+  - sudo MY_USER=travis make setup
   - make check
   - make validate
