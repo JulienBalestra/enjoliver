@@ -80,3 +80,4 @@ bootcfg/assets/setup-network-environment/1.0.1/
 /runtime/bootcfg/
 /runtime/renders/*.render/
 /runtime/target/
+/hyperkube/hyperkube

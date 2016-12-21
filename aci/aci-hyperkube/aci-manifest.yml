@@ -1,0 +1,12 @@
+name: static-aci-hyperkube:0
+
+builder:
+  dependencies:
+    - static-aci-debian:8
+
+  mountPoints:
+    - {from: ../../, to: /opt/source-project}
+
+aci:
+  dependencies:
+    - static-aci-debian:8
