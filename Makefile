@@ -1,3 +1,4 @@
+CWD=$(shell pwd)
 CHECK=check
 CHECK_ASSETS=check_assets
 CHECK_FAST=check_fast
@@ -9,13 +10,18 @@ default: help
 
 help:
 	@echo ----------------------
-	@echo Setup:
+	@echo Prepare:
 	@echo sudo make apt
+	@echo ----------------------
+	@echo Setup:
 	@echo make submodules
 	@echo make runner
 	@echo sudo make acis
 	@echo make assets
 	@echo make validate
+	@echo
+	@echo All in one:
+	@echo sudo MY_USER= setup
 	@echo ----------------------
 	@echo Testing:
 	@echo make $(CHECK)
@@ -109,3 +115,14 @@ config:
 	mkdir -pv $(HOME)/.config/enjoliver
 	touch $(HOME)/.config/enjoliver/config.env
 	touch $(HOME)/.config/enjoliver/config.json
+
+setup:
+	echo "Need MY_USER for non root operations"
+	test $(MY_USER)
+	test $(shell id -u -r) -eq 0
+	su - $(MY_USER) -c "make -C $(CWD) submodules"
+	su - $(MY_USER) -c "make -C $(CWD) runner"
+	make acis
+	su - $(MY_USER) -c "make -C $(CWD) assets"
+	su - $(MY_USER) -c "make -C $(CWD) validate"
+	su - $(MY_USER) -c "make -C $(CWD) config"
