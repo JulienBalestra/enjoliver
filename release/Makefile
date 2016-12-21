@@ -42,7 +42,7 @@ $(ENJOLIVER): install
 	$(RKT) --local-config=$(RUNTIME) fetch --insecure-options=all $(ENJOLIVER)
 
 clean:
-	IMAGE=$(CWD)/aci-enjoliver make -C $(RUNTIME) clean
+	IMAGE=$(ACI)/aci-enjoliver make -C $(RUNTIME) clean
 	$(RKT) --local-config=$(RUNTIME) image gc --grace-period=0s
 
 fclean: clean
