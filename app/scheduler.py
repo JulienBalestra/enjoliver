@@ -166,7 +166,8 @@ class EtcdProxyScheduler(CommonScheduler):
                 extra_metadata={
                     "etcd_initial_cluster": self.etcd_initial_cluster,
                     "etcd_advertise_client_urls": "http://%s:2379" % nic[0],
-                    "etcd_proxy": "on"
+                    "etcd_proxy": "on",
+                    "hostname": "etcd-proxy-%d" % i,
                 }
             )
             self._gen.dumps()
@@ -291,7 +292,8 @@ class K8sNodeScheduler(CommonScheduler):
                     "etcd_advertise_client_urls": "http://%s:2379" % nic[0],
                     "etcd_proxy": "on",
                     "k8s_advertise_ip": "%s" % nic[0],
-                    "k8s_endpoint": ",".join(self._k8s_control_plane_instance.k8s_endpoint)
+                    "k8s_endpoint": ",".join(self._k8s_control_plane_instance.k8s_endpoint),
+                    "hostname": "k8s-node-%d" % i,
                 }
             )
             self._gen.dumps()
@@ -407,7 +409,7 @@ class K8sControlPlaneScheduler(CommonScheduler):
     def _apply_control_plane(self):
         self.custom_log(self._apply_control_plane.__name__, "in progress...")
 
-        marker = "%s%scontrol-plane" % (self.bootcfg_prefix, "k8s")  # e for Etcd
+        marker = "%s%scontrol-plane" % (self.bootcfg_prefix, "k8s")
 
         new_pending = set()
         for i, nic in enumerate(self._pending_control_plane):
@@ -427,6 +429,7 @@ class K8sControlPlaneScheduler(CommonScheduler):
                     # K8s Control Plane
                     "k8s_apiserver_count": self.control_plane_nb,
                     "k8s_advertise_ip": "%s" % nic[0],
+                    "hostname": "k8s-control-plane-%d" % i,
                 }
             )
             self._gen.dumps()
@@ -552,7 +555,7 @@ class EtcdMemberScheduler(CommonScheduler):
                     "etcd_initial_cluster": etcd_initial_cluster,
                     "etcd_initial_advertise_peer_urls": "http://%s:2380" % nic[0],
                     "etcd_advertise_client_urls": "http://%s:2379" % nic[0],
-
+                    "hostname": "etcd-member-%d" % i,
                 }
             )
             self._gen.dumps()

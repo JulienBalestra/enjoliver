@@ -78,6 +78,14 @@ systemd:
 
 storage:
   files:
+
+    - path: /etc/hostname
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          discovery
+
     - path: /etc/metadata-endpoints.env
       filesystem: root
       mode: 0644
