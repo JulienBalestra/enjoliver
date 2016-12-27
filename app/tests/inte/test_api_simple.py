@@ -178,6 +178,8 @@ class TestAPI(unittest.TestCase):
             u'/discovery',
             u'/discovery/interfaces',
             u'/discovery/ignition-journal/<string:uuid>',
+            u'/discovery/ignition-journal/<string:uuid>/<string:boot_id>',
+            u'/discovery/ignition-journal',
             u'/boot.ipxe',
             u'/boot.ipxe.0',
             u'/healthz',

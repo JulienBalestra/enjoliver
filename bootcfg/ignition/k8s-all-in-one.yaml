@@ -1,7 +1,6 @@
 ---
 systemd:
   units:
-
     - name: fetch-metadata.service
       enable: true
       contents: |
@@ -46,7 +45,7 @@ systemd:
         [Service]
         Environment=IGNITION_FILE=/run/ignition.journal
         EnvironmentFile=/etc/metadata-endpoints.env
-        ExecStartPre=-/bin/bash -c "/usr/bin/journalctl --identifier=ignition -o cat > ${IGNITION_FILE}"
+        ExecStartPre=-/bin/bash -c "/usr/bin/journalctl --identifier=ignition -o short-iso > ${IGNITION_FILE}"
         ExecStart=/opt/bin/discoveryC
         Restart=on-failure
         RestartSec=5s
@@ -90,6 +89,19 @@ systemd:
         ExecStart=/opt/bin/install-cni
         ExecReload=-/bin/rm -Rfv $FULL_PATH_CNI $OPT_CNI
         RemainAfterExit=yes
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: cni-dhcp.service
+      enable: true
+      contents: |
+        [Unit]
+        Requires=install-cni.service
+        After=install-cni.service
+
+        [Service]
+        ExecStartPre=-/bin/rm -v /run/cni/dhcp.sock
+        ExecStart=/opt/cni/bin/dhcp daemon
         [Install]
         WantedBy=multi-user.target
 
@@ -145,23 +157,6 @@ systemd:
         [Install]
         RequiredBy=multi-user.target
 
-    - name: fetch-metadata.service
-      enable: true
-      contents: |
-        [Unit]
-        Requires=network-online.target
-        After=network-online.target
-        [Service]
-        Type=oneshot
-        EnvironmentFile=/etc/metadata-endpoints.env
-        Environment=METADATA=/etc/metadata.env
-        # If the file already exist put the unit on failure
-        ExecStartPre=/usr/bin/test ! -f $METADATA
-        ExecStart=/usr/bin/curl ${BOOTCFG_URI}/metadata?${REQUEST_RAW_QUERY} -o $METADATA
-        RemainAfterExit=yes
-        [Install]
-        WantedBy=multi-user.target
-
     - name: etcd2.service
       enable: true
       dropins:
@@ -176,13 +171,51 @@ systemd:
             Environment=ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379,http://0.0.0.0:4001
             Environment=ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380,http://0.0.0.0:7001
 
-    - name: kubelet.service
+    - name: kubelet-runonce.service
       enable: true
       contents: |
         [Unit]
         After=fetch-metadata.service
         After=installs.target
         Requires=installs.target
+        After=cni-dhcp.service
+        Requires=cni-dhcp.service
+        After=rkt-api.service
+        Requires=rkt-api.service
+
+        [Service]
+        EnvironmentFile=/etc/metadata.env
+        Environment=MANIFESTS=/etc/kubernetes/manifests
+        ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
+        ExecStartPre=/bin/mkdir -pv $MANIFESTS
+        ExecStart=/opt/bin/kubelet \
+          \
+          --network-plugin=cni \
+          --cni-conf-dir=/etc/kubernetes/cni/net.d \
+          \
+          --pod-manifest-path=${MANIFESTS} \
+          --hostname-override=${K8S_ADVERTISE_IP} \
+          --register-schedulable=false \
+          --allow-privileged=true \
+          --runonce=true \
+          --cloud-provider="" \
+          \
+          --container-runtime=rkt \
+          --rkt-path=/opt/bin/rkt \
+          --v=2
+        RestartSec=30s
+        Type=oneshot
+        RemainAfterExit=yes
+
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: kubelet.service
+      enable: true
+      contents: |
+        [Unit]
+        After=kubelet-runonce.service
+        Requires=kubelet-runonce.service
 
         [Service]
         EnvironmentFile=/etc/metadata.env
@@ -322,6 +355,13 @@ storage:
           # Standards
           REQUEST_RAW_QUERY="{{.request.raw_query}}"
 
+    - path: /etc/hostname
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          all-in-one
+
     - path: /etc/rkt/paths.d/paths.json
       filesystem: root
       mode: 0644
@@ -343,12 +383,7 @@ storage:
             "type": "macvlan",
             "master": "eth0",
             "ipam": {
-              "type": "host-local",
-              "subnet": "172.20.0.0/19",
-              "rangeStart": "172.20.1.10",
-              "rangeStart": "172.20.1.50",
-              "gateway": "172.20.0.1",
-              "routes": [{"dst":"0.0.0.0/0"}]
+              "type": "dhcp"
             }
           }
 

@@ -1,6 +1,5 @@
 import datetime
 import os
-
 from sqlalchemy.orm import sessionmaker, subqueryload
 
 import logger
@@ -57,9 +56,39 @@ class Fetch(object):
 
             with open("%s/%s" % (uuid_directory, boot_id_list[0][0]), "r") as log:
                 lines = log.readlines()
-            return lines
+
+        elif os.path.isdir(uuid_directory):
+            boot_id_file = "%s/%s" % (uuid_directory, boot_id)
+            try:
+                with open(boot_id_file, 'r') as log:
+                    lines = log.readlines()
+            except OSError:
+                pass
 
         return lines
+
+    def get_ignition_journal_summary(self):
+        summaries = []
+        try:
+            ig = os.listdir(self.ignition_journal)
+            for uuid in ig:
+                summary = dict()
+                summary["uuid"] = uuid
+                boot_id_list = []
+                uuid_directory = "%s/%s" % (self.ignition_journal, uuid)
+                for d in os.listdir(uuid_directory):
+                    boot_id_list.append({
+                        "ctime": os.stat("%s/%s" % (uuid_directory, d)).st_ctime,
+                        "boot_id": d})
+
+                boot_id_list.sort(key=lambda d: d["ctime"])
+                summary["boot_id_list"] = boot_id_list
+                summaries.append(summary)
+
+            return summaries
+
+        except OSError:
+            return summaries
 
     def get_all(self):
         all_data = []
