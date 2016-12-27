@@ -125,6 +125,14 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
         os.environ["DB_PATH"] = db_path
         os.environ["IGNITION_JOURNAL_DIR"] = journal
+        try:
+            with open("%s/.config/enjoliver/config.json" % os.getenv("HOME")) as f:
+                conf = json.load(f)
+                os.environ["AWS_ACCESS_KEY_ID"] = conf["AWS_ACCESS_KEY_ID"]
+                os.environ["AWS_SECRET_ACCESS_KEY"] = conf["AWS_SECRET_ACCESS_KEY"]
+                os.environ["BACKUP_BUCKET_NAME"] = "bbcenjoliver-dev"
+        except (IOError, ValueError):
+            pass
         cmd = [
             "%s/env/bin/gunicorn" % KernelVirtualMachinePlayer.project_path,
             "--chdir",
