@@ -470,7 +470,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                         os.write(1, "\r-> REMAIN %s for %s\n\r" % (str(ips), self.k8s_api_health.__name__))
 
                 except urllib2.URLError:
-                    os.write(2, "\r-> NOT READY %s for %s\n\r" % (ip, self.k8s_api_health.__name__))
+                    os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (t + 1, tries, ip, self.k8s_api_health.__name__))
                     time.sleep(10)
         self.assertEqual(len(ips), 0)
 
