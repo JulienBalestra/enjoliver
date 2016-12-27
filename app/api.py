@@ -254,11 +254,29 @@ def discovery_interfaces():
     return jsonify(interfaces)
 
 
+@application.route('/discovery/ignition-journal/<string:uuid>/<string:boot_id>', methods=['GET'])
+def discovery_ignition_journal_by_boot_id(uuid, boot_id):
+    fetch = crud.Fetch(engine=engine,
+                       ignition_journal=ignition_journal)
+    lines = fetch.get_ignition_journal(uuid, boot_id=boot_id)
+
+    return jsonify(lines)
+
+
 @application.route('/discovery/ignition-journal/<string:uuid>', methods=['GET'])
-def discovery_ignition_journal(uuid):
+def discovery_ignition_journal_by_uuid(uuid):
     fetch = crud.Fetch(engine=engine,
                        ignition_journal=ignition_journal)
     lines = fetch.get_ignition_journal(uuid)
+
+    return jsonify(lines)
+
+
+@application.route('/discovery/ignition-journal', methods=['GET'])
+def discovery_ignition_journal_summary():
+    fetch = crud.Fetch(engine=engine,
+                       ignition_journal=ignition_journal)
+    lines = fetch.get_ignition_journal_summary()
 
     return jsonify(lines)
 

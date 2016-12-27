@@ -45,7 +45,7 @@ systemd:
         [Service]
         Environment=IGNITION_FILE=/run/ignition.journal
         EnvironmentFile=/etc/metadata-endpoints.env
-        ExecStartPre=-/bin/bash -c "/usr/bin/journalctl --identifier=ignition -o cat > ${IGNITION_FILE}"
+        ExecStartPre=-/bin/bash -c "/usr/bin/journalctl --identifier=ignition -o short-iso > ${IGNITION_FILE}"
         ExecStart=/opt/bin/discoveryC
         Restart=on-failure
         RestartSec=5s

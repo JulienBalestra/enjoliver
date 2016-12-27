@@ -101,6 +101,8 @@ class TestAPI(unittest.TestCase):
             u'/discovery',
             u'/discovery/interfaces',
             u'/discovery/ignition-journal/<string:uuid>',
+            u'/discovery/ignition-journal/<string:uuid>/<string:boot_id>',
+            u'/discovery/ignition-journal',
             u'/boot.ipxe',
             u'/healthz',
             u'/ipxe',
@@ -143,6 +145,36 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(200, r.status_code)
         data = json.loads(r.data)
         self.assertEqual(39, len(data))
+
+    def test_discovery_06(self):
+        r = self.app.get("/discovery/ignition-journal")
+        self.assertEqual(200, r.status_code)
+        data = json.loads(r.data)
+        self.assertEqual(2, len(data))
+        self.assertEqual(1, len(data[0]["boot_id_list"]))
+        self.assertEqual(1, len(data[1]["boot_id_list"]))
+
+    def test_discovery_06_more(self):
+        r = self.app.get("/discovery/ignition-journal")
+        self.assertEqual(200, r.status_code)
+        data = json.loads(r.data)
+        self.assertEqual(2, len(data))
+        self.assertEqual(1, len(data[0]["boot_id_list"]))
+        self.assertEqual(1, len(data[1]["boot_id_list"]))
+
+        uuid = data[0]["uuid"]
+        boot_id = data[0]["boot_id_list"][0]["boot_id"]
+        r = self.app.get("/discovery/ignition-journal/%s/%s" % (uuid, boot_id))
+        self.assertEqual(200, r.status_code)
+        new_data = json.loads(r.data)
+        self.assertEqual(39, len(new_data))
+
+        uuid = data[1]["uuid"]
+        boot_id = data[1]["boot_id_list"][0]["boot_id"]
+        r = self.app.get("/discovery/ignition-journal/%s/%s" % (uuid, boot_id))
+        self.assertEqual(200, r.status_code)
+        new_data = json.loads(r.data)
+        self.assertEqual(39, len(new_data))
 
     def test_discovery_05(self):
         r = self.app.get("/discovery")
