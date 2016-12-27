@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import unittest
 
 from app import api
@@ -19,6 +20,10 @@ class TestAPI(unittest.TestCase):
             os.remove(db_path)
         except OSError:
             pass
+        api.ignition_journal = "%s/ignition_journal" % cls.unit_path
+
+        shutil.rmtree(api.ignition_journal, ignore_errors=True)
+
         engine = api.create_engine(db)
         model.Base.metadata.create_all(engine)
         api.engine = engine
