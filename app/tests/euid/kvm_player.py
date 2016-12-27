@@ -8,6 +8,7 @@ import sys
 import time
 import unittest
 import urllib2
+import shutil
 
 from app import generator, api
 
@@ -120,10 +121,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         except OSError:
             pass
 
-        try:
-            os.removedirs(journal)
-        except OSError:
-            pass
+        shutil.rmtree(journal, ignore_errors=True)
 
         os.environ["DB_PATH"] = db_path
         os.environ["IGNITION_JOURNAL_DIR"] = journal

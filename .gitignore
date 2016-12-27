@@ -81,3 +81,11 @@ bootcfg/assets/setup-network-environment/1.0.1/
 /runtime/renders/*.render/
 /runtime/target/
 /hyperkube/hyperkube
+/hyperkube/controller-manager
+/hyperkube/federation-controller-manager
+/hyperkube/apiserver
+/hyperkube/federation-apiserver
+/hyperkube/kubectl
+/hyperkube/kubelet
+/hyperkube/scheduler
+/hyperkube/proxy
