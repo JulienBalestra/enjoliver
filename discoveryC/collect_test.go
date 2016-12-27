@@ -24,7 +24,7 @@ func TestCollectData(t *testing.T) {
 	if len(data.LLDPInfo.Data.Interfaces) == 0 {
 		t.Error("len(data.LLDPInfo.Data.Interfaces) == 0")
 	}
-	if len(data.IgnitionJournal) != 39 {
+	if len(data.IgnitionJournal) != 42 {
 		t.Error("IgnitionJournal", len(data.IgnitionJournal))
 	}
 }
