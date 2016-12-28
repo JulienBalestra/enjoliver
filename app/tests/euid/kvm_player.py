@@ -10,6 +10,9 @@ import unittest
 import urllib2
 import shutil
 
+import requests
+import yaml
+from kubernetes import client as kc
 from app import generator, api
 
 
@@ -473,6 +476,39 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (t + 1, tries, ip, self.k8s_api_health.__name__))
                     time.sleep(10)
         self.assertEqual(len(ips), 0)
+
+    def create_nginx_deploy(self, api_server_ip):
+        with open("%s/manifests/nginx-deploy.yaml" % self.euid_path) as f:
+            nginx = yaml.load(f)
+
+        c = kc.ApiClient(host="%s:8080" % api_server_ip)
+        b = kc.ExtensionsV1beta1Api(c)
+        b.create_namespaced_deployment("default", nginx)
+
+    def nginx_is_running(self, api_server_ip, tries=60):
+        code = 0
+        for t in xrange(tries):
+            if code == 200:
+                break
+            c = kc.ApiClient(host="%s:8080" % api_server_ip)
+            core = kc.CoreV1Api(c)
+            try:
+                r = core.list_namespaced_pod("default")
+                for p in r.items:
+                    ip = p.status.pod_ip
+                    try:
+                        g = requests.get("http://%s" % ip)
+                        code = g.status_code
+                        g.close()
+                    except requests.exceptions.ConnectionError:
+                        os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (
+                        t + 1, tries, ip, self.nginx_is_running.__name__))
+                        time.sleep(2)
+            except ValueError:
+                os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (
+                t + 1, tries, "ValueError", self.nginx_is_running.__name__))
+                time.sleep(2)
+        self.assertEqual(200, code)
 
     @staticmethod
     def get_optimized_memory():
