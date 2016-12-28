@@ -210,3 +210,4 @@ class TestKVMK8SBasic1(TestKVMK8sBasic):
 
 if __name__ == "__main__":
     unittest.main()
+    # unittest.main(defaultTest="TestKVMK8SBasic1.test_01")
