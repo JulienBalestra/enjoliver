@@ -44,7 +44,7 @@ serve
 image.aci
 /aci/target/
 bootcfg/assets/coreos/1214.0.0/
-bootcfg/assets/rkt/v1.19.0/
+bootcfg/assets/rkt/v*/
 bootcfg/assets/setup-network-environment/1.0.1/
 *.sqlite
 /app/tests/unit/ignition_journal/
