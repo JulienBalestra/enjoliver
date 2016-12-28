@@ -4,6 +4,11 @@ set -ex
 set -o pipefail
 
 export DEBIAN_FRONTEND=noninteractive
+
+apt-get update -qq
+# The static link need the latest libs
+apt-get upgrade -y
+
 export GODEBUG=netdns=cgo
 
 ROOT_VOL=/opt/hyperkube
