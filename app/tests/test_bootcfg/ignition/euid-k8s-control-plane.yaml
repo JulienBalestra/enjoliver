@@ -102,6 +102,7 @@ systemd:
         [Service]
         ExecStartPre=-/bin/rm -v /run/cni/dhcp.sock
         ExecStart=/opt/cni/bin/dhcp daemon
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
