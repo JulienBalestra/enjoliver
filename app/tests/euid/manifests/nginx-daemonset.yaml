@@ -1,20 +1,15 @@
 apiVersion: extensions/v1beta1
-kind: Deployment
+kind: DaemonSet
 metadata:
-  name: nginx-deploy
+  name: nginx-daemonset
   namespace: default
 spec:
-  replicas: 1
-  revisionHistoryLimit: 3
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
   template:
     metadata:
       labels:
-        run: nginx-dhcp
+        run: nginx-host
     spec:
+      hostNetwork: true
       containers:
       - name: nginx
         image: quay.io/julienbalestra/nginx:latest
