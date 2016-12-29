@@ -504,7 +504,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         c = kc.ApiClient(host="%s:8080" % api_server_ip)
         core = kc.CoreV1Api(c)
         for t in xrange(tries):
-            if code == 200:
+            if code == 404:
                 break
             try:
                 r = core.list_namespaced_pod("default")
@@ -518,14 +518,14 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                         sys.stdout.flush()
                     except requests.exceptions.ConnectionError:
                         os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (
-                        t + 1, tries, ip, self.pod_nginx_is_running.__name__))
+                            t + 1, tries, ip, self.pod_nginx_is_running.__name__))
             except ValueError:
                 os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (
-                t + 1, tries, "ValueError", self.pod_nginx_is_running.__name__))
+                    t + 1, tries, "ValueError", self.pod_nginx_is_running.__name__))
 
             time.sleep(self.kvm_sleep_between_node)
 
-        self.assertEqual(200, code)
+        self.assertEqual(404, code)
 
     def daemon_set_nginx_are_running(self, ips, tries=200):
         assert type(ips) is list
@@ -540,12 +540,14 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     g.close()
                     os.write(1, "\r-> RESULT %s %s\n\r" % (ip, code))
                     sys.stdout.flush()
-                    if code == 200:
+                    if code == 404:
                         ips.pop(i)
-                        os.write(1, "\r-> REMAIN %s for %s\n\r" % (str(ips), self.daemon_set_nginx_are_running.__name__))
+                        os.write(1,
+                                 "\r-> REMAIN %s for %s\n\r" % (str(ips), self.daemon_set_nginx_are_running.__name__))
 
                 except requests.exceptions.ConnectionError:
-                    os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (t + 1, tries, ip, self.daemon_set_nginx_are_running.__name__))
+                    os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (
+                        t + 1, tries, ip, self.daemon_set_nginx_are_running.__name__))
                     time.sleep(self.kvm_sleep_between_node)
 
         self.assertEqual(len(ips), 0)
@@ -555,3 +557,16 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
         mem_gib = mem_bytes / (1024. ** 3)
         return mem_gib * 1024 if mem_gib > 3 else 3 * 1024
+
+    def polling_for_stop(self, stop="/tmp/e.stop"):
+        os.write(1, "\r-> Starting %s\n\r" % self.polling_for_stop.__name__)
+        with open(stop, "w") as f:
+            f.write("")
+        os.chmod(stop, 0777)
+        try:
+            while os.path.isfile(stop) is True and os.stat(stop).st_size == 0:
+                if int(time.time()) % 20 == 0:
+                    os.write(1, "\r-> Stop with \"sudo rm -v\" %s or \"echo 1 > %s\"\n\r" % (stop, stop))
+                time.sleep(self.wait_setup_teardown)
+        finally:
+            os.write(1, "\r-> Stopping %s\n\r" % self.polling_for_stop.__name__)

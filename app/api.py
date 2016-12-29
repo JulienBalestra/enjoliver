@@ -89,6 +89,7 @@ def root():
     links = [l for l in set(
         [k.rule for k in app.url_map.iter_rules() if "/static/" != k.rule[:8]])
              ]
+    links.sort()
     return json.jsonify(links)
 
 
