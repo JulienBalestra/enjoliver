@@ -1,37 +1,37 @@
-From 0bde3eb6dbfba5cd73a48571c24a712a81b69720 Mon Sep 17 00:00:00 2001
+From 2536cb057063a1c9eef4f160d51339d837d54c5a Mon Sep 17 00:00:00 2001
 From: Julien Balestra <julien.balestra@blablacar.com>
-Date: Wed, 28 Dec 2016 14:48:04 +0100
+Date: Thu, 29 Dec 2016 16:14:17 +0100
 Subject: [PATCH] Syslog
 
 ---
- pkg/kubelet/rkt/rkt.go | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ pkg/kubelet/rkt/rkt.go | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
 diff --git a/pkg/kubelet/rkt/rkt.go b/pkg/kubelet/rkt/rkt.go
-index ce797fe..87025b8 100644
+index ce797fe..668709f 100644
 --- a/pkg/kubelet/rkt/rkt.go
 +++ b/pkg/kubelet/rkt/rkt.go
-@@ -1170,8 +1170,23 @@ func (r *Runtime) preparePod(pod *v1.Pod, podIP string, pullSecrets []v1.Secret,
- 	// TODO per container finishedAt, not just per pod
- 	markPodFinished := podFinishedMarkCommand(r.touchPath, r.runtimeHelper.GetPodDir(pod.UID), uuid)
+@@ -1111,6 +1111,15 @@ func (r *Runtime) getSelinuxContext(opt *v1.SELinuxOptions) (string, error) {
+ 	return strings.Join(ctx, ":"), nil
+ }
  
-+	syslog := map[string]string{
-+		"Namespace": pod.Namespace,
-+		"Name": pod.Name,
-+		"UID": string(pod.UID),
-+		"ClusterName": pod.ClusterName,
-+		"GenerateName": pod.GenerateName,
-+		"CreationTimestamp": pod.CreationTimestamp.String(),
-+		"Kind": pod.Kind,
-+		"SelfLink": pod.SelfLink,
++func getPrefixPodName(podName string) string {
++	n := strings.Split(podName, "-")
++	if len(n) > 1 {
++		return strings.Join(n[:len(n) - 1], "-")
++	} else {
++		return strings.Join(n[:], "-")
 +	}
-+	sysJson, erro := json.Marshal(&syslog)
-+	if erro != nil {
-+		glog.Warningf("syslog: Unexpected event when marshal pod %s", erro)
-+	}
++}
++
+ // preparePod will:
+ //
+ // 1. Invoke 'rkt prepare' to prepare the pod, and get the rkt pod uuid.
+@@ -1172,6 +1181,7 @@ func (r *Runtime) preparePod(pod *v1.Pod, podIP string, pullSecrets []v1.Secret,
+ 
  	hostNetwork := kubecontainer.IsHostNetworkPod(pod)
  	units := []*unit.UnitOption{
-+		newUnitOption("Service", "SyslogIdentifier", string(sysJson)),
++		newUnitOption("Service", "SyslogIdentifier", pod.Namespace + "." + getPrefixPodName(pod.Name)),
  		newUnitOption("Service", "ExecStart", runPrepared),
  		newUnitOption("Service", "ExecStopPost", markPodFinished),
  		// This enables graceful stop.
