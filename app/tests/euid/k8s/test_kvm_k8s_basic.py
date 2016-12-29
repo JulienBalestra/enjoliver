@@ -204,6 +204,8 @@ class TestKVMK8SBasic1(TestKVMK8sBasic):
             self.daemon_set_nginx_are_running(sch_cp.ip_list + sch_no.ip_list)
             self.write_ending(marker)
         finally:
+            if os.getenv("TEST"):
+                self.bash_interactive()
             for i in xrange(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
@@ -213,5 +215,4 @@ class TestKVMK8SBasic1(TestKVMK8sBasic):
 
 
 if __name__ == "__main__":
-    unittest.main()
-    # unittest.main(defaultTest="TestKVMK8SBasic1.test_01")
+    unittest.main(defaultTest=os.getenv("TEST"))
