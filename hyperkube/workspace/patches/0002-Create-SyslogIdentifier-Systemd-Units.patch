@@ -1,0 +1,40 @@
+From 0bde3eb6dbfba5cd73a48571c24a712a81b69720 Mon Sep 17 00:00:00 2001
+From: Julien Balestra <julien.balestra@blablacar.com>
+Date: Wed, 28 Dec 2016 14:48:04 +0100
+Subject: [PATCH] Syslog
+
+---
+ pkg/kubelet/rkt/rkt.go | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/pkg/kubelet/rkt/rkt.go b/pkg/kubelet/rkt/rkt.go
+index ce797fe..87025b8 100644
+--- a/pkg/kubelet/rkt/rkt.go
++++ b/pkg/kubelet/rkt/rkt.go
+@@ -1170,8 +1170,23 @@ func (r *Runtime) preparePod(pod *v1.Pod, podIP string, pullSecrets []v1.Secret,
+ 	// TODO per container finishedAt, not just per pod
+ 	markPodFinished := podFinishedMarkCommand(r.touchPath, r.runtimeHelper.GetPodDir(pod.UID), uuid)
+ 
++	syslog := map[string]string{
++		"Namespace": pod.Namespace,
++		"Name": pod.Name,
++		"UID": string(pod.UID),
++		"ClusterName": pod.ClusterName,
++		"GenerateName": pod.GenerateName,
++		"CreationTimestamp": pod.CreationTimestamp.String(),
++		"Kind": pod.Kind,
++		"SelfLink": pod.SelfLink,
++	}
++	sysJson, erro := json.Marshal(&syslog)
++	if erro != nil {
++		glog.Warningf("syslog: Unexpected event when marshal pod %s", erro)
++	}
+ 	hostNetwork := kubecontainer.IsHostNetworkPod(pod)
+ 	units := []*unit.UnitOption{
++		newUnitOption("Service", "SyslogIdentifier", string(sysJson)),
+ 		newUnitOption("Service", "ExecStart", runPrepared),
+ 		newUnitOption("Service", "ExecStopPost", markPodFinished),
+ 		// This enables graceful stop.
+-- 
+2.7.4
+

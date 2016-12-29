@@ -10,6 +10,9 @@ import unittest
 import urllib2
 import shutil
 
+import requests
+import yaml
+from kubernetes import client as kc
 from app import generator, api
 
 
@@ -396,6 +399,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         assert type(ips) is list
         assert len(ips) > 0
         for t in xrange(tries):
+            if len(ips) == 0:
+                break
             for i, ip in enumerate(ips):
                 try:
                     endpoint = "http://%s:2379/health" % ip
@@ -411,6 +416,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 except urllib2.URLError:
                     os.write(2, "\r-> NOT READY %s for %s\n\r" % (ip, self.etcd_endpoint_health.__name__))
                     time.sleep(10)
+
         self.assertEqual(len(ips), 0)
 
     def etcd_member_len(self, ip, members_nb, tries=30):
@@ -433,7 +439,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
         self.assertEqual(len(result["members"]), members_nb)
 
-    def etcd_member_k8s_minions(self, ip, nodes_nb, tries=120):
+    def etcd_member_k8s_minions(self, ip, nodes_nb, tries=200):
         result = {}
         for t in xrange(tries):
             try:
@@ -449,14 +455,16 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             except urllib2.URLError:
                 pass
             os.write(2, "\r-> NOT READY %s %s\n\r" % (ip, self.etcd_member_k8s_minions.__name__))
-            time.sleep(10)
+            time.sleep(self.kvm_sleep_between_node)
 
         self.assertEqual(len(result["node"]["nodes"]), nodes_nb)
 
-    def k8s_api_health(self, ips, tries=120):
+    def k8s_api_health(self, ips, tries=200):
         assert type(ips) is list
         assert len(ips) > 0
         for t in xrange(tries):
+            if len(ips) == 0:
+                break
             for i, ip in enumerate(ips):
                 try:
                     endpoint = "http://%s:8080/healthz" % ip
@@ -466,12 +474,80 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     os.write(1, "\r-> RESULT %s %s\n\r" % (endpoint, response_body))
                     sys.stdout.flush()
                     if response_body == "ok":
+                        os.write(1, "\r## kubectl -s %s:8080 get cs\n\r" % ip)
                         ips.pop(i)
                         os.write(1, "\r-> REMAIN %s for %s\n\r" % (str(ips), self.k8s_api_health.__name__))
 
                 except urllib2.URLError:
                     os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (t + 1, tries, ip, self.k8s_api_health.__name__))
-                    time.sleep(10)
+                    time.sleep(self.kvm_sleep_between_node)
+        self.assertEqual(len(ips), 0)
+
+    def create_nginx_deploy(self, api_server_ip):
+        with open("%s/manifests/nginx-deploy.yaml" % self.euid_path) as f:
+            nginx = yaml.load(f)
+
+        c = kc.ApiClient(host="%s:8080" % api_server_ip)
+        b = kc.ExtensionsV1beta1Api(c)
+        b.create_namespaced_deployment("default", nginx)
+
+    def create_nginx_daemon_set(self, api_server_ip):
+        with open("%s/manifests/nginx-daemonset.yaml" % self.euid_path) as f:
+            nginx = yaml.load(f)
+
+        c = kc.ApiClient(host="%s:8080" % api_server_ip)
+        b = kc.ExtensionsV1beta1Api(c)
+        b.create_namespaced_daemon_set("default", nginx)
+
+    def pod_nginx_is_running(self, api_server_ip, tries=100):
+        code = 0
+        c = kc.ApiClient(host="%s:8080" % api_server_ip)
+        core = kc.CoreV1Api(c)
+        for t in xrange(tries):
+            if code == 200:
+                break
+            try:
+                r = core.list_namespaced_pod("default")
+                for p in r.items:
+                    ip = p.status.pod_ip
+                    try:
+                        g = requests.get("http://%s" % ip)
+                        code = g.status_code
+                        g.close()
+                        os.write(1, "\r-> RESULT %s %s\n\r" % (ip, code))
+                        sys.stdout.flush()
+                    except requests.exceptions.ConnectionError:
+                        os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (
+                        t + 1, tries, ip, self.pod_nginx_is_running.__name__))
+            except ValueError:
+                os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (
+                t + 1, tries, "ValueError", self.pod_nginx_is_running.__name__))
+
+            time.sleep(self.kvm_sleep_between_node)
+
+        self.assertEqual(200, code)
+
+    def daemon_set_nginx_are_running(self, ips, tries=200):
+        assert type(ips) is list
+        assert len(ips) > 0
+        for t in xrange(tries):
+            if len(ips) == 0:
+                break
+            for i, ip in enumerate(ips):
+                try:
+                    g = requests.get("http://%s" % ip)
+                    code = g.status_code
+                    g.close()
+                    os.write(1, "\r-> RESULT %s %s\n\r" % (ip, code))
+                    sys.stdout.flush()
+                    if code == 200:
+                        ips.pop(i)
+                        os.write(1, "\r-> REMAIN %s for %s\n\r" % (str(ips), self.daemon_set_nginx_are_running.__name__))
+
+                except requests.exceptions.ConnectionError:
+                    os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (t + 1, tries, ip, self.daemon_set_nginx_are_running.__name__))
+                    time.sleep(self.kvm_sleep_between_node)
+
         self.assertEqual(len(ips), 0)
 
     @staticmethod

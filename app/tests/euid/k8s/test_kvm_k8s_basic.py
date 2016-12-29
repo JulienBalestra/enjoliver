@@ -198,6 +198,10 @@ class TestKVMK8SBasic1(TestKVMK8sBasic):
             self.etcd_endpoint_health(sch_cp.ip_list)
             self.k8s_api_health(sch_cp.ip_list)
             self.etcd_member_k8s_minions(sch_member.ip_list[0], len(sch_no.wide_done_list) - sch_member.etcd_members_nb)
+            self.create_nginx_deploy(sch_cp.ip_list[0])
+            self.pod_nginx_is_running(sch_cp.ip_list[0])
+            self.create_nginx_daemon_set(sch_cp.ip_list[0])
+            self.daemon_set_nginx_are_running(sch_cp.ip_list + sch_no.ip_list)
             self.write_ending(marker)
         finally:
             for i in xrange(nb_node):
@@ -210,3 +214,4 @@ class TestKVMK8SBasic1(TestKVMK8sBasic):
 
 if __name__ == "__main__":
     unittest.main()
+    # unittest.main(defaultTest="TestKVMK8SBasic1.test_01")
