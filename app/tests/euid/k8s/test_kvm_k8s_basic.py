@@ -205,7 +205,7 @@ class TestKVMK8SBasic1(TestKVMK8sBasic):
             self.write_ending(marker)
         finally:
             if os.getenv("TEST"):
-                self.bash_interactive()
+                self.polling_for_stop()
             for i in xrange(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
