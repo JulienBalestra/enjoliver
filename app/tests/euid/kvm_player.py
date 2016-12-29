@@ -518,10 +518,10 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                         sys.stdout.flush()
                     except requests.exceptions.ConnectionError:
                         os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (
-                        t + 1, tries, ip, self.pod_nginx_is_running.__name__))
+                            t + 1, tries, ip, self.pod_nginx_is_running.__name__))
             except ValueError:
                 os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (
-                t + 1, tries, "ValueError", self.pod_nginx_is_running.__name__))
+                    t + 1, tries, "ValueError", self.pod_nginx_is_running.__name__))
 
             time.sleep(self.kvm_sleep_between_node)
 
@@ -542,10 +542,12 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     sys.stdout.flush()
                     if code == 200:
                         ips.pop(i)
-                        os.write(1, "\r-> REMAIN %s for %s\n\r" % (str(ips), self.daemon_set_nginx_are_running.__name__))
+                        os.write(1,
+                                 "\r-> REMAIN %s for %s\n\r" % (str(ips), self.daemon_set_nginx_are_running.__name__))
 
                 except requests.exceptions.ConnectionError:
-                    os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (t + 1, tries, ip, self.daemon_set_nginx_are_running.__name__))
+                    os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (
+                    t + 1, tries, ip, self.daemon_set_nginx_are_running.__name__))
                     time.sleep(self.kvm_sleep_between_node)
 
         self.assertEqual(len(ips), 0)
@@ -555,3 +557,15 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
         mem_gib = mem_bytes / (1024. ** 3)
         return mem_gib * 1024 if mem_gib > 3 else 3 * 1024
+
+    @staticmethod
+    def bash_interactive():
+        """
+        Quick way to interactive block the process
+        This create some zombies because of lldp chroot
+        :return:
+        """
+        cmd = ["bash", "-i"]
+        os.write(1, "\rOpen %s\n\r" % cmd)
+        ret = subprocess.call(cmd)
+        os.write(1, "\rClose %s: %s\n\r" % (cmd, ret))
