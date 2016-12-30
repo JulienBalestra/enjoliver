@@ -229,7 +229,10 @@ class TestAPIAdvanced(unittest.TestCase):
             u'/healthz',
             u'/backup/db',
             u'/',
-            u'/ipxe']
+            u'/ui',
+            u'/ui/view/machine',
+            u'/ipxe'
+        ]
         request = urllib2.urlopen("%s/" % self.api_uri)
         response_body = request.read()
         response_code = request.code

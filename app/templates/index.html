@@ -33,7 +33,7 @@
         <!-- Nav tabs -->
         <ul class="nav nav-tabs" role="tablist">
             <li role="presentation" class="active">
-                <a href="#overview" aria-controls="overview" role="tab" data-toggle="tab">Overview</a>
+                <a href="#machine" aria-controls="machine" role="tab" data-toggle="tab">Machines</a>
             </li>
             <li role="presentation"><a href="#backup" aria-controls="backup" role="tab" data-toggle="tab">Backup</a>
             </li>
@@ -43,11 +43,14 @@
 
         <!-- Tab panes -->
         <div class="tab-content" style="margin-top: 10px">
-            <div role="tabpanel" class="tab-pane fade in active" id="overview">
+            <div role="tabpanel" class="tab-pane fade in active" id="machine">
                 <table class="table table-hover" id="machine_table"></table>
             </div>
-            <div role="tabpanel" class="tab-pane fade" id="backup">...</div>
-            <div role="tabpanel" class="tab-pane fade" id="health">...</div>
+            <div role="tabpanel" class="tab-pane fade" id="backup">
+            </div>
+            <div role="tabpanel" class="tab-pane fade" id="health">
+                <div id="health_status"></div>
+            </div>
         </div>
 
     </div>
