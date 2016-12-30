@@ -1,0 +1,11 @@
+{
+  "name": "ui",
+  "version": "1.0.0",
+  "devDependencies": {
+    "bootstrap": "^3.3.6",
+    "jquery": "2.2.0",
+    "datatables.net": "1.10.13",
+    "datatables.net-bs": "1.10.13"
+
+  }
+}
