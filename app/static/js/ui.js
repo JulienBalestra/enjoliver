@@ -4,8 +4,9 @@ function createMachineTable() {
             if (response.length == 0) {
                 return
             }
+            $("#machine-nb").text(response.length);
             var machine_table = $("#machine_table");
-            var thead, tbody, row, cell;
+            var thead, tbody, row
 
             thead = $("<thead>").appendTo(machine_table);
             row = $("<tr>").appendTo(thead);
@@ -26,26 +27,24 @@ function createMachineTable() {
     });
 }
 
-function recurseHealth(object) {
-    var health_status = $("#health_status");
-    var label, li;
+function recurseHealth(object, parent) {
+    var label, li, new_parent;
 
     for (var key in object) {
         if (object.hasOwnProperty(key)) {
             if (typeof(object[key]) != "boolean") {
-                //TODO display the parent
-                recurseHealth(object[key]);
+                li = $("<li>").appendTo(parent);
+                $("<span class=\"label label-default\">").appendTo(li).text(key);
+                new_parent = $("<ul>").appendTo(parent);
+                recurseHealth(object[key], new_parent);
                 continue
             }
-            li = $("<li>").appendTo(health_status);
+            li = $("<li>").appendTo(parent);
             if (object[key] == true) {
-                label = $("<span class=\"label label-success\">").appendTo(li).text(key);
+                $("<span class=\"label label-success\">").appendTo(li).text(key);
             } else {
-                label = $("<span class=\"label label-danger\">").appendTo(li).text(key);
+                $("<span class=\"label label-danger\">").appendTo(li).text(key);
             }
-
-            // $(key).appendTo(label);
-            console.log(key + " -> " + object[key]);
         }
     }
 }
@@ -53,8 +52,7 @@ function recurseHealth(object) {
 function createHealth() {
     $.ajax({
         url: "/healthz", success: function (response) {
-
-            recurseHealth(response);
+            recurseHealth(response, $("<ul>").appendTo($("#health_status")));
         }, async: true
     });
 }
@@ -65,3 +63,9 @@ function main() {
 }
 
 main();
+
+$(document).ready(function(){
+    $("#refresh-button").click(function () {
+        console.log("click catch");
+    });
+});
