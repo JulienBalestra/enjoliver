@@ -112,7 +112,10 @@ class TestAPI(unittest.TestCase):
             u'/healthz',
             u'/ipxe',
             u'/backup/db',
-            u'/'])
+            u'/ui',
+            u'/ui/view/machine',
+            u'/'
+        ])
 
     def test_discovery_00(self):
         result = self.app.post('/discovery', data=json.dumps(posts.M01),

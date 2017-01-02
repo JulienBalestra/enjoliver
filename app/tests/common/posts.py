@@ -136,7 +136,7 @@ ALL = [
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser()
-    args.add_argument("-e", '--endpoint', default="http://127.0.0.1:8000/discovery", help="The API endpoint")
+    args.add_argument("-e", '--endpoint', default="http://127.0.0.1:5000/discovery", help="The API endpoint")
     args.add_argument('-p', '--post', type=str, default="ALL", help='Select the post to send')
     data = args.parse_args().post
     data = globals()[data]

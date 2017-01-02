@@ -1,18 +1,19 @@
 import ctypes
+import math
 import os
 import shutil
 import time
 import urllib2
-import math
 
-from flask import Flask, request, json, jsonify
+import requests
+from flask import Flask, request, json, jsonify, render_template
 from sqlalchemy import create_engine
 from werkzeug.contrib.cache import SimpleCache
 
 import crud
+import logger
 import model
 import s3
-import logger
 
 LOGGER = logger.get_logger(__file__)
 
@@ -109,10 +110,10 @@ def healthz():
         application.logger.error("BOOTCFG_URI is None")
     for k in status["bootcfg"]:
         try:
-            bootcfg_resp = urllib2.urlopen(
-                "%s/%s" % (app.config["BOOTCFG_URI"], k))
-            assert bootcfg_resp.code == 200
-            status["bootcfg"][k] = True
+            r = requests.get("%s/%s" % (app.config["BOOTCFG_URI"], k))
+            r.close()
+            if r.status_code == 200:
+                status["bootcfg"][k] = True
         except Exception:
             status["bootcfg"][k] = False
             status["global"] = False
@@ -346,6 +347,38 @@ def ipxe():
 @app.errorhandler(404)
 def page_not_found(error):
     return '404\n', 404
+
+
+@application.route('/ui', methods=['GET'])
+def user_interface():
+    return render_template("index.html")
+
+
+@application.route('/ui/view/machine', methods=['GET'])
+def user_view_machine():
+    key = "discovery"
+    all_data = cache.get(key)
+    if all_data is None:
+        fetch = crud.Fetch(
+            engine=engine,
+            ignition_journal=ignition_journal
+        )
+        all_data = fetch.get_all()
+        cache.set(key, all_data, timeout=30)
+
+    res = [["created-date", "updated-date", "uuid", "cidr-boot", "mac-boot"]]
+    for i in all_data:
+        sub_list = list()
+        sub_list.append(i["boot-info"]["created-date"])
+        sub_list.append(i["boot-info"]["updated-date"])
+        sub_list.append(i["boot-info"]["uuid"])
+        for j in i["interfaces"]:
+            if j["as_boot"]:
+                sub_list.append(j["cidrv4"])
+                sub_list.append(j["mac"])
+        res.append(sub_list)
+
+    return jsonify(res)
 
 
 if __name__ == "__main__":
