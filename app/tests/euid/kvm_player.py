@@ -225,6 +225,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     @classmethod
     def check_requirements(cls):
+        # TODO validate the assets in this method
         if os.geteuid() != 0:
             raise RuntimeError("Need to be root EUID==%d" % os.geteuid())
 

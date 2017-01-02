@@ -110,7 +110,9 @@ class Fetch(object):
 
             m["boot-info"] = {
                 "uuid": machine.uuid,
-                "mac": interface_boot.mac
+                "mac": interface_boot.mac,
+                "created-date": machine.created_date,
+                "updated-date": machine.updated_date,
             }
 
             all_data.append(m)
