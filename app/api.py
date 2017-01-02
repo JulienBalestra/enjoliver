@@ -365,9 +365,11 @@ def user_view_machine():
         all_data = fetch.get_all()
         cache.set(key, all_data, timeout=30)
 
-    res = [["uuid", "cidr-boot", "mac-boot"]]
+    res = [["created-date", "updated-date", "uuid", "cidr-boot", "mac-boot"]]
     for i in all_data:
         sub_list = list()
+        sub_list.append(i["boot-info"]["created-date"])
+        sub_list.append(i["boot-info"]["updated-date"])
         sub_list.append(i["boot-info"]["uuid"])
         for j in i["interfaces"]:
             if j["as_boot"]:

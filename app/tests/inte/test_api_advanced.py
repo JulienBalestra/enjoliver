@@ -331,26 +331,31 @@ class TestAPIAdvanced(unittest.TestCase):
         f = urllib2.urlopen(req)
         self.assertEqual(200, f.code)
         response = json.loads(f.read())
-        expect = [
-            {
-                u'boot-info': {
+        expect = {
+            u'boot-info': {
+                u'mac': u'52:54:00:e8:32:5b',
+                u'uuid': u'b7f5f93a-b029-475f-b3a4-479ba198cb8a'
+            },
+            u'interfaces': [
+                {
+                    u'name': u'eth0',
+                    u'as_boot': True,
+                    u'netmask': 21,
                     u'mac': u'52:54:00:e8:32:5b',
-                    u'uuid': u'b7f5f93a-b029-475f-b3a4-479ba198cb8a'
-                },
-                u'interfaces': [
-                    {
-                        u'name': u'eth0',
-                        u'as_boot': True,
-                        u'netmask': 21,
-                        u'mac': u'52:54:00:e8:32:5b',
-                        u'ipv4': u'172.20.0.65',
-                        u'cidrv4': u'172.20.0.65/21'
-                    }
-                ]
-            }
-        ]
+                    u'ipv4': u'172.20.0.65',
+                    u'cidrv4': u'172.20.0.65/21'
+                }
+            ]
+        }
+
         f.close()
-        self.assertEqual(expect, response)
+        self.assertEqual(1, len(response))
+        first = response[0]
+        self.assertEqual(first["boot-info"]["uuid"], expect["boot-info"]["uuid"])
+        self.assertEqual(first["boot-info"]["mac"], expect["boot-info"]["mac"])
+        self.assertEqual(first["interfaces"][0]["mac"], expect["interfaces"][0]["mac"])
+        self.assertEqual(first["interfaces"][0]["as_boot"], expect["interfaces"][0]["as_boot"])
+
         req = urllib2.Request("%s/discovery/ignition-journal/b7f5f93a-b029-475f-b3a4-479ba198cb8a" % self.api_uri)
         f = urllib2.urlopen(req)
         self.assertEqual(200, f.code)

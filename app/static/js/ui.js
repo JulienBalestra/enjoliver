@@ -1,7 +1,7 @@
 function createMachineTable() {
     $.ajax({
         url: "/ui/view/machine", success: function (response) {
-            if (response.length == 0) {
+            if (response.length < 2) {
                 return
             }
             $("#machine-nb").text(response.length - 1);
@@ -18,7 +18,7 @@ function createMachineTable() {
             tbody = $("<tbody>").appendTo(machine_table);
             for (var j = 1; j < response.length; j++) {
                 row = $("<tr>").appendTo(tbody);
-                for (var k = 0; k < response[k].length; k++) {
+                for (var k = 0; k < response[j].length; k++) {
                     $("<td>").appendTo(row).text(response[j][k]);
                 }
             }
