@@ -175,7 +175,7 @@ class TestAssetsRkt(unittest.TestCase):
     assets_path = "%s/bootcfg/assets" % project_path
     asset_test = "%s/rkt" % assets_path
     default_files = ["Makefile"]
-    version = default_files + ["v1.19.0"]
+    version = default_files + ["v1.21.0"]
 
     def test_00_fclean(self):
         expect = self.default_files

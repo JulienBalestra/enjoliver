@@ -185,6 +185,8 @@ class TestAPI(unittest.TestCase):
             u'/healthz',
             u'/backup/db',
             u'/',
+            u'/ui',
+            u'/ui/view/machine',
             u'/ipxe'
         ]
         result = self.app.get('/')
