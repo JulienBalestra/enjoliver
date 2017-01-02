@@ -110,7 +110,9 @@ class Fetch(object):
 
             m["boot-info"] = {
                 "uuid": machine.uuid,
-                "mac": interface_boot.mac
+                "mac": interface_boot.mac,
+                "created-date": machine.created_date,
+                "updated-date": machine.updated_date,
             }
 
             all_data.append(m)
@@ -152,7 +154,6 @@ class Inject(object):
         if machine:
             self.log.debug("machine %s already in db" % uuid)
             machine.updated_date = datetime.datetime.utcnow()
-            self.session.add(machine)
             self.updates += 1
             return machine
         machine = Machine(uuid=uuid)
@@ -164,6 +165,7 @@ class Inject(object):
         m_interfaces = self.machine.interfaces
 
         for i in self.discovery["interfaces"]:
+            # TODO make only one query instead of many
             if i["mac"] and self.session.query(MachineInterface).filter(MachineInterface.mac == i["mac"]).count() == 0:
                 self.log.debug("mac not in db: %s adding" % i["mac"])
                 m_interfaces.append(

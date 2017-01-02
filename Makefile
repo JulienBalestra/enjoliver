@@ -111,6 +111,9 @@ runner:
 release_aci:
 	make -C release
 
+npm:
+	make -C app/static
+
 config:
 	mkdir -pv $(HOME)/.config/enjoliver
 	touch $(HOME)/.config/enjoliver/config.env
@@ -122,7 +125,8 @@ setup:
 	test $(shell id -u -r) -eq 0
 	su - $(MY_USER) -c "make -C $(CWD) submodules"
 	su - $(MY_USER) -c "make -C $(CWD) runner"
-	make acis
+	su - $(MY_USER) -c "make -C $(CWD)/app/static"
+	make -C $(CWD) acis
 	su - $(MY_USER) -c "make -C $(CWD) assets"
 	su - $(MY_USER) -c "make -C $(CWD) validate"
 	su - $(MY_USER) -c "make -C $(CWD) config"
