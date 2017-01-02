@@ -5,6 +5,7 @@ import shutil
 import time
 import urllib2
 
+import requests
 from flask import Flask, request, json, jsonify, render_template
 from sqlalchemy import create_engine
 from werkzeug.contrib.cache import SimpleCache
@@ -109,10 +110,10 @@ def healthz():
         application.logger.error("BOOTCFG_URI is None")
     for k in status["bootcfg"]:
         try:
-            bootcfg_resp = urllib2.urlopen(
-                "%s/%s" % (app.config["BOOTCFG_URI"], k))
-            assert bootcfg_resp.code == 200
-            status["bootcfg"][k] = True
+            r = requests.get("%s/%s" % (app.config["BOOTCFG_URI"], k))
+            r.close()
+            if r.status_code == 200:
+                status["bootcfg"][k] = True
         except Exception:
             status["bootcfg"][k] = False
             status["global"] = False
