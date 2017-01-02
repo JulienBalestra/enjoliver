@@ -4,14 +4,14 @@ function createMachineTable() {
             if (response.length == 0) {
                 return
             }
-            $("#machine-nb").text(response.length);
+            $("#machine-nb").text(response.length - 1);
             var machine_table = $("#machine_table");
-            var thead, tbody, row
+            var thead, tbody, row;
 
             thead = $("<thead>").appendTo(machine_table);
             row = $("<tr>").appendTo(thead);
 
-            for (var i = 0; i < response[i].length; i++) {
+            for (var i = 0; i < response[0].length; i++) {
                 $("<th>").appendTo(row).text(response[0][i]);
             }
 
