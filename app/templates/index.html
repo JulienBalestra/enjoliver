@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" href="static/media/favicon.ico">
+
+    <link rel="stylesheet" href="static/css/index.css">
+
+    <link rel="stylesheet" href="static/node_modules/bootstrap/dist/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="static/node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="static/node_modules/datatables.net-bs/css/dataTables.bootstrap.css">
+
+    <title>Enjoliver</title>
+</head>
+
+<body>
+<nav class="navbar navbar-default" style="">
+
+    <div class="row">
+
+        <div class="col-md-4">
+            <img style="display: inline-block;
+            height: 50px; margin-top: 2px; margin-bottom: 2px; margin-left: 2px"
+                 src="static/media/wheel.jpg">
+        </div>
+        <div class="col-md-4">
+            <h3>The Enjoliver</h3>
+        </div>
+        <div class="col-md-2">
+
+            <div id="refresh">
+                <a href="#" id="refresh-button">Refresh</a>
+
+            </div>
+
+        </div>
+        <div class="col-md-2">
+
+            <div id="unhealthy">
+            </div>
+
+        </div>
+
+
+    </div>
+</nav>
+<div class="container">
+    <div>
+
+        <!-- Nav tabs -->
+        <ul class="nav nav-tabs" role="tablist">
+            <li role="presentation" class="active">
+                <a href="#machine" aria-controls="machine" role="tab" data-toggle="tab">Machines <span class="badge" id="machine-nb">0</span></a>
+            </li>
+            <li role="presentation"><a href="#backup" aria-controls="backup" role="tab" data-toggle="tab">Backup</a>
+            </li>
+            <li role="presentation"><a href="#health" aria-controls="health" role="tab"
+                                       data-toggle="tab">Health</a></li>
+        </ul>
+
+        <!-- Tab panes -->
+        <div class="tab-content" style="margin-top: 10px">
+            <div role="tabpanel" class="tab-pane fade in active" id="machine">
+                <table class="table table-bordered table-hover table-striped" id="machine_table"></table>
+            </div>
+            <div role="tabpanel" class="tab-pane fade" id="backup">
+            </div>
+            <div role="tabpanel" class="tab-pane fade" id="health">
+                <div id="health_status"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+</body>
+<footer>
+
+    <script src="static/node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="static/node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="static/node_modules/datatables.net/js/jquery.dataTables.js"></script>
+    <script src="static/node_modules/datatables.net-bs/js/dataTables.bootstrap.js"></script>
+
+    <script src="static/js/ui.js"></script>
+</footer>
+</html>
