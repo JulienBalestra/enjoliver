@@ -559,13 +559,14 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         mem_gib = mem_bytes / (1024. ** 3)
         return mem_gib * 1024 if mem_gib > 3 else 3 * 1024
 
-    def polling_for_stop(self, stop="/tmp/e.stop"):
+    def polling_for_stop(self, stop="/tmp/e.stop", fns=None):
         os.write(1, "\r-> Starting %s\n\r" % self.polling_for_stop.__name__)
         with open(stop, "w") as f:
             f.write("")
         os.chmod(stop, 0777)
         try:
             while os.path.isfile(stop) is True and os.stat(stop).st_size == 0:
+                [fn() for fn in fns]
                 if int(time.time()) % 20 == 0:
                     os.write(1, "\r-> Stop with \"sudo rm -v\" %s or \"echo 1 > %s\"\n\r" % (stop, stop))
                 time.sleep(self.wait_setup_teardown)
