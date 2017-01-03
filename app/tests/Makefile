@@ -75,6 +75,7 @@ ngrok_api:
 	--exec ngrok -- http 172.20.0.1:5000
 
 ngrok_k8s:
+	echo $(K8S_IP_PORT)
 	test $(K8S_IP_PORT)
 	$(RKT) run --local-config=$(CWD) --interactive --net=rack0 \
 	quay.io/julienbalestra/ngrok \
