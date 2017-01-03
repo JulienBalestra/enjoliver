@@ -276,6 +276,7 @@ storage:
               - --service-cluster-ip-range=172.20.0.0/19
               - --admission-control=NamespaceLifecycle,LimitRanger,DefaultStorageClass,ResourceQuota
               - --runtime-config=extensions/v1beta1/networkpolicies=true
+              - --enable-swagger-ui=true
               livenessProbe:
                 httpGet:
                   host: 127.0.0.1
