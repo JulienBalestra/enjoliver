@@ -275,7 +275,7 @@ storage:
               - --allow-privileged=true
               - --service-cluster-ip-range=172.20.0.0/19
               - --admission-control=NamespaceLifecycle,LimitRanger,DefaultStorageClass,ResourceQuota
-              - --runtime-config=extensions/v1beta1/networkpolicies=true
+              - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1
               - --enable-swagger-ui=true
               livenessProbe:
                 httpGet:
