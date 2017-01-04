@@ -9,7 +9,7 @@ spec:
       template:
         spec:
           containers:
-          - name: date
+          - name: date-batch-cron
             image: quay.io/julienbalestra/nginx:latest
             command:
             - /bin/date

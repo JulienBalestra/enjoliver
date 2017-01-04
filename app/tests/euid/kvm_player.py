@@ -566,7 +566,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         os.chmod(stop, 0777)
         try:
             while os.path.isfile(stop) is True and os.stat(stop).st_size == 0:
-                [fn() for fn in fns]
+                if fns:
+                    [fn() for fn in fns]
                 if int(time.time()) % 20 == 0:
                     os.write(1, "\r-> Stop with \"sudo rm -v\" %s or \"echo 1 > %s\"\n\r" % (stop, stop))
                 time.sleep(self.wait_setup_teardown)

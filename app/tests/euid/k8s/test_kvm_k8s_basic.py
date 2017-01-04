@@ -203,9 +203,9 @@ class TestKVMK8SBasic1(TestKVMK8sBasic):
             self.create_nginx_daemon_set(sch_cp.ip_list[0])
             self.daemon_set_nginx_are_running(sch_cp.ip_list + sch_no.ip_list)
             self.write_ending(marker)
-            if os.getenv("TEST"):
-                self.polling_for_stop(fns=[sch_no.apply])
         finally:
+            if os.getenv("TEST"):
+                self.polling_for_stop()
             for i in xrange(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \

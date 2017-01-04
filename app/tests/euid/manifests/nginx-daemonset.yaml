@@ -11,7 +11,7 @@ spec:
     spec:
       hostNetwork: true
       containers:
-      - name: nginx
+      - name: nginx-daemonset-pod
         image: quay.io/julienbalestra/nginx:latest
         command:
         - /usr/sbin/nginx
