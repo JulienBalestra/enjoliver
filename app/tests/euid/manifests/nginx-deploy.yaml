@@ -16,7 +16,7 @@ spec:
         run: nginx-dhcp
     spec:
       containers:
-      - name: nginx
+      - name: nginx-deploy-rs-pod
         image: quay.io/julienbalestra/nginx:latest
         command:
         - /usr/sbin/nginx
