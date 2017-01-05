@@ -1,0 +1,411 @@
+---
+systemd:
+  units:
+    - name: download-discoveryC.service
+      enable: true
+      contents: |
+        [Unit]
+        Requires=network-online.target
+        After=network-online.target
+        [Service]
+        Type=oneshot
+        Environment=OPT_BIN=/opt/bin
+        EnvironmentFile=/etc/metadata-endpoints.env
+        ExecStartPre=/bin/mkdir -pv ${OPT_BIN}
+        ExecStart=/usr/bin/curl -f ${BOOTCFG_URI}/assets/discoveryC/serve/discoveryC \
+          -o ${OPT_BIN}/discoveryC
+        ExecStartPost=/usr/bin/chmod +x ${OPT_BIN}/discoveryC
+        RemainAfterExit=yes
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: discoveryC.service
+      enable: true
+      contents: |
+        [Unit]
+        Requires=download-discoveryC.service
+        After=download-discoveryC.service lldpd.service
+        [Service]
+        Environment=IGNITION_FILE=/run/ignition.journal
+        EnvironmentFile=/etc/metadata-endpoints.env
+        ExecStartPre=-/bin/bash -c "/usr/bin/journalctl --identifier=ignition -o short-iso > ${IGNITION_FILE}"
+        ExecStart=/opt/bin/discoveryC
+        Restart=on-failure
+        RestartSec=5s
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: fetch-metadata.service
+      enable: true
+      contents: |
+        [Unit]
+        Requires=network-online.target
+        After=network-online.target
+        [Service]
+        Type=oneshot
+        EnvironmentFile=/etc/metadata-endpoints.env
+        Environment=METADATA=/etc/metadata.env
+        # If the file already exist put the unit on failure
+        ExecStartPre=/usr/bin/test ! -f $METADATA
+        ExecStart=/usr/bin/curl ${BOOTCFG_URI}/metadata?${REQUEST_RAW_QUERY} -o $METADATA
+        RemainAfterExit=yes
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: install-rkt.service
+      enable: true
+      contents: |
+        [Unit]
+        Requires=network-online.target
+        After=network-online.target
+        [Service]
+        Type=oneshot
+        EnvironmentFile=/etc/metadata-endpoints.env
+        Environment=OPT_RKT=/opt/rkt
+        Environment=DOWNLOAD_RKT_DIR=/tmp/rkt_install
+        Environment=FULL_PATH_RKT=/opt/bin/rkt
+        Environment=FULL_PATH_DIR_RKT=/opt/bin
+        Environment=RKT_ARCHIVE=rkt.tar.gz
+        ExecStart=/opt/bin/install-rkt
+        ExecReload=-/bin/rm -Rfv $RKT $OPT_RKT $DOWNLOAD_RKT_DIR $FULL_PATH_RKT
+        RemainAfterExit=yes
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: install-cni.service
+      enable: true
+      contents: |
+        [Unit]
+        Requires=network-online.target
+        After=network-online.target
+
+        [Service]
+        Type=oneshot
+        EnvironmentFile=/etc/metadata-endpoints.env
+        Environment=OPT_CNI=/opt/cni
+        Environment=FULL_PATH_DIR_CNI=/opt/bin
+        Environment=FULL_PATH_CNI=/opt/bin/cnitool
+        Environment=CNI_ARCHIVE=cni.tar.gz
+        ExecStart=/opt/bin/install-cni
+        ExecReload=-/bin/rm -Rfv $FULL_PATH_CNI $OPT_CNI
+        RemainAfterExit=yes
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: cni-dhcp.service
+      enable: true
+      contents: |
+        [Unit]
+        Requires=install-cni.service
+        After=install-cni.service
+
+        [Service]
+        ExecStartPre=-/bin/rm -v /run/cni/dhcp.sock
+        ExecStart=/opt/cni/bin/dhcp daemon
+        Restart=on-failure
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: install-hyperkube.service
+      enable: true
+      contents: |
+        [Unit]
+        Requires=network-online.target
+        After=network-online.target
+
+        [Service]
+        Type=oneshot
+        EnvironmentFile=/etc/metadata-endpoints.env
+        Environment=FULL_PATH_DIR_HYPERKUBE=/opt/bin
+        Environment=FULL_PATH_HYPERKUBE=/opt/bin/hyperkube
+        ExecStart=/opt/bin/install-hyperkube
+        ExecReload=-/bin/rm -v $FULL_PATH_HYPERKUBE \
+          ${FULL_PATH_DIR_HYPERKUBE}/apiserver \
+          ${FULL_PATH_DIR_HYPERKUBE}/controller-manager \
+          ${FULL_PATH_DIR_HYPERKUBE}/federation-apiserver \
+          ${FULL_PATH_DIR_HYPERKUBE}/federation-controller-manager \
+          ${FULL_PATH_DIR_HYPERKUBE}/kubectl \
+          ${FULL_PATH_DIR_HYPERKUBE}/kubelet \
+          ${FULL_PATH_DIR_HYPERKUBE}/proxy \
+          ${FULL_PATH_DIR_HYPERKUBE}/scheduler
+
+        RemainAfterExit=yes
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: installs.target
+      contents: |
+        [Unit]
+        Requires=install-cni.service
+        After=install-cni.service
+        Requires=install-rkt.service
+        After=install-rkt.service
+        Requires=install-hyperkube.service
+        After=install-hyperkube.service
+
+    - name: rkt-api.service
+      enable: true
+      contents: |
+        [Unit]
+        After=install-rkt.service
+        Requires=install-rkt.service
+
+        [Service]
+        ExecStart=/opt/bin/rkt api-service
+        Restart=always
+        RestartSec=10
+
+        [Install]
+        RequiredBy=multi-user.target
+
+    - name: etcd2.service
+      enable: true
+      dropins:
+        - name: 10-cluster.conf
+          contents: |
+            [Unit]
+            After=fetch-metadata.service
+            [Service]
+            ExecStartPre=/bin/cat /etc/metadata.env
+            ExecStartPre=/bin/ls -l /etc/metadata.env
+            EnvironmentFile=/etc/metadata.env
+            Environment=ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379,http://0.0.0.0:4001
+            Environment=ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380,http://0.0.0.0:7001
+
+    - name: kubelet.service
+      enable: true
+      contents: |
+        [Unit]
+        After=fetch-metadata.service
+        After=installs.target
+        Requires=installs.target
+        After=cni-dhcp.service
+        Requires=cni-dhcp.service
+        After=rkt-api.service
+        Requires=rkt-api.service
+
+        [Service]
+        EnvironmentFile=/etc/metadata.env
+        Environment=MANIFESTS=/etc/kubernetes/manifests
+        ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
+        ExecStartPre=/bin/mkdir -pv $MANIFESTS
+        ExecStart=/opt/bin/kubelet \
+          \
+          --network-plugin=cni \
+          --cni-conf-dir=/etc/kubernetes/cni/net.d \
+          \
+          --pod-manifest-path=${MANIFESTS} \
+          --hostname-override=${K8S_ADVERTISE_IP} \
+          --register-schedulable=true \
+          --allow-privileged=true \
+          --api-servers=${K8S_ENDPOINT} \
+          --cloud-provider="" \
+          \
+          --container-runtime=rkt \
+          --rkt-path=/opt/bin/rkt \
+          --v=2
+        Restart=always
+        RestartSec=10
+
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: fleet.service
+      enable: true
+
+
+storage:
+  files:
+    - path: /etc/hostname
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          {{.hostname}}
+
+    - path: /etc/metadata-endpoints.env
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          # Customs
+          API_URI={{.api_uri}}
+          BOOTCFG_URI={{.bootcfg_uri}}
+          DISCOVERY_ADDRESS={{.api_uri}}/discovery
+
+          # Standards
+          REQUEST_RAW_QUERY="{{.request.raw_query}}"
+
+    - path: /etc/rkt/paths.d/paths.json
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          {
+            "rktKind": "paths",
+            "rktVersion": "v1",
+            "stage1-images": "/opt/rkt/"
+          }
+
+    - path: /etc/kubernetes/cni/net.d/10-k8s.conf
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          {
+            "name": "rkt.kubernetes.io",
+            "type": "macvlan",
+            "master": "eth0",
+            "ipam": {
+              "type": "dhcp"
+            }
+          }
+
+    - path: /root/.bash_history
+      filesystem: root
+      mode: 0600
+      contents:
+        inline: |
+          journalctl -u kubelet --no-pager -o short -f
+          journalctl -u kubelet --no-pager -o short
+
+    - path: /opt/bin/install-cni
+      filesystem: root
+      mode: 0544
+      contents:
+        inline: |
+          #!/bin/bash
+          set -xv
+
+          function is_var {
+              if [ -z $1 ]
+              then
+                  echo 'Variable name have to be in $1' >&2
+                  exit 1
+              fi
+              if [ -z $2 ]
+              then
+                  echo "Variable $1 have to be set" >&2
+                  exit 1
+              fi
+
+          }
+
+          is_var OPT_CNI ${OPT_CNI}
+          is_var FULL_PATH_CNI ${FULL_PATH_CNI}
+          is_var FULL_PATH_DIR_CNI ${FULL_PATH_DIR_CNI}
+          is_var CNI_ARCHIVE ${CNI_ARCHIVE}
+          is_var BOOTCFG_URI ${BOOTCFG_URI}
+
+          ${FULL_PATH_CNI}
+          if [ $? -eq 1 ]
+          then
+              exit 0
+          fi
+
+          set -e +v
+
+          mkdir -pv ${OPT_CNI}
+          curl ${BOOTCFG_URI}/assets/cni/serve/${CNI_ARCHIVE} -o /tmp/${CNI_ARCHIVE}
+          tar -C ${OPT_CNI} -xzvf /tmp/${CNI_ARCHIVE}
+          ln -sv ${OPT_CNI}/bin/cnitool ${FULL_PATH_DIR_CNI}
+
+          set +e
+
+          ${FULL_PATH_CNI}
+          if [ $? -ne 1 ]
+          then
+              exit 2
+          else
+              exit 0
+          fi
+
+    - path: /opt/bin/install-hyperkube
+      filesystem: root
+      mode: 0544
+      contents:
+        inline: |
+          #!/bin/bash
+          set -xv
+
+          function is_var {
+              if [ -z $1 ]
+              then
+                  echo 'Variable name have to be in $1' >&2
+                  exit 1
+              fi
+              if [ -z $2 ]
+              then
+                  echo "Variable $1 have to be set" >&2
+                  exit 1
+              fi
+
+          }
+
+          is_var FULL_PATH_DIR_HYPERKUBE ${FULL_PATH_DIR_HYPERKUBE}
+          is_var FULL_PATH_HYPERKUBE ${FULL_PATH_HYPERKUBE}
+          is_var BOOTCFG_URI ${BOOTCFG_URI}
+
+          ${FULL_PATH_HYPERKUBE} --version && exit 0
+
+          set -e +v
+
+          mkdir -pv ${FULL_PATH_DIR_HYPERKUBE}
+          curl ${BOOTCFG_URI}/assets/hyperkube/serve/hyperkube -o ${FULL_PATH_HYPERKUBE}
+          chmod +x ${FULL_PATH_HYPERKUBE}
+
+          cd ${FULL_PATH_DIR_HYPERKUBE}
+          ${FULL_PATH_HYPERKUBE} --version
+          ${FULL_PATH_HYPERKUBE} --make-symlinks
+
+    - path: /opt/bin/install-rkt
+      filesystem: root
+      mode: 0544
+      contents:
+        inline: |
+          #!/bin/bash
+          set -xv
+
+          function is_var {
+              if [ -z $1 ]
+              then
+                  echo 'Variable name have to be in $1' >&2
+                  exit 1
+              fi
+              if [ -z $2 ]
+              then
+                  echo "Variable $1 have to be set" >&2
+                  exit 1
+              fi
+          }
+
+          is_var FULL_PATH_RKT ${FULL_PATH_RKT}
+          is_var FULL_PATH_DIR_RKT ${FULL_PATH_DIR_RKT}
+          is_var OPT_RKT ${OPT_RKT}
+          is_var DOWNLOAD_RKT_DIR ${DOWNLOAD_RKT_DIR}
+          is_var RKT_ARCHIVE ${RKT_ARCHIVE}
+          is_var BOOTCFG_URI ${BOOTCFG_URI}
+
+          FULL_PATH_RKT version && exit 0
+
+          set -e +v
+
+          mkdir -pv ${DOWNLOAD_RKT_DIR} ${OPT_RKT} ${FULL_PATH_DIR_RKT}
+          curl ${BOOTCFG_URI}/assets/rkt/serve/${RKT_ARCHIVE} -o ${DOWNLOAD_RKT_DIR}/${RKT_ARCHIVE}
+          tar -C ${DOWNLOAD_RKT_DIR} -xzvf ${DOWNLOAD_RKT_DIR}/${RKT_ARCHIVE} --strip-component=1
+          for b in rkt stage1-coreos.aci stage1-fly.aci stage1-kvm.aci
+          do
+            mv -v ${DOWNLOAD_RKT_DIR}/${b} ${OPT_RKT}
+          done
+          ln -sv ${OPT_RKT}/rkt ${FULL_PATH_DIR_RKT}
+          ${FULL_PATH_RKT} version
+
+{{ if index . "ssh_authorized_keys" }}
+passwd:
+  users:
+    - name: core
+      ssh_authorized_keys:
+        {{ range $element := .ssh_authorized_keys }}
+        - {{$element}}
+        {{end}}
+{{end}}
