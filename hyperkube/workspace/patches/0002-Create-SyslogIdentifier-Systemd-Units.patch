@@ -31,7 +31,7 @@ index ce797fe..7ff0ab3 100644
  
  	hostNetwork := kubecontainer.IsHostNetworkPod(pod)
  	units := []*unit.UnitOption{
-+		newUnitOption("Unit", "Description", pod.Namespace + "." + pod.GenerateName),
++		newUnitOption("Unit", "Description", pod.Namespace + "." + pod.Name),
 +		newUnitOption("Service", "SyslogIdentifier", pod.Namespace + "." + getPrefixPodName(pod.Name)),
  		newUnitOption("Service", "ExecStart", runPrepared),
  		newUnitOption("Service", "ExecStopPost", markPodFinished),
