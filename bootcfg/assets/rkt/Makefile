@@ -1,7 +1,7 @@
 CWD=$(shell pwd)
 SERVE=serve
 
-VERSION=v1.21.0
+VERSION=v1.22.0
 RKT_GITHUB=https://github.com/coreos/rkt/releases/download/$(VERSION)/rkt-$(VERSION).tar.gz
 
 TARGET=$(VERSION)/rkt.tar.gz
