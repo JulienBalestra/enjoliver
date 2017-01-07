@@ -2,7 +2,7 @@ CWD=$(shell pwd)
 
 
 # DGR
-DGR_VERSION=v78
+DGR_VERSION=v80
 DGR_GITHUB_DOWNLOAD=https://github.com/blablacar/dgr/releases/download
 DGR_TAR=dgr-$(DGR_VERSION)-linux-amd64.tar.gz
 DGR_GITHUB=$(DGR_GITHUB_DOWNLOAD)/$(DGR_VERSION)/$(DGR_TAR)
@@ -12,7 +12,7 @@ DGR_DOWNLOAD_TAR=$(DGR_DIR)/$(DGR_TAR)
 
 
 # RKT
-RKT_VERSION=v1.21.0
+RKT_VERSION=v1.22.0
 RKT_GITHUB_DOWNLOAD=https://github.com/coreos/rkt/releases/download
 RKT_TAR=rkt-$(RKT_VERSION).tar.gz
 RKT_GITHUB=$(RKT_GITHUB_DOWNLOAD)/$(RKT_VERSION)/$(RKT_TAR)
