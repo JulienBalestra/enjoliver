@@ -39,10 +39,11 @@
 * golang # > 1.3
 
 
-    # Over Debian-based:
-    ./apt.sh
+    ./apt.sh # Over Debian-based
+
 
 ##### Optional:
+
 * npm
 * liblzma-dev
 * mkisofs
