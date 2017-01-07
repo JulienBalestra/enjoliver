@@ -18,7 +18,7 @@ chmod +x /usr/local/bin/virtualenv
 
 
 ### CoreOS Baremetal ###
-BOOTCFG_VERSION=v0.4.0
+BOOTCFG_VERSION=v0.4.2
 BOOTCFG_DIR=${ROOTFS}/usr/bin
 BOOTCFG_INSTALL=/opt/bootcfg_install
 
