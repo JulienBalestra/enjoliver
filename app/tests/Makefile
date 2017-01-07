@@ -75,6 +75,7 @@ ngrok_api:
 	--exec ngrok -- http 172.20.0.1:5000
 
 ngrok_k8s:
+	echo $(K8S_IP_PORT)
 	test $(K8S_IP_PORT)
 	$(RKT) run --local-config=$(CWD) --interactive --net=rack0 \
 	quay.io/julienbalestra/ngrok \
@@ -126,6 +127,9 @@ check_euid_discovery_client: $(PYTHON)
 
 check_euid_k8s_basic: $(PYTHON)
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/k8s/test_kvm_k8s_basic.py
+
+check_euid_k8s_fast: $(PYTHON)
+	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/k8s/test_kvm_k8s_fast.py
 
 check_euid_basic: $(PYTHON)
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover euid/basic/
