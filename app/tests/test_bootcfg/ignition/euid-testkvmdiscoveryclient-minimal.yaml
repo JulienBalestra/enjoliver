@@ -10,13 +10,15 @@ systemd:
         [Service]
         Type=oneshot
         Environment=OPT_BIN=/opt/bin
+        EnvironmentFile=-/etc/metadata-endpoints.env
         ExecStartPre=/bin/mkdir -pv ${OPT_BIN}
-        ExecStart=/usr/bin/curl -f http://172.20.0.1:8080/assets/discoveryC/serve/discoveryC \
+        ExecStart=/usr/bin/curl -f ${API_URI}/assets/discoveryC/serve/discoveryC \
           -o ${OPT_BIN}/discoveryC
         ExecStartPost=/usr/bin/chmod +x ${OPT_BIN}/discoveryC
         RemainAfterExit=yes
         [Install]
         WantedBy=multi-user.target
+
     - name: discoveryC.service
       enable: true
       contents: |
@@ -25,10 +27,32 @@ systemd:
         After=download-discoveryC.service
         [Service]
         Type=oneshot
-        Environment=DISCOVERY_ADDRESS=http://172.20.0.1:5000/discovery
+        EnvironmentFile=-/etc/metadata-endpoints.env
         ExecStart=/opt/bin/discoveryC
         [Install]
         WantedBy=multi-user.target
+
+storage:
+  files:
+
+    - path: /etc/hostname
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          discovery
+
+    - path: /etc/metadata-endpoints.env
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          # Customs
+          API_URI={{.api_uri}}
+          DISCOVERY_ADDRESS={{.api_uri}}/discovery
+
+          # Standards
+          REQUEST_RAW_QUERY="{{.request.raw_query}}"
 
 
 {{ if index . "ssh_authorized_keys" }}

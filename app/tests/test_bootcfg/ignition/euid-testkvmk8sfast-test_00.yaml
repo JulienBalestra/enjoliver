@@ -11,8 +11,9 @@ systemd:
         [Service]
         Type=oneshot
         Environment=OPT_BIN=/opt/bin
+        EnvironmentFile=-/etc/metadata-endpoints.env
         ExecStartPre=/bin/mkdir -pv ${OPT_BIN}
-        ExecStart=/usr/bin/curl -f http://172.20.0.1:8080/assets/discoveryC/serve/discoveryC \
+        ExecStart=/usr/bin/curl -f ${API_URI}/assets/discoveryC/serve/discoveryC \
           -o ${OPT_BIN}/discoveryC
         ExecStartPost=/usr/bin/chmod +x ${OPT_BIN}/discoveryC
         RemainAfterExit=yes
@@ -27,7 +28,7 @@ systemd:
         After=download-discoveryC.service lldpd.service
         [Service]
         Environment=IGNITION_FILE=/run/ignition.journal
-        Environment=DISCOVERY_ADDRESS=http://172.20.0.1:5000/discovery
+        EnvironmentFile=-/etc/metadata-endpoints.env
         ExecStartPre=-/bin/bash -c "/usr/bin/journalctl --identifier=ignition -o short-iso > ${IGNITION_FILE}"
         ExecStart=/opt/bin/discoveryC
         Restart=on-failure
@@ -66,7 +67,6 @@ storage:
         inline: |
           # Customs
           API_URI={{.api_uri}}
-          BOOTCFG_URI={{.bootcfg_uri}}
           DISCOVERY_ADDRESS={{.api_uri}}/discovery
 
           # Standards
@@ -88,7 +88,7 @@ storage:
 
           while true
           do
-              curl -f ${BOOTCFG_URI}/ignition?${REQUEST_RAW_QUERY} -o ${NEW_IGNITION}
+              curl -f ${API_URI}/ignition?${REQUEST_RAW_QUERY} -o ${NEW_IGNITION}
 
               diff /run/ignition.json ${NEW_IGNITION}
               if [ $? -eq 1 ]

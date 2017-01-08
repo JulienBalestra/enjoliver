@@ -24,7 +24,6 @@ class GenerateGroup(GenerateCommon):
             "profile": profile,
             "metadata": {
                 "api_uri": "",
-                "bootcfg_uri": "",
                 "etcd_initial_cluster": ""
             }
         }
@@ -46,7 +45,6 @@ class GenerateGroup(GenerateCommon):
 
     def _metadata(self):
         self._target_data["metadata"]["api_uri"] = self.api_uri
-        self._target_data["metadata"]["bootcfg_uri"] = self.bootcfg_uri
         self._target_data["metadata"]["etcd_initial_cluster"] = ""  # default WET
         self._target_data["metadata"]["ssh_authorized_keys"] = self._get_ssh_authorized_keys()
 

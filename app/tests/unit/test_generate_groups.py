@@ -18,7 +18,6 @@ class TestGenerateGroups(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        os.environ["BOOTCFG_URI"] = "http://127.0.0.1:8080"
         os.environ["API_URI"] = "http://127.0.0.1:5000"
         subprocess.check_output(["make", "-C", cls.gen.project_path])
         cls.gen = generate_groups.GenerateGroup(
@@ -39,7 +38,6 @@ class TestGenerateGroups(TestCase):
     def test_01_metadata(self):
         expect = {'etcd_initial_cluster': '',
                   'api_uri': '%s' % self.gen.api_uri,
-                  'bootcfg_uri': "%s" % self.gen.bootcfg_uri,
                   'ssh_authorized_keys': []}
 
         self.gen._metadata()
@@ -51,7 +49,6 @@ class TestGenerateGroups(TestCase):
             'metadata': {
                 'etcd_initial_cluster': '',
                 'api_uri': '%s' % self.gen.api_uri,
-                'bootcfg_uri': "%s" % self.gen.bootcfg_uri,
                 'ssh_authorized_keys': []
             },
             'id': 'etcd-proxy',
@@ -106,8 +103,8 @@ class TestGenerateGroupsSelectorLower(TestCase):
         self.assertIsNotNone(ip)
 
     def test_01_metadata(self):
-        expect = {'etcd_initial_cluster': '', 'api_uri': "%s" % self.gen.api_uri,
-                  'bootcfg_uri': "%s" % self.gen.bootcfg_uri,
+        expect = {'etcd_initial_cluster': '',
+                  'api_uri': "%s" % self.gen.api_uri,
                   'ssh_authorized_keys': []}
         self.gen._metadata()
         self.gen._target_data["metadata"]['ssh_authorized_keys'] = []
@@ -125,7 +122,6 @@ class TestGenerateGroupsSelectorLower(TestCase):
                 'etcd_initial_cluster': '',
                 'api_uri': self.gen.api_uri,
                 'selector': {'mac': '08:00:27:37:28:2e'},
-                'bootcfg_uri': "%s" % self.gen.bootcfg_uri,
                 'ssh_authorized_keys': []
             },
             'id': 'etcd-proxy',
@@ -185,8 +181,8 @@ class TestGenerateGroupsSelectorUpper(TestCase):
         self.assertIsNotNone(ip)
 
     def test_01_metadata(self):
-        expect = {'etcd_initial_cluster': '', 'api_uri': "%s" % self.gen.api_uri,
-                  'bootcfg_uri': "%s" % self.gen.bootcfg_uri,
+        expect = {'etcd_initial_cluster': '',
+                  'api_uri': "%s" % self.gen.api_uri,
                   'ssh_authorized_keys': []}
         self.gen._metadata()
         self.gen._target_data["metadata"]['ssh_authorized_keys'] = []
@@ -204,7 +200,6 @@ class TestGenerateGroupsSelectorUpper(TestCase):
                 'etcd_initial_cluster': '',
                 'api_uri': "%s" % self.gen.api_uri,
                 'selector': {'mac': '08:00:27:37:28:2e'},
-                'bootcfg_uri': "%s" % self.gen.bootcfg_uri,
                 'ssh_authorized_keys': []
             },
             'id': 'etcd-proxy',
@@ -270,7 +265,6 @@ class TestGenerateGroupsExtraMetadata(TestCase):
         expect = {'etcd_initial_cluster': 'static0=http://192.168.1.1:2379',
                   'api_uri': "%s" % self.gen.api_uri,
                   'api_seed': 'http://192.168.1.2:5000',
-                  'bootcfg_uri': "%s" % self.gen.bootcfg_uri,
                   'ssh_authorized_keys': []}
         self.gen._metadata()
         self.gen._target_data["metadata"]['ssh_authorized_keys'] = []
@@ -288,7 +282,6 @@ class TestGenerateGroupsExtraMetadata(TestCase):
                 'etcd_initial_cluster': '',
                 'api_uri': "%s" % self.gen.api_uri,
                 'selector': {'mac': '08:00:27:37:28:2e'},
-                'bootcfg_uri': "%s" % self.gen.bootcfg_uri,
                 'ssh_authorized_keys': []
             },
             'id': 'etcd-proxy',

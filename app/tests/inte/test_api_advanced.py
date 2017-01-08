@@ -38,7 +38,6 @@ class TestAPIAdvanced(unittest.TestCase):
 
     bootcfg_port = int(os.getenv("BOOTCFG_PORT", "8080"))
 
-    bootcfg_address = "0.0.0.0:%d" % bootcfg_port
     bootcfg_uri = "http://localhost:%d" % bootcfg_port
 
     api_port = int(os.getenv("API_PORT", "5000"))
@@ -52,7 +51,6 @@ class TestAPIAdvanced(unittest.TestCase):
             "%s" % TestAPIAdvanced.bootcfg_bin,
             "-data-path", "%s" % TestAPIAdvanced.test_bootcfg_path,
             "-assets-path", "%s" % TestAPIAdvanced.assets_path,
-            "-address", "%s" % TestAPIAdvanced.bootcfg_address,
             "-log-level", "debug"
         ]
         os.write(1, "PID  -> %s\n"
@@ -87,7 +85,6 @@ class TestAPIAdvanced(unittest.TestCase):
         engine = api.create_engine(db)
         api.app.config["DB_PATH"] = db_path
         api.app.config["API_URI"] = cls.api_uri
-        api.app.config["BOOTCFG_URI"] = cls.bootcfg_uri
         model.Base.metadata.create_all(engine)
         assert os.path.isfile(db_path)
         api.engine = engine
@@ -180,7 +177,8 @@ class TestAPIAdvanced(unittest.TestCase):
                 u'/': True,
                 u'/boot.ipxe': True,
                 u'/boot.ipxe.0': True,
-                u'/assets': True
+                u'/assets': True,
+                u"/metadata": True
             }}
         request = urllib2.urlopen("%s/healthz" % self.api_uri)
         response_body = request.read()
@@ -231,7 +229,13 @@ class TestAPIAdvanced(unittest.TestCase):
             u'/',
             u'/ui',
             u'/ui/view/machine',
-            u'/ipxe'
+            u'/ipxe',
+            u'/assets',
+            u'/assets/<path:path>',
+            u'/config',
+            u'/ignition',
+            u'/metadata',
+            u'/static/<path:filename>'
         ]
         request = urllib2.urlopen("%s/" % self.api_uri)
         response_body = request.read()
@@ -267,7 +271,7 @@ class TestAPIAdvanced(unittest.TestCase):
                  "coreos.first_boot " \
                  "coreos.oem.id=pxe\n" \
                  "initrd %s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz \n" \
-                 "boot\n" % (gen.profile.bootcfg_uri, gen.profile.bootcfg_uri, gen.profile.bootcfg_uri)
+                 "boot\n" % (gen.profile.api_uri, gen.profile.api_uri, gen.profile.api_uri)
         self.assertEqual(response_body, expect)
         self.assertEqual(response_code, 200)
 
@@ -296,7 +300,7 @@ class TestAPIAdvanced(unittest.TestCase):
                  "coreos.config.url=%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp} " \
                  "coreos.first_boot coreos.oem.id=pxe\n" \
                  "initrd %s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz \n" \
-                 "boot\n" % (gen.profile.bootcfg_uri, gen.profile.bootcfg_uri, gen.profile.bootcfg_uri)
+                 "boot\n" % (gen.profile.api_uri, gen.profile.api_uri, gen.profile.api_uri)
         self.assertEqual(response_body, expect)
         self.assertEqual(response_code, 200)
 

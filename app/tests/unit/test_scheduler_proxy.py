@@ -13,12 +13,14 @@ class TestEtcdSchedulerProxy(unittest.TestCase):
     app_path = "%s" % os.path.split(tests_path)[0]
     project_path = "%s" % os.path.split(app_path)[0]
     test_bootcfg_path = "%s/test_bootcfg" % tests_path
+    api_uri = "http://127.0.0.1:5000"
 
     @classmethod
     def setUpClass(cls):
         subprocess.check_output(["make", "-C", cls.project_path])
         scheduler.EtcdProxyScheduler.apply_deps_tries = 1
         scheduler.EtcdProxyScheduler.apply_deps_delay = 0
+        os.environ["API_URI"] = cls.api_uri
 
     @staticmethod
     def clean_sandbox():

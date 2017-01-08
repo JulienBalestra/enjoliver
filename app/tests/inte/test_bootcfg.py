@@ -40,8 +40,10 @@ class TestBootConfigCommon(TestCase):
 
     bootcfg_port = int(os.getenv("BOOTCFG_PORT", "8080"))
 
-    bootcfg_address = "0.0.0.0:%d" % bootcfg_port
+    # bootcfg_address = "0.0.0.0:%d" % bootcfg_port
     bootcfg_endpoint = "http://localhost:%d" % bootcfg_port
+
+    api_uri = "http://127.0.0.1:5000"
 
     @staticmethod
     def process_target():
@@ -49,7 +51,7 @@ class TestBootConfigCommon(TestCase):
             "%s" % TestBootConfigCommon.bootcfg_bin,
             "-data-path", "%s" % TestBootConfigCommon.test_bootcfg_path,
             "-assets-path", "%s" % TestBootConfigCommon.assets_path,
-            "-address", "%s" % TestBootConfigCommon.bootcfg_address,
+            # "-address", "%s" % TestBootConfigCommon.bootcfg_address,
             "-log-level", "debug"
         ]
         os.write(1, "PID  -> %s\n"
@@ -88,6 +90,7 @@ class TestBootConfigCommon(TestCase):
     def setUpClass(cls):
         time.sleep(0.1)
         cls.clean_sandbox()
+        os.environ["API_URI"] = cls.api_uri
 
         subprocess.check_output(["make"], cwd=cls.project_path)
         if os.path.isfile("%s" % TestBootConfigCommon.bootcfg_bin) is False:
@@ -178,16 +181,16 @@ class TestBootConfigCommon(TestCase):
         kernel = lines[1].split(" ")
         kernel_expect = [
             'kernel',
-            '%s/assets/coreos/serve/coreos_production_pxe.vmlinuz' % self.gen.profile.bootcfg_uri,
+            '%s/assets/coreos/serve/coreos_production_pxe.vmlinuz' % self.gen.profile.api_uri,
             'coreos.autologin',
-            'coreos.config.url=%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % self.gen.profile.bootcfg_uri,
+            'coreos.config.url=%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % self.gen.profile.api_uri,
             'coreos.first_boot',
             "coreos.oem.id=pxe"]
         self.assertEqual(kernel, kernel_expect)
 
         init_rd = lines[2].split(" ")
         init_rd_expect = ['initrd',
-                          '%s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz' % self.gen.profile.bootcfg_uri]
+                          '%s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz' % self.gen.profile.api_uri]
         self.assertEqual(init_rd, init_rd_expect)
 
         boot = lines[3]
@@ -282,16 +285,16 @@ class TestBootConfigSelector(TestBootConfigCommon):
         kernel = lines[1].split(" ")
         kernel_expect = [
             'kernel',
-            '%s/assets/coreos/serve/coreos_production_pxe.vmlinuz' % self.gen.profile.bootcfg_uri,
+            '%s/assets/coreos/serve/coreos_production_pxe.vmlinuz' % self.gen.profile.api_uri,
             'coreos.autologin',
-            'coreos.config.url=%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % self.gen.profile.bootcfg_uri,
+            'coreos.config.url=%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % self.gen.profile.api_uri,
             'coreos.first_boot',
             "coreos.oem.id=pxe"]
         self.assertEqual(kernel, kernel_expect)
 
         init_rd = lines[2].split(" ")
         init_rd_expect = ['initrd',
-                          '%s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz' % self.gen.profile.bootcfg_uri]
+                          '%s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz' % self.gen.profile.api_uri]
         self.assertEqual(init_rd, init_rd_expect)
 
         boot = lines[3]

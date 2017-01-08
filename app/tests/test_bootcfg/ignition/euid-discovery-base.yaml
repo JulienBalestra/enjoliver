@@ -10,9 +10,10 @@ systemd:
         After=network-online.target
         [Service]
         Environment=LLDP_VOLUME=/run/lldp
+        EnvironmentFile=-/etc/metadata-endpoints.env
         ExecStartPre=/bin/mkdir -pv ${LLDP_VOLUME}
         ExecStartPre=/usr/bin/rkt fetch --insecure-options=all \
-          http://172.20.0.1:8080/assets/lldp/serve/static-aci-lldp-0.aci
+          ${API_URI}/assets/lldp/serve/static-aci-lldp-0.aci
 
         ExecStart=/usr/bin/rkt run --mount volume=socket,target=/var/run \
           --net=host \
@@ -31,8 +32,9 @@ systemd:
         [Service]
         Type=oneshot
         Environment=OPT_BIN=/opt/bin
+        EnvironmentFile=-/etc/metadata-endpoints.env
         ExecStartPre=/bin/mkdir -pv ${OPT_BIN}
-        ExecStart=/usr/bin/curl -f http://172.20.0.1:8080/assets/discoveryC/serve/discoveryC \
+        ExecStart=/usr/bin/curl -f ${API_URI}/assets/discoveryC/serve/discoveryC \
           -o ${OPT_BIN}/discoveryC
         ExecStartPost=/usr/bin/chmod +x ${OPT_BIN}/discoveryC
         RemainAfterExit=yes
@@ -48,7 +50,7 @@ systemd:
         [Service]
         Environment=LLDP_VOLUME=/run/lldp
         Environment=LLDP_FILE=/run/lldp/lldp.xml
-        Environment=DISCOVERY_ADDRESS=http://172.20.0.1:5000/discovery
+        EnvironmentFile=-/etc/metadata-endpoints.env
         ExecStartPre=-/usr/bin/rkt run --mount volume=socket,target=/var/run \
            --net=host \
            static-aci-lldp \
@@ -76,6 +78,14 @@ systemd:
 
 storage:
   files:
+
+    - path: /etc/hostname
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          discovery
+
     - path: /etc/metadata-endpoints.env
       filesystem: root
       mode: 0644
@@ -83,7 +93,6 @@ storage:
         inline: |
           # Customs
           API_URI={{.api_uri}}
-          BOOTCFG_URI={{.bootcfg_uri}}
           DISCOVERY_ADDRESS={{.api_uri}}/discovery
 
           # Standards
@@ -105,7 +114,7 @@ storage:
 
           while true
           do
-              curl -f ${BOOTCFG_URI}/ignition?${REQUEST_RAW_QUERY} -o ${NEW_IGNITION}
+              curl -f ${API_URI}/ignition?${REQUEST_RAW_QUERY} -o ${NEW_IGNITION}
 
               diff /run/ignition.json ${NEW_IGNITION}
               if [ $? -eq 1 ]

@@ -13,7 +13,7 @@ systemd:
         Environment=METADATA=/etc/metadata.env
         # If the file already exist put the unit on failure
         ExecStartPre=/usr/bin/test ! -f $METADATA
-        ExecStart=/usr/bin/curl ${BOOTCFG_URI}/metadata?${REQUEST_RAW_QUERY} -o $METADATA
+        ExecStart=/usr/bin/curl ${API_URI}/metadata?${REQUEST_RAW_QUERY} -o $METADATA
         RemainAfterExit=yes
         [Install]
         WantedBy=multi-user.target
@@ -29,7 +29,7 @@ systemd:
         Environment=OPT_BIN=/opt/bin
         EnvironmentFile=/etc/metadata-endpoints.env
         ExecStartPre=/bin/mkdir -pv ${OPT_BIN}
-        ExecStart=/usr/bin/curl -f ${BOOTCFG_URI}/assets/discoveryC/serve/discoveryC \
+        ExecStart=/usr/bin/curl -f ${API_URI}/assets/discoveryC/serve/discoveryC \
           -o ${OPT_BIN}/discoveryC
         ExecStartPost=/usr/bin/chmod +x ${OPT_BIN}/discoveryC
         RemainAfterExit=yes
@@ -189,7 +189,7 @@ systemd:
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
         ExecStartPre=/bin/mkdir -pv $MANIFESTS
         ExecStartPre=/usr/bin/rkt fetch --insecure-options=all \
-          ${BOOTCFG_URI}/assets/hyperkube/serve/static-aci-hyperkube-0.aci
+          ${API_URI}/assets/hyperkube/serve/static-aci-hyperkube-0.aci
         ExecStart=/opt/bin/kubelet \
           \
           --network-plugin=cni \
@@ -351,7 +351,6 @@ storage:
         inline: |
           # Customs
           API_URI={{.api_uri}}
-          BOOTCFG_URI={{.bootcfg_uri}}
           DISCOVERY_ADDRESS={{.api_uri}}/discovery
 
           # Standards
@@ -423,7 +422,6 @@ storage:
           is_var FULL_PATH_CNI ${FULL_PATH_CNI}
           is_var FULL_PATH_DIR_CNI ${FULL_PATH_DIR_CNI}
           is_var CNI_ARCHIVE ${CNI_ARCHIVE}
-          is_var BOOTCFG_URI ${BOOTCFG_URI}
 
           ${FULL_PATH_CNI}
           if [ $? -eq 1 ]
@@ -434,7 +432,7 @@ storage:
           set -e +v
 
           mkdir -pv ${OPT_CNI}
-          curl ${BOOTCFG_URI}/assets/cni/serve/${CNI_ARCHIVE} -o /tmp/${CNI_ARCHIVE}
+          curl ${API_URI}/assets/cni/serve/${CNI_ARCHIVE} -o /tmp/${CNI_ARCHIVE}
           tar -C ${OPT_CNI} -xzvf /tmp/${CNI_ARCHIVE}
           ln -sv ${OPT_CNI}/bin/cnitool ${FULL_PATH_DIR_CNI}
 
@@ -472,14 +470,13 @@ storage:
 
           is_var FULL_PATH_DIR_HYPERKUBE ${FULL_PATH_DIR_HYPERKUBE}
           is_var FULL_PATH_HYPERKUBE ${FULL_PATH_HYPERKUBE}
-          is_var BOOTCFG_URI ${BOOTCFG_URI}
 
           ${FULL_PATH_HYPERKUBE} --version && exit 0
 
           set -e +v
 
           mkdir -pv ${FULL_PATH_DIR_HYPERKUBE}
-          curl ${BOOTCFG_URI}/assets/hyperkube/serve/hyperkube -o ${FULL_PATH_HYPERKUBE}
+          curl ${API_URI}/assets/hyperkube/serve/hyperkube -o ${FULL_PATH_HYPERKUBE}
           chmod +x ${FULL_PATH_HYPERKUBE}
 
           cd ${FULL_PATH_DIR_HYPERKUBE}
@@ -512,14 +509,13 @@ storage:
           is_var OPT_RKT ${OPT_RKT}
           is_var DOWNLOAD_RKT_DIR ${DOWNLOAD_RKT_DIR}
           is_var RKT_ARCHIVE ${RKT_ARCHIVE}
-          is_var BOOTCFG_URI ${BOOTCFG_URI}
 
           FULL_PATH_RKT version && exit 0
 
           set -e +v
 
           mkdir -pv ${DOWNLOAD_RKT_DIR} ${OPT_RKT} ${FULL_PATH_DIR_RKT}
-          curl ${BOOTCFG_URI}/assets/rkt/serve/${RKT_ARCHIVE} -o ${DOWNLOAD_RKT_DIR}/${RKT_ARCHIVE}
+          curl ${API_URI}/assets/rkt/serve/${RKT_ARCHIVE} -o ${DOWNLOAD_RKT_DIR}/${RKT_ARCHIVE}
           tar -C ${DOWNLOAD_RKT_DIR} -xzvf ${DOWNLOAD_RKT_DIR}/${RKT_ARCHIVE} --strip-component=1
           for b in rkt stage1-coreos.aci stage1-fly.aci stage1-kvm.aci
           do
