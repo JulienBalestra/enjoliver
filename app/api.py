@@ -129,7 +129,7 @@ def healthz():
         application.logger.error("BOOTCFG_URI is None")
     for k in status["bootcfg"]:
         try:
-            r = requests.get("%s/%s" % (app.config["BOOTCFG_URI"], k))
+            r = requests.get("%s%s" % (app.config["BOOTCFG_URI"], k))
             r.close()
             status["bootcfg"][k] = True
         except Exception as e:
