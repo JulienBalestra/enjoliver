@@ -1,9 +1,10 @@
 import datetime
 import os
+
 from sqlalchemy.orm import sessionmaker, subqueryload
 
 import logger
-from model import ChassisPort, Chassis, MachineInterface, Machine
+from model import ChassisPort, Chassis, MachineInterface, Machine, Healthz
 
 
 class Fetch(object):
@@ -118,6 +119,27 @@ class Fetch(object):
             all_data.append(m)
 
         return all_data
+
+
+def health_check(engine, ts, who):
+    health = False
+    sm = sessionmaker(bind=engine)
+    session = sm()
+    try:
+        h = Healthz()
+        h.ts = ts
+        h.host = who
+        session.add(h)
+        session.commit()
+        query_ts = session.query(Healthz).filter(Healthz.ts == ts).all()
+        if query_ts[0].ts != ts:
+            raise AssertionError("%s not in %s" % (ts, query_ts))
+        session.query(Healthz).filter(Healthz.ts < ts).delete()
+        session.commit()
+        health = True
+    finally:
+        session.close()
+    return health
 
 
 class Inject(object):

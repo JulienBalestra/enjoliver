@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float
 from sqlalchemy import ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -20,6 +20,14 @@ class Machine(Base):
 
     def __repr__(self):
         return "<%s: %s %s %s>" % (Machine.__name__, self.uuid, self.created_date, self.updated_date)
+
+
+class Healthz(Base):
+    __tablename__ = 'healthz'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    ts = Column(Float, nullable=False)
+    host = Column(String, nullable=True)
 
 
 class MachineInterface(Base):
