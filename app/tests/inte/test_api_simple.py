@@ -137,6 +137,7 @@ class TestAPI(unittest.TestCase):
         expect = {
             u'flask': True,
             u'global': True,
+            u'db': True,
             u'bootcfg': {
                 u'/': True,
                 u'/boot.ipxe': True,

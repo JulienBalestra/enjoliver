@@ -8,6 +8,7 @@ import urllib2
 import requests
 from flask import Flask, request, json, jsonify, render_template
 from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from werkzeug.contrib.cache import SimpleCache
 
 import crud
@@ -121,8 +122,8 @@ def healthz():
     status = {
         "global": True,
         "flask": True,
-        "bootcfg": {
-            k: False for k in application.config["BOOTCFG_URLS"]}
+        "db": False,
+        "bootcfg": {k: False for k in application.config["BOOTCFG_URLS"]}
     }
     if app.config["BOOTCFG_URI"] is None:
         application.logger.error("BOOTCFG_URI is None")
@@ -131,9 +132,15 @@ def healthz():
             r = requests.get("%s/%s" % (app.config["BOOTCFG_URI"], k))
             r.close()
             status["bootcfg"][k] = True
-        except Exception:
+        except Exception as e:
             status["bootcfg"][k] = False
             status["global"] = False
+            LOGGER.error(e)
+    try:
+        status["db"] = crud.health_check(engine=engine, ts=time.time(), who=request.remote_addr)
+    except Exception as e:
+        status["global"] = False
+        LOGGER.error(e)
 
     app.logger.debug("%s" % status)
     return json.jsonify(status)
