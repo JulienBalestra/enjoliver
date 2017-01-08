@@ -21,7 +21,7 @@ app = application = Flask(__name__)
 cache = SimpleCache()
 
 application.config["BOOTCFG_URI"] = os.getenv(
-    "BOOTCFG_URI", None)
+    "BOOTCFG_URI", "http://127.0.0.1:8080")
 
 application.config["API_URI"] = os.getenv(
     "API_URI", None)
@@ -30,7 +30,8 @@ application.config["BOOTCFG_URLS"] = [
     "/",
     "/boot.ipxe",
     "/boot.ipxe.0",
-    "/assets"
+    "/assets",
+    "/metadata"
 ]
 
 application.config["DB_PATH"] = os.getenv(
@@ -81,17 +82,34 @@ if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "foreign
     LOGGER.info("Engine with <driver: %s> " % engine.driver)
 
 
+@application.route("/config", methods=["GET"])
+def config():
+    wanted, c = [
+                    "API_URI",
+                    "BOOTCFG_URI",
+                    "BOOTCFG_URLS",
+                    "DB_PATH",
+                    "DB_URI",
+                    "IGNITION_JOURNAL_DIR",
+                    "BACKUP_BUCKET_NAME",
+                    "BACKUP_BUCKET_DIRECTORY",
+                    "BACKUP_LOCK_KEY"
+                ], dict()
+    for elt in wanted:
+        c[elt] = application.config[elt]
+    return jsonify(c)
+
+
 @application.route('/', methods=['GET'])
 def root():
     """
     Map the API
     :return: available routes
     """
-    links = [l for l in set(
-        [k.rule for k in app.url_map.iter_rules() if "/static/" != k.rule[:8]])
-             ]
-    links.sort()
-    return json.jsonify(links)
+    r = [k.rule for k in application.url_map.iter_rules()]
+    r = list(set(r))
+    r.sort()
+    return jsonify(r)
 
 
 @application.route('/healthz', methods=['GET'])
@@ -112,8 +130,7 @@ def healthz():
         try:
             r = requests.get("%s/%s" % (app.config["BOOTCFG_URI"], k))
             r.close()
-            if r.status_code == 200:
-                status["bootcfg"][k] = True
+            status["bootcfg"][k] = True
         except Exception:
             status["bootcfg"][k] = False
             status["global"] = False
@@ -316,6 +333,44 @@ def boot_ipxe():
         "serial=${serial}\n" % flask_uri
     app.logger.debug("%s" % response)
     return response
+
+
+@application.route("/ignition", methods=["GET"])
+def ignition():
+    bootcfg_uri = application.config.get("BOOTCFG_URI")
+    if bootcfg_uri:
+        bootcfg_resp = requests.get("%s%s" % (bootcfg_uri, request.full_path))
+        d = bootcfg_resp.content
+        bootcfg_resp.close()
+        return d, bootcfg_resp.status_code
+
+    return "bootcfg=%s" % bootcfg_uri, 403
+
+
+@application.route("/metadata", methods=["GET"])
+def metadata():
+    bootcfg_uri = application.config.get("BOOTCFG_URI")
+    if bootcfg_uri:
+        bootcfg_resp = requests.get("%s%s" % (bootcfg_uri, request.full_path))
+        d = bootcfg_resp.content
+        bootcfg_resp.close()
+        return d, bootcfg_resp.status_code
+
+    return "bootcfg=%s" % bootcfg_uri, 403
+
+
+@app.route('/assets', defaults={'path': ''})
+@app.route('/assets/<path:path>')
+def assets(path):
+    bootcfg_uri = application.config.get("BOOTCFG_URI")
+    if bootcfg_uri:
+        url = "%s/assets/%s" % (bootcfg_uri, path)
+        bootcfg_resp = requests.get(url)
+        d = bootcfg_resp.content
+        bootcfg_resp.close()
+        return d, bootcfg_resp.status_code
+
+    return "bootcfg=%s" % bootcfg_uri, 403
 
 
 @application.route('/ipxe', methods=['GET'])

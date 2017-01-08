@@ -28,7 +28,6 @@ class TestAPI(unittest.TestCase):
         model.Base.metadata.create_all(engine)
         api.engine = engine
         api.application.config["API_URI"] = "http://localhost"
-        api.application.config["BOOTCFG_URI"] = "http://localhost"
         cls.app = api.app.test_client()
 
         cls.app.testing = True
@@ -45,7 +44,8 @@ class TestAPI(unittest.TestCase):
                 u'/boot.ipxe': False,
                 u'/boot.ipxe.0': False,
                 u'/': False,
-                u'/assets': False
+                u'/assets': False,
+                u"/metadata": False
             }}
 
         result = self.app.get('/healthz')
@@ -114,7 +114,13 @@ class TestAPI(unittest.TestCase):
             u'/backup/db',
             u'/ui',
             u'/ui/view/machine',
-            u'/'
+            u'/',
+            u'/assets',
+            u'/assets/<path:path>',
+            u'/config',
+            u'/ignition',
+            u'/metadata',
+            u'/static/<path:filename>'
         ])
 
     def test_discovery_00(self):

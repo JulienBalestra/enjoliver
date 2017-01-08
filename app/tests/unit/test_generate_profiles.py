@@ -13,9 +13,6 @@ class IOErrorToWarning(object):
         generate_common.GenerateCommon._raise_enof = IOError
 
 
-
-
-
 class TestGenerateProfiles(TestCase):
     gen = generate_profiles.GenerateProfile
     network_environment = "%s/misc/network-environment" % gen.bootcfg_path
@@ -25,26 +22,25 @@ class TestGenerateProfiles(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        os.environ["BOOTCFG_URI"] = "http://127.0.0.1:8080"
         os.environ["API_URI"] = "http://127.0.0.1:5000"
         subprocess.check_output(["make", "-C", cls.gen.project_path])
-        # generate_common.GenerateCommon._raise_enof = Warning  # Skip the ignition isfile
+        generate_common.GenerateCommon._raise_enof = Warning  # Skip the ignition isfile
         with IOErrorToWarning():
             cls.gen = generate_profiles.GenerateProfile(
                 _id="etcd-proxy", name="etcd-proxy", ignition_id="etcd-proxy.yaml")
-        # generate_common.GenerateCommon._raise_enof = IOError
+        generate_common.GenerateCommon._raise_enof = IOError
         cls.gen.profiles_path = "%s/test_resources" % cls.tests_path
 
     def test_01_boot(self):
         expect = {
-            'kernel': '%s/assets/coreos/serve/coreos_production_pxe.vmlinuz' % self.gen.bootcfg_uri,
-            'initrd': ['%s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz' % self.gen.bootcfg_uri],
+            'kernel': '%s/assets/coreos/serve/coreos_production_pxe.vmlinuz' % self.gen.api_uri,
+            'initrd': ['%s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz' % self.gen.api_uri],
             'cmdline':
                 {
                     'coreos.autologin': '',
                     'coreos.first_boot': '',
                     'coreos.oem.id': 'pxe',
-                    'coreos.config.url': '%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % self.gen.bootcfg_uri
+                    'coreos.config.url': '%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % self.gen.api_uri
                 }
         }
         self.gen._boot()
@@ -55,16 +51,16 @@ class TestGenerateProfiles(TestCase):
         expect = {
             "cloud_id": "",
             "boot": {
-                "kernel": "%s/assets/coreos/serve/coreos_production_pxe.vmlinuz" % self.gen.bootcfg_uri,
+                "kernel": "%s/assets/coreos/serve/coreos_production_pxe.vmlinuz" % self.gen.api_uri,
                 "initrd": [
-                    "%s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz" % self.gen.bootcfg_uri
+                    "%s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz" % self.gen.api_uri
                 ],
                 "cmdline": {
                     "coreos.autologin": "",
                     "coreos.first_boot": "",
                     "coreos.oem.id": "pxe",
                     "coreos.config.url": "%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}" %
-                                         self.gen.bootcfg_uri
+                                         self.gen.api_uri
                 }
             },
             "id": "etcd-proxy",

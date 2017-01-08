@@ -12,7 +12,7 @@ systemd:
         Environment=OPT_BIN=/opt/bin
         EnvironmentFile=/etc/metadata-endpoints.env
         ExecStartPre=/bin/mkdir -pv ${OPT_BIN}
-        ExecStart=/usr/bin/curl -f ${BOOTCFG_URI}/assets/discoveryC/serve/discoveryC \
+        ExecStart=/usr/bin/curl -f ${API_URI}/assets/discoveryC/serve/discoveryC \
           -o ${OPT_BIN}/discoveryC
         ExecStartPost=/usr/bin/chmod +x ${OPT_BIN}/discoveryC
         RemainAfterExit=yes
@@ -47,7 +47,7 @@ systemd:
         Environment=METADATA=/etc/metadata.env
         # If the file already exist put the unit on failure
         ExecStartPre=/usr/bin/test ! -f $METADATA
-        ExecStart=/usr/bin/curl ${BOOTCFG_URI}/metadata?${REQUEST_RAW_QUERY} -o $METADATA
+        ExecStart=/usr/bin/curl ${API_URI}/metadata?${REQUEST_RAW_QUERY} -o $METADATA
         RemainAfterExit=yes
         [Install]
         WantedBy=multi-user.target
@@ -79,7 +79,6 @@ storage:
         inline: |
           # Customs
           API_URI={{.api_uri}}
-          BOOTCFG_URI={{.bootcfg_uri}}
           DISCOVERY_ADDRESS={{.api_uri}}/discovery
 
           # Standards

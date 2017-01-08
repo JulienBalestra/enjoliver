@@ -68,9 +68,6 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     bootcfg_port = int(os.getenv("BOOTCFG_PORT", "8080"))
 
-    bootcfg_address = "0.0.0.0:%d" % bootcfg_port
-    bootcfg_uri = "http://172.20.0.1:%d" % bootcfg_port
-
     api_port = int(os.getenv("API_PORT", "5000"))
 
     api_ip = "172.20.0.1"
@@ -82,7 +79,6 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     wait_setup_teardown = 3
 
     os.environ["API_URI"] = api_uri
-    os.environ["BOOTCFG_URI"] = bootcfg_uri
 
     @staticmethod
     def pause(t=600):
@@ -105,7 +101,6 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "%s" % KernelVirtualMachinePlayer.bootcfg_bin,
             "-data-path", "%s" % KernelVirtualMachinePlayer.test_bootcfg_path,
             "-assets-path", "%s" % KernelVirtualMachinePlayer.assets_path,
-            "-address", "%s" % KernelVirtualMachinePlayer.bootcfg_address,
             "-log-level", "debug"
         ]
         os.write(1, "PID  -> %s\n"
