@@ -58,6 +58,7 @@ class TestAssetsCoreOS(unittest.TestCase):
         self.assertItemsEqual(expect, real)
 
 
+@unittest.skipIf(os.getenv("SKIP_ASSETS"), "SKIP_ASSETS")
 @unittest.skipIf(os.getenv("PYCHARM_HOSTED"), "PYCHARM_HOSTED")
 class TestAssetsCNI(unittest.TestCase):
     func_path = "%s" % os.path.dirname(__file__)
@@ -112,6 +113,7 @@ class TestAssetsCNI(unittest.TestCase):
         self.assertItemsEqual(expect, real)
 
 
+@unittest.skipIf(os.getenv("SKIP_ASSETS"), "SKIP_ASSETS")
 @unittest.skipIf(os.getenv("PYCHARM_HOSTED"), "PYCHARM_HOSTED")
 class TestAssetsSetupNetworkEnvironment(unittest.TestCase):
     func_path = "%s" % os.path.dirname(__file__)
@@ -166,6 +168,7 @@ class TestAssetsSetupNetworkEnvironment(unittest.TestCase):
         self.assertItemsEqual(expect, real)
 
 
+@unittest.skipIf(os.getenv("SKIP_ASSETS"), "SKIP_ASSETS")
 @unittest.skipIf(os.getenv("PYCHARM_HOSTED"), "PYCHARM_HOSTED")
 class TestAssetsRkt(unittest.TestCase):
     func_path = "%s" % os.path.dirname(__file__)
@@ -220,6 +223,7 @@ class TestAssetsRkt(unittest.TestCase):
         self.assertItemsEqual(expect, real)
 
 
+@unittest.skipIf(os.getenv("SKIP_ASSETS"), "SKIP_ASSETS")
 @unittest.skipIf(os.getenv("PYCHARM_HOSTED"), "PYCHARM_HOSTED")
 class TestAssetsDiscoveryC(unittest.TestCase):
     func_path = "%s" % os.path.dirname(__file__)
