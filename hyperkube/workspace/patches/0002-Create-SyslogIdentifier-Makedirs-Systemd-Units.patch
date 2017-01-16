@@ -1,0 +1,59 @@
+From 078515b8e6535c7f677e36f5ff5f84d1946730ec Mon Sep 17 00:00:00 2001
+From: Julien Balestra <julien.balestra@blablacar.com>
+Date: Wed, 11 Jan 2017 12:01:32 +0100
+Subject: [PATCH] Syslog and Makedirs
+
+---
+ pkg/kubelet/rkt/rkt.go | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+
+diff --git a/pkg/kubelet/rkt/rkt.go b/pkg/kubelet/rkt/rkt.go
+index ce797fe..6d03325 100644
+--- a/pkg/kubelet/rkt/rkt.go
++++ b/pkg/kubelet/rkt/rkt.go
+@@ -92,6 +92,8 @@ const (
+ 	k8sRktRestartCountAnno           = "rkt.kubernetes.io/restart-count"
+ 	k8sRktTerminationMessagePathAnno = "rkt.kubernetes.io/termination-message-path"
+ 
++	k8sRktHostCreateDirectories      = "rkt.kubernetes.io/host-create-directories"
++
+ 	// TODO(euank): This has significant security concerns as a stage1 image is
+ 	// effectively root.
+ 	// Furthermore, this (using an annotation) is a hack to pass an extra
+@@ -1111,6 +1113,23 @@ func (r *Runtime) getSelinuxContext(opt *v1.SELinuxOptions) (string, error) {
+ 	return strings.Join(ctx, ":"), nil
+ }
+ 
++func execStartPre(annotations map[string]string) string {
++	if val, ok := annotations[k8sRktHostCreateDirectories]; ok {
++		return "/bin/mkdir -pv " + val
++	}
++	return "/bin/true"
++}
++
++func syslogIdentifier(generateName string, podName string) string {
++	if (len(generateName) > 1 && generateName[len(generateName) - 1] == '-') {
++		return generateName[0:len(generateName) - 1]
++	} else if (len(generateName) > 0) {
++		return generateName
++	} else {
++		return podName
++	}
++}
++
+ // preparePod will:
+ //
+ // 1. Invoke 'rkt prepare' to prepare the pod, and get the rkt pod uuid.
+@@ -1172,6 +1191,9 @@ func (r *Runtime) preparePod(pod *v1.Pod, podIP string, pullSecrets []v1.Secret,
+ 
+ 	hostNetwork := kubecontainer.IsHostNetworkPod(pod)
+ 	units := []*unit.UnitOption{
++		newUnitOption("Unit", "Description", pod.Name),
++		newUnitOption("Service", "ExecStartPre", execStartPre(pod.Annotations)),
++		newUnitOption("Service", "SyslogIdentifier", syslogIdentifier(pod.GenerateName, pod.Name)),
+ 		newUnitOption("Service", "ExecStart", runPrepared),
+ 		newUnitOption("Service", "ExecStopPost", markPodFinished),
+ 		// This enables graceful stop.
+-- 
+2.7.4
+
