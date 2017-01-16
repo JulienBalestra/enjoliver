@@ -6,6 +6,8 @@ metadata:
 spec:
   template:
     metadata:
+      annotations:
+        rkt.kubernetes.io/host-create-directories: /tmp/nginx1 /tmp/nginx2
       labels:
         run: nginx-host
     spec:
