@@ -1,5 +1,5 @@
 dependencies:
-  pre:
+  override:
     - sudo apt-get update
     - sudo make apt
 
@@ -12,7 +12,5 @@ test:
 
   override:
     - make submodules
-
     - make assets
-
     - make check
