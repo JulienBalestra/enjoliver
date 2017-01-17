@@ -18,7 +18,7 @@ cd -P $(dirname $0)
 export GOPATH=/go
 export PATH=$PATH:/go/bin:/usr/local/go/bin
 
-VERSION=1.5.1
+VERSION=1.5.2
 VVERSION="v${VERSION}"
 
 mkdir -pv ${GOPATH}

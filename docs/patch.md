@@ -5,7 +5,7 @@ Some quick features are breaking changes for the Kubernetes project so Enjoliver
 
 **To create a patch:**
 
-    git checkout -b v1.5.1
+    git checkout -b v1.5.2
     git reset HEAD~
     git add pkg/kubelet/rkt/rkt.go
     git commit -m "Syslog"
