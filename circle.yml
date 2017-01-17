@@ -6,6 +6,9 @@ test:
   override:
     - sudo make apt
 
-    - sudo MY_USER=$USER make setup
+    - make submodules
+    - make assets
+    - make validate
+
     - make check
     - make validate
