@@ -6,6 +6,6 @@ test:
   override:
     - sudo make apt
 
-    - sudo MY_USER=travis make setup
+    - sudo MY_USER=$USER make setup
     - make check
     - make validate
