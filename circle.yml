@@ -1,12 +1,19 @@
 dependencies:
   pre:
     - sudo apt-get update
-
-test:
-  override:
     - sudo make apt
 
+test:
+  pre:
+    # Mock
+    - touch lldp/static-aci-lldp-0.aci
+    - touch hyperkube/hyperkube
+    - touch hyperkube/static-aci-hyperkube-0.aci
+
+  override:
     - make submodules
+    - make runner
+
     - make assets
 
     - make check
