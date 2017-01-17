@@ -13,7 +13,7 @@ class TestAssetsCoreOS(unittest.TestCase):
     assets_path = "%s/bootcfg/assets" % project_path
     asset_test = "%s/coreos" % assets_path
     default_files = ["Makefile"]
-    version = default_files + ["1214.0.0"]
+    version = default_files + ["1284.2.0"]
 
     def test_00_fclean(self):
         expect = self.default_files
