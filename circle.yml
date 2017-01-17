@@ -12,7 +12,6 @@ test:
 
   override:
     - make submodules
-    - make runner
 
     - make assets
 
