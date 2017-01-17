@@ -1,0 +1,11 @@
+dependencies:
+  pre:
+    - sudo apt-get update
+
+test:
+  override:
+    - sudo make apt
+
+    - sudo MY_USER=travis make setup
+    - make check
+    - make validate
