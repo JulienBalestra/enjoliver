@@ -132,7 +132,7 @@ check_euid_k8s_fast: $(PYTHON)
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/k8s/test_kvm_k8s_fast.py
 
 check_euid_it_k8s_fast: $(PYTHON)
-	PYTHONPATH=$(shell pwd)/../.. TEST=TestKVMK8SFast0 $(PYTHON) -m unittest discover euid/
+	PYTHONPATH=$(shell pwd)/../.. TEST=TestKVMK8SFast0 $(PYTHON) euid/k8s/test_kvm_k8s_fast.py
 
 check_euid_basic: $(PYTHON)
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover euid/basic/
