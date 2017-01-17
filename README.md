@@ -1,5 +1,14 @@
 # Enjoliver
 
+[![Build Status](https://travis-ci.com/JulienBalestra/enjoliver.svg?token=ZwLEpiSqDoYCiBWcDCqE&branch=master)](https://travis-ci.com/JulienBalestra/enjoliver)
+[![Circle CI](https://circleci.com/gh/JulienBalestra/enjoliver.svg?style=svg)](https://circleci.com/gh/JulienBalestra/enjoliver)
+
+Deploy an usable Kubernetes cluster with iPXE.
+
+The Kubernetes Kubelet runtime is rkt.
+
+
+
 ## Linux checkout and local run
 
 ### Requirements
@@ -11,16 +20,18 @@
     sudo make apt
     
     # MY_USER is your non-root user
-    sudo MY_USER= make setup
+    sudo MY_USER=${USER} make setup
     make validate
-    
-    
+        
     # Testing
     make check
     sudo make check_euid
     
     # Quick using
-    sudo TEST=TestKVMK8SFast0 make -C app/tests/ check_euid_k8s_fast
+    sudo make -C app/tests/ check_euid_it_k8s_fast
+    
+    # Stop the cluster
+    echo "" > /tmp/e.stop
     
     
 
