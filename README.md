@@ -2,7 +2,6 @@
 
 [![Build Status](https://travis-ci.com/JulienBalestra/enjoliver.svg?token=ZwLEpiSqDoYCiBWcDCqE&branch=master)](https://travis-ci.com/JulienBalestra/enjoliver)
  
-[![CircleCI](https://circleci.com/gh/JulienBalestra/enjoliver/tree/master.svg?style=svg)](https://circleci.com/gh/JulienBalestra/enjoliver/tree/master)
 
 Deploy an usable Kubernetes cluster with iPXE.
 
