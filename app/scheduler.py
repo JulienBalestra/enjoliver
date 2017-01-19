@@ -291,7 +291,8 @@ class K8sNodeScheduler(CommonScheduler):
                     "etcd_initial_cluster": self.etcd_initial_cluster,
                     "etcd_advertise_client_urls": "http://%s:2379" % nic[0],
                     "etcd_proxy": "on",
-                    "k8s_advertise_ip": "%s" % nic[0],
+                    "kubelet_ip": "%s" % nic[0],
+                    "kubelet_name": "%s" % nic[0],
                     "k8s_endpoint": ",".join(self._k8s_control_plane_instance.k8s_endpoint),
                     "hostname": "k8s-node-%d" % i,
                 }
@@ -428,6 +429,8 @@ class K8sControlPlaneScheduler(CommonScheduler):
                     "etcd_proxy": "on",
                     # K8s Control Plane
                     "k8s_apiserver_count": self.control_plane_nb,
+                    "kubelet_ip": "%s" % nic[0],
+                    "kubelet_name": "%s" % nic[0],
                     "k8s_advertise_ip": "%s" % nic[0],
                     "hostname": "k8s-control-plane-%d" % i,
                 }
