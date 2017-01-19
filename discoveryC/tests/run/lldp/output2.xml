@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lldp label="LLDP neighbors">
+    <interface label="Interface" name="eno1" via="LLDP" rid="2" age="0 day, 00:00:02">
+        <chassis label="Chassis">
+            <id label="ChassisID" type="mac">58:f3:9c:4b:b9:9e</id>
+            <name label="SysName">My-Terrible-Name</name>
+            <descr label="SysDescr">Cisco Nexus Operating System (NX-OS) Software 6.0(2)U4(1)
+                TAC support: http://www.cisco.com/tac
+                Copyright (c) 2002-2020, Cisco Systems, Inc. All rights reserved.</descr>
+            <capability label="Capability" type="Bridge" enabled="on"/>
+            <capability label="Capability" type="Router" enabled="on"/>
+        </chassis>
+        <port label="Port">
+            <id label="PortID" type="ifname">Ethernet1/23</id>
+            <descr label="PortDescr">Description</descr>
+        </port>
+        <vlan label="VLAN" vlan-id="500" pvid="yes"/>
+    </interface>
+    <interface label="Interface" name="eno2" via="LLDP" rid="1" age="0 day, 00:00:08">
+        <chassis label="Chassis">
+            <id label="ChassisID" type="mac">1c:6a:7a:4c:e3:1e</id>
+            <name label="SysName">My-Terrible-Name</name>
+            <descr label="SysDescr">Cisco Nexus Operating System (NX-OS) Software 6.0(2)U4(1)
+                TAC support: http://www.cisco.com/tac
+                Copyright (c) 2002-2020, Cisco Systems, Inc. All rights reserved.</descr>
+            <capability label="Capability" type="Bridge" enabled="on"/>
+            <capability label="Capability" type="Router" enabled="on"/>
+        </chassis>
+        <port label="Port">
+            <id label="PortID" type="ifname">Ethernet1/23</id>
+            <descr label="PortDescr">Description</descr>
+        </port>
+        <vlan label="VLAN" vlan-id="500" pvid="yes"/>
+    </interface>
+</lldp>
