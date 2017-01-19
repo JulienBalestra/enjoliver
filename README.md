@@ -1,14 +1,22 @@
 # Enjoliver 
 
-travis-ci.com [![Build Status](https://travis-ci.com/JulienBalestra/enjoliver.svg?token=ZwLEpiSqDoYCiBWcDCqE&branch=master)](https://travis-ci.com/JulienBalestra/enjoliver)
+*travis-ci.com* [![Build Status](https://travis-ci.com/JulienBalestra/enjoliver.svg?token=ZwLEpiSqDoYCiBWcDCqE&branch=master)](https://travis-ci.com/JulienBalestra/enjoliver)
 
-travis-ci.org [![Build Status](https://travis-ci.org/JulienBalestra/enjoliver.svg?branch=master)](https://travis-ci.org/JulienBalestra/enjoliver)
+*travis-ci.org* [![Build Status](https://travis-ci.org/JulienBalestra/enjoliver.svg?branch=master)](https://travis-ci.org/JulienBalestra/enjoliver)
+
+
+## Description
 
 Deploy an usable Kubernetes cluster with iPXE.
 
 The Kubernetes Kubelet runtime is rkt.
 
+Docker:// prefix is removed from Kubernetes by patches and recompile.
+Extra features are (alpha) adds like:
 
+* get logs of a pods by the `journalctl --identifier`
+* creates volumes by pods annotations
+* import environment variable of node / host information (IP + Hostname) inside the pod of avoid discovery process
 
 ## Linux checkout and local run
 
