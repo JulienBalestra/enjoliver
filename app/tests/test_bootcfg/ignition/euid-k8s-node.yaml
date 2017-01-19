@@ -195,7 +195,7 @@ systemd:
           --cni-conf-dir=/etc/kubernetes/cni/net.d \
           \
           --pod-manifest-path=${MANIFESTS} \
-          --hostname-override=${K8S_ADVERTISE_IP} \
+          --hostname-override=${KUBELET_IP} \
           --register-schedulable=true \
           --allow-privileged=true \
           --api-servers=${K8S_ENDPOINT} \
@@ -203,6 +203,28 @@ systemd:
           \
           --container-runtime=rkt \
           --rkt-path=/opt/bin/rkt \
+          --v=2
+        Restart=always
+        RestartSec=10
+
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: kube-proxy.service
+      enable: false
+      contents: |
+        [Unit]
+        After=fetch-metadata.service
+        After=installs.target
+        Requires=installs.target
+
+        [Service]
+        EnvironmentFile=/etc/metadata.env
+        ExecStart=/opt/bin/proxy \
+          --masquerade-all \
+          --proxy-mode=iptables \
+          --hostname-override=${KUBELET_IP} \
+          --master=${K8S_ENDPOINT} \
           --v=2
         Restart=always
         RestartSec=10
@@ -246,6 +268,19 @@ storage:
             "stage1-images": "/opt/rkt/"
           }
 
+    - path: /etc/rkt/stage1.d/coreos.json
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          {
+              "rktKind": "stage1",
+              "rktVersion": "v1",
+              "name": "coreos.com/rkt/stage1-coreos",
+              "version": "v1.22.0",
+              "location": "/opt/rkt/stage1-coreos.aci"
+          }
+
     - path: /etc/kubernetes/cni/net.d/10-k8s.conf
       filesystem: root
       mode: 0644
@@ -259,14 +294,6 @@ storage:
               "type": "dhcp"
             }
           }
-
-    - path: /root/.bash_history
-      filesystem: root
-      mode: 0600
-      contents:
-        inline: |
-          journalctl -u kubelet --no-pager -o short -f
-          journalctl -u kubelet --no-pager -o short
 
     - path: /opt/bin/install-cni
       filesystem: root
