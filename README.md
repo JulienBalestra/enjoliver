@@ -14,9 +14,10 @@ The Kubernetes Kubelet runtime is rkt.
 Docker:// prefix is removed from Kubernetes by patches and recompile.
 Extra features are (alpha) adds like:
 
-* get logs of a pods by the `journalctl --identifier`
-* creates volumes by pods annotations
-* import environment variable of node / host information (IP + Hostname) inside the pod of avoid discovery process
+* easily identify who's who `systemctl list-units "k8s_*"`
+* get logs of a pod by the `journalctl --identifier`
+* creates volumes by pods annotations `rkt.kubernetes.io/host-create-directories: /tmp/my-dir`
+* import environment variables of node / host information (IP + Hostname) inside the pod of avoid discovery process
 
 ## Linux checkout and local run
 
