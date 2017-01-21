@@ -9,7 +9,7 @@ fi
 
 apt-get update -q
 
-for p in curl python python-virtualenv qemu-kvm libvirt-bin virtinstall jq liblzma-dev mkisofs isolinux file npm
+for p in curl python python-virtualenv qemu-kvm libvirt-bin virtinstall jq liblzma-dev mkisofs isolinux file npm make
 do
     apt-get install ${INSTALL} $p
 done
