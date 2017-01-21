@@ -13,6 +13,7 @@ then
 fi
 
 git remote get-url --all origin | grep -c "${PRIVATE_REPOSITORY}" || exit 0
+git remote -v
 
 cd -P $(dirname $0)
 pwd -P
@@ -27,5 +28,5 @@ chmod 400 id_rsa
 ssh-add id_rsa
 
 
-git remote set-url --push "${PUBLIC_REPOSITORY}"
-git push "${PUBLIC_REPOSITORY}" ${TRAVIS_BRANCH}
+git remote set-url --push --add "${PUBLIC_REPOSITORY}"
+git push origin ${TRAVIS_BRANCH}
