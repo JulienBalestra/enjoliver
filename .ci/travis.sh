@@ -27,6 +27,7 @@ cat githubKey >> ~/.ssh/known_hosts
 echo -n ${HASH} | gpg --passphrase-fd 0 id_rsa.gpg
 
 chmod 400 id_rsa
+eval "$(ssh-agent -s)"
 ssh-add id_rsa
 
 
