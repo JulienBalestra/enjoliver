@@ -23,5 +23,5 @@ script:
   - make validate
 
 # If we are in the private repo, publish success on the public one
-deploy:
+after_success:
   - ./ci.travis.sh
