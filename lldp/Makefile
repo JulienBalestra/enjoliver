@@ -5,7 +5,6 @@ RUNTIME=$(PROJECT)/runtime
 RKT=$(RUNTIME)/rkt/rkt
 ACI=$(PROJECT)/aci
 
-BASE=base
 DEBIAN=debian
 
 LLDP_VERSION=0
@@ -19,11 +18,7 @@ LLDP_RENDER=$(RENDERS)/lldp.render
 
 default: $(LLDP)
 
-$(BASE):
-	@echo ENV IMAGE=$(ACI)/aci-$(BASE)
-	IMAGE=$(ACI)/aci-$(BASE) make -C $(RUNTIME) install
-
-$(DEBIAN): $(BASE)
+$(DEBIAN):
 	@echo ENV IMAGE=$(ACI)/aci-$(DEBIAN)
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) install
 

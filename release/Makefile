@@ -5,7 +5,6 @@ RUNTIME=$(PROJECT)/runtime
 RKT=$(RUNTIME)/rkt/rkt
 ACI=$(PROJECT)/aci
 
-BASE=base
 DEBIAN=debian
 
 ENJOLIVER_VERSION=0
@@ -21,11 +20,7 @@ ENJOLIVER_RENDER=$(RENDERS)/enjoliver.render
 default: $(ENJOLIVER)
 
 
-$(BASE):
-	@echo ENV IMAGE=$(ACI)/aci-$(BASE)
-	IMAGE=$(ACI)/aci-$(BASE) make -C $(RUNTIME) install
-
-$(DEBIAN): $(BASE)
+$(DEBIAN):
 	@echo ENV IMAGE=$(ACI)/aci-$(DEBIAN)
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) install
 

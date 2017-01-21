@@ -11,7 +11,6 @@ DEBIAN=debian
 HYPERKUBE_BIN=hyperkube
 WS=workspace
 
-BASE=base
 DEBIAN=debian
 BUILDER_K8S=builder-k8s
 
@@ -31,11 +30,7 @@ HYPERKUBE_COREOS=hyperkube-$(QUAY_HYPERKUBE_COREOS_VERSION)
 
 default: $(HYPERKUBE)
 
-$(BASE):
-	@echo ENV IMAGE=$(ACI)/aci-$(BASE)
-	IMAGE=$(ACI)/aci-$(BASE) make -C $(RUNTIME) install
-
-$(DEBIAN): $(BASE)
+$(DEBIAN):
 	@echo ENV IMAGE=$(ACI)/aci-$(DEBIAN)
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) install
 
