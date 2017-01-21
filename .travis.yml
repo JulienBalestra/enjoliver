@@ -24,4 +24,4 @@ script:
 
 # If we are in the private repo, publish success on the public one
 after_success:
-  - ./ci.travis.sh
+  - ./.ci/travis.sh
