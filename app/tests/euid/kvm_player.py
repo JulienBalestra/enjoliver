@@ -2,17 +2,18 @@ import datetime
 import json
 import multiprocessing
 import os
+import shutil
 import socket
 import subprocess
 import sys
 import time
 import unittest
 import urllib2
-import shutil
 
 import requests
 import yaml
 from kubernetes import client as kc
+
 from app import generator, api
 
 
@@ -554,11 +555,44 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         mem_gib = mem_bytes / (1024. ** 3)
         return mem_gib * 1024 if mem_gib > 3 else 3 * 1024
 
-    def polling_for_stop(self, stop="/tmp/e.stop", fns=None):
-        os.write(1, "\r-> Starting %s\n\r" % self.polling_for_stop.__name__)
+    def kubectl_proxy(self, api_server_uri):
+        def run():
+            cmd = [
+                "%s/hyperkube/serve/hyperkube" % self.assets_path,
+                "kubectl",
+                "-s",
+                "%s" % api_server_uri,
+                "proxy",
+            ]
+            os.write(1, "\r-> %s\n\r" % " ".join(cmd))
+            os.execve(cmd[0], cmd, os.environ)
+
+        return run
+
+    def iteractive_usage(self, stop="/tmp/e.stop", api_server_uri=None, fns=None):
+        os.write(1, "\r-> Starting %s\n\r" % self.iteractive_usage.__name__)
+        kp, proxy_port = None, 8001
+        if api_server_uri:
+            kp = multiprocessing.Process(target=self.kubectl_proxy(api_server_uri))
+            kp.start()
+            maxi = 12
+            for i in xrange(maxi):
+                if kp.is_alive():
+                    try:
+                        r = requests.get("http://127.0.0.1:%d/healthz" % proxy_port)
+                        r.close()
+                        if r.status_code == 200:
+                            os.write(2, "\n\r## kubectl -s 127.0.0.1:%d get cs\n\r" % proxy_port)
+                            break
+                    except Exception as e:
+                        os.write(2, "\n-> %d/%d %s\n\r" % (i + 1, maxi, type(e)))
+                time.sleep(0.5)
+
         with open(stop, "w") as f:
             f.write("")
         os.chmod(stop, 0777)
+        os.write(1, "\n\r")
+
         try:
             while os.path.isfile(stop) is True and os.stat(stop).st_size == 0:
                 if fns:
@@ -566,5 +600,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 if int(time.time()) % 20 == 0:
                     os.write(1, "\r-> Stop with \"sudo rm -v\" %s or \"echo 1 > %s\"\n\r" % (stop, stop))
                 time.sleep(self.wait_setup_teardown)
+            if api_server_uri and kp.is_alive():
+                kp.terminate()
+                kp.join(timeout=5)
         finally:
-            os.write(1, "\r-> Stopping %s\n\r" % self.polling_for_stop.__name__)
+            os.write(1, "\r-> Stopping %s\n\r" % self.iteractive_usage.__name__)

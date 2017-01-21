@@ -8,7 +8,6 @@ import urllib2
 import requests
 from flask import Flask, request, json, jsonify, render_template
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 from werkzeug.contrib.cache import SimpleCache
 
 import crud
