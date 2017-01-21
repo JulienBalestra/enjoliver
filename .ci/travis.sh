@@ -23,8 +23,9 @@ cat githubKey >> ~/.ssh/known_hosts
 
 echo -n ${HASH} | gpg --passphrase-fd 0 id_rsa.gpg
 
+chmod 400 id_rsa
 ssh-add id_rsa
 
 
 git remote set-url --push "${PUBLIC_REPOSITORY}"
-git push "${PUBLIC_REPOSITORY}" ${BRANCH}
+git push "${PUBLIC_REPOSITORY}" ${TRAVIS_BRANCH}
