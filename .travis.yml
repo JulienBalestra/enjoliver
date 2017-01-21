@@ -6,15 +6,19 @@ os:
 sudo: required
 dist: trusty
 
-install:
+before_install:
   - sudo apt-get update -q
 
-script:
+install:
   - sudo make apt
 
+before_script:
   - sudo MY_USER=travis make setup
+
+script:
   - make check
   - make validate
 
-after_success:
+# If we are in the private repo, publish success on the public one
+deploy:
   - ./ci.travis.sh

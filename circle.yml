@@ -1,3 +1,6 @@
+# Circle CI use containers who doesn't easily allow fs overlay with DGR
+# TODO Use rktception
+
 dependencies:
   override:
     - sudo apt-get update
