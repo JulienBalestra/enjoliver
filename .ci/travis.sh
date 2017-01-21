@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 if [ -z "${PRIVATE_REPOSITORY}" ]
 then
     echo '${PRIVATE_REPOSITORY}==' "${PRIVATE_REPOSITORY}"
@@ -28,5 +30,6 @@ chmod 400 id_rsa
 ssh-add id_rsa
 
 
-git remote set-url --push --add "${PUBLIC_REPOSITORY}"
+git remote set-url --push origin "${PUBLIC_REPOSITORY}"
+git remote -v
 git push origin ${TRAVIS_BRANCH}
