@@ -1,14 +1,15 @@
 # Enjoliver 
 
 Travis-ci (com / org)
-* [![Build Status](https://travis-ci.com/JulienBalestra/enjoliver-private.svg?token=ZwLEpiSqDoYCiBWcDCqE&branch=master)](https://travis-ci.com/JulienBalestra/enjoliver-private) - Private --push mirror  
+
+* [![Build Status](https://travis-ci.com/JulienBalestra/enjoliver-private.svg?token=ZwLEpiSqDoYCiBWcDCqE&branch=master)](https://travis-ci.com/JulienBalestra/enjoliver-private) - Private --push mirror and private daily builds  
 * [![Build Status](https://travis-ci.com/JulienBalestra/enjoliver.svg?token=ZwLEpiSqDoYCiBWcDCqE&branch=master)](https://travis-ci.com/JulienBalestra/enjoliver) - Public daily build  
-* [![Build Status](https://travis-ci.org/JulienBalestra/enjoliver.svg?branch=master)](https://travis-ci.org/JulienBalestra/enjoliver) - This one
+* [![Build Status](https://travis-ci.org/JulienBalestra/enjoliver.svg?branch=master)](https://travis-ci.org/JulienBalestra/enjoliver) - Public
 
 
 Circle-ci
 
-* [![CircleCI](https://circleci.com/gh/JulienBalestra/enjoliver/tree/master.svg?style=svg)](https://circleci.com/gh/JulienBalestra/enjoliver/tree/master) - This one
+* [![CircleCI](https://circleci.com/gh/JulienBalestra/enjoliver/tree/master.svg?style=svg)](https://circleci.com/gh/JulienBalestra/enjoliver/tree/master) - Public
 
 ## Description
 
@@ -33,7 +34,8 @@ Extra features are (alpha) adds like:
 * Store the roles in a real database
     * Remove bootcfg
        
-
+* Custom @home baremetal CI
+    1) KVM
 
 ## Linux checkout and local run
 
