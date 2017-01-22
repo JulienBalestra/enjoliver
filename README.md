@@ -1,8 +1,8 @@
 # Enjoliver 
 
-[![Build Status](https://travis-ci.com/JulienBalestra/enjoliver-private.svg?token=ZwLEpiSqDoYCiBWcDCqE&branch=master)](https://travis-ci.com/JulienBalestra/enjoliver-private) *travis-ci.com* 
-
-[![Build Status](https://travis-ci.org/JulienBalestra/enjoliver.svg?branch=master)](https://travis-ci.org/JulienBalestra/enjoliver) *travis-ci.org*
+* [![Build Status](https://travis-ci.com/JulienBalestra/enjoliver-private.svg?token=ZwLEpiSqDoYCiBWcDCqE&branch=master)](https://travis-ci.com/JulienBalestra/enjoliver-private) - Private --push mirror  
+* [![Build Status](https://travis-ci.com/JulienBalestra/enjoliver.svg?token=ZwLEpiSqDoYCiBWcDCqE&branch=master)](https://travis-ci.com/JulienBalestra/enjoliver) - Public daily build  
+* [![Build Status](https://travis-ci.org/JulienBalestra/enjoliver.svg?branch=master)](https://travis-ci.org/JulienBalestra/enjoliver) - This one
 
 
 ## Description
@@ -18,6 +18,17 @@ Extra features are (alpha) adds like:
 * get logs of a pod by the `journalctl --identifier`
 * creates volumes by pods annotations `rkt.kubernetes.io/host-create-directories: /tmp/my-dir`
 * import environment variables of node / host information (IP + Hostname) inside the pod of avoid discovery process
+
+## Incoming
+
+* Programmatic IPAM
+    1) remove DHCP for containers (CNI)
+    2) remove DHCP for hosts
+    
+* Store the roles in a real database
+    * Remove bootcfg
+       
+
 
 ## Linux checkout and local run
 
