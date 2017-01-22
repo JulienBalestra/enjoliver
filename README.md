@@ -28,14 +28,14 @@ Extra features are (alpha) adds like:
 ## Incoming
 
 * Programmatic IPAM
-    1) remove DHCP for containers (CNI)
-    2) remove DHCP for hosts
+    * remove DHCP for containers (CNI)
+    * remove DHCP for hosts
     
 * Store the roles in a real database
     * Remove bootcfg
        
 * Custom @home baremetal CI
-    1) KVM
+    * KVM
 
 ## Linux checkout and local run
 
