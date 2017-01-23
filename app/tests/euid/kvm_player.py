@@ -555,7 +555,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         mem_gib = mem_bytes / (1024. ** 3)
         return mem_gib * 1024 if mem_gib > 3 else 3 * 1024
 
-    def kubectl_proxy(self, api_server_uri):
+    def kubectl_proxy(self, api_server_uri, proxy_port):
         def run():
             cmd = [
                 "%s/hyperkube/serve/hyperkube" % self.assets_path,
@@ -563,6 +563,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 "-s",
                 "%s" % api_server_uri,
                 "proxy",
+                "-p",
+                "%d" % proxy_port
             ]
             os.write(1, "\r-> %s\n\r" % " ".join(cmd))
             os.execve(cmd[0], cmd, os.environ)
@@ -573,7 +575,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         os.write(1, "\r-> Starting %s\n\r" % self.iteractive_usage.__name__)
         kp, proxy_port = None, 8001
         if api_server_uri:
-            kp = multiprocessing.Process(target=self.kubectl_proxy(api_server_uri))
+            kp = multiprocessing.Process(target=self.kubectl_proxy(api_server_uri, proxy_port=proxy_port))
             kp.start()
             maxi = 12
             for i in xrange(maxi):
