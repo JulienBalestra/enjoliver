@@ -19,6 +19,27 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
+    - name: install-etcd.service
+      enable: true
+      contents: |
+        [Unit]
+        Requires=network-online.target
+        After=network-online.target
+        [Service]
+        Type=oneshot
+        EnvironmentFile=/etc/metadata-endpoints.env
+        Environment=OPT_ETCD=/opt/etcd
+        Environment=DOWNLOAD_ETCD_DIR=/tmp/etcd_install
+        Environment=FULL_PATH_ETCD=/opt/etcd/etcd
+        Environment=FULL_PATH_ETCDCTL=/opt/etcd/etcdctl
+        Environment=FULL_PATH_DIR_ETCD=/opt/bin
+        Environment=ETCD_ARCHIVE=etcd.tar.gz
+        ExecStart=/opt/bin/install-etcd
+        ExecReload=-/bin/rm -Rfv $OPT_ETCD $DOWNLOAD_ETCD_DIR $FULL_PATH_ETCD
+        RemainAfterExit=yes
+        [Install]
+        WantedBy=multi-user.target
+
     - name: discoveryC.service
       enable: true
       contents: |
@@ -53,18 +74,25 @@ systemd:
         WantedBy=multi-user.target
 
     - name: etcd2.service
+      enable: false
+
+    - name: etcd3.service
       enable: true
-      dropins:
-        - name: 10-cluster.conf
-          contents: |
-            [Unit]
-            After=fetch-metadata.service
-            [Service]
-            ExecStartPre=/bin/cat /etc/metadata.env
-            ExecStartPre=/bin/ls -l /etc/metadata.env
-            EnvironmentFile=/etc/metadata.env
-            Environment=ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379,http://0.0.0.0:4001
-            Environment=ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380,http://0.0.0.0:7001
+      contents: |
+        [Unit]
+        After=fetch-metadata.service
+        Requires=install-etcd.service
+        After=install-etcd.service
+        [Service]
+        ExecStartPre=/bin/cat /etc/metadata.env
+        ExecStartPre=/bin/ls -l /etc/metadata.env
+        Type=notify
+        ExecStart=/opt/etcd/etcd
+        EnvironmentFile=/etc/metadata.env
+        Environment=ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379,http://0.0.0.0:4001
+        Environment=ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380,http://0.0.0.0:7001
+        [Install]
+        WantedBy=multi-user.target
 
     - name: fleet.service
       enable: true
@@ -90,6 +118,58 @@ storage:
       contents:
         inline: |
           {{.hostname}}
+
+    - path: /opt/bin/install-etcd
+      filesystem: root
+      mode: 0544
+      contents:
+        inline: |
+          #!/bin/bash
+          set -xv
+
+          function is_var {
+              if [ -z $1 ]
+              then
+                  echo 'Variable name have to be in $1' >&2
+                  exit 1
+              fi
+              if [ -z $2 ]
+              then
+                  echo "Variable $1 have to be set" >&2
+                  exit 1
+              fi
+          }
+
+          is_var OPT_ETCD ${OPT_ETCD}
+          is_var FULL_PATH_ETCD ${FULL_PATH_ETCD}
+          is_var FULL_PATH_ETCDCTL ${FULL_PATH_ETCDCTL}
+          is_var FULL_PATH_DIR_ETCD ${FULL_PATH_DIR_ETCD}
+          is_var ETCD_ARCHIVE ${ETCD_ARCHIVE}
+
+          ${FULL_PATH_ETCD} --version
+          ${FULL_PATH_ETCDCTL} --version
+          if [ $? -eq 1 ]
+          then
+              exit 0
+          fi
+
+          set -e +v
+
+          mkdir -pv ${OPT_ETCD} ${DOWNLOAD_ETCD_DIR}
+          curl ${API_URI}/assets/etcd/serve/${ETCD_ARCHIVE} -o /tmp/${ETCD_ARCHIVE}
+          tar -C ${DOWNLOAD_ETCD_DIR} -xzvf /tmp/${ETCD_ARCHIVE} --strip-component=1
+          mv -v ${DOWNLOAD_ETCD_DIR}/etcd ${FULL_PATH_ETCD}
+          mv -v ${DOWNLOAD_ETCD_DIR}/etcdctl ${FULL_PATH_ETCDCTL}
+
+          set +e
+
+          ${FULL_PATH_ETCD} --version
+          if [ $? -ne 0 ]
+          then
+              exit 2
+          else
+              exit 0
+          fi
 
 {{ if index . "ssh_authorized_keys" }}
 passwd:
