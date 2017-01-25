@@ -60,6 +60,8 @@ assets:
 	make -C bootcfg/assets/setup-network-environment serve
 	make -C bootcfg/assets/rkt
 	make -C bootcfg/assets/rkt serve
+	make -C bootcfg/assets/etcd
+	make -C bootcfg/assets/etcd serve
 	make -C bootcfg/assets/cni
 	make -C bootcfg/assets/cni serve
 	# Self
