@@ -10,7 +10,7 @@ type Config struct {
 	// http://IP:PORT
 	DiscoveryAddress string
 	ProcCmdline      string
-	ProcBootId      string
+	ProcBootId       string
 	LLDPFile         string
 	IgnitionFile     string
 }

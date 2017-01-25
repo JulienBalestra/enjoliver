@@ -38,6 +38,7 @@ class Fetch(object):
                 "cidrv4": i.cidrv4,
                 "as_boot": i.as_boot,
                 "machine": self.session.query(Machine).filter(Machine.id == i.machine_id).first().uuid,
+                "gateway": i.gateway,
                 "chassis_name": self._get_chassis_name(i)
             } for i in self.session.query(MachineInterface)]
 
@@ -103,7 +104,8 @@ class Fetch(object):
                     "netmask": k.netmask,
                     "ipv4": k.ipv4,
                     "cidrv4": k.cidrv4,
-                    "as_boot": k.as_boot
+                    "as_boot": k.as_boot,
+                    "gateway": k.gateway
                 } for k in machine.interfaces]
             interface_boot = self.session.query(MachineInterface).filter(
                 MachineInterface.machine_id == machine.id and
@@ -198,6 +200,7 @@ class Inject(object):
                         ipv4=i["ipv4"],
                         cidrv4=i["cidrv4"],
                         as_boot=True if i["mac"] == self.discovery["boot-info"]["mac"] else False,
+                        gateway=i["gateway"],
                         machine_id=self.machine.id)
                 )
                 self.adds += 1

@@ -46,14 +46,16 @@ class TestEtcdSchedulerMember(unittest.TestCase):
                     "ipv4": "127.0.0.1",
                     "mac": "",
                     "name": "lo",
-                    "netmask": 8
+                    "netmask": 8,
+                    "gateway": "172.20.0.1"
                 },
                 {
                     "cidrv4": "172.20.0.57/21",
                     "ipv4": "172.20.0.57",
                     "mac": "52:54:00:95:24:0f",
                     "name": "eth0",
-                    "netmask": 21
+                    "netmask": 21,
+                    "gateway": "172.20.0.1"
                 }
             ],
             "lldp": {
@@ -73,8 +75,8 @@ class TestEtcdSchedulerMember(unittest.TestCase):
                 "is_file": True
             }
         }
-        ret = scheduler.EtcdMemberScheduler.get_machine_boot_ip_mac(m)
-        self.assertEqual(ret, ("172.20.0.57", "52:54:00:95:24:0f"))
+        ret = scheduler.EtcdMemberScheduler.get_machine_tuple(m)
+        self.assertEqual(ret, ("172.20.0.57", "52:54:00:95:24:0f", "172.20.0.57/21", "172.20.0.1"))
 
     def test_01_get_ip(self):
         m = {
@@ -88,14 +90,16 @@ class TestEtcdSchedulerMember(unittest.TestCase):
                     "ipv4": "127.0.0.1",
                     "mac": "",
                     "name": "lo",
-                    "netmask": 8
+                    "netmask": 8,
+                    "gateway": "172.20.0.1"
                 },
                 {
                     "cidrv4": "172.20.0.57/21",
                     "ipv4": "172.20.0.57",
                     "mac": "52:54:00:95:24:0f",
                     "name": "eth0",
-                    "netmask": 21
+                    "netmask": 21,
+                    "gateway": "172.20.0.1"
                 }
             ],
             "lldp": {
@@ -116,7 +120,7 @@ class TestEtcdSchedulerMember(unittest.TestCase):
             }
         }
         with self.assertRaises(LookupError):
-            scheduler.EtcdMemberScheduler.get_machine_boot_ip_mac(m)
+            scheduler.EtcdMemberScheduler.get_machine_tuple(m)
 
     # @unittest.skip("skip")
     def test_00(self):
@@ -133,14 +137,16 @@ class TestEtcdSchedulerMember(unittest.TestCase):
                             "ipv4": "127.0.0.1",
                             "mac": "",
                             "name": "lo",
-                            "netmask": 8
+                            "netmask": 8,
+                            "gateway": "172.20.0.1"
                         },
                         {
                             "cidrv4": "172.20.0.57/21",
                             "ipv4": "172.20.0.57",
                             "mac": "52:54:00:95:24:0f",
                             "name": "eth0",
-                            "netmask": 21
+                            "netmask": 21,
+                            "gateway": "172.20.0.1"
                         }
                     ],
                     "lldp": {
@@ -171,14 +177,16 @@ class TestEtcdSchedulerMember(unittest.TestCase):
                             "ipv4": "127.0.0.1",
                             "mac": "",
                             "name": "lo",
-                            "netmask": 8
+                            "netmask": 8,
+                            "gateway": "172.20.0.1"
                         },
                         {
                             "cidrv4": "172.20.0.83/21",
                             "ipv4": "172.20.0.83",
                             "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
-                            "netmask": 21
+                            "netmask": 21,
+                            "gateway": "172.20.0.1"
                         }
                     ],
                     "lldp": {
@@ -209,14 +217,16 @@ class TestEtcdSchedulerMember(unittest.TestCase):
                             "ipv4": "127.0.0.1",
                             "mac": "",
                             "name": "lo",
-                            "netmask": 8
+                            "netmask": 8,
+                            "gateway": "172.20.0.1"
                         },
                         {
                             "cidrv4": "172.20.0.70/21",
                             "ipv4": "172.20.0.70",
                             "mac": "52:54:00:c3:22:c2",
                             "name": "eth0",
-                            "netmask": 21
+                            "netmask": 21,
+                            "gateway": "172.20.0.1"
                         }
                     ],
                     "lldp": {
@@ -257,10 +267,6 @@ class TestEtcdSchedulerMember(unittest.TestCase):
         for g in etcd_groups:
             ref += 1
             self.assertEqual(len(g["metadata"]["etcd_initial_cluster"].split(",")), 3)
-            self.assertEqual(g["metadata"]["etcd_initial_cluster"],
-                             "static0=http://172.20.0.70:2380,"
-                             "static1=http://172.20.0.83:2380,"
-                             "static2=http://172.20.0.57:2380")
         self.assertTrue(ref == 3)
 
         etcd_profile = "%s/profiles/%semember.json" % (self.test_bootcfg_path, marker)
@@ -284,14 +290,16 @@ class TestEtcdSchedulerMember(unittest.TestCase):
                             "ipv4": "127.0.0.1",
                             "mac": "",
                             "name": "lo",
-                            "netmask": 8
+                            "netmask": 8,
+                            "gateway": "172.20.0.1"
                         },
                         {
                             "cidrv4": "172.20.0.83/21",
                             "ipv4": "172.20.0.83",
                             "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
-                            "netmask": 21
+                            "netmask": 21,
+                            "gateway": "172.20.0.1"
                         }
                     ],
                     "lldp": {
@@ -345,14 +353,16 @@ class TestEtcdSchedulerMember(unittest.TestCase):
                             "ipv4": "127.0.0.1",
                             "mac": "",
                             "name": "lo",
-                            "netmask": 8
+                            "netmask": 8,
+                            "gateway": "172.20.0.1"
                         },
                         {
                             "cidrv4": "172.20.0.57/21",
                             "ipv4": "172.20.0.57",
                             "mac": "52:54:00:95:24:0f",
                             "name": "eth0",
-                            "netmask": 21
+                            "netmask": 21,
+                            "gateway": "172.20.0.1"
                         }
                     ],
                     "lldp": {
@@ -383,14 +393,16 @@ class TestEtcdSchedulerMember(unittest.TestCase):
                             "ipv4": "127.0.0.1",
                             "mac": "",
                             "name": "lo",
-                            "netmask": 8
+                            "netmask": 8,
+                            "gateway": "172.20.0.1"
                         },
                         {
                             "cidrv4": "172.20.0.83/21",
                             "ipv4": "172.20.0.83",
                             "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
-                            "netmask": 21
+                            "netmask": 21,
+                            "gateway": "172.20.0.1"
                         }
                     ],
                     "lldp": {
@@ -444,14 +456,16 @@ class TestEtcdSchedulerMember(unittest.TestCase):
                             "ipv4": "127.0.0.1",
                             "mac": "",
                             "name": "lo",
-                            "netmask": 8
+                            "netmask": 8,
+                            "gateway": "172.20.0.1"
                         },
                         {
                             "cidrv4": "172.20.0.57/21",
                             "ipv4": "172.20.0.57",
                             "mac": "52:54:00:95:24:0f",
                             "name": "eth0",
-                            "netmask": 21
+                            "netmask": 21,
+                            "gateway": "172.20.0.1"
                         }
                     ],
                     "lldp": {
@@ -482,14 +496,16 @@ class TestEtcdSchedulerMember(unittest.TestCase):
                             "ipv4": "127.0.0.1",
                             "mac": "",
                             "name": "lo",
-                            "netmask": 8
+                            "netmask": 8,
+                            "gateway": "172.20.0.1"
                         },
                         {
                             "cidrv4": "172.20.0.83/21",
                             "ipv4": "172.20.0.83",
                             "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
-                            "netmask": 21
+                            "netmask": 21,
+                            "gateway": "172.20.0.1"
                         }
                     ],
                     "lldp": {
@@ -520,14 +536,16 @@ class TestEtcdSchedulerMember(unittest.TestCase):
                             "ipv4": "127.0.0.1",
                             "mac": "",
                             "name": "lo",
-                            "netmask": 8
+                            "netmask": 8,
+                            "gateway": "172.20.0.1"
                         },
                         {
                             "cidrv4": "172.20.0.70/21",
                             "ipv4": "172.20.0.70",
                             "mac": "52:54:00:c3:22:c2",
                             "name": "eth0",
-                            "netmask": 21
+                            "netmask": 21,
+                            "gateway": "172.20.0.1"
                         }
                     ],
                     "lldp": {
@@ -570,10 +588,6 @@ class TestEtcdSchedulerMember(unittest.TestCase):
         for g in etcd_groups:
             ref += 1
             self.assertEqual(len(g["metadata"]["etcd_initial_cluster"].split(",")), 3)
-            self.assertEqual(g["metadata"]["etcd_initial_cluster"],
-                             "static0=http://172.20.0.70:2380,"
-                             "static1=http://172.20.0.83:2380,"
-                             "static2=http://172.20.0.57:2380")
         self.assertTrue(ref == 3)
 
         etcd_profile = "%s/profiles/%semember.json" % (self.test_bootcfg_path, marker)
@@ -589,10 +603,6 @@ class TestEtcdSchedulerMember(unittest.TestCase):
         for g in etcd_groups:
             ref += 1
             self.assertEqual(len(g["metadata"]["etcd_initial_cluster"].split(",")), 3)
-            self.assertEqual(g["metadata"]["etcd_initial_cluster"],
-                             "static0=http://172.20.0.70:2380,"
-                             "static1=http://172.20.0.83:2380,"
-                             "static2=http://172.20.0.57:2380")
         self.assertTrue(ref == 3)
 
     # @unittest.skip("skip")
@@ -610,14 +620,16 @@ class TestEtcdSchedulerMember(unittest.TestCase):
                             "ipv4": "127.0.0.1",
                             "mac": "",
                             "name": "lo",
-                            "netmask": 8
+                            "netmask": 8,
+                            "gateway": "172.20.0.1"
                         },
                         {
                             "cidrv4": "172.20.0.57/21",
                             "ipv4": "172.20.0.57",
                             "mac": "52:54:00:95:24:0f",
                             "name": "eth0",
-                            "netmask": 21
+                            "netmask": 21,
+                            "gateway": "172.20.0.1"
                         }
                     ],
                     "lldp": {
@@ -648,14 +660,16 @@ class TestEtcdSchedulerMember(unittest.TestCase):
                             "ipv4": "127.0.0.1",
                             "mac": "",
                             "name": "lo",
-                            "netmask": 8
+                            "netmask": 8,
+                            "gateway": "172.20.0.1"
                         },
                         {
                             "cidrv4": "172.20.0.83/21",
                             "ipv4": "172.20.0.83",
                             "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
-                            "netmask": 21
+                            "netmask": 21,
+                            "gateway": "172.20.0.1"
                         }
                     ],
                     "lldp": {
@@ -697,14 +711,16 @@ class TestEtcdSchedulerMember(unittest.TestCase):
                         "ipv4": "127.0.0.1",
                         "mac": "",
                         "name": "lo",
-                        "netmask": 8
+                        "netmask": 8,
+                        "gateway": "172.20.0.1"
                     },
                     {
                         "cidrv4": "172.20.0.57/21",
                         "ipv4": "172.20.0.57",
                         "mac": "52:54:00:95:24:0f",
                         "name": "eth0",
-                        "netmask": 21
+                        "netmask": 21,
+                        "gateway": "172.20.0.1"
                     }
                 ],
                 "lldp": {
@@ -735,14 +751,16 @@ class TestEtcdSchedulerMember(unittest.TestCase):
                         "ipv4": "127.0.0.1",
                         "mac": "",
                         "name": "lo",
-                        "netmask": 8
+                        "netmask": 8,
+                        "gateway": "172.20.0.1"
                     },
                     {
                         "cidrv4": "172.20.0.83/21",
                         "ipv4": "172.20.0.83",
                         "mac": "52:54:00:a4:32:b5",
                         "name": "eth0",
-                        "netmask": 21
+                        "netmask": 21,
+                        "gateway": "172.20.0.1"
                     }
                 ],
                 "lldp": {
@@ -773,14 +791,16 @@ class TestEtcdSchedulerMember(unittest.TestCase):
                         "ipv4": "127.0.0.1",
                         "mac": "",
                         "name": "lo",
-                        "netmask": 8
+                        "netmask": 8,
+                        "gateway": "172.20.0.1"
                     },
                     {
                         "cidrv4": "172.20.0.70/21",
                         "ipv4": "172.20.0.70",
                         "mac": "52:54:00:c3:22:c2",
                         "name": "eth0",
-                        "netmask": 21
+                        "netmask": 21,
+                        "gateway": "172.20.0.1"
                     }
                 ],
                 "lldp": {
@@ -815,10 +835,6 @@ class TestEtcdSchedulerMember(unittest.TestCase):
         for g in etcd_groups:
             ref += 1
             self.assertEqual(len(g["metadata"]["etcd_initial_cluster"].split(",")), 3)
-            self.assertEqual(g["metadata"]["etcd_initial_cluster"],
-                             "static0=http://172.20.0.70:2380,"
-                             "static1=http://172.20.0.83:2380,"
-                             "static2=http://172.20.0.57:2380")
         self.assertTrue(ref == 3)
 
         etcd_profile = "%s/profiles/%semember.json" % (self.test_bootcfg_path, marker)
@@ -834,10 +850,6 @@ class TestEtcdSchedulerMember(unittest.TestCase):
         for g in etcd_groups:
             ref += 1
             self.assertEqual(len(g["metadata"]["etcd_initial_cluster"].split(",")), 3)
-            self.assertEqual(g["metadata"]["etcd_initial_cluster"],
-                             "static0=http://172.20.0.70:2380,"
-                             "static1=http://172.20.0.83:2380,"
-                             "static2=http://172.20.0.57:2380")
         self.assertTrue(ref == 3)
 
     # @unittest.skip("skip")
@@ -853,3 +865,11 @@ class TestEtcdSchedulerMember(unittest.TestCase):
             ignition_member="%semember" % marker,
             bootcfg_prefix=marker)
         self.assertFalse(sch.apply())
+
+    def test_06_ipam(self):
+        ipam = scheduler.CommonScheduler.cni_ipam("172.20.0.11/16", "172.20.0.1")
+        self.assertEqual(ipam["subnet"], "172.20.0.0/16")
+        self.assertEqual(ipam["rangeStart"], "172.20.11.1")
+        self.assertEqual(ipam["rangeEnd"], "172.20.11.254")
+        self.assertEqual(ipam["routes"][0], {'dst': '0.0.0.0/0'})
+        self.assertEqual(ipam["gateway"], "172.20.0.1")

@@ -448,9 +448,7 @@ storage:
             "name": "rkt.kubernetes.io",
             "type": "macvlan",
             "master": "eth0",
-            "ipam": {
-              "type": "dhcp"
-            }
+            "ipam": {{ .cni }}
           }
 
     - path: /opt/bin/install-cni

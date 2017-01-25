@@ -4,6 +4,7 @@ import (
 	"net"
 	"strings"
 	"strconv"
+	"github.com/vishvananda/netlink"
 )
 
 type Iface struct {
@@ -12,6 +13,7 @@ type Iface struct {
 	Netmask int           `json:"netmask"`
 	MAC     string        `json:"mac"`
 	Name    string        `json:"name"`
+	Gateway string        `json:"gateway"`
 }
 
 func IsCIDRv4(cidr string) bool {
@@ -54,6 +56,9 @@ func LocalIfaces() []Iface {
 				iface.CIDRv4 = a.String()
 				iface.IPv4, iface.Netmask =
 					GetIPv4Netmask(a.String())
+				// TODO Fix this later
+				route, _ := netlink.RouteGet(net.ParseIP("8.8.8.8"))
+				iface.Gateway = route[0].Gw.String()
 			}
 		}
 		ifaces = append(ifaces, iface)

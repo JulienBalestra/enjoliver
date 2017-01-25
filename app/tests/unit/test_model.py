@@ -50,7 +50,8 @@ class TestModel(unittest.TestCase):
                 'ipv4': u'172.20.0.65',
                 'machine': u'b7f5f93a-b029-475f-b3a4-479ba198cb8a',
                 'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
-                'cidrv4': u'172.20.0.65/21'
+                'cidrv4': u'172.20.0.65/21',
+                "gateway": "172.20.0.1"
             }
         ], interfaces)
         journal = fetch.get_ignition_journal(posts.M01["boot-info"]["uuid"])
@@ -72,7 +73,8 @@ class TestModel(unittest.TestCase):
                 'ipv4': u'172.20.0.65',
                 'machine': u'b7f5f93a-b029-475f-b3a4-479ba198cb8a',
                 'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
-                'cidrv4': u'172.20.0.65/21'
+                'cidrv4': u'172.20.0.65/21',
+                "gateway": "172.20.0.1"
             }
         ], interfaces)
         journal = fetch.get_ignition_journal(posts.M01["boot-info"]["uuid"])
@@ -95,7 +97,8 @@ class TestModel(unittest.TestCase):
                 'as_boot': True,
                 'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
                 'netmask': 21,
-                'ipv4': u'172.20.0.65'
+                'ipv4': u'172.20.0.65',
+                "gateway": "172.20.0.1"
             },
             {
                 'machine': u'a21a9123-302d-488d-976c-5d6ded84a32d',
@@ -105,7 +108,8 @@ class TestModel(unittest.TestCase):
                 'as_boot': True,
                 'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
                 'netmask': 21,
-                'ipv4': u'172.20.0.51'
+                'ipv4': u'172.20.0.51',
+                "gateway": "172.20.0.1"
             }
         ], interfaces)
         fetch.close()
@@ -124,10 +128,12 @@ class TestModel(unittest.TestCase):
         self.assertEqual([
             {'machine': u'b7f5f93a-b029-475f-b3a4-479ba198cb8a', 'mac': u'52:54:00:e8:32:5b', 'name': u'eth0',
              'cidrv4': u'172.20.0.65/21', 'as_boot': True, 'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
-             'netmask': 21, 'ipv4': u'172.20.0.65'},
+             'netmask': 21, 'ipv4': u'172.20.0.65',
+             "gateway": "172.20.0.1"},
             {'machine': u'a21a9123-302d-488d-976c-5d6ded84a32d', 'mac': u'52:54:00:a5:24:f5', 'name': u'eth0',
              'cidrv4': u'172.20.0.51/21', 'as_boot': True, 'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
-             'netmask': 21, 'ipv4': u'172.20.0.51'}
+             'netmask': 21, 'ipv4': u'172.20.0.51',
+             "gateway": "172.20.0.1"}
         ], interfaces)
         fetch.close()
 

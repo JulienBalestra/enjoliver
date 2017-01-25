@@ -69,12 +69,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     "netmask": 8
                 },
                 {
-                    "cidrv4": "172.20.0.57/21",
+                    "cidrv4": "172.20.0.57/16",
                     "ipv4": "172.20.0.57",
                     "mac": "52:54:00:95:24:0f",
                     "name": "eth0",
-                    "netmask": 21
-                }
+                    "netmask": 21, "gateway": "172.20.0.1"}
             ],
             "lldp": {
                 "data": {
@@ -93,8 +92,8 @@ class TestSchedulerK8sNode(unittest.TestCase):
                 "is_file": True
             }
         }
-        ret = scheduler.EtcdMemberScheduler.get_machine_boot_ip_mac(m)
-        self.assertEqual(ret, ("172.20.0.57", "52:54:00:95:24:0f"))
+        ret = scheduler.EtcdMemberScheduler.get_machine_tuple(m)
+        self.assertEqual(ret, ("172.20.0.57", "52:54:00:95:24:0f", "172.20.0.57/16", "172.20.0.1"))
 
     def test_01_get_ip(self):
         m = {
@@ -111,12 +110,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                     "netmask": 8
                 },
                 {
-                    "cidrv4": "172.20.0.57/21",
+                    "cidrv4": "172.20.0.57/16",
                     "ipv4": "172.20.0.57",
                     "mac": "52:54:00:95:24:0f",
                     "name": "eth0",
-                    "netmask": 21
-                }
+                    "netmask": 21, "gateway": "172.20.0.1"}
             ],
             "lldp": {
                 "data": {
@@ -136,7 +134,7 @@ class TestSchedulerK8sNode(unittest.TestCase):
             }
         }
         with self.assertRaises(LookupError):
-            scheduler.EtcdMemberScheduler.get_machine_boot_ip_mac(m)
+            scheduler.EtcdMemberScheduler.get_machine_tuple(m)
 
     # @unittest.skip("skip")
     def test_03(self):
@@ -157,12 +155,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.57/21",
+                            "cidrv4": "172.20.0.57/16",
                             "ipv4": "172.20.0.57",
                             "mac": "52:54:00:95:24:0f",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -195,12 +192,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.83/21",
+                            "cidrv4": "172.20.0.83/16",
                             "ipv4": "172.20.0.83",
                             "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -233,12 +229,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.70/21",
+                            "cidrv4": "172.20.0.70/16",
                             "ipv4": "172.20.0.70",
                             "mac": "52:54:00:c3:22:c2",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -271,18 +266,13 @@ class TestSchedulerK8sNode(unittest.TestCase):
             etcd_member_instance=sch_member,
             ignition_control_plane="%sk8s-control-plane" % marker
         )
-        self.assertEqual(sch_cp.etcd_initial_cluster,
-                         "static0=http://172.20.0.70:2380,"
-                         "static1=http://172.20.0.83:2380,"
-                         "static2=http://172.20.0.57:2380")
+        self.assertEqual(len(sch_cp.etcd_initial_cluster.split(",")), 3)
         sch_no = scheduler.K8sNodeScheduler(
             k8s_control_plane=sch_cp,
             ignition_node="%sk8s-node" % marker
         )
-        self.assertEqual(sch_no.etcd_initial_cluster,
-                         "static0=http://172.20.0.70:2380,"
-                         "static1=http://172.20.0.83:2380,"
-                         "static2=http://172.20.0.57:2380")
+
+        self.assertEqual(len(sch_no.etcd_initial_cluster.split(",")), 3)
         profiles = self.get_profiles()
         self.assertEqual(len(profiles), 1)
         groups = self.get_groups()
@@ -307,12 +297,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.57/21",
+                            "cidrv4": "172.20.0.57/16",
                             "ipv4": "172.20.0.57",
                             "mac": "52:54:00:95:24:0f",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -345,12 +334,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.83/21",
+                            "cidrv4": "172.20.0.83/16",
                             "ipv4": "172.20.0.83",
                             "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -383,12 +371,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.70/21",
+                            "cidrv4": "172.20.0.70/16",
                             "ipv4": "172.20.0.70",
                             "mac": "52:54:00:c3:22:c2",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -421,18 +408,14 @@ class TestSchedulerK8sNode(unittest.TestCase):
             ignition_control_plane="%sk8scontrol-plane" % marker,
             apply_first=True
         )
-        self.assertEqual(sch_cp.etcd_initial_cluster,
-                         "static0=http://172.20.0.70:2380,"
-                         "static1=http://172.20.0.83:2380,"
-                         "static2=http://172.20.0.57:2380")
+
+        self.assertEqual(len(sch_cp.etcd_initial_cluster.split(",")), 3)
         sch_no = scheduler.K8sNodeScheduler(
             k8s_control_plane=sch_cp,
             ignition_node="%sk8s-node" % marker
         )
-        self.assertEqual(sch_no.etcd_initial_cluster,
-                         "static0=http://172.20.0.70:2380,"
-                         "static1=http://172.20.0.83:2380,"
-                         "static2=http://172.20.0.57:2380")
+
+        self.assertEqual(len(sch_no.etcd_initial_cluster.split(",")), 3)
         profiles = self.get_profiles()
         self.assertEqual(len(profiles), 1)
         groups = self.get_groups()
@@ -457,12 +440,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.57/21",
+                            "cidrv4": "172.20.0.57/16",
                             "ipv4": "172.20.0.57",
                             "mac": "52:54:00:95:24:0f",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -495,12 +477,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.83/21",
+                            "cidrv4": "172.20.0.83/16",
                             "ipv4": "172.20.0.83",
                             "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -533,12 +514,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.70/21",
+                            "cidrv4": "172.20.0.70/16",
                             "ipv4": "172.20.0.70",
                             "mac": "52:54:00:c3:22:c2",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -573,18 +553,12 @@ class TestSchedulerK8sNode(unittest.TestCase):
         sch_cp.fetch_discovery = fake_fetch_discovery
         self.assertEqual(sch_cp.etcd_initial_cluster, None)
         sch_cp.apply_member()
-        self.assertEqual(sch_cp.etcd_initial_cluster,
-                         "static0=http://172.20.0.70:2380,"
-                         "static1=http://172.20.0.83:2380,"
-                         "static2=http://172.20.0.57:2380")
+        self.assertEqual(len(sch_cp.etcd_initial_cluster.split(",")), 3)
         sch_no = scheduler.K8sNodeScheduler(
             k8s_control_plane=sch_cp,
             ignition_node="%sk8s-node" % marker
         )
-        self.assertEqual(sch_no.etcd_initial_cluster,
-                         "static0=http://172.20.0.70:2380,"
-                         "static1=http://172.20.0.83:2380,"
-                         "static2=http://172.20.0.57:2380")
+        self.assertEqual(len(sch_no.etcd_initial_cluster.split(",")), 3)
         profiles = self.get_profiles()
         self.assertEqual(len(profiles), 1)
         groups = self.get_groups()
@@ -609,12 +583,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.57/21",
+                            "cidrv4": "172.20.0.57/16",
                             "ipv4": "172.20.0.57",
                             "mac": "52:54:00:95:24:0f",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -647,12 +620,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.83/21",
+                            "cidrv4": "172.20.0.83/16",
                             "ipv4": "172.20.0.83",
                             "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -685,12 +657,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.70/21",
+                            "cidrv4": "172.20.0.70/16",
                             "ipv4": "172.20.0.70",
                             "mac": "52:54:00:c3:22:c2",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -724,10 +695,7 @@ class TestSchedulerK8sNode(unittest.TestCase):
             apply_first=True
         )
         sch_cp.fetch_discovery = fake_fetch_discovery
-        self.assertEqual(sch_cp.etcd_initial_cluster,
-                         "static0=http://172.20.0.70:2380,"
-                         "static1=http://172.20.0.83:2380,"
-                         "static2=http://172.20.0.57:2380")
+        self.assertEqual(len(sch_cp.etcd_initial_cluster.split(",")), 3)
         self.assertFalse(sch_cp.apply())
         profiles = self.get_profiles()
         self.assertEqual(len(profiles), 1)
@@ -762,12 +730,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.57/21",
+                            "cidrv4": "172.20.0.57/16",
                             "ipv4": "172.20.0.57",
                             "mac": "52:54:00:95:24:0f",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -800,12 +767,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.83/21",
+                            "cidrv4": "172.20.0.83/16",
                             "ipv4": "172.20.0.83",
                             "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -838,12 +804,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.70/21",
+                            "cidrv4": "172.20.0.70/16",
                             "ipv4": "172.20.0.70",
                             "mac": "52:54:00:c3:22:c2",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -876,12 +841,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.102/21",
+                            "cidrv4": "172.20.0.102/16",
                             "ipv4": "172.20.0.102",
                             "mac": "52:54:00:c3:22:c4",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -916,10 +880,7 @@ class TestSchedulerK8sNode(unittest.TestCase):
         )
         sch_cp.control_plane_nb = 1
         sch_cp.fetch_discovery = fake_fetch_discovery
-        self.assertEqual(sch_cp.etcd_initial_cluster,
-                         "static0=http://172.20.0.70:2380,"
-                         "static1=http://172.20.0.83:2380,"
-                         "static2=http://172.20.0.57:2380")
+        self.assertEqual(len(sch_cp.etcd_initial_cluster.split(",")), 3)
         self.assertEqual(len(sch_cp.done_list), 0)
         sch_no = scheduler.K8sNodeScheduler(
             k8s_control_plane=sch_cp,
@@ -948,12 +909,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.57/21",
+                            "cidrv4": "172.20.0.57/16",
                             "ipv4": "172.20.0.57",
                             "mac": "52:54:00:95:24:0f",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -986,12 +946,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.83/21",
+                            "cidrv4": "172.20.0.83/16",
                             "ipv4": "172.20.0.83",
                             "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -1024,12 +983,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.70/21",
+                            "cidrv4": "172.20.0.70/16",
                             "ipv4": "172.20.0.70",
                             "mac": "52:54:00:c3:22:c2",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -1063,10 +1021,7 @@ class TestSchedulerK8sNode(unittest.TestCase):
             apply_first=True
         )
         sch_cp.fetch_discovery = fake_fetch_discovery
-        self.assertEqual(sch_cp.etcd_initial_cluster,
-                         "static0=http://172.20.0.70:2380,"
-                         "static1=http://172.20.0.83:2380,"
-                         "static2=http://172.20.0.57:2380")
+        self.assertEqual(len(sch_cp.etcd_initial_cluster.split(",")), 3)
         self.assertFalse(sch_cp.apply())
         profiles = self.get_profiles()
         self.assertEqual(len(profiles), 1)
@@ -1090,12 +1045,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.57/21",
+                            "cidrv4": "172.20.0.57/16",
                             "ipv4": "172.20.0.57",
                             "mac": "52:54:00:95:24:0f",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -1128,12 +1082,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.83/21",
+                            "cidrv4": "172.20.0.83/16",
                             "ipv4": "172.20.0.83",
                             "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -1166,12 +1119,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.70/21",
+                            "cidrv4": "172.20.0.70/16",
                             "ipv4": "172.20.0.70",
                             "mac": "52:54:00:c3:22:c2",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -1204,12 +1156,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.100/21",
+                            "cidrv4": "172.20.0.100/16",
                             "ipv4": "172.20.0.100",
                             "mac": "52:54:00:c3:22:c4",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -1242,12 +1193,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.101/21",
+                            "cidrv4": "172.20.0.101/16",
                             "ipv4": "172.20.0.101",
                             "mac": "52:54:00:95:24:4f",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -1280,12 +1230,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.105/21",
+                            "cidrv4": "172.20.0.105/16",
                             "ipv4": "172.20.0.105",
                             "mac": "52:54:00:95:24:5f",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -1318,12 +1267,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.106/21",
+                            "cidrv4": "172.20.0.106/16",
                             "ipv4": "172.20.0.106",
                             "mac": "52:54:01:95:24:5f",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -1382,12 +1330,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.57/21",
+                            "cidrv4": "172.20.0.57/16",
                             "ipv4": "172.20.0.57",
                             "mac": "52:54:00:95:24:0f",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -1420,12 +1367,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.83/21",
+                            "cidrv4": "172.20.0.83/16",
                             "ipv4": "172.20.0.83",
                             "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -1458,12 +1404,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.70/21",
+                            "cidrv4": "172.20.0.70/16",
                             "ipv4": "172.20.0.70",
                             "mac": "52:54:00:c3:22:c2",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -1497,10 +1442,7 @@ class TestSchedulerK8sNode(unittest.TestCase):
             apply_first=True
         )
         sch_cp.fetch_discovery = fake_fetch_discovery
-        self.assertEqual(sch_cp.etcd_initial_cluster,
-                         "static0=http://172.20.0.70:2380,"
-                         "static1=http://172.20.0.83:2380,"
-                         "static2=http://172.20.0.57:2380")
+        self.assertEqual(len(sch_cp.etcd_initial_cluster.split(",")), 3)
         self.assertFalse(sch_cp.apply())
         profiles = self.get_profiles()
         self.assertEqual(len(profiles), 1)
@@ -1524,12 +1466,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.57/21",
+                            "cidrv4": "172.20.0.57/16",
                             "ipv4": "172.20.0.57",
                             "mac": "52:54:00:95:24:0f",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -1562,12 +1503,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.83/21",
+                            "cidrv4": "172.20.0.83/16",
                             "ipv4": "172.20.0.83",
                             "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -1600,12 +1540,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.70/21",
+                            "cidrv4": "172.20.0.70/16",
                             "ipv4": "172.20.0.70",
                             "mac": "52:54:00:c3:22:c2",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -1638,12 +1577,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.100/21",
+                            "cidrv4": "172.20.0.100/16",
                             "ipv4": "172.20.0.100",
                             "mac": "52:54:00:c3:22:c4",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -1676,12 +1614,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.101/21",
+                            "cidrv4": "172.20.0.101/16",
                             "ipv4": "172.20.0.101",
                             "mac": "52:54:00:95:24:4f",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -1714,12 +1651,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.105/21",
+                            "cidrv4": "172.20.0.105/16",
                             "ipv4": "172.20.0.105",
                             "mac": "52:54:00:95:24:5f",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -1752,12 +1688,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.106/21",
+                            "cidrv4": "172.20.0.106/16",
                             "ipv4": "172.20.0.106",
                             "mac": "52:54:01:95:24:5f",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -1814,12 +1749,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.57/21",
+                            "cidrv4": "172.20.0.57/16",
                             "ipv4": "172.20.0.57",
                             "mac": "52:54:00:95:24:0f",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -1852,12 +1786,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.83/21",
+                            "cidrv4": "172.20.0.83/16",
                             "ipv4": "172.20.0.83",
                             "mac": "52:54:00:a4:32:b5",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -1890,12 +1823,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.70/21",
+                            "cidrv4": "172.20.0.70/16",
                             "ipv4": "172.20.0.70",
                             "mac": "52:54:00:c3:22:c2",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -1928,12 +1860,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.100/21",
+                            "cidrv4": "172.20.0.100/16",
                             "ipv4": "172.20.0.100",
                             "mac": "52:54:00:c3:22:c4",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -1966,12 +1897,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.101/21",
+                            "cidrv4": "172.20.0.101/16",
                             "ipv4": "172.20.0.101",
                             "mac": "52:54:00:95:24:4f",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -2004,12 +1934,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.105/21",
+                            "cidrv4": "172.20.0.105/16",
                             "ipv4": "172.20.0.105",
                             "mac": "52:54:00:95:24:5f",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -2042,12 +1971,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.106/21",
+                            "cidrv4": "172.20.0.106/16",
                             "ipv4": "172.20.0.106",
                             "mac": "52:54:01:95:24:5f",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {
@@ -2080,12 +2008,11 @@ class TestSchedulerK8sNode(unittest.TestCase):
                             "netmask": 8
                         },
                         {
-                            "cidrv4": "172.20.0.250/21",
+                            "cidrv4": "172.20.0.250/16",
                             "ipv4": "172.20.0.250",
                             "mac": "52:11:02:97:24:5f",
                             "name": "eth0",
-                            "netmask": 21
-                        }
+                            "netmask": 21, "gateway": "172.20.0.1"}
                     ],
                     "lldp": {
                         "data": {

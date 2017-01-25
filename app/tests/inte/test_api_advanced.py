@@ -326,7 +326,8 @@ class TestAPIAdvanced(unittest.TestCase):
                 "mac": "52:54:00:e8:32:5b",
                 "machine": "b7f5f93a-b029-475f-b3a4-479ba198cb8a",
                 "name": "eth0",
-                "netmask": 21
+                "netmask": 21,
+                "gateway": "172.20.0.1"
             }
         ]
         f.close()
@@ -348,7 +349,8 @@ class TestAPIAdvanced(unittest.TestCase):
                     u'netmask': 21,
                     u'mac': u'52:54:00:e8:32:5b',
                     u'ipv4': u'172.20.0.65',
-                    u'cidrv4': u'172.20.0.65/21'
+                    u'cidrv4': u'172.20.0.65/21',
+                    "gateway": "172.20.0.1"
                 }
             ]
         }

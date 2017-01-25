@@ -40,6 +40,7 @@ class MachineInterface(Base):
     ipv4 = Column(String, nullable=False)
     cidrv4 = Column(String, nullable=False)
     as_boot = Column(Boolean, default=False)
+    gateway = Column(String, nullable=False)
 
     machine_id = Column(Integer, ForeignKey('machine.id'))
     chassis_port = relationship("ChassisPort")

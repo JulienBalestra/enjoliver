@@ -3,6 +3,8 @@ import json
 import time
 import urllib2
 
+import ipaddr
+
 import generator
 import logger
 
@@ -11,6 +13,23 @@ class CommonScheduler(object):
     __metaclass__ = abc.ABCMeta
 
     log = logger.get_logger(__file__)
+
+    @staticmethod
+    def cni_ipam(host_cidrv4, host_gateway, multiplier=256, ips=254):
+        host = ipaddr.IPNetwork(host_cidrv4)
+        ip_cut = int(host.ip.__str__().split(".")[-1])
+        sub = ipaddr.IPNetwork(host.network).ip + (ip_cut * multiplier)
+        rs = sub + 1
+        re = sub + ips
+        ipam = {
+            "type": "host-local",
+            "subnet": "%s/%s" % (host.network.__str__(), host.prefixlen),
+            "rangeStart": rs.__str__(),
+            "rangeEnd": re.__str__(),
+            "gateway": host_gateway,
+            "routes": [{"dst": "0.0.0.0/0"}]
+        }
+        return ipam
 
     def custom_log(self, func_name, message, level="info"):
         if level.lower() == "debug":
@@ -23,13 +42,15 @@ class CommonScheduler(object):
             self.log.info("%s.%s %s" % (self.__name__, func_name, message))
 
     @staticmethod
-    def get_machine_boot_ip_mac(discovery):
+    def get_machine_tuple(discovery):
         mac = discovery["boot-info"]["mac"]
-        ipv4 = None
+        ipv4, cidrv4, gateway = None, None, None
         nb_interfaces = len(discovery["interfaces"])
         for n, i in enumerate(discovery["interfaces"]):
             if i["mac"] == mac:
                 ipv4 = i["ipv4"]
+                cidrv4 = i["cidrv4"]
+                gateway = i["gateway"]
                 CommonScheduler.log.debug("%d/%d %s matching in %s" % (n + 1, nb_interfaces, mac, str(i)))
                 try:
                     if i["as_boot"] is False:
@@ -43,7 +64,7 @@ class CommonScheduler(object):
             message = "%s Lookup failed in %s" % (mac, discovery)
             CommonScheduler.log.error(message)
             raise LookupError(message)
-        return ipv4, mac
+        return ipv4, mac, cidrv4, gateway
 
     @staticmethod
     def fetch_discovery(api_endpoint):
@@ -131,7 +152,7 @@ class EtcdProxyScheduler(CommonScheduler):
 
         if len(discovery) > len(self.wide_done_list):
             for machine in discovery:
-                ip_mac = self.get_machine_boot_ip_mac(machine)
+                ip_mac = self.get_machine_tuple(machine)
                 if ip_mac in self.done_list:
                     self.custom_log(self._fall_back_to_proxy.__name__,
                                     "Skip because Etcd Proxy %s" % str(ip_mac))
@@ -153,8 +174,8 @@ class EtcdProxyScheduler(CommonScheduler):
 
         base = len(self._done_etcd_proxy)
         new_pending = set()
-        for i, nic in enumerate(self._pending_etcd_proxy):
-            # nic = (IPv4, MAC)
+        for i, m in enumerate(self._pending_etcd_proxy):
+            # m = (IPv4, MAC, CIDRv4, Gateway)
             i += base
             self._gen = generator.Generator(
                 group_id="%s-%d" % (marker, i),  # one per machine
@@ -162,18 +183,19 @@ class EtcdProxyScheduler(CommonScheduler):
                 name=marker,
                 ignition_id="%s.yaml" % self._ignition_proxy,
                 bootcfg_path=self.bootcfg_path,
-                selector={"mac": nic[1]},
+                selector={"mac": m[1]},
                 extra_metadata={
                     "etcd_initial_cluster": self.etcd_initial_cluster,
-                    "etcd_advertise_client_urls": "http://%s:2379" % nic[0],
+                    "etcd_advertise_client_urls": "http://%s:2379" % m[0],
                     "etcd_proxy": "on",
                     "hostname": "etcd-proxy-%d" % i,
+                    "cni": json.dumps(self.cni_ipam(m[2], m[3]))
                 }
             )
             self._gen.dumps()
-            self._done_etcd_proxy.add(nic)
+            self._done_etcd_proxy.add(m)
             new_pending = self._pending_etcd_proxy - self._done_etcd_proxy
-            self.custom_log(self._apply_proxy.__name__, "selector {mac: %s}" % nic[1])
+            self.custom_log(self._apply_proxy.__name__, "selector {mac: %s}" % m[1])
 
         if self._pending_etcd_proxy - self._done_etcd_proxy:
             message = "self._pending_etcd_proxy - self._done_etcd_proxy have to return an empty set"
@@ -255,7 +277,7 @@ class K8sNodeScheduler(CommonScheduler):
 
         if len(discovery) > len(self.wide_done_list):
             for machine in discovery:
-                ip_mac = self.get_machine_boot_ip_mac(machine)
+                ip_mac = self.get_machine_tuple(machine)
                 if ip_mac in self._done_k8s_node:
                     self.custom_log(self._fall_back_to_node.__name__,
                                     "Skip because K8s Node %s" % str(ip_mac))
@@ -277,8 +299,8 @@ class K8sNodeScheduler(CommonScheduler):
 
         base = len(self._done_k8s_node)
         new_pending = set()
-        for i, nic in enumerate(self._pending_k8s_node):
-            # nic = (IPv4, MAC)
+        for i, m in enumerate(self._pending_k8s_node):
+            # m = (IPv4, MAC, CIDRv4, Gateway)
             i += base
             self._gen = generator.Generator(
                 group_id="%s-%d" % (marker, i),  # one per machine
@@ -286,21 +308,22 @@ class K8sNodeScheduler(CommonScheduler):
                 name=marker,
                 ignition_id="%s.yaml" % self._ignition_node,
                 bootcfg_path=self.bootcfg_path,
-                selector={"mac": nic[1]},
+                selector={"mac": m[1]},
                 extra_metadata={
                     "etcd_initial_cluster": self.etcd_initial_cluster,
-                    "etcd_advertise_client_urls": "http://%s:2379" % nic[0],
+                    "etcd_advertise_client_urls": "http://%s:2379" % m[0],
                     "etcd_proxy": "on",
-                    "kubelet_ip": "%s" % nic[0],
-                    "kubelet_name": "%s" % nic[0],
+                    "kubelet_ip": "%s" % m[0],
+                    "kubelet_name": "%s" % m[0],
                     "k8s_endpoint": ",".join(self._k8s_control_plane_instance.k8s_endpoint),
                     "hostname": "k8s-node-%d" % i,
+                    "cni": json.dumps(self.cni_ipam(m[2], m[3]))
                 }
             )
             self._gen.dumps()
-            self._done_k8s_node.add(nic)
+            self._done_k8s_node.add(m)
             new_pending = self._pending_k8s_node - self._done_k8s_node
-            self.custom_log(self._apply_k8s_node.__name__, "selector {mac: %s}" % nic[1])
+            self.custom_log(self._apply_k8s_node.__name__, "selector {mac: %s}" % m[1])
 
         if self._pending_k8s_node - self._done_k8s_node:
             message = "self._pending_k8s_node - self._done_k8s_node have to return an empty set"
@@ -389,7 +412,7 @@ class K8sControlPlaneScheduler(CommonScheduler):
 
         else:
             for machine in discovery:
-                ip_mac = self.get_machine_boot_ip_mac(machine)
+                ip_mac = self.get_machine_tuple(machine)
                 if ip_mac in self._done_control_plane:
                     self.custom_log(self._fifo_control_plane_simple.__name__,
                                     "WARNING Skip because K8s Control Plane  %s" % str(ip_mac))
@@ -413,32 +436,33 @@ class K8sControlPlaneScheduler(CommonScheduler):
         marker = "%s%scontrol-plane" % (self.bootcfg_prefix, "k8s")
 
         new_pending = set()
-        for i, nic in enumerate(self._pending_control_plane):
-            # nic = (IPv4, MAC)
+        for i, m in enumerate(self._pending_control_plane):
+            # m = (IPv4, MAC, CIDRv4, Gateway)
             self._gen = generator.Generator(
                 group_id="%s-%d" % (marker, i),  # one per machine
                 profile_id=marker,  # link to ignition
                 name=marker,
                 ignition_id="%s.yaml" % self._ignition_control_plane,
                 bootcfg_path=self.bootcfg_path,
-                selector={"mac": nic[1]},
+                selector={"mac": m[1]},
                 extra_metadata={
                     # Etcd Proxy
                     "etcd_initial_cluster": self.etcd_initial_cluster,
-                    "etcd_advertise_client_urls": "http://%s:2379" % nic[0],
+                    "etcd_advertise_client_urls": "http://%s:2379" % m[0],
                     "etcd_proxy": "on",
                     # K8s Control Plane
                     "k8s_apiserver_count": self.control_plane_nb,
-                    "kubelet_ip": "%s" % nic[0],
-                    "kubelet_name": "%s" % nic[0],
-                    "k8s_advertise_ip": "%s" % nic[0],
+                    "kubelet_ip": "%s" % m[0],
+                    "kubelet_name": "%s" % m[0],
+                    "k8s_advertise_ip": "%s" % m[0],
                     "hostname": "k8s-control-plane-%d" % i,
+                    "cni": json.dumps(self.cni_ipam(m[2], m[3]))
                 }
             )
             self._gen.dumps()
-            self._done_control_plane.add(nic)
+            self._done_control_plane.add(m)
             new_pending = self._pending_control_plane - self._done_control_plane
-            self.custom_log(self._apply_control_plane.__name__, "selector {mac: %s}" % nic[1])
+            self.custom_log(self._apply_control_plane.__name__, "selector {mac: %s}" % m[1])
 
         if self._pending_control_plane - self._done_control_plane:
             message = "self._apply_control_plane - self._done_control_plane have to return an empty set"
@@ -523,7 +547,7 @@ class EtcdMemberScheduler(CommonScheduler):
 
         else:
             for machine in discovery:
-                ip_mac = self.get_machine_boot_ip_mac(machine)
+                ip_mac = self.get_machine_tuple(machine)
                 if len(self._pending_etcd_member) < self.etcd_members_nb:
                     self._pending_etcd_member.add(ip_mac)
                 else:
@@ -544,26 +568,27 @@ class EtcdMemberScheduler(CommonScheduler):
 
         etcd_initial_cluster = ",".join(etcd_initial_cluster_list)
 
-        for i, nic in enumerate(self._pending_etcd_member):
-            # nic = (IPv4, MAC)
+        for i, m in enumerate(self._pending_etcd_member):
+            # m = (IPv4, MAC, CIDRv4, Gateway)
             self._gen = generator.Generator(
                 group_id="%s-%d" % (marker, i),  # one per machine
                 profile_id=marker,  # link to ignition
                 name=marker,
                 ignition_id="%s.yaml" % self._ignition_member,
                 bootcfg_path=self.bootcfg_path,
-                selector={"mac": nic[1]},
+                selector={"mac": m[1]},
                 extra_metadata={
                     "etcd_name": "%s%d" % (self.etcd_name, i),
                     "etcd_initial_cluster": etcd_initial_cluster,
-                    "etcd_initial_advertise_peer_urls": "http://%s:2380" % nic[0],
-                    "etcd_advertise_client_urls": "http://%s:2379" % nic[0],
+                    "etcd_initial_advertise_peer_urls": "http://%s:2380" % m[0],
+                    "etcd_advertise_client_urls": "http://%s:2379" % m[0],
                     "hostname": "etcd-member-%d" % i,
+                    "cni": json.dumps(self.cni_ipam(m[2], m[3]))
                 }
             )
             self._gen.dumps()
-            self._done_etcd_member.add(nic)
-            self.custom_log(self._apply_member.__name__, "selector {mac: %s}" % nic[1])
+            self._done_etcd_member.add(m)
+            self.custom_log(self._apply_member.__name__, "selector {mac: %s}" % m[1])
         self._etcd_initial_cluster = etcd_initial_cluster
 
     @property
