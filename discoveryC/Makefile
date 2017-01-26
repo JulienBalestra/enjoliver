@@ -7,10 +7,10 @@ CWD=$(shell pwd)
 default: $(TARGET)
 
 check:
-	GOPATH=$(GOPATH):$(CWD) $(CC) test -v ./
+	GOPATH=$(CWD) $(CC) test -v ./
 
 $(TARGET):
-	GOPATH=$(GOPATH):$(CWD) CGO_ENABLED=0 GOOS=linux $(CC) build $(FLAGS) -o $(TARGET)
+	GOPATH=$(CWD) CGO_ENABLED=0 GOOS=linux $(CC) build $(FLAGS) -o $(TARGET)
 
 run: $(TARGET)
 	./$(TARGET)
