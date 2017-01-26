@@ -29,7 +29,6 @@ Extra features are (alpha) adds like:
 ## Incoming
 
 * Programmatic IPAM
-    * remove DHCP for containers (CNI)
     * remove DHCP for hosts
     
 * Store the roles in a real database
