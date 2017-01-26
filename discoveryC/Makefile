@@ -1,6 +1,7 @@
 CC=go
 TARGET=discoveryC
 FLAGS=-ldflags '-w'
+GODEP=$(GOPATH)/bin/godep
 CWD=$(shell pwd)
 
 default: $(TARGET)
