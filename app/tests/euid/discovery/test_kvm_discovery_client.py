@@ -74,7 +74,7 @@ class TestKVMDiscoveryClient00(TestKVMDiscoveryClient):
             self.assertEqual(len(interfaces), 1)
             for i in interfaces:
                 self.assertEqual(i["name"], "eth0")
-                self.assertEqual(i["netmask"], 21)
+                self.assertEqual(i["netmask"], 16)
                 self.assertEqual(i["ipv4"][:9], '172.20.0.')
                 self.assertEqual(len(i["mac"]), 17)
                 self.assertTrue(i["as_boot"])
@@ -142,7 +142,7 @@ class TestKVMDiscoveryClient01(TestKVMDiscoveryClient):
 
             for i in interfaces:
                 self.assertEqual(i["name"], "eth0")
-                self.assertEqual(i["netmask"], 21)
+                self.assertEqual(i["netmask"], 16)
                 self.assertEqual(i["ipv4"][:9], '172.20.0.')
                 self.assertEqual(len(i["mac"]), 17)
                 self.assertTrue(i["as_boot"])
@@ -221,7 +221,7 @@ class TestKVMDiscoveryClient02(TestKVMDiscoveryClient):
             for interface in interfaces:
                 self.assertIsNotNone(interface["chassis_name"])
                 self.assertEqual(interface["name"], "eth0")
-                self.assertEqual(interface["netmask"], 21)
+                self.assertEqual(interface["netmask"], 16)
                 self.assertEqual(interface["ipv4"][:9], '172.20.0.')
                 self.assertEqual(len(interface["mac"]), 17)
                 self.assertTrue(interface["as_boot"])
@@ -304,7 +304,7 @@ class TestKVMDiscoveryClient03(TestKVMDiscoveryClient):
             for interface in interfaces:
                 self.assertIsNotNone(interface["chassis_name"])
                 self.assertEqual(interface["name"], "eth0")
-                self.assertEqual(interface["netmask"], 21)
+                self.assertEqual(interface["netmask"], 16)
                 self.assertEqual(interface["ipv4"][:9], '172.20.0.')
                 self.assertEqual(len(interface["mac"]), 17)
                 self.assertTrue(interface["as_boot"])
@@ -429,7 +429,7 @@ class TestKVMDiscoveryClient05(TestKVMDiscoveryClient):
             # Just one machine but with 2 interfaces
             self.assertEqual(len(interfaces), 2)
             for i in interfaces:
-                self.assertEqual(i["netmask"], 21)
+                self.assertEqual(i["netmask"], 16)
                 self.assertEqual(i["ipv4"][:9], '172.20.0.')
                 self.assertEqual(len(i["mac"]), 17)
 
@@ -508,7 +508,7 @@ class TestKVMDiscoveryClient06(TestKVMDiscoveryClient):
             as_boot = 0
             as_not_boot = 0
             for i in interfaces:
-                self.assertEqual(i["netmask"], 21)
+                self.assertEqual(i["netmask"], 16)
                 self.assertEqual(i["ipv4"][:9], '172.20.0.')
                 self.assertEqual(len(i["mac"]), 17)
 
