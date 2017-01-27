@@ -14,13 +14,16 @@ class CommonScheduler(object):
 
     log = logger.get_logger(__file__)
 
+    ipam_multiplier = 256
+    ipam_ips = 254
+
     @staticmethod
-    def cni_ipam(host_cidrv4, host_gateway, multiplier=256, ips=254):
+    def cni_ipam(host_cidrv4, host_gateway):
         host = ipaddr.IPNetwork(host_cidrv4)
         ip_cut = int(host.ip.__str__().split(".")[-1])
-        sub = ipaddr.IPNetwork(host.network).ip + (ip_cut * multiplier)
+        sub = ipaddr.IPNetwork(host.network).ip + (ip_cut * CommonScheduler.ipam_multiplier)
         rs = sub + 1
-        re = sub + ips
+        re = sub + CommonScheduler.ipam_ips
         ipam = {
             "type": "host-local",
             "subnet": "%s/%s" % (host.network.__str__(), host.prefixlen),
@@ -239,12 +242,19 @@ class K8sNodeScheduler(CommonScheduler):
         self._etcd_initial_cluster = None
         self._k8s_control_plane_instance = k8s_control_plane
 
-        if isinstance(self._k8s_control_plane_instance, K8sControlPlaneScheduler) is False:
-            raise AttributeError("%s not a instanceof(%s)" % (
-                "k8s_control_plane", K8sControlPlaneScheduler.__name__))
+        if isinstance(self._k8s_control_plane_instance, K8sControlPlaneScheduler):
+            if apply_first is True:
+                self.apply_control_plane()
 
-        if apply_first is True:
-            self.apply_control_plane()
+        elif isinstance(self._k8s_control_plane_instance, EtcdMemberK8sControlPlaneScheduler):
+            if apply_first is True:
+                raise NotImplementedError
+
+        else:
+            raise AttributeError("%s not a instanceof(%s||%s): type(%s)" % (
+                "k8s_control_plane", K8sControlPlaneScheduler.__name__,
+                EtcdMemberK8sControlPlaneScheduler.__name__,
+                type(self._k8s_control_plane_instance)))
 
         self._ignition_node = ignition_node
         self.api_endpoint = self._k8s_control_plane_instance.api_endpoint
@@ -511,6 +521,136 @@ class K8sControlPlaneScheduler(CommonScheduler):
     @property
     def wide_done_list(self):
         return self.done_list + self._etcd_member_instance.wide_done_list
+
+
+class EtcdMemberK8sControlPlaneScheduler(CommonScheduler):
+    etcd_members_nb = 3
+    __name__ = "EtcdMemberK8sControlPlaneScheduler"
+    etcd_name = "static"  # basename
+
+    control_plane_nb = 3
+    api_server_port = 8080
+
+    def __init__(self,
+                 api_endpoint, bootcfg_path,
+                 ignition_member,
+                 bootcfg_prefix=""):
+        self.log.debug("instancing %s" % self.__name__)
+        self.api_endpoint = api_endpoint
+        self._gen = generator.Generator
+        self.bootcfg_path = bootcfg_path
+        self.bootcfg_prefix = bootcfg_prefix
+
+        # Etcd member area
+        self._ignition_member = ignition_member
+        self._pending_etcd_member = set()
+        self._done_etcd_member = set()
+        self._etcd_initial_cluster = None
+
+        # Kubernetes
+        self._done_control_plane = set()
+        self._pending_control_plane = set()
+
+    def _fifo_members_simple(self, discovery):
+
+        if not discovery or len(discovery) == 0:
+            self.custom_log(self._fifo_members_simple.__name__, "no machine 0/%d" % self.etcd_members_nb)
+            return self._pending_etcd_member
+
+        elif len(discovery) < self.etcd_members_nb:
+            self.custom_log(self._fifo_members_simple.__name__,
+                            "not enough machines %d/%d" % (len(discovery), self.etcd_members_nb))
+            return self._pending_etcd_member
+
+        else:
+            for machine in discovery:
+                ip_mac = self.get_machine_tuple(machine)
+                if len(self._pending_etcd_member) < self.etcd_members_nb:
+                    self._pending_etcd_member.add(ip_mac)
+                else:
+                    break
+
+        self.custom_log(self._fifo_members_simple.__name__,
+                        "enough machines %d/%d" % (len(discovery), self.etcd_members_nb))
+        return self._pending_etcd_member
+
+    def _apply_member(self):
+        self.custom_log(self._apply_member.__name__, "in progress...")
+
+        marker = "%s%smember" % (self.bootcfg_prefix, "e")  # e for Etcd
+
+        etcd_initial_cluster_list = []
+        for i, m in enumerate(self._pending_etcd_member):
+            etcd_initial_cluster_list.append("%s%d=http://%s:2380" % (self.etcd_name, i, m[0]))
+
+        etcd_initial_cluster = ",".join(etcd_initial_cluster_list)
+
+        for i, m in enumerate(self._pending_etcd_member):
+            # m = (IPv4, MAC, CIDRv4, Gateway)
+            self._gen = generator.Generator(
+                group_id="%s-%d" % (marker, i),  # one per machine
+                profile_id=marker,  # link to ignition
+                name=marker,
+                ignition_id="%s.yaml" % self._ignition_member,
+                bootcfg_path=self.bootcfg_path,
+                selector={"mac": m[1]},
+                extra_metadata={
+                    "etcd_name": "%s%d" % (self.etcd_name, i),
+                    "etcd_initial_cluster": etcd_initial_cluster,
+                    "etcd_initial_advertise_peer_urls": "http://%s:2380" % m[0],
+                    "etcd_advertise_client_urls": "http://%s:2379" % m[0],
+                    # K8s Control Plane
+                    "k8s_apiserver_count": self.control_plane_nb,
+                    "kubelet_ip": "%s" % m[0],
+                    "kubelet_name": "%s" % m[0],
+                    "k8s_advertise_ip": "%s" % m[0],
+                    "hostname": "k8s-control-plane-%d" % i,
+                    "cni": json.dumps(self.cni_ipam(m[2], m[3]))
+                }
+            )
+            self._gen.dumps()
+            self._done_etcd_member.add(m)
+            self._done_control_plane.add(m)
+            self.custom_log(self._apply_member.__name__, "selector {mac: %s}" % m[1])
+        self._etcd_initial_cluster = etcd_initial_cluster
+
+    @property
+    def k8s_endpoint(self):
+        return ["http://%s:%d" % (k[0], self.api_server_port) for k in self._done_control_plane]
+
+    @property
+    def etcd_initial_cluster(self):
+        return self._etcd_initial_cluster
+
+    @property
+    def ip_list(self):
+        return [k[0] for k in self._done_etcd_member]
+
+    @property
+    def done_list(self):
+        return [k for k in self._done_etcd_member]
+
+    @property
+    def wide_done_list(self):
+        return self.done_list
+
+    def apply(self):
+        # Etcd Members + Kubernetes Control Plane
+        if len(self._done_etcd_member) < self.etcd_members_nb:
+            discovery = self.fetch_discovery(self.api_endpoint)
+            self._fifo_members_simple(discovery)
+            if len(self._pending_etcd_member) == self.etcd_members_nb:
+                self._apply_member()
+
+        else:
+            self.custom_log(self.apply.__name__, "already complete")
+            return True
+
+        if len(self._done_etcd_member) < self.etcd_members_nb:
+            return False
+        else:
+            self.custom_log(self.apply.__name__, "complete")
+            return True
 
 
 class EtcdMemberScheduler(CommonScheduler):

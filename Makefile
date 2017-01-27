@@ -64,6 +64,8 @@ assets:
 	make -C bootcfg/assets/etcd serve
 	make -C bootcfg/assets/cni
 	make -C bootcfg/assets/cni serve
+	make -C bootcfg/assets/fleet
+	make -C bootcfg/assets/fleet serve
 	# Self
 	make -C bootcfg/assets/discoveryC
 	@# Depends on .acis

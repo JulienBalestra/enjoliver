@@ -146,6 +146,12 @@ check_euid_basic_pxe: $(PYTHON)
 check_euid_plans_all_in_one: $(PYTHON)
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/plans/test_kvm_plan_all_in_one.py
 
+check_euid_plans_enjolivage: $(PYTHON)
+	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/plans/test_kvm_plan_k8s_enjolivage.py
+
+check_euid_it_plans_enjolivage: $(PYTHON)
+	PYTHONPATH=$(shell pwd)/../.. TEST=TestKVMK8sEnjolivage0 $(PYTHON) euid/plans/test_kvm_plan_k8s_enjolivage.py
+
 check_euid_kvm_player: $(PYTHON)
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/test_kvm_player.py
 

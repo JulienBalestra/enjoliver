@@ -39,6 +39,11 @@ class TestValidateBootcfgAssets(unittest.TestCase):
         list_dir = os.listdir(rule)
         self.assertIn("rkt.tar.gz", list_dir)
 
+    def test_fleet(self):
+        rule = "%s/%s/serve" % (self.assets, self.test_fleet.__name__.replace("test_", ""))
+        list_dir = os.listdir(rule)
+        self.assertIn("fleet.tar.gz", list_dir)
+
     def test_etcd(self):
         rule = "%s/%s/serve" % (self.assets, self.test_etcd.__name__.replace("test_", ""))
         list_dir = os.listdir(rule)
