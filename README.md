@@ -33,6 +33,12 @@ Extra features are (alpha) adds like:
     
 * Store the roles in a real database
     * Remove bootcfg
+    
+* Scheduler
+    * Capable to append custom selectors (os=installed)
+    * Reload the scheduler from
+        * API Best
+        * Pickle Fast
        
 * Custom @home baremetal CI
     * KVM
