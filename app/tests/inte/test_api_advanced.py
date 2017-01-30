@@ -62,8 +62,18 @@ class TestAPIAdvanced(unittest.TestCase):
     @staticmethod
     def process_target_api():
         api.cache.clear()
-        api.application.config["API_IP_PORT"] = "localhost:5000"
-        api.app.run(host="localhost", port=TestAPIAdvanced.api_port)
+        os.environ["API_URI"] = "http://localhost:5000"
+        os.environ["DB_PATH"] = "%s/%s.sqlite" % (TestAPIAdvanced.dbs_path, TestAPIAdvanced.__name__.lower())
+        os.environ["IGNITION_JOURNAL_DIR"] = "%s/ignition_journal" % TestAPIAdvanced.inte_path
+        cmd = [
+            "%s/env/bin/gunicorn" % TestAPIAdvanced.project_path,
+            "--chdir",
+            "%s" % TestAPIAdvanced.app_path,
+            "-b",
+            "0.0.0.0:5000",
+            "api:app"
+        ]
+        os.execve(cmd[0], cmd, os.environ)
 
     @classmethod
     def setUpClass(cls):
@@ -89,7 +99,6 @@ class TestAPIAdvanced(unittest.TestCase):
         assert os.path.isfile(db_path)
         api.engine = engine
 
-        # subprocess.check_output(["make"], cwd=cls.project_path)
         if os.path.isfile("%s" % TestAPIAdvanced.bootcfg_bin) is False:
             raise IOError("%s" % TestAPIAdvanced.bootcfg_bin)
         cls.p_bootcfg = Process(target=TestAPIAdvanced.process_target_bootcfg)
