@@ -14,7 +14,7 @@ import requests
 import yaml
 from kubernetes import client as kc
 
-from app import generator, api
+from app import generator, api, scheduler
 
 
 def is_virtinstall():
@@ -338,6 +338,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     def setUp(self):
         self.clean_sandbox()
         self.api_healthz()
+        scheduler.CommonScheduler.etcd_initial_cluster_set = set()
 
     def virsh(self, cmd, assertion=False, v=None):
         if v is not None:

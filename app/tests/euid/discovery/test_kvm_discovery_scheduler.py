@@ -612,4 +612,4 @@ class TestKVMDiscoveryScheduler6(TestKVMDiscoveryScheduler):
 
 
 if __name__ == "__main__":
-    unittest.main(failfast=True)
+    unittest.main(failfast=True, defaultTest=os.getenv("TEST"))

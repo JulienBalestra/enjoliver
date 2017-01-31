@@ -35,9 +35,9 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
         os.environ["BOOTCFG_IP"] = "172.20.0.1"
         os.environ["API_IP"] = "172.20.0.1"
 
-        e = enjolivage.Enjolivage(marker,
-                                  bootcfg_path=self.test_bootcfg_path,
-                                  api_uri="http://127.0.0.1:5000")
+        plan_enjolivage = enjolivage.Enjolivage(marker,
+                                                bootcfg_path=self.test_bootcfg_path,
+                                                api_uri="http://127.0.0.1:5000")
 
         for m in nodes:
             destroy, undefine = ["virsh", "destroy", m], \
@@ -63,9 +63,10 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
                 time.sleep(self.kvm_sleep_between_node)
 
-            time.sleep(self.kvm_sleep_between_node)
+            time.sleep(self.kvm_sleep_between_node * self.kvm_sleep_between_node)
+
             for i in range(60):
-                if e.run() == 1:
+                if plan_enjolivage.run() == 1:
                     break
                 time.sleep(self.kvm_sleep_between_node)
 
@@ -73,18 +74,22 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
             self.kvm_restart_off_machines(to_start)
             time.sleep(self.kvm_sleep_between_node * self.kvm_sleep_between_node)
 
-            self.etcd_endpoint_health(e.etcd_member_k8s_control_plane.ip_list)
-            self.k8s_api_health(e.etcd_member_k8s_control_plane.ip_list)
-            self.etcd_member_k8s_minions(e.etcd_member_k8s_control_plane.ip_list[0], nb_node)
-            self.create_nginx_daemon_set(e.etcd_member_k8s_control_plane.ip_list[0])
-            self.create_nginx_deploy(e.etcd_member_k8s_control_plane.ip_list[0])
-            self.daemon_set_nginx_are_running(e.k8s_node.wide_done_list)
-            self.pod_nginx_is_running(e.etcd_member_k8s_control_plane.ip_list[0])
+            self.etcd_endpoint_health(plan_enjolivage.etcd_member_k8s_control_plane.ip_list)
+            self.k8s_api_health(plan_enjolivage.etcd_member_k8s_control_plane.ip_list)
+            self.etcd_member_k8s_minions(plan_enjolivage.etcd_member_k8s_control_plane.ip_list[0], nb_node)
+
+            self.create_nginx_daemon_set(plan_enjolivage.etcd_member_k8s_control_plane.ip_list[0])
+            self.create_nginx_deploy(plan_enjolivage.etcd_member_k8s_control_plane.ip_list[0])
+            ips = copy.deepcopy(
+                plan_enjolivage.k8s_node.ip_list + plan_enjolivage.etcd_member_k8s_control_plane.ip_list)
+            self.daemon_set_nginx_are_running(ips)
+            self.pod_nginx_is_running(plan_enjolivage.etcd_member_k8s_control_plane.ip_list[0])
 
             self.write_ending(marker)
         finally:
             if os.getenv("TEST"):
-                self.iteractive_usage(api_server_uri="http://%s:8080" % e.etcd_member_k8s_control_plane.ip_list[0])
+                self.iteractive_usage(
+                    api_server_uri="http://%s:8080" % plan_enjolivage.etcd_member_k8s_control_plane.ip_list[0])
             for i in xrange(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \

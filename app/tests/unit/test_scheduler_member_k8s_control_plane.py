@@ -36,7 +36,7 @@ class TestEtcdSchedulerMember(unittest.TestCase):
         scheduler.CommonScheduler.etcd_initial_cluster_set = set()
 
     def test_00_get_ip(self):
-        ret = scheduler.EtcdMemberScheduler.get_machine_tuple(posts.M01)
+        ret = scheduler.EtcdMemberK8sControlPlaneScheduler.get_machine_tuple(posts.M01)
         self.assertEqual(ret, (u'172.20.0.65', u'52:54:00:e8:32:5b', u'172.20.0.65/21', '172.20.0.1'))
 
     def test_01_get_ip(self):
@@ -81,7 +81,7 @@ class TestEtcdSchedulerMember(unittest.TestCase):
             }
         }
         with self.assertRaises(LookupError):
-            scheduler.EtcdMemberScheduler.get_machine_tuple(m)
+            scheduler.EtcdMemberK8sControlPlaneScheduler.get_machine_tuple(m)
 
     # @unittest.skip("skip")
     def test_00(self):
@@ -90,7 +90,7 @@ class TestEtcdSchedulerMember(unittest.TestCase):
 
         marker = "unit-%s-" % (TestEtcdSchedulerMember.__name__.lower())
         scheduler.CommonScheduler.fetch_discovery = fake_fetch_discovery
-        sch = scheduler.EtcdMemberScheduler(
+        sch = scheduler.EtcdMemberK8sControlPlaneScheduler(
             "http://127.0.0.1:5000",
             self.test_bootcfg_path,
             ignition_member="%semember" % marker,
@@ -121,7 +121,7 @@ class TestEtcdSchedulerMember(unittest.TestCase):
             return [posts.M01]
 
         marker = "unit-%s-%s-" % (TestEtcdSchedulerMember.__name__.lower(), self.test_01.__name__)
-        sch = scheduler.EtcdMemberScheduler(
+        sch = scheduler.EtcdMemberK8sControlPlaneScheduler(
             "http://127.0.0.1:5000",
             self.test_bootcfg_path,
             ignition_member="%semember" % marker,
@@ -143,7 +143,7 @@ class TestEtcdSchedulerMember(unittest.TestCase):
             return [posts.M01, posts.M02]
 
         marker = "unit-%s-%s-" % (TestEtcdSchedulerMember.__name__.lower(), self.test_01.__name__)
-        sch = scheduler.EtcdMemberScheduler(
+        sch = scheduler.EtcdMemberK8sControlPlaneScheduler(
             "http://127.0.0.1:5000",
             self.test_bootcfg_path,
             ignition_member="%semember" % marker,
@@ -165,7 +165,7 @@ class TestEtcdSchedulerMember(unittest.TestCase):
             return [posts.M01, posts.M02, posts.M03]
 
         marker = "unit-%s-" % (TestEtcdSchedulerMember.__name__.lower())
-        sch = scheduler.EtcdMemberScheduler(
+        sch = scheduler.EtcdMemberK8sControlPlaneScheduler(
             "http://127.0.0.1:5000",
             self.test_bootcfg_path,
             ignition_member="%semember" % marker,
@@ -179,7 +179,7 @@ class TestEtcdSchedulerMember(unittest.TestCase):
                 etcd_groups.append(json.loads(group.read()))
         self.assertEqual(3, len(etcd_groups))
 
-        self.assertEqual(3, len(etcd_groups))
+        self.assertEqual(3, len(sch.done_list))
 
         ref = 0
         for g in etcd_groups:
@@ -208,8 +208,8 @@ class TestEtcdSchedulerMember(unittest.TestCase):
             return [posts.M01, posts.M02]
 
         marker = "unit-%s-" % (TestEtcdSchedulerMember.__name__.lower())
-        scheduler.EtcdMemberScheduler.fetch_discovery = fake_fetch_discovery
-        sch = scheduler.EtcdMemberScheduler(
+        scheduler.EtcdMemberK8sControlPlaneScheduler.fetch_discovery = fake_fetch_discovery
+        sch = scheduler.EtcdMemberK8sControlPlaneScheduler(
             "http://127.0.0.1:5000",
             self.test_bootcfg_path,
             ignition_member="%semember" % marker,
@@ -254,14 +254,104 @@ class TestEtcdSchedulerMember(unittest.TestCase):
         def fake_fetch_discovery(x, y):
             return None
 
-        marker = "unit-%s-%s-" % (TestEtcdSchedulerMember.__name__.lower(), self.test_00.__name__)
-        scheduler.EtcdMemberScheduler.fetch_discovery = fake_fetch_discovery
-        sch = scheduler.EtcdMemberScheduler(
+        marker = "unit-%s-" % (TestEtcdSchedulerMember.__name__.lower())
+        scheduler.EtcdMemberK8sControlPlaneScheduler.fetch_discovery = fake_fetch_discovery
+        sch = scheduler.EtcdMemberK8sControlPlaneScheduler(
             "http://127.0.0.1:5000",
             self.test_bootcfg_path,
             ignition_member="%semember" % marker,
             bootcfg_prefix=marker)
         self.assertFalse(sch.apply())
+
+    # @unittest.skip("skip")
+    def test_07(self):
+        def fake_fetch_discovery(x, y):
+            return [posts.M01, posts.M02, posts.M03]
+
+        marker = "unit-%s-" % (TestEtcdSchedulerMember.__name__.lower())
+        scheduler.EtcdMemberK8sControlPlaneScheduler.fetch_discovery = fake_fetch_discovery
+        sch_cp = scheduler.EtcdMemberK8sControlPlaneScheduler(
+            "http://127.0.0.1:5000",
+            self.test_bootcfg_path,
+            ignition_member="%semember" % marker,
+            bootcfg_prefix=marker)
+        self.assertTrue(sch_cp.apply())
+
+        sch_no = scheduler.K8sNodeScheduler(
+            k8s_control_plane=sch_cp,
+            ignition_node="%semember" % marker,
+        )
+        sch_no.fetch_discovery = lambda x: [posts.M01, posts.M02, posts.M03, posts.M04]
+        self.assertEqual(1, sch_no.apply())
+        self.assertEqual(4, len(sch_no.wide_done_list))
+        self.assertEqual(1, len(sch_no.done_list))
+        self.assertEqual(3, len(sch_cp.done_list))
+        sch_no.fetch_discovery = lambda x: [posts.M01, posts.M02, posts.M03, posts.M04, posts.M05]
+        self.assertEqual(2, sch_no.apply())
+        self.assertTrue(sch_cp.apply())
+        self.assertEqual(3, len(sch_cp.etcd_initial_cluster.split(",")))
+        self.assertEqual(3, len(sch_no.etcd_initial_cluster.split(",")))
+
+    # @unittest.skip("skip")
+    def test_08(self):
+        def fake_fetch_discovery(x, y):
+            return [posts.M01, posts.M02, posts.M03, posts.M04, posts.M05]
+
+        marker = "unit-%s-" % (TestEtcdSchedulerMember.__name__.lower())
+        scheduler.EtcdMemberK8sControlPlaneScheduler.fetch_discovery = fake_fetch_discovery
+        sch_cp = scheduler.EtcdMemberK8sControlPlaneScheduler(
+            "http://127.0.0.1:5000",
+            self.test_bootcfg_path,
+            ignition_member="%semember" % marker,
+            bootcfg_prefix=marker)
+        self.assertTrue(sch_cp.apply())
+
+        sch_no = scheduler.K8sNodeScheduler(
+            k8s_control_plane=sch_cp,
+            ignition_node="%semember" % marker,
+        )
+        sch_no.fetch_discovery = lambda x: [posts.M01, posts.M02, posts.M03, posts.M04]
+        self.assertEqual(1, sch_no.apply())
+        self.assertEqual(4, len(sch_no.wide_done_list))
+        self.assertEqual(1, len(sch_no.done_list))
+        self.assertEqual(3, len(sch_cp.done_list))
+        sch_no.fetch_discovery = lambda x: [posts.M01, posts.M02, posts.M03, posts.M04, posts.M05]
+        self.assertEqual(2, sch_no.apply())
+        self.assertTrue(sch_cp.apply())
+        self.assertEqual(3, len(sch_cp.etcd_initial_cluster.split(",")))
+        self.assertEqual(3, len(sch_no.etcd_initial_cluster.split(",")))
+
+    # @unittest.skip("skip")
+    def test_09(self):
+        def fake_fetch_discovery(x, y):
+            return posts.ALL
+
+        marker = "unit-%s-" % (TestEtcdSchedulerMember.__name__.lower())
+        scheduler.CommonScheduler.fetch_discovery = fake_fetch_discovery
+        sch_cp = scheduler.EtcdMemberK8sControlPlaneScheduler(
+            "http://127.0.0.1:5000",
+            self.test_bootcfg_path,
+            ignition_member="%semember" % marker,
+            bootcfg_prefix=marker)
+        self.assertTrue(sch_cp.apply())
+
+        sch_no = scheduler.K8sNodeScheduler(
+            k8s_control_plane=sch_cp,
+            ignition_node="%semember" % marker,
+        )
+        self.assertEqual(20, sch_no.apply())
+        self.assertTrue(sch_cp.apply())
+        expect_initial_cluster = [
+            u'static0=http://172.20.0.63:2380',
+            u'static1=http://172.20.0.65:2380',
+            u'static2=http://172.20.0.51:2380'
+        ]
+        real_initial_cluster = sch_cp.etcd_initial_cluster.split(",")
+        real_initial_cluster.sort()
+
+        self.assertEqual(expect_initial_cluster, real_initial_cluster)
+        self.assertEqual(3, len(sch_cp.etcd_initial_cluster.split(",")))
+        self.assertEqual(3, len(sch_no.etcd_initial_cluster.split(",")))
 
     def test_06_ipam(self):
         ipam = scheduler.CommonScheduler.cni_ipam("172.20.0.11/16", "172.20.0.1")
