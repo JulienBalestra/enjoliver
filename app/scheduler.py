@@ -25,6 +25,12 @@ class CommonScheduler(object):
     etcd_initial_cluster_set = set()
 
     def get_dns_name(self, host_ipv4, default=None):
+        """
+        Get the DNS name by IPv4 address, fail to a default name
+        :param host_ipv4:
+        :param default: param returned if socket exception
+        :return:
+        """
         try:
             t = socket.gethostbyaddr(host_ipv4)
             return t[0]
@@ -756,10 +762,8 @@ class EtcdMemberK8sControlPlaneScheduler(CommonScheduler):
             return True
 
 
-class EtcdMemberScheduler(CommonScheduler):
-    etcd_members_nb = 3
+class EtcdMemberScheduler(EtcdMemberK8sControlPlaneScheduler):
     __name__ = "EtcdMemberScheduler"
-    etcd_name = "static"  # basename
 
     def __init__(self,
                  api_endpoint, bootcfg_path,
@@ -777,29 +781,6 @@ class EtcdMemberScheduler(CommonScheduler):
         self._pending_etcd_member = set()
         self._done_etcd_member = set()
 
-    def _fifo_members_simple(self, discovery):
-
-        if not discovery or len(discovery) == 0:
-            self.custom_log(self._fifo_members_simple.__name__, "no machine 0/%d" % self.etcd_members_nb)
-            return self._pending_etcd_member
-
-        elif len(discovery) < self.etcd_members_nb:
-            self.custom_log(self._fifo_members_simple.__name__,
-                            "not enough machines %d/%d" % (len(discovery), self.etcd_members_nb))
-            return self._pending_etcd_member
-
-        else:
-            for machine in discovery:
-                ip_mac = self.get_machine_tuple(machine)
-                if len(self._pending_etcd_member) < self.etcd_members_nb:
-                    self._pending_etcd_member.add(ip_mac)
-                else:
-                    break
-
-        self.custom_log(self._fifo_members_simple.__name__,
-                        "enough machines %d/%d" % (len(discovery), self.etcd_members_nb))
-        return self._pending_etcd_member
-
     def _apply_member(self):
         self.custom_log(self._apply_member.__name__, "in progress...")
 
@@ -808,7 +789,8 @@ class EtcdMemberScheduler(CommonScheduler):
         if self.etcd_initial_cluster_set:
             self.custom_log(
                 self._apply_member.__name__, "self.etcd_initial_cluster_set is not empty", level="error")
-            raise AttributeError("self.etcd_initial_cluster_set is not empty")
+            raise AttributeError("self.etcd_initial_cluster_set is not empty: %s" % self.etcd_initial_cluster_set)
+
         for i, m in enumerate(self._pending_etcd_member):
             self.etcd_initial_cluster_set.add("%s%d=http://%s:2380" % (self.etcd_name, i, m[0]))
 
@@ -837,32 +819,11 @@ class EtcdMemberScheduler(CommonScheduler):
             self._done_etcd_member.add(m)
             self.custom_log(self._apply_member.__name__, "selector {mac: %s}" % m[1])
 
-    @property
-    def ip_list(self):
-        return [k[0] for k in self._done_etcd_member]
-
-    @property
-    def done_list(self):
-        return [k for k in self._done_etcd_member]
-
-    @property
-    def wide_done_list(self):
-        return self.done_list
-
-    def apply(self):
-        # Etcd Members
-        if len(self._done_etcd_member) < self.etcd_members_nb:
-            discovery = self.fetch_discovery(self.api_endpoint)
-            self._fifo_members_simple(discovery)
-            if len(self._pending_etcd_member) == self.etcd_members_nb:
-                self._apply_member()
-
-        else:
-            self.custom_log(self.apply.__name__, "already complete")
-            return True
-
-        if len(self._done_etcd_member) < self.etcd_members_nb:
-            return False
-        else:
-            self.custom_log(self.apply.__name__, "complete")
-            return True
+        self.custom_log(
+            self._apply_member.__name__,
+            "finished with "
+            "[self._done_etcd_member: %s] "
+            "[self.etcd_initial_cluster %s] "
+            "[self.etcd_initial_cluster_set %s]" % (
+                len(self._done_etcd_member),
+                len(self.etcd_initial_cluster), len(self.etcd_initial_cluster_set)))
