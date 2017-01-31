@@ -117,7 +117,7 @@ class TestEtcdSchedulerK8sControlPlane(unittest.TestCase):
         sch_member.fetch_discovery = fake_fetch_discovery
         self.assertTrue(sch_member.apply())
         sch_cp = scheduler.K8sControlPlaneScheduler(
-            etcd_member_instance=sch_member,
+            dep_instance=sch_member,
             ignition_control_plane="%sk8s-control-plane" % marker
         )
         self.assertEqual(len(sch_cp.etcd_initial_cluster.split(",")), 3)
@@ -139,7 +139,7 @@ class TestEtcdSchedulerK8sControlPlane(unittest.TestCase):
             bootcfg_prefix=marker)
         sch_member.fetch_discovery = fake_fetch_discovery
         sch_cp = scheduler.K8sControlPlaneScheduler(
-            etcd_member_instance=sch_member,
+            dep_instance=sch_member,
             ignition_control_plane="%sk8scontrol-plane" % marker,
             apply_first=True
         )
@@ -162,12 +162,12 @@ class TestEtcdSchedulerK8sControlPlane(unittest.TestCase):
             bootcfg_prefix=marker)
         sch_member.fetch_discovery = fake_fetch_discovery
         sch_cp = scheduler.K8sControlPlaneScheduler(
-            etcd_member_instance=sch_member,
+            dep_instance=sch_member,
             ignition_control_plane="%sk8s-control-plane" % marker
         )
         sch_cp.fetch_discovery = fake_fetch_discovery
         self.assertEqual(sch_cp.etcd_initial_cluster, "")
-        sch_cp.apply_member()
+        sch_cp.apply_dep()
         self.assertEqual(len(sch_cp.etcd_initial_cluster.split(",")), 3)
         profiles = self.get_profiles()
         self.assertEqual(len(profiles), 1)
@@ -187,7 +187,7 @@ class TestEtcdSchedulerK8sControlPlane(unittest.TestCase):
             bootcfg_prefix=marker)
         sch_member.fetch_discovery = fake_fetch_discovery
         sch_cp = scheduler.K8sControlPlaneScheduler(
-            etcd_member_instance=sch_member,
+            dep_instance=sch_member,
             ignition_control_plane="%sk8s-control-plane" % marker,
             apply_first=True
         )
@@ -213,7 +213,7 @@ class TestEtcdSchedulerK8sControlPlane(unittest.TestCase):
             bootcfg_prefix=marker)
         sch_member.fetch_discovery = fake_fetch_discovery
         sch_cp = scheduler.K8sControlPlaneScheduler(
-            etcd_member_instance=sch_member,
+            dep_instance=sch_member,
             ignition_control_plane="%sk8s-control-plane" % marker,
             apply_first=True
         )
@@ -235,7 +235,7 @@ class TestEtcdSchedulerK8sControlPlane(unittest.TestCase):
             bootcfg_prefix=marker)
         sch_member.fetch_discovery = fake_fetch_discovery
         sch_cp = scheduler.K8sControlPlaneScheduler(
-            etcd_member_instance=sch_member,
+            dep_instance=sch_member,
             ignition_control_plane="%sk8s-control-plane" % marker,
             apply_first=True
         )
@@ -258,7 +258,7 @@ class TestEtcdSchedulerK8sControlPlane(unittest.TestCase):
             bootcfg_prefix=marker)
         sch_member.fetch_discovery = fake_fetch_discovery
         sch_cp = scheduler.K8sControlPlaneScheduler(
-            etcd_member_instance=sch_member,
+            dep_instance=sch_member,
             ignition_control_plane="%sk8s-control-plane" % marker,
             apply_first=True
         )

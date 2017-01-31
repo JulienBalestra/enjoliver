@@ -83,7 +83,7 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
             self.assertTrue(sch_member.apply())
 
             sch_cp = scheduler.K8sControlPlaneScheduler(
-                etcd_member_instance=sch_member,
+                dep_instance=sch_member,
                 ignition_control_plane="%s-k8s-control-plane" % marker,
                 apply_first=False
             )
@@ -169,7 +169,7 @@ class TestKVMK8SBasic1(TestKVMK8sBasic):
             self.assertTrue(sch_member.apply())
 
             sch_cp = scheduler.K8sControlPlaneScheduler(
-                etcd_member_instance=sch_member,
+                dep_instance=sch_member,
                 ignition_control_plane="%s-k8s-control-plane" % marker,
                 apply_first=False
             )
@@ -181,7 +181,7 @@ class TestKVMK8SBasic1(TestKVMK8sBasic):
 
             self.assertTrue(sch_cp.apply())
             sch_no = scheduler.K8sNodeScheduler(
-                k8s_control_plane=sch_cp,
+                dep_instance=sch_cp,
                 ignition_node="%s-k8s-node" % marker,
                 apply_first=False
             )

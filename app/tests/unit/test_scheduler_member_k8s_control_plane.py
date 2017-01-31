@@ -278,7 +278,7 @@ class TestEtcdSchedulerMember(unittest.TestCase):
         self.assertTrue(sch_cp.apply())
 
         sch_no = scheduler.K8sNodeScheduler(
-            k8s_control_plane=sch_cp,
+            dep_instance=sch_cp,
             ignition_node="%semember" % marker,
         )
         sch_no.fetch_discovery = lambda x: [posts.M01, posts.M02, posts.M03, posts.M04]
@@ -307,7 +307,7 @@ class TestEtcdSchedulerMember(unittest.TestCase):
         self.assertTrue(sch_cp.apply())
 
         sch_no = scheduler.K8sNodeScheduler(
-            k8s_control_plane=sch_cp,
+            dep_instance=sch_cp,
             ignition_node="%semember" % marker,
         )
         sch_no.fetch_discovery = lambda x: [posts.M01, posts.M02, posts.M03, posts.M04]
@@ -336,7 +336,7 @@ class TestEtcdSchedulerMember(unittest.TestCase):
         self.assertTrue(sch_cp.apply())
 
         sch_no = scheduler.K8sNodeScheduler(
-            k8s_control_plane=sch_cp,
+            dep_instance=sch_cp,
             ignition_node="%semember" % marker,
         )
         self.assertEqual(20, sch_no.apply())

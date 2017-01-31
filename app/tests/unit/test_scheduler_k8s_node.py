@@ -114,12 +114,12 @@ class TestSchedulerK8sNode(unittest.TestCase):
         sch_member.fetch_discovery = fake_fetch_discovery
         self.assertTrue(sch_member.apply())
         sch_cp = scheduler.K8sControlPlaneScheduler(
-            etcd_member_instance=sch_member,
+            dep_instance=sch_member,
             ignition_control_plane="%sk8s-control-plane" % marker
         )
         self.assertEqual(len(sch_cp.etcd_initial_cluster.split(",")), 3)
         sch_no = scheduler.K8sNodeScheduler(
-            k8s_control_plane=sch_cp,
+            dep_instance=sch_cp,
             ignition_node="%sk8s-node" % marker
         )
 
@@ -142,14 +142,14 @@ class TestSchedulerK8sNode(unittest.TestCase):
             bootcfg_prefix=marker)
         sch_member.fetch_discovery = fake_fetch_discovery
         sch_cp = scheduler.K8sControlPlaneScheduler(
-            etcd_member_instance=sch_member,
+            dep_instance=sch_member,
             ignition_control_plane="%sk8scontrol-plane" % marker,
             apply_first=True
         )
 
         self.assertEqual(len(sch_cp.etcd_initial_cluster.split(",")), 3)
         sch_no = scheduler.K8sNodeScheduler(
-            k8s_control_plane=sch_cp,
+            dep_instance=sch_cp,
             ignition_node="%sk8s-node" % marker
         )
 
@@ -172,15 +172,15 @@ class TestSchedulerK8sNode(unittest.TestCase):
             bootcfg_prefix=marker)
         sch_member.fetch_discovery = fake_fetch_discovery
         sch_cp = scheduler.K8sControlPlaneScheduler(
-            etcd_member_instance=sch_member,
+            dep_instance=sch_member,
             ignition_control_plane="%sk8s-control-plane" % marker
         )
         sch_cp.fetch_discovery = fake_fetch_discovery
         self.assertEqual(sch_cp.etcd_initial_cluster, "")
-        sch_cp.apply_member()
+        sch_cp.apply_dep()
         self.assertEqual(len(sch_cp.etcd_initial_cluster.split(",")), 3)
         sch_no = scheduler.K8sNodeScheduler(
-            k8s_control_plane=sch_cp,
+            dep_instance=sch_cp,
             ignition_node="%sk8s-node" % marker
         )
         self.assertEqual(len(sch_no.etcd_initial_cluster.split(",")), 3)
@@ -202,7 +202,7 @@ class TestSchedulerK8sNode(unittest.TestCase):
             bootcfg_prefix=marker)
         sch_member.fetch_discovery = fake_fetch_discovery
         sch_cp = scheduler.K8sControlPlaneScheduler(
-            etcd_member_instance=sch_member,
+            dep_instance=sch_member,
             ignition_control_plane="%sk8s-control-plane" % marker,
             apply_first=True
         )
@@ -218,7 +218,7 @@ class TestSchedulerK8sNode(unittest.TestCase):
         scheduler.K8sNodeScheduler.apply_deps_tries = 1
         with self.assertRaises(RuntimeError):
             scheduler.K8sNodeScheduler(
-                k8s_control_plane=sch_cp,
+                dep_instance=sch_cp,
                 ignition_node="%sk8s-node" % marker,
                 apply_first=True
             )
@@ -236,7 +236,7 @@ class TestSchedulerK8sNode(unittest.TestCase):
             bootcfg_prefix=marker)
         sch_member.fetch_discovery = fake_fetch_discovery
         sch_cp = scheduler.K8sControlPlaneScheduler(
-            etcd_member_instance=sch_member,
+            dep_instance=sch_member,
             ignition_control_plane="%sk8s-control-plane" % marker,
             apply_first=True
         )
@@ -245,7 +245,7 @@ class TestSchedulerK8sNode(unittest.TestCase):
         self.assertEqual(len(sch_cp.etcd_initial_cluster.split(",")), 3)
         self.assertEqual(len(sch_cp.done_list), 0)
         sch_no = scheduler.K8sNodeScheduler(
-            k8s_control_plane=sch_cp,
+            dep_instance=sch_cp,
             ignition_node="%sk8s-node" % marker,
             apply_first=True
         )
@@ -265,7 +265,7 @@ class TestSchedulerK8sNode(unittest.TestCase):
             bootcfg_prefix=marker)
         sch_member.fetch_discovery = fake_fetch_discovery
         sch_cp = scheduler.K8sControlPlaneScheduler(
-            etcd_member_instance=sch_member,
+            dep_instance=sch_member,
             ignition_control_plane="%sk8s-control-plane" % marker,
             apply_first=True
         )
@@ -291,7 +291,7 @@ class TestSchedulerK8sNode(unittest.TestCase):
         self.assertEqual(len(groups), 6)
 
         sch_no = scheduler.K8sNodeScheduler(
-            k8s_control_plane=sch_cp,
+            dep_instance=sch_cp,
             ignition_node="%sk8s-node" % marker
         )
         sch_no.fetch_discovery = fake_fetch_discovery
@@ -312,7 +312,7 @@ class TestSchedulerK8sNode(unittest.TestCase):
             bootcfg_prefix=marker)
         sch_member.fetch_discovery = fake_fetch_discovery
         sch_cp = scheduler.K8sControlPlaneScheduler(
-            etcd_member_instance=sch_member,
+            dep_instance=sch_member,
             ignition_control_plane="%sk8s-control-plane" % marker,
             apply_first=True
         )
@@ -338,7 +338,7 @@ class TestSchedulerK8sNode(unittest.TestCase):
         self.assertEqual(len(groups), 6)
 
         sch_no = scheduler.K8sNodeScheduler(
-            k8s_control_plane=sch_cp,
+            dep_instance=sch_cp,
             ignition_node="%sk8s-node" % marker
         )
         sch_no.fetch_discovery = fake_fetch_discovery

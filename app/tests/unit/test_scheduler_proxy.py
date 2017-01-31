@@ -119,7 +119,7 @@ class TestEtcdSchedulerProxy(unittest.TestCase):
         sch_member.fetch_discovery = fake_fetch_discovery
         self.assertTrue(sch_member.apply())
         sch_proxy = scheduler.EtcdProxyScheduler(
-            etcd_member_instance=sch_member,
+            dep_instance=sch_member,
             ignition_proxy="%seproxy" % marker
         )
         self.assertEqual(len(sch_proxy.etcd_initial_cluster.split(",")), 3)
@@ -141,7 +141,7 @@ class TestEtcdSchedulerProxy(unittest.TestCase):
             bootcfg_prefix=marker)
         sch_member.fetch_discovery = fake_fetch_discovery
         sch_proxy = scheduler.EtcdProxyScheduler(
-            etcd_member_instance=sch_member,
+            dep_instance=sch_member,
             ignition_proxy="%seproxy" % marker,
             apply_first=True
         )
@@ -164,12 +164,12 @@ class TestEtcdSchedulerProxy(unittest.TestCase):
             bootcfg_prefix=marker)
         sch_member.fetch_discovery = fake_fetch_discovery
         sch_proxy = scheduler.EtcdProxyScheduler(
-            etcd_member_instance=sch_member,
+            dep_instance=sch_member,
             ignition_proxy="%seproxy" % marker
         )
         sch_proxy.fetch_discovery = fake_fetch_discovery
         self.assertEqual(sch_proxy.etcd_initial_cluster, "")
-        sch_proxy.apply_member()
+        sch_proxy.apply_dep()
         self.assertEqual(len(sch_proxy.etcd_initial_cluster.split(",")), 3)
         profiles = self.get_profiles()
         self.assertEqual(len(profiles), 1)
@@ -189,7 +189,7 @@ class TestEtcdSchedulerProxy(unittest.TestCase):
             bootcfg_prefix=marker)
         sch_member.fetch_discovery = fake_fetch_discovery
         sch_proxy = scheduler.EtcdProxyScheduler(
-            etcd_member_instance=sch_member,
+            dep_instance=sch_member,
             ignition_proxy="%seproxy" % marker,
             apply_first=True
         )
@@ -214,7 +214,7 @@ class TestEtcdSchedulerProxy(unittest.TestCase):
             bootcfg_prefix=marker)
         sch_member.fetch_discovery = fake_fetch_discovery
         sch_proxy = scheduler.EtcdProxyScheduler(
-            etcd_member_instance=sch_member,
+            dep_instance=sch_member,
             ignition_proxy="%seproxy" % marker,
             apply_first=True
         )
@@ -235,7 +235,7 @@ class TestEtcdSchedulerProxy(unittest.TestCase):
             bootcfg_prefix=marker)
         sch_member.fetch_discovery = fake_fetch_discovery
         sch_proxy = scheduler.EtcdProxyScheduler(
-            etcd_member_instance=sch_member,
+            dep_instance=sch_member,
             ignition_proxy="%seproxy" % marker,
             apply_first=True
         )

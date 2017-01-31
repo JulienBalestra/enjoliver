@@ -405,7 +405,7 @@ class TestKVMDiscoveryScheduler4(TestKVMDiscoveryScheduler):
 
             self.assertTrue(sch_member.apply())
             sch_proxy = scheduler.EtcdProxyScheduler(
-                etcd_member_instance=sch_member,
+                dep_instance=sch_member,
                 ignition_proxy="%s-emember" % marker,
                 apply_first=False
             )
@@ -493,7 +493,7 @@ class TestKVMDiscoveryScheduler5(TestKVMDiscoveryScheduler):
             self.assertTrue(sch_member.apply())
 
             sch_proxy = scheduler.EtcdProxyScheduler(
-                etcd_member_instance=sch_member,
+                dep_instance=sch_member,
                 ignition_proxy="%s-emember" % marker,
                 apply_first=False
             )
@@ -581,7 +581,7 @@ class TestKVMDiscoveryScheduler6(TestKVMDiscoveryScheduler):
 
             self.assertTrue(sch_member.apply())
             sch_proxy = scheduler.EtcdProxyScheduler(
-                etcd_member_instance=sch_member,
+                dep_instance=sch_member,
                 ignition_proxy="%s-emember" % marker,
                 apply_first=False
             )

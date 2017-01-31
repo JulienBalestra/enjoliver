@@ -30,7 +30,7 @@ class Enjolivage(object):
             bootcfg_prefix="%s-" % self.marker
         )
         self._k8s_node = scheduler.K8sNodeScheduler(
-            k8s_control_plane=self.etcd_member_k8s_control_plane,
+            dep_instance=self.etcd_member_k8s_control_plane,
             ignition_node="%s-k8s-node" % self.marker,
             apply_first=False
         )
