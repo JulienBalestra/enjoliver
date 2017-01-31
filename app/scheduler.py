@@ -184,33 +184,69 @@ class CommonScheduler(object):
         random.shuffle(l)
         return ",".join(l)
 
-    @abc.abstractproperty
+    @property
     def ip_list(self):
         """
         List of IP address
         :return: list
         """
+        return [k[0] for k in self._done]
 
-    @abc.abstractproperty
+    @property
     def done_list(self):
         """
         List of set of data provides by
         >>> CommonScheduler.get_machine_tuple(discovery={})
         :return: list of set
         """
+        return [k for k in self._done]
 
-    @abc.abstractproperty
+    @property
     def wide_done_list(self):
         """
         The done_list of the current instances and his dep's done_list
         :return: list of ips
         """
+        try:
+            return self.done_list + self._dep_instance.wide_done_list
+        except AttributeError:
+            return self.done_list
 
 
-class K8sNodeScheduler(CommonScheduler):
+class CommonFallBackScheduler(CommonScheduler):
+    def apply(self):
+        discovery = self.fetch_discovery(self.api_endpoint)
+        self._fall_back(discovery)
+        if len(self._pending) > 0:
+            self._apply()
+
+        self.custom_log(self.apply.__name__, "total %d" % len(self._done))
+        return len(self._done)
+
+    def _fall_back(self, discovery):
+        if len(self._pending) != 0:
+            raise AssertionError("len(self._pending) != 0 -> %s" % str(self._pending))
+
+        if len(discovery) > len(self.wide_done_list):
+            for machine in discovery:
+                ip_mac = self.get_machine_tuple(machine)
+                if ip_mac in self._done:
+                    self.custom_log(self._fall_back.__name__,
+                                    "Skip because %s %s" % (self.__name__, str(ip_mac)))
+                elif ip_mac in self.wide_done_list:
+                    self.custom_log(self._fall_back.__name__,
+                                    "Skip because in Wide Schedule %s" % str(ip_mac))
+                else:
+                    self.custom_log(self._fall_back.__name__,
+                                    "Pending %s %s" % (self.__name__, str(ip_mac)))
+                    self._pending.add(ip_mac)
+        else:
+            self.custom_log(self._fall_back.__name__,
+                            "no machine 0 %s" % len(self._pending))
+
+
+class K8sNodeScheduler(CommonFallBackScheduler):
     __name__ = "K8sNodeScheduler"
-    apply_deps_delay = 6
-    apply_deps_tries = apply_deps_delay * 50
 
     def __init__(self,
                  dep_instance,
@@ -244,27 +280,6 @@ class K8sNodeScheduler(CommonScheduler):
         # State
         self._done = set()
         self._pending = set()
-
-    def _fall_back(self, discovery):
-        if len(self._pending) != 0:
-            raise AssertionError("len(self._pending_k8s_node) != 0 -> %s" % str(self._pending))
-
-        if len(discovery) > len(self.wide_done_list):
-            for machine in discovery:
-                ip_mac = self.get_machine_tuple(machine)
-                if ip_mac in self._done:
-                    self.custom_log(self._fall_back.__name__,
-                                    "Skip because K8s Node %s" % str(ip_mac))
-                elif ip_mac in self.wide_done_list:
-                    self.custom_log(self._fall_back.__name__,
-                                    "Skip because in Wide Schedule %s" % str(ip_mac))
-                else:
-                    self.custom_log(self._fall_back.__name__,
-                                    "Pending K8s Node %s" % str(ip_mac))
-                    self._pending.add(ip_mac)
-        else:
-            self.custom_log(self._fall_back.__name__,
-                            "no machine 0 %s" % len(self._pending))
 
     def _apply(self):
         self.custom_log(self._apply.__name__, "in progress...")
@@ -308,29 +323,8 @@ class K8sNodeScheduler(CommonScheduler):
             raise AssertionError(message)
         self._pending = new_pending
 
-    def apply(self):
-        discovery = self.fetch_discovery(self.api_endpoint)
-        self._fall_back(discovery)
-        if len(self._pending) > 0:
-            self._apply()
 
-        self.custom_log(self.apply.__name__, "total %d" % len(self._done))
-        return len(self._done)
-
-    @property
-    def ip_list(self):
-        return [k[0] for k in self._done]
-
-    @property
-    def done_list(self):
-        return [k for k in self._done]
-
-    @property
-    def wide_done_list(self):
-        return self.done_list + self._dep_instance.wide_done_list
-
-
-class EtcdProxyScheduler(K8sNodeScheduler):
+class EtcdProxyScheduler(CommonFallBackScheduler):
     __name__ = "EtcdProxyScheduler"
 
     def __init__(self,
@@ -401,14 +395,19 @@ class EtcdProxyScheduler(K8sNodeScheduler):
         self._pending = new_pending
 
 
-class K8sControlPlaneScheduler(CommonScheduler):
+class CommonK8sControlPlaneScheduler(CommonScheduler):
+    k8s_api_server_nb = 3
+    k8s_api_server_port = 8080
+
+    @property
+    def k8s_endpoint(self):
+        e = ["http://%s:%d" % (k[0], self.k8s_api_server_port) for k in self._done]
+        random.shuffle(e)
+        return e
+
+
+class K8sControlPlaneScheduler(CommonK8sControlPlaneScheduler):
     __name__ = "K8sControlPlaneScheduler"
-
-    apply_deps_delay = 6
-    apply_deps_tries = apply_deps_delay * 50
-
-    control_plane_nb = 3
-    api_server_port = 8080
 
     def __init__(self,
                  dep_instance,
@@ -439,13 +438,13 @@ class K8sControlPlaneScheduler(CommonScheduler):
     def _fifo_control_plane_simple(self, discovery):
         if not discovery or len(discovery) == 0:
             self.custom_log(self._fifo_control_plane_simple.__name__,
-                            "no machine 0/%d" % self.control_plane_nb)
+                            "no machine 0/%d" % self.k8s_api_server_nb)
             return self._pending
 
-        elif len(discovery) < self.control_plane_nb:
+        elif len(discovery) < self.k8s_api_server_nb:
             self.custom_log(self._fifo_control_plane_simple.__name__,
                             "not enough machines %d/%d" % (
-                                len(discovery), self.control_plane_nb))
+                                len(discovery), self.k8s_api_server_nb))
             return self._pending
 
         else:
@@ -457,7 +456,7 @@ class K8sControlPlaneScheduler(CommonScheduler):
                 elif ip_mac in self.wide_done_list:
                     self.custom_log(self._fifo_control_plane_simple.__name__,
                                     "Skip because Wide Schedule %s" % str(ip_mac))
-                elif len(self._pending) < self.control_plane_nb:
+                elif len(self._pending) < self.k8s_api_server_nb:
                     self.custom_log(self._fifo_control_plane_simple.__name__,
                                     "Pending K8s Control Plane %s" % str(ip_mac))
                     self._pending.add(ip_mac)
@@ -465,7 +464,7 @@ class K8sControlPlaneScheduler(CommonScheduler):
                     break
 
         self.custom_log(self._fifo_control_plane_simple.__name__,
-                        "enough machines %d/%d" % (len(discovery), self.control_plane_nb))
+                        "enough machines %d/%d" % (len(discovery), self.k8s_api_server_nb))
         return self._pending
 
     def _apply(self):
@@ -492,7 +491,7 @@ class K8sControlPlaneScheduler(CommonScheduler):
                     "etcd_advertise_client_urls": "http://%s:2379" % m[0],
                     "etcd_proxy": "on",
                     # K8s Control Plane
-                    "k8s_apiserver_count": self.control_plane_nb,
+                    "k8s_apiserver_count": self.k8s_api_server_nb,
                     "kubelet_ip": "%s" % m[0],
                     "kubelet_name": "%s" % m[0],
                     "k8s_advertise_ip": "%s" % m[0],
@@ -514,49 +513,78 @@ class K8sControlPlaneScheduler(CommonScheduler):
     def apply(self):
         self.apply_dep()
         # K8s Control Plane
-        if len(self._done) < self.control_plane_nb:
+        if len(self._done) < self.k8s_api_server_nb:
             discovery = self.fetch_discovery(self.api_endpoint)
             self._fifo_control_plane_simple(discovery)
-            if len(self._pending) == self.control_plane_nb:
+            if len(self._pending) == self.k8s_api_server_nb:
                 self._apply()
 
         else:
             self.custom_log(self.apply.__name__, "already complete")
             return True
 
-        if len(self._done) < self.control_plane_nb:
+        if len(self._done) < self.k8s_api_server_nb:
             self.custom_log(self.apply.__name__, "uncomplete")
             return False
         else:
             self.custom_log(self.apply.__name__, "complete")
             return True
 
-    @property
-    def k8s_endpoint(self):
-        e = ["http://%s:%d" % (k[0], self.api_server_port) for k in self._done]
-        random.shuffle(e)
-        return e
 
-    @property
-    def ip_list(self):
-        return [k[0] for k in self._done]
-
-    @property
-    def done_list(self):
-        return [k for k in self._done]
-
-    @property
-    def wide_done_list(self):
-        return self.done_list + self._dep_instance.wide_done_list
-
-
-class EtcdMemberK8sControlPlaneScheduler(CommonScheduler):
-    etcd_members_nb = 3
-    __name__ = "EtcdMemberK8sControlPlaneScheduler"
+class CommonEtcdScheduler(CommonScheduler):
     etcd_name = "static"  # basename
+    etcd_members_nb = 3
 
-    control_plane_nb = 3
-    api_server_port = 8080
+    def _fifo_members_simple(self, discovery):
+
+        if not discovery or len(discovery) == 0:
+            self.custom_log(self._fifo_members_simple.__name__, "no machine 0/%d" % self.etcd_members_nb)
+            return self._pending
+
+        elif len(discovery) < self.etcd_members_nb:
+            self.custom_log(self._fifo_members_simple.__name__,
+                            "not enough machines %d/%d" % (len(discovery), self.etcd_members_nb))
+            return self._pending
+
+        else:
+            for machine in discovery:
+                ip_mac = self.get_machine_tuple(machine)
+                if len(self._pending) < self.etcd_members_nb:
+                    self._pending.add(ip_mac)
+                    self.custom_log(self._fifo_members_simple.__name__,
+                                    "added machine %s %d/%d" % (
+                                        ip_mac, len(self._pending), self.etcd_members_nb))
+                else:
+                    break
+
+        self.custom_log(self._fifo_members_simple.__name__,
+                        "enough machines %d/%d" % (len(discovery), self.etcd_members_nb))
+        return self._pending
+
+    def apply(self):
+        self.custom_log(self.apply.__name__, "begin")
+        # Etcd Members
+        if len(self._done) < self.etcd_members_nb:
+            self.custom_log(self.apply.__name__, "len(self._done_etcd_member) < self.etcd_members_nb | %d < %d" %
+                            (len(self._done), self.etcd_members_nb))
+            discovery = self.fetch_discovery(self.api_endpoint)
+            self._fifo_members_simple(discovery)
+            if len(self._pending) == self.etcd_members_nb:
+                self._apply()
+
+        else:
+            self.custom_log(self.apply.__name__, "already complete")
+            return True
+
+        if len(self._done) < self.etcd_members_nb:
+            return False
+        else:
+            self.custom_log(self.apply.__name__, "complete")
+            return True
+
+
+class EtcdMemberK8sControlPlaneScheduler(CommonK8sControlPlaneScheduler, CommonEtcdScheduler):
+    __name__ = "EtcdMemberK8sControlPlaneScheduler"
 
     def __init__(self,
                  api_endpoint, bootcfg_path,
@@ -564,7 +592,6 @@ class EtcdMemberK8sControlPlaneScheduler(CommonScheduler):
                  bootcfg_prefix="",
                  extra_selectors=None):
         self.log.debug("instancing %s" % self.__name__)
-        # self.etcd_initial_cluster_set = set()
 
         self.api_endpoint = api_endpoint
         self.bootcfg_path = bootcfg_path
@@ -572,39 +599,9 @@ class EtcdMemberK8sControlPlaneScheduler(CommonScheduler):
 
         # Etcd member area
         self._ignition_member = ignition_member
-        self._pending_etcd_member = set()
-        self._done_etcd_member = set()
-        self._extra_selectors = self.get_extra_selectors(extra_selectors)
-
-        # Kubernetes
-        self._done = set()
         self._pending = set()
-
-    def _fifo_members_simple(self, discovery):
-
-        if not discovery or len(discovery) == 0:
-            self.custom_log(self._fifo_members_simple.__name__, "no machine 0/%d" % self.etcd_members_nb)
-            return self._pending_etcd_member
-
-        elif len(discovery) < self.etcd_members_nb:
-            self.custom_log(self._fifo_members_simple.__name__,
-                            "not enough machines %d/%d" % (len(discovery), self.etcd_members_nb))
-            return self._pending_etcd_member
-
-        else:
-            for machine in discovery:
-                ip_mac = self.get_machine_tuple(machine)
-                if len(self._pending_etcd_member) < self.etcd_members_nb:
-                    self._pending_etcd_member.add(ip_mac)
-                    self.custom_log(self._fifo_members_simple.__name__,
-                                    "added machine %s %d/%d" % (
-                                        ip_mac, len(self._pending_etcd_member), self.etcd_members_nb))
-                else:
-                    break
-
-        self.custom_log(self._fifo_members_simple.__name__,
-                        "enough machines %d/%d" % (len(discovery), self.etcd_members_nb))
-        return self._pending_etcd_member
+        self._done = set()
+        self._extra_selectors = self.get_extra_selectors(extra_selectors)
 
     def _apply(self):
         self.custom_log(self._apply.__name__, "in progress...")
@@ -616,10 +613,10 @@ class EtcdMemberK8sControlPlaneScheduler(CommonScheduler):
                 self._apply.__name__, "self.etcd_initial_cluster_set is not empty", level="error")
             raise AttributeError("self.etcd_initial_cluster_set is not empty: %s" % self.etcd_initial_cluster_set)
 
-        for i, m in enumerate(self._pending_etcd_member):
+        for i, m in enumerate(self._pending):
             self.etcd_initial_cluster_set.add("%s%d=http://%s:2380" % (self.etcd_name, i, m[0]))
 
-        for i, m in enumerate(self._pending_etcd_member):
+        for i, m in enumerate(self._pending):
             # m = (IPv4, MAC, CIDRv4, Gateway)
             s = {"mac": m[1]}
             hostname = self.get_dns_name(m[0], "k8s-control-plane-%d" % i)
@@ -637,7 +634,7 @@ class EtcdMemberK8sControlPlaneScheduler(CommonScheduler):
                     "etcd_initial_advertise_peer_urls": "http://%s:2380" % m[0],
                     "etcd_advertise_client_urls": "http://%s:2379" % m[0],
                     # K8s Control Plane
-                    "k8s_apiserver_count": self.control_plane_nb,
+                    "k8s_apiserver_count": self.k8s_api_server_nb,
                     "kubelet_ip": "%s" % m[0],
                     "kubelet_name": "%s" % m[0],
                     "k8s_advertise_ip": "%s" % m[0],
@@ -646,7 +643,7 @@ class EtcdMemberK8sControlPlaneScheduler(CommonScheduler):
                 }
             )
             gen.dumps()
-            self._done_etcd_member.add(m)
+            self._done.add(m)
             self._done.add(m)
             self.custom_log(self._apply.__name__, "selector {mac: %s}" % m[1])
 
@@ -657,50 +654,11 @@ class EtcdMemberK8sControlPlaneScheduler(CommonScheduler):
             "[self._done_control_plane: %s] "
             "[self.etcd_initial_cluster %s] "
             "[self.etcd_initial_cluster_set %s]" % (
-                len(self._done_etcd_member), len(self._done),
+                len(self._done), len(self._done),
                 len(self.etcd_initial_cluster), len(self.etcd_initial_cluster_set)))
 
-    @property
-    def k8s_endpoint(self):
-        e = ["http://%s:%d" % (k[0], self.api_server_port) for k in self._done]
-        random.shuffle(e)
-        return e
 
-    @property
-    def ip_list(self):
-        return [k[0] for k in self._done_etcd_member]
-
-    @property
-    def done_list(self):
-        return [k for k in self._done_etcd_member]
-
-    @property
-    def wide_done_list(self):
-        return self.done_list
-
-    def apply(self):
-        self.custom_log(self.apply.__name__, "begin")
-        # Etcd Members + Kubernetes Control Plane
-        if len(self._done_etcd_member) < self.etcd_members_nb:
-            self.custom_log(self.apply.__name__, "len(self._done_etcd_member) < self.etcd_members_nb | %d < %d" %
-                            (len(self._done_etcd_member), self.etcd_members_nb))
-            discovery = self.fetch_discovery(self.api_endpoint)
-            self._fifo_members_simple(discovery)
-            if len(self._pending_etcd_member) == self.etcd_members_nb:
-                self._apply()
-
-        else:
-            self.custom_log(self.apply.__name__, "already complete")
-            return True
-
-        if len(self._done_etcd_member) < self.etcd_members_nb:
-            return False
-        else:
-            self.custom_log(self.apply.__name__, "complete")
-            return True
-
-
-class EtcdMemberScheduler(EtcdMemberK8sControlPlaneScheduler):
+class EtcdMemberScheduler(CommonEtcdScheduler):
     __name__ = "EtcdMemberScheduler"
 
     def __init__(self,
@@ -716,8 +674,8 @@ class EtcdMemberScheduler(EtcdMemberK8sControlPlaneScheduler):
 
         # Etcd member area
         self._ignition_member = ignition_member
-        self._pending_etcd_member = set()
-        self._done_etcd_member = set()
+        self._pending = set()
+        self._done = set()
 
     def _apply(self):
         self.custom_log(self._apply.__name__, "in progress...")
@@ -729,10 +687,10 @@ class EtcdMemberScheduler(EtcdMemberK8sControlPlaneScheduler):
                 self._apply.__name__, "self.etcd_initial_cluster_set is not empty", level="error")
             raise AttributeError("self.etcd_initial_cluster_set is not empty: %s" % self.etcd_initial_cluster_set)
 
-        for i, m in enumerate(self._pending_etcd_member):
+        for i, m in enumerate(self._pending):
             self.etcd_initial_cluster_set.add("%s%d=http://%s:2380" % (self.etcd_name, i, m[0]))
 
-        for i, m in enumerate(self._pending_etcd_member):
+        for i, m in enumerate(self._pending):
             # m = (IPv4, MAC, CIDRv4, Gateway)
             s = {"mac": m[1]}
             hostname = self.get_dns_name(m[0], "etcd-member-%d" % i)
@@ -754,7 +712,7 @@ class EtcdMemberScheduler(EtcdMemberK8sControlPlaneScheduler):
                 }
             )
             gen.dumps()
-            self._done_etcd_member.add(m)
+            self._done.add(m)
             self.custom_log(self._apply.__name__, "selector {mac: %s}" % m[1])
 
         self.custom_log(
@@ -763,5 +721,5 @@ class EtcdMemberScheduler(EtcdMemberK8sControlPlaneScheduler):
             "[self._done_etcd_member: %s] "
             "[self.etcd_initial_cluster %s] "
             "[self.etcd_initial_cluster_set %s]" % (
-                len(self._done_etcd_member),
+                len(self._done),
                 len(self.etcd_initial_cluster), len(self.etcd_initial_cluster_set)))

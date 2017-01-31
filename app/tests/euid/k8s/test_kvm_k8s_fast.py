@@ -85,7 +85,7 @@ class TestKVMK8SFast0(TestKVMK8sFast):
                 ignition_control_plane="%s-k8s-control-plane" % marker,
                 apply_first=False
             )
-            sch_cp.control_plane_nb = 1
+            sch_cp.k8s_api_server_nb = 1
             for i in xrange(60):
                 if sch_cp.apply() is True:
                     break

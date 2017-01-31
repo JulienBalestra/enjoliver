@@ -87,7 +87,7 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
                 ignition_control_plane="%s-k8s-control-plane" % marker,
                 apply_first=False
             )
-            sch_cp.control_plane_nb = 1
+            sch_cp.k8s_api_server_nb = 1
             for i in xrange(60):
                 if sch_cp.apply() is True:
                     break
@@ -100,7 +100,7 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
             self.etcd_member_len(sch_member.ip_list[0], sch_member.etcd_members_nb)
             self.etcd_endpoint_health(sch_cp.ip_list)
             self.k8s_api_health(sch_cp.ip_list)
-            self.etcd_member_k8s_minions(sch_member.ip_list[0], sch_cp.control_plane_nb)
+            self.etcd_member_k8s_minions(sch_member.ip_list[0], sch_cp.k8s_api_server_nb)
             self.write_ending(marker)
 
         finally:
@@ -173,7 +173,7 @@ class TestKVMK8SBasic1(TestKVMK8sBasic):
                 ignition_control_plane="%s-k8s-control-plane" % marker,
                 apply_first=False
             )
-            sch_cp.control_plane_nb = 1
+            sch_cp.k8s_api_server_nb = 1
             for i in xrange(60):
                 if sch_cp.apply() is True:
                     break

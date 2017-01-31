@@ -239,7 +239,7 @@ class TestEtcdSchedulerK8sControlPlane(unittest.TestCase):
             ignition_control_plane="%sk8s-control-plane" % marker,
             apply_first=True
         )
-        sch_cp.control_plane_nb = 1
+        sch_cp.k8s_api_server_nb = 1
         sch_cp.fetch_discovery = fake_fetch_discovery
         self.assertEqual(len(sch_cp.etcd_initial_cluster.split(",")), 3)
         self.assertTrue(sch_cp.apply())
