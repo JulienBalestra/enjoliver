@@ -1,4 +1,5 @@
 import datetime
+import re
 
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float
 from sqlalchemy import ForeignKey
@@ -8,15 +9,36 @@ from sqlalchemy.orm import relationship, validates
 Base = declarative_base()
 
 
+def compile_regex(regex):
+    r = re.compile(regex)
+
+    def match(string):
+        if not re.match(r, string):
+            raise AttributeError("%s not valid as expected" % regex)
+
+    return match
+
+
+mac_regex = compile_regex("^([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})$")
+ipv4_regex = compile_regex(
+    "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$")
+
+
 class Machine(Base):
     __tablename__ = 'machine'
     id = Column(Integer, primary_key=True, autoincrement=True)
 
-    uuid = Column(String, nullable=False)
+    uuid = Column(String(36), nullable=False)
 
     interfaces = relationship("MachineInterface", lazy="joined")
     created_date = Column(DateTime, default=datetime.datetime.utcnow)
     updated_date = Column(DateTime, default=None)
+
+    @validates('uuid')
+    def validate_mac(self, key, uuid):
+        if len(uuid) != 36:
+            raise AttributeError("len(uuid) != 36 -> %s" % uuid)
+        return uuid
 
     def __repr__(self):
         return "<%s: %s %s %s>" % (Machine.__name__, self.uuid, self.created_date, self.updated_date)
@@ -34,18 +56,29 @@ class MachineInterface(Base):
     __tablename__ = 'machine-interface'
     id = Column(Integer, primary_key=True, autoincrement=True)
 
-    mac = Column(String, nullable=False)
+    mac = Column(String(17), nullable=False)
     name = Column(String, nullable=False)
     netmask = Column(Integer, nullable=False)
-    ipv4 = Column(String, nullable=False)
+    ipv4 = Column(String(15), nullable=False)
     cidrv4 = Column(String, nullable=False)
     as_boot = Column(Boolean, default=False)
-    gateway = Column(String, nullable=False)
+    gateway = Column(String(15), nullable=False)
 
     machine_id = Column(Integer, ForeignKey('machine.id'))
     chassis_port = relationship("ChassisPort")
 
     schedule = relationship("Schedule")
+
+    @validates('mac')
+    def validate_mac(self, key, mac):
+        mac_regex(mac)
+        return mac
+
+    @validates('ipv4')
+    @validates('gateway')
+    def validate_ipv4(self, key, ipv4):
+        ipv4_regex(ipv4)
+        return ipv4
 
     def __repr__(self):
         return "<%s: %s %s>" % (MachineInterface.__name__, self.mac, self.cidrv4)
@@ -56,9 +89,14 @@ class Chassis(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
 
     name = Column(String, nullable=False)
-    mac = Column(String, nullable=False)
+    mac = Column(String(17), nullable=False)
 
     ports = relationship("ChassisPort", lazy="joined")
+
+    @validates('mac')
+    def validate_mac(self, key, mac):
+        mac_regex(mac)
+        return mac
 
     def __repr__(self):
         return "<%s: mac:%s name:%s>" % (Chassis.__name__, self.mac, self.name)
@@ -68,13 +106,18 @@ class ChassisPort(Base):
     __tablename__ = 'chassis-port'
     id = Column(Integer, primary_key=True, autoincrement=True)
 
-    mac = Column(String, nullable=False)
+    mac = Column(String(17), nullable=False)
     chassis_id = Column(Integer, ForeignKey('chassis.id'))
 
     machine_interface_id = Column(Integer, ForeignKey('machine-interface.id'))
 
     def __repr__(self):
         return "<%s: mac:%s chassis_mac:%s>" % (ChassisPort.__name__, self.mac, self.chassis_id)
+
+    @validates('mac')
+    def validate_mac(self, key, mac):
+        mac_regex(mac)
+        return mac
 
 
 class Schedule(Base):
