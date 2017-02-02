@@ -93,3 +93,5 @@ bootcfg/assets/setup-network-environment/1.0.1/
 /bootcfg/assets/coreos/1284.2.0/version.txt
 /bootcfg/assets/etcd/v3.1.0/
 /bootcfg/assets/fleet/v*
+*.pickle
+*.dill

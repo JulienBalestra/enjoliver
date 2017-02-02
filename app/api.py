@@ -170,9 +170,9 @@ def discovery():
     # Another logger
     LOGGER.debug(r)
     try:
-        i = crud.Inject(engine=engine,
-                        ignition_journal=ignition_journal,
-                        discovery=r)
+        i = crud.InjectDiscovery(engine=engine,
+                                 ignition_journal=ignition_journal,
+                                 discovery=r)
         new = i.commit_and_close()
         cache.delete("discovery")
         return jsonify({"total_elt": new[0], "new": new[1]})
@@ -191,7 +191,7 @@ def discovery_get():
     key = "discovery"
     all_data = cache.get(key)
     if all_data is None:
-        fetch = crud.Fetch(
+        fetch = crud.FetchDiscovery(
             engine=engine,
             ignition_journal=ignition_journal
         )
@@ -199,6 +199,47 @@ def discovery_get():
         cache.set(key, all_data, timeout=30)
 
     return jsonify(all_data)
+
+
+@application.route('/scheduler', methods=['GET'])
+def get_all_schedules():
+    key = "schedules"
+    all_sch = cache.get(key)
+    if all_sch is None:
+        fetch = crud.FetchSchedule(
+            engine=engine,
+        )
+        all_sch = fetch.get_schedules()
+        cache.set(key, all_sch, timeout=30)
+
+    return jsonify(all_sch)
+
+
+@application.route('/scheduler', methods=['POST'])
+def schedule_role():
+    if request.content_type != "application/json":
+        try:
+            r = json.loads(request.data)
+        except ValueError:
+            app.logger.error("ValueError for %s" % request.data)
+            return jsonify(
+                {
+                    u"roles": model.Schedule.roles,
+                    u'selector': {
+                        "mac": ""
+                    }
+                }), 400
+    else:
+        r = request.get_json()
+
+    inject = crud.InjectSchedule(
+        engine=engine,
+        data=r)
+    inject.apply_roles()
+    inject.commit_and_close()
+    cache.delete("schedules")
+
+    return jsonify(r)
 
 
 @application.route('/backup/db', methods=['POST'])
@@ -272,8 +313,8 @@ def backup_database():
 
 @application.route('/discovery/interfaces', methods=['GET'])
 def discovery_interfaces():
-    fetch = crud.Fetch(engine=engine,
-                       ignition_journal=ignition_journal)
+    fetch = crud.FetchDiscovery(engine=engine,
+                                ignition_journal=ignition_journal)
     interfaces = fetch.get_all_interfaces()
 
     return jsonify(interfaces)
@@ -281,8 +322,8 @@ def discovery_interfaces():
 
 @application.route('/discovery/ignition-journal/<string:uuid>/<string:boot_id>', methods=['GET'])
 def discovery_ignition_journal_by_boot_id(uuid, boot_id):
-    fetch = crud.Fetch(engine=engine,
-                       ignition_journal=ignition_journal)
+    fetch = crud.FetchDiscovery(engine=engine,
+                                ignition_journal=ignition_journal)
     lines = fetch.get_ignition_journal(uuid, boot_id=boot_id)
 
     return jsonify(lines)
@@ -290,8 +331,8 @@ def discovery_ignition_journal_by_boot_id(uuid, boot_id):
 
 @application.route('/discovery/ignition-journal/<string:uuid>', methods=['GET'])
 def discovery_ignition_journal_by_uuid(uuid):
-    fetch = crud.Fetch(engine=engine,
-                       ignition_journal=ignition_journal)
+    fetch = crud.FetchDiscovery(engine=engine,
+                                ignition_journal=ignition_journal)
     lines = fetch.get_ignition_journal(uuid)
 
     return jsonify(lines)
@@ -299,8 +340,8 @@ def discovery_ignition_journal_by_uuid(uuid):
 
 @application.route('/discovery/ignition-journal', methods=['GET'])
 def discovery_ignition_journal_summary():
-    fetch = crud.Fetch(engine=engine,
-                       ignition_journal=ignition_journal)
+    fetch = crud.FetchDiscovery(engine=engine,
+                                ignition_journal=ignition_journal)
     lines = fetch.get_ignition_journal_summary()
 
     return jsonify(lines)
@@ -420,7 +461,7 @@ def user_view_machine():
     key = "discovery"
     all_data = cache.get(key)
     if all_data is None:
-        fetch = crud.Fetch(
+        fetch = crud.FetchDiscovery(
             engine=engine,
             ignition_journal=ignition_journal
         )

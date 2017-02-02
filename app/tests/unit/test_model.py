@@ -29,7 +29,7 @@ class TestModel(unittest.TestCase):
         assert os.path.isfile(db) is False
         cls.engine = create_engine('sqlite:///%s' % db)
         model.Base.metadata.create_all(cls.engine)
-        fetch = crud.Fetch(cls.engine, cls.ignition_journal_path)
+        fetch = crud.FetchDiscovery(cls.engine, cls.ignition_journal_path)
         assert fetch.get_all_interfaces() == []
         assert fetch.get_all() == []
         assert fetch.get_ignition_journal("") == []
@@ -37,9 +37,9 @@ class TestModel(unittest.TestCase):
 
     # @unittest.skip("")
     def test_00(self):
-        i = crud.Inject(self.engine, self.ignition_journal_path, posts.M01)
+        i = crud.InjectDiscovery(self.engine, self.ignition_journal_path, posts.M01)
         i.commit_and_close()
-        fetch = crud.Fetch(self.engine, self.ignition_journal_path)
+        fetch = crud.FetchDiscovery(self.engine, self.ignition_journal_path)
         interfaces = fetch.get_all_interfaces()
         self.assertEqual([
             {
@@ -60,9 +60,9 @@ class TestModel(unittest.TestCase):
 
     # @unittest.skip("")
     def test_00_1(self):
-        i = crud.Inject(self.engine, self.ignition_journal_path, posts.M01)
+        i = crud.InjectDiscovery(self.engine, self.ignition_journal_path, posts.M01)
         i.commit_and_close()
-        fetch = crud.Fetch(self.engine, self.ignition_journal_path)
+        fetch = crud.FetchDiscovery(self.engine, self.ignition_journal_path)
         interfaces = fetch.get_all_interfaces()
         self.assertEqual([
             {
@@ -82,9 +82,9 @@ class TestModel(unittest.TestCase):
         self.assertEqual(len(journal), len(posts.M01["ignition-journal"]))
 
     def test_01(self):
-        i = crud.Inject(self.engine, self.ignition_journal_path, posts.M02)
+        i = crud.InjectDiscovery(self.engine, self.ignition_journal_path, posts.M02)
         i.commit_and_close()
-        fetch = crud.Fetch(self.engine, self.ignition_journal_path)
+        fetch = crud.FetchDiscovery(self.engine, self.ignition_journal_path)
         interfaces = fetch.get_all_interfaces()
         self.assertEqual(len(interfaces), 2)
         self.assertEqual(len(fetch.get_ignition_journal(posts.M02["boot-info"]["uuid"])), 39)
@@ -115,13 +115,13 @@ class TestModel(unittest.TestCase):
         fetch.close()
 
     def test_02(self):
-        m1 = crud.Inject(self.engine, self.ignition_journal_path, posts.M01)
+        m1 = crud.InjectDiscovery(self.engine, self.ignition_journal_path, posts.M01)
         m1.commit_and_close()
-        i = crud.Inject(self.engine, self.ignition_journal_path, posts.M02)
+        i = crud.InjectDiscovery(self.engine, self.ignition_journal_path, posts.M02)
         i.commit_and_close()
-        i = crud.Inject(self.engine, self.ignition_journal_path, posts.M02)
+        i = crud.InjectDiscovery(self.engine, self.ignition_journal_path, posts.M02)
         i.commit_and_close()
-        fetch = crud.Fetch(self.engine, self.ignition_journal_path)
+        fetch = crud.FetchDiscovery(self.engine, self.ignition_journal_path)
         interfaces = fetch.get_all_interfaces()
         self.assertEqual(len(interfaces), 2)
         self.assertEqual(len(fetch.get_ignition_journal(posts.M02["boot-info"]["uuid"])), 39)
@@ -138,43 +138,43 @@ class TestModel(unittest.TestCase):
         fetch.close()
 
     def test_03(self):
-        i = crud.Inject(self.engine, self.ignition_journal_path, posts.M03)
+        i = crud.InjectDiscovery(self.engine, self.ignition_journal_path, posts.M03)
         i.commit_and_close()
-        fetch = crud.Fetch(self.engine, self.ignition_journal_path)
+        fetch = crud.FetchDiscovery(self.engine, self.ignition_journal_path)
         interfaces = fetch.get_all_interfaces()
         self.assertEqual(len(interfaces), 3)
         self.assertEqual(len(fetch.get_ignition_journal(posts.M03["boot-info"]["uuid"])), 39)
 
     def test_04(self):
         for p in posts.ALL:
-            i = crud.Inject(self.engine, self.ignition_journal_path, p)
+            i = crud.InjectDiscovery(self.engine, self.ignition_journal_path, p)
             i.commit_and_close()
-        fetch = crud.Fetch(self.engine, self.ignition_journal_path)
+        fetch = crud.FetchDiscovery(self.engine, self.ignition_journal_path)
         interfaces = fetch.get_all_interfaces()
         self.assertEqual(len(posts.ALL), len(interfaces))
 
     def test_05(self):
         for p in posts.ALL:
-            i = crud.Inject(self.engine, self.ignition_journal_path, p)
+            i = crud.InjectDiscovery(self.engine, self.ignition_journal_path, p)
             i.commit_and_close()
 
-        fetch = crud.Fetch(self.engine, self.ignition_journal_path)
+        fetch = crud.FetchDiscovery(self.engine, self.ignition_journal_path)
         interfaces = fetch.get_all_interfaces()
         self.assertEqual(len(posts.ALL), len(interfaces))
 
     def test_06(self):
-        i = crud.Inject(self.engine, self.ignition_journal_path, posts.M16)
+        i = crud.InjectDiscovery(self.engine, self.ignition_journal_path, posts.M16)
         i.commit_and_close()
 
     def test_07(self):
         with self.assertRaises(KeyError):
-            i = crud.Inject(self.engine, self.ignition_journal_path, {
+            i = crud.InjectDiscovery(self.engine, self.ignition_journal_path, {
                 u'boot-info': {},
                 u'lldp': {},
                 u'interfaces': []
             })
             i.commit_and_close()
-        fetch = crud.Fetch(self.engine, self.ignition_journal_path)
+        fetch = crud.FetchDiscovery(self.engine, self.ignition_journal_path)
         interfaces = fetch.get_all_interfaces()
         self.assertEqual(len(posts.ALL), len(interfaces))
         machines = fetch.get_all()
@@ -187,15 +187,208 @@ class TestModel(unittest.TestCase):
         self.assertEqual(587, line_nb)
 
     def test_08(self):
-        fetch = crud.Fetch(self.engine, self.ignition_journal_path)
+        fetch = crud.FetchDiscovery(self.engine, self.ignition_journal_path)
         all_data = fetch.get_all_interfaces()
         chassis_names = [k["chassis_name"] for k in all_data]
         self.assertEqual(4, chassis_names.count(None))
         self.assertEqual(19, chassis_names.count("rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4"))
 
     def test_09(self):
-        inject = crud.Inject(self.engine, self.ignition_journal_path, posts.M01)
+        inject = crud.InjectDiscovery(self.engine, self.ignition_journal_path, posts.M01)
         inject.commit_and_close()
-        fetch = crud.Fetch(self.engine, self.ignition_journal_path)
+        fetch = crud.FetchDiscovery(self.engine, self.ignition_journal_path)
         all_data_new = fetch.get_all()
         self.assertEqual(all_data_new[0]["boot-info"]["uuid"], posts.M01["boot-info"]["uuid"])
+
+    def test_10(self):
+        mac = posts.M01["boot-info"]["mac"]
+        s = {
+            "roles": ["etcd-member"],
+            "selector": {
+                "mac": mac
+            }
+        }
+        e = {'kubernetes-control-plane': 0, 'kubernetes-node': 0, 'etcd-member': 1}
+
+        inject = crud.InjectSchedule(self.engine, s)
+        inject.apply_roles()
+        self.assertEqual(inject.commit_and_close(), (e, True))
+
+        inject = crud.InjectSchedule(self.engine, s)
+        inject.apply_roles()
+        self.assertEqual(inject.commit_and_close(), (e, False))
+
+        fetch = crud.FetchSchedule(self.engine)
+        e = fetch.get_schedules()
+        self.assertEqual([{mac: [u"etcd-member"]}], e)
+        self.assertEqual([u"etcd-member"], fetch.get_roles_by_mac_selector(mac))
+
+    def test_11(self):
+        mac = posts.M02["boot-info"]["mac"]
+        s = {
+            "roles": ["etcd-member"],
+            "selector": {
+                "mac": mac
+            }
+        }
+        e = {'kubernetes-control-plane': 0, 'kubernetes-node': 0, 'etcd-member': 2}
+
+        inject = crud.InjectSchedule(self.engine, s)
+        inject.apply_roles()
+        self.assertEqual(inject.commit_and_close(), (e, True))
+
+        inject = crud.InjectSchedule(self.engine, s)
+        inject.apply_roles()
+        self.assertEqual(inject.commit_and_close(), (e, False))
+
+        fetch = crud.FetchSchedule(self.engine)
+        self.assertEqual([u"etcd-member"], fetch.get_roles_by_mac_selector(mac))
+
+    def test_12(self):
+        mac = posts.M03["boot-info"]["mac"]
+        s = {
+            "roles": ["etcd-member"],
+            "selector": {
+                "mac": mac
+            }
+        }
+        e = {'kubernetes-control-plane': 0, 'kubernetes-node': 0, 'etcd-member': 3}
+
+        inject = crud.InjectSchedule(self.engine, s)
+        inject.apply_roles()
+        self.assertEqual(inject.commit_and_close(), (e, True))
+
+        inject = crud.InjectSchedule(self.engine, s)
+        inject.apply_roles()
+        self.assertEqual(inject.commit_and_close(), (e, False))
+
+        fetch = crud.FetchSchedule(self.engine)
+        self.assertEqual([u"etcd-member"], fetch.get_roles_by_mac_selector(mac))
+
+    def test_13(self):
+        mac = posts.M04["boot-info"]["mac"]
+        s = {
+            "roles": ["kubernetes-control-plane"],
+            "selector": {
+                "mac": mac
+            }
+        }
+        e = {'kubernetes-control-plane': 1, 'kubernetes-node': 0, 'etcd-member': 3}
+
+        inject = crud.InjectSchedule(self.engine, s)
+        inject.apply_roles()
+        self.assertEqual(inject.commit_and_close(), (e, True))
+
+        inject = crud.InjectSchedule(self.engine, s)
+        inject.apply_roles()
+        self.assertEqual(inject.commit_and_close(), (e, False))
+
+        fetch = crud.FetchSchedule(self.engine)
+        self.assertEqual([u"kubernetes-control-plane"], fetch.get_roles_by_mac_selector(mac))
+
+    def test_14(self):
+        mac = posts.M04["boot-info"]["mac"]
+        s = {
+            "roles": ["etcd-member"],
+            "selector": {
+                "mac": mac
+            }
+        }
+        e = {'kubernetes-control-plane': 1, 'kubernetes-node': 0, 'etcd-member': 4}
+
+        inject = crud.InjectSchedule(self.engine, s)
+        inject.apply_roles()
+        self.assertEqual(inject.commit_and_close(), (e, True))
+
+        inject = crud.InjectSchedule(self.engine, s)
+        inject.apply_roles()
+        self.assertEqual(inject.commit_and_close(), (e, False))
+
+        fetch = crud.FetchSchedule(self.engine)
+        self.assertEqual([u"kubernetes-control-plane", "etcd-member"], fetch.get_roles_by_mac_selector(mac))
+
+    def test_15(self):
+        mac = posts.M05["boot-info"]["mac"]
+        s = {
+            "roles": ["kubernetes-node"],
+            "selector": {
+                "mac": mac
+            }
+        }
+        e = {'kubernetes-control-plane': 1, 'kubernetes-node': 1, 'etcd-member': 4}
+
+        inject = crud.InjectSchedule(self.engine, s)
+        inject.apply_roles()
+        self.assertEqual(inject.commit_and_close(), (e, True))
+
+        inject = crud.InjectSchedule(self.engine, s)
+        inject.apply_roles()
+        self.assertEqual(inject.commit_and_close(), (e, False))
+
+        fetch = crud.FetchSchedule(self.engine)
+        self.assertEqual(["kubernetes-node"], fetch.get_roles_by_mac_selector(mac))
+
+    def test_16(self):
+        mac = posts.M06["boot-info"]["mac"]
+        s = {
+            "roles": ["kubernetes-node"],
+            "selector": {
+                "mac": mac
+            }
+        }
+        e = {'kubernetes-control-plane': 1, 'kubernetes-node': 2, 'etcd-member': 4}
+
+        inject = crud.InjectSchedule(self.engine, s)
+        inject.apply_roles()
+        self.assertEqual(inject.commit_and_close(), (e, True))
+
+        inject = crud.InjectSchedule(self.engine, s)
+        inject.apply_roles()
+        self.assertEqual(inject.commit_and_close(), (e, False))
+
+        fetch = crud.FetchSchedule(self.engine)
+        self.assertEqual(["kubernetes-node"], fetch.get_roles_by_mac_selector(mac))
+
+    def test_17(self):
+        mac = posts.M07["boot-info"]["mac"]
+        s = {
+            "roles": ["kubernetes-node"],
+            "selector": {
+                "mac": mac
+            }
+        }
+        e = {'kubernetes-control-plane': 1, 'kubernetes-node': 3, 'etcd-member': 4}
+
+        inject = crud.InjectSchedule(self.engine, s)
+        inject.apply_roles()
+        self.assertEqual(inject.commit_and_close(), (e, True))
+
+        inject = crud.InjectSchedule(self.engine, s)
+        inject.apply_roles()
+        self.assertEqual(inject.commit_and_close(), (e, False))
+
+        fetch = crud.FetchSchedule(self.engine)
+        self.assertEqual(["kubernetes-node"], fetch.get_roles_by_mac_selector(mac))
+
+    def test_18(self):
+        mac = posts.M08["boot-info"]["mac"]
+        s = {
+            "roles": ["bad-role"],
+            "selector": {
+                "mac": mac
+            }
+        }
+        e = {'kubernetes-control-plane': 1, 'kubernetes-node': 3, 'etcd-member': 4}
+
+        inject = crud.InjectSchedule(self.engine, s)
+        with self.assertRaises(AttributeError):
+            inject.apply_roles()
+
+        self.assertEqual(inject.commit_and_close(), (e, False))
+
+        fetch = crud.FetchSchedule(self.engine)
+        self.assertEqual([], fetch.get_roles_by_mac_selector(mac))
+
+    def test_19(self):
+        fetch = crud.FetchSchedule(self.engine)
+        self.assertEqual(8, len(fetch.get_schedules()))

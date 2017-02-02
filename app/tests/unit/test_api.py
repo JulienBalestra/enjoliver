@@ -121,6 +121,7 @@ class TestAPI(unittest.TestCase):
             u'/config',
             u'/ignition',
             u'/metadata',
+            u"/scheduler",
             u'/static/<path:filename>'
         ])
 

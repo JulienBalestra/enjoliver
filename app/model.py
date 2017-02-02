@@ -3,7 +3,7 @@ import datetime
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float
 from sqlalchemy import ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, validates
 
 Base = declarative_base()
 
@@ -45,6 +45,8 @@ class MachineInterface(Base):
     machine_id = Column(Integer, ForeignKey('machine.id'))
     chassis_port = relationship("ChassisPort")
 
+    schedule = relationship("Schedule")
+
     def __repr__(self):
         return "<%s: %s %s>" % (MachineInterface.__name__, self.mac, self.cidrv4)
 
@@ -73,3 +75,25 @@ class ChassisPort(Base):
 
     def __repr__(self):
         return "<%s: mac:%s chassis_mac:%s>" % (ChassisPort.__name__, self.mac, self.chassis_id)
+
+
+class Schedule(Base):
+    __tablename__ = 'schedule'
+
+    etcd_member = "etcd-member"
+    kubernetes_control_plane = "kubernetes-control-plane"
+    kubernetes_node = "kubernetes-node"
+    roles = [etcd_member, kubernetes_control_plane, kubernetes_node]
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    created_date = Column(DateTime, default=datetime.datetime.utcnow)
+
+    machine_interface = Column(Integer, ForeignKey('machine-interface.id'), nullable=True)
+
+    role = Column(String, nullable=False)
+
+    @validates('role')
+    def validate_role(self, key, role_name):
+        if role_name not in Schedule.roles:
+            raise AttributeError("%s not in %s" % (role_name, Schedule.roles))
+        return role_name

@@ -4,10 +4,10 @@ import os
 from sqlalchemy.orm import sessionmaker, subqueryload
 
 import logger
-from model import ChassisPort, Chassis, MachineInterface, Machine, Healthz
+from model import ChassisPort, Chassis, MachineInterface, Machine, Healthz, Schedule
 
 
-class Fetch(object):
+class FetchDiscovery(object):
     def __init__(self, engine, ignition_journal):
         sm = sessionmaker(bind=engine)
         self.session = sm()
@@ -144,7 +144,7 @@ def health_check(engine, ts, who):
     return health
 
 
-class Inject(object):
+class InjectDiscovery(object):
     log = logger.get_logger(__file__)
 
     def __init__(self, engine, ignition_journal, discovery):
@@ -285,3 +285,82 @@ class Inject(object):
             self.log.debug("closing")
             self.session.close()
             return machine_nb, True if self.adds else False
+
+
+class FetchSchedule(object):
+    def __init__(self, engine):
+        sm = sessionmaker(bind=engine)
+        self.session = sm()
+
+    def get_schedules(self):
+        s = self.session.query(Schedule, MachineInterface).join(
+            MachineInterface).all()
+
+        r = []
+        for i in s:
+            r.append({i[1].mac: [i[0].role]})
+        return r
+
+    def get_roles_by_mac_selector(self, mac):
+        # db_mac = self.session.query(MachineInterface).filter(MachineInterface.mac == mac).first()
+        s = self.session.query(Schedule).join(MachineInterface).filter(MachineInterface.mac == mac).all()
+        r = [k.role for k in s]
+        return r
+
+    def close(self):
+        self.session.close()
+
+
+class InjectSchedule(object):
+    log = logger.get_logger(__file__)
+
+    def __init__(self, engine, data):
+        sm = sessionmaker(bind=engine)
+        self.session = sm()
+        self.adds = 0
+        self.updates = 0
+
+        self.data = data
+        self.mac = self.data["selector"]["mac"]
+
+        self.interface = self.session.query(MachineInterface).filter(MachineInterface.mac == self.mac).first()
+        self.log.info("init with mac: %s" % self.mac)
+
+    def apply_roles(self):
+        for role in self.data["roles"]:
+            r = self.session.query(Schedule).filter(
+                Schedule.machine_interface == self.interface.id).filter(Schedule.role == role).first()
+            if r:
+                self.log.info("mac %s already scheduled as %s" % (self.mac, role))
+                continue
+
+            new = Schedule(
+                machine_interface=self.interface.id,
+                role=role
+            )
+            self.session.add(new)
+            self.adds += 1
+            self.log.info("mac %s scheduling as %s" % (self.mac, role))
+
+        return
+
+    def commit_and_close(self):
+        try:
+            if self.adds != 0 or self.updates != 0:
+                try:
+                    self.log.debug("commiting")
+                    self.session.commit()
+
+                except Exception as e:
+                    self.log.error("%s %s %s adds=%s updates=%s" % (type(e), e, e.message, self.adds, self.updates))
+                    self.adds, self.updates = 0, 0
+                    self.log.warning("rollback the sessions")
+                    self.session.rollback()
+                    raise
+        finally:
+            roles_rapport = {}
+            for r in Schedule.roles:
+                roles_rapport[r] = self.session.query(Schedule).filter(Schedule.role == r).count()
+            self.log.debug("closing")
+            self.session.close()
+            return roles_rapport, True if self.adds else False
