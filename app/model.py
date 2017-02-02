@@ -133,7 +133,7 @@ class Schedule(Base):
 
     machine_interface = Column(Integer, ForeignKey('machine-interface.id'), nullable=True)
 
-    role = Column(String, nullable=False)
+    role = Column(String(len(max(roles, key=len))), nullable=False)
 
     @validates('role')
     def validate_role(self, key, role_name):
