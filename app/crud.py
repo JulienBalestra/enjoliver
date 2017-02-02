@@ -302,7 +302,6 @@ class FetchSchedule(object):
         return r
 
     def get_roles_by_mac_selector(self, mac):
-        # db_mac = self.session.query(MachineInterface).filter(MachineInterface.mac == mac).first()
         s = self.session.query(Schedule).join(MachineInterface).filter(MachineInterface.mac == mac).all()
         r = [k.role for k in s]
         return r
