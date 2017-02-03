@@ -122,7 +122,8 @@ class TestAPI(unittest.TestCase):
             u'/ignition',
             u'/metadata',
             u"/scheduler",
-            u'/static/<path:filename>'
+            u'/static/<path:filename>',
+            u'/scheduler/<string:role>'
         ])
 
     def test_discovery_00(self):
@@ -199,3 +200,47 @@ class TestAPI(unittest.TestCase):
             uuid = m["boot-info"]["uuid"]
             r = self.app.get("/discovery/ignition-journal/%s" % uuid)
             self.assertEqual(200, r.status_code)
+
+    def test_scheduler_00(self):
+        r = self.app.get("/scheduler")
+        self.assertEqual(200, r.status_code)
+        self.assertEqual({}, json.loads(r.data))
+
+    def test_scheduler_01(self):
+        r = self.app.post("/scheduler")
+        self.assertEqual(400, r.status_code)
+        self.assertEqual({
+            u'roles': [
+                u'etcd-member',
+                u'kubernetes-control-plane',
+                u'kubernetes-node'
+            ],
+            u'selector': {u'mac': u''}
+        }, json.loads(r.data))
+
+    def test_scheduler_02(self):
+        mac = posts.M01["boot-info"]["mac"]
+        data = {
+            u'roles': [
+                u'etcd-member',
+                u'kubernetes-control-plane'
+            ],
+            u'selector': {u'mac': mac}
+        }
+        r = self.app.post("/scheduler", data=json.dumps(data),
+                          content_type='application/json')
+        self.assertEqual(200, r.status_code)
+        self.assertEqual(data, json.loads(r.data))
+        r = self.app.get("/scheduler")
+        self.assertEqual({mac: [
+            u'etcd-member',
+            u'kubernetes-control-plane'
+        ]}, json.loads(r.data))
+
+    def test_scheduler_03(self):
+        r = self.app.get("/scheduler/etcd-member")
+        self.assertEqual(1, len(json.loads(r.data)))
+
+    def test_scheduler_04(self):
+        r = self.app.get("/scheduler/kubernetes-control-plane")
+        self.assertEqual(1, len(json.loads(r.data)))

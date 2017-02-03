@@ -296,15 +296,37 @@ class FetchSchedule(object):
         s = self.session.query(Schedule, MachineInterface).join(
             MachineInterface).all()
 
-        r = []
+        r = {}
         for i in s:
-            r.append({i[1].mac: [i[0].role]})
+            try:
+                r[i[1].mac] += [i[0].role]
+            except KeyError:
+                r[i[1].mac] = [i[0].role]
+
         return r
 
     def get_roles_by_mac_selector(self, mac):
         s = self.session.query(Schedule).join(MachineInterface).filter(MachineInterface.mac == mac).all()
         r = [k.role for k in s]
         return r
+
+    def get_role(self, role):
+        s = self.session.query(Schedule).filter(Schedule.role == role).all()
+        l = []
+        for i in s:
+            l.append({
+                "mac": i.interface.mac,
+                "ipv4": i.interface.ipv4,
+                "cidrv4": i.interface.cidrv4,
+                "gateway": i.interface.gateway,
+                "as_boot": i.interface.as_boot,
+                "name": i.interface.name,
+                "netmask": i.interface.netmask,
+                "role": i.role,
+                "created_date": i.created_date
+            })
+
+        return l
 
     def close(self):
         self.session.close()
@@ -323,6 +345,11 @@ class InjectSchedule(object):
         self.mac = self.data["selector"]["mac"]
 
         self.interface = self.session.query(MachineInterface).filter(MachineInterface.mac == self.mac).first()
+        if not self.interface:
+            m = "mac: '%s' unknown in db" % self.mac
+            self.log.error(m)
+            self.session.close()
+            raise AttributeError(m)
         self.log.info("init with mac: %s" % self.mac)
 
     def apply_roles(self):

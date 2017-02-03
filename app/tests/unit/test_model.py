@@ -1,3 +1,4 @@
+import datetime
 import os
 import shutil
 import unittest
@@ -220,7 +221,7 @@ class TestModel(unittest.TestCase):
 
         fetch = crud.FetchSchedule(self.engine)
         e = fetch.get_schedules()
-        self.assertEqual([{mac: [u"etcd-member"]}], e)
+        self.assertEqual({mac: [u"etcd-member"]}, e)
         self.assertEqual([u"etcd-member"], fetch.get_roles_by_mac_selector(mac))
 
     def test_11(self):
@@ -391,4 +392,59 @@ class TestModel(unittest.TestCase):
 
     def test_19(self):
         fetch = crud.FetchSchedule(self.engine)
-        self.assertEqual(8, len(fetch.get_schedules()))
+        self.assertEqual(7, len(fetch.get_schedules()))
+
+    def test_20(self):
+        s = {
+            "roles": ["etcd-member"],
+            "selector": {
+                "mac": ""
+            }
+        }
+        with self.assertRaises(AttributeError):
+            crud.InjectSchedule(self.engine, s)
+
+    def test_21(self):
+        f = crud.FetchSchedule(self.engine)
+        r = f.get_role("etcd-member")
+        self.assertEqual(4, len(r))
+        for i in r:
+            self.assertTrue(i["as_boot"])
+            self.assertEqual(unicode, type(i["mac"]))
+            self.assertEqual(unicode, type(i["ipv4"]))
+            self.assertEqual(unicode, type(i["cidrv4"]))
+            self.assertEqual(unicode, type(i["gateway"]))
+            self.assertEqual(unicode, type(i["name"]))
+            self.assertEqual(int, type(i["netmask"]))
+            self.assertEqual(unicode, type(i["role"]))
+            self.assertEqual(datetime.datetime, type(i["created_date"]))
+
+    def test_22(self):
+        f = crud.FetchSchedule(self.engine)
+        r = f.get_role("kubernetes-node")
+        self.assertEqual(3, len(r))
+        for i in r:
+            self.assertTrue(i["as_boot"])
+            self.assertEqual(unicode, type(i["mac"]))
+            self.assertEqual(unicode, type(i["ipv4"]))
+            self.assertEqual(unicode, type(i["cidrv4"]))
+            self.assertEqual(unicode, type(i["gateway"]))
+            self.assertEqual(unicode, type(i["name"]))
+            self.assertEqual(int, type(i["netmask"]))
+            self.assertEqual(unicode, type(i["role"]))
+            self.assertEqual(datetime.datetime, type(i["created_date"]))
+
+    def test_23(self):
+        f = crud.FetchSchedule(self.engine)
+        r = f.get_role("kubernetes-control-plane")
+        self.assertEqual(1, len(r))
+        for i in r:
+            self.assertTrue(i["as_boot"])
+            self.assertEqual(unicode, type(i["mac"]))
+            self.assertEqual(unicode, type(i["ipv4"]))
+            self.assertEqual(unicode, type(i["cidrv4"]))
+            self.assertEqual(unicode, type(i["gateway"]))
+            self.assertEqual(unicode, type(i["name"]))
+            self.assertEqual(int, type(i["netmask"]))
+            self.assertEqual(unicode, type(i["role"]))
+            self.assertEqual(datetime.datetime, type(i["created_date"]))

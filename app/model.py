@@ -67,7 +67,7 @@ class MachineInterface(Base):
     machine_id = Column(Integer, ForeignKey('machine.id'))
     chassis_port = relationship("ChassisPort")
 
-    schedule = relationship("Schedule")
+    schedule = relationship("Schedule", backref="interface")
 
     @validates('mac')
     def validate_mac(self, key, mac):

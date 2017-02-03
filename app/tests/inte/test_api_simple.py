@@ -193,7 +193,8 @@ class TestAPI(unittest.TestCase):
             u'/ignition',
             u'/metadata',
             u"/scheduler",
-            u'/static/<path:filename>'
+            u'/static/<path:filename>',
+            u'/scheduler/<string:role>'
         ]
         self.maxDiff = None
         result = self.app.get('/')

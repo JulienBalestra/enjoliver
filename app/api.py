@@ -210,16 +210,31 @@ def get_all_schedules():
             engine=engine,
         )
         all_sch = fetch.get_schedules()
+        fetch.close()
         cache.set(key, all_sch, timeout=30)
 
     return jsonify(all_sch)
+
+
+@application.route('/scheduler/<string:role>', methods=['GET'])
+def get_schedule_by_role(role):
+    one_role = cache.get(role)
+    if one_role is None:
+        fetch = crud.FetchSchedule(
+            engine=engine,
+        )
+        one_role = fetch.get_role(role)
+        fetch.close()
+        cache.set(role, one_role, timeout=30)
+
+    return jsonify(one_role)
 
 
 @application.route('/scheduler', methods=['POST'])
 def schedule_role():
     if request.content_type != "application/json":
         try:
-            r = json.loads(request.data)
+            r = json.loads(request.get_data())
         except ValueError:
             app.logger.error("ValueError for %s" % request.data)
             return jsonify(
@@ -235,9 +250,11 @@ def schedule_role():
     inject = crud.InjectSchedule(
         engine=engine,
         data=r)
-    inject.apply_roles()
-    inject.commit_and_close()
-    cache.delete("schedules")
+    try:
+        inject.apply_roles()
+        cache.delete("schedules")
+    finally:
+        inject.commit_and_close()
 
     return jsonify(r)
 

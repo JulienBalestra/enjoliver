@@ -246,7 +246,8 @@ class TestAPIAdvanced(unittest.TestCase):
             u'/ignition',
             u'/metadata',
             u"/scheduler",
-            u'/static/<path:filename>'
+            u'/static/<path:filename>',
+            u'/scheduler/<string:role>'
         ]
         request = urllib2.urlopen("%s/" % self.api_uri)
         response_body = request.read()
