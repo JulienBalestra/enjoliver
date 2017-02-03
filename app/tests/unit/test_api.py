@@ -244,3 +244,11 @@ class TestAPI(unittest.TestCase):
     def test_scheduler_04(self):
         r = self.app.get("/scheduler/kubernetes-control-plane")
         self.assertEqual(1, len(json.loads(r.data)))
+
+    def test_scheduler_05(self):
+        r = self.app.get("/scheduler/kubernetes-node")
+        self.assertEqual(0, len(json.loads(r.data)))
+
+    def test_scheduler_06(self):
+        r = self.app.get("/scheduler/not-existing")
+        self.assertEqual(0, len(json.loads(r.data)))
