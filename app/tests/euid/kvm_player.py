@@ -333,7 +333,10 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         except Exception as e:
             os.write(2, "\r%s: %s\n\r" % (self.api_healthz.__name__, e.message))
             if first is True:
+                time.sleep(0.5)
                 self.api_healthz(False)
+            else:
+                raise
 
     def setUp(self):
         self.clean_sandbox()
