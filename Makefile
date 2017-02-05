@@ -7,7 +7,6 @@ CHECK_EUID_KVM_PLAYER=check_euid_kvm_player
 
 default: help
 
-
 help:
 	@echo ----------------------
 	@echo Prepare:
@@ -25,12 +24,6 @@ help:
 	@echo ----------------------
 	@echo Testing:
 	@echo make $(CHECK)
-	@echo 
-	@echo Skip: $(CHECK_ASSETS)
-	@echo make $(CHECK_FAST)
-	@echo
-	@echo Only: $(CHECK_ASSETS)
-	@echo make  $(CHECK_ASSETS)
 	@echo
 	@echo Ready for KVM:
 	@echo sudo make $(CHECK_EUID_KVM_PLAYER)
@@ -91,9 +84,6 @@ $(CHECK):
 $(CHECK_FAST):
 	make -C discoveryC/ $(CHECK)
 	make -C app/tests/ $(CHECK_FAST)
-
-$(CHECK_ASSETS):
-	make -C app/tests/ $(CHECK_ASSETS)
 
 $(CHECK_EUID): validate
 	test $(shell id -u -r) -eq 0

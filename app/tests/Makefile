@@ -69,18 +69,6 @@ gc:
 gci:
 	$(RKT) --local-config=$(CWD) image gc --grace-period=0s
 
-ngrok_api:
-	$(RKT) run --local-config=$(CWD) --interactive --net=rack0 \
-	quay.io/julienbalestra/ngrok \
-	--exec ngrok -- http 172.20.0.1:5000
-
-ngrok_k8s:
-	echo $(K8S_IP_PORT)
-	test $(K8S_IP_PORT)
-	$(RKT) run --local-config=$(CWD) --interactive --net=rack0 \
-	quay.io/julienbalestra/ngrok \
-	--exec ngrok -- http $(K8S_IP_PORT)
-
 $(TESTING_RSA):
 	ssh-keygen -f $(CWD)/$(TESTING_RSA) -t rsa -N ''
 	mkdir -vp $(CWD)/test_bootcfg/ssh_authorized_keys/
@@ -101,14 +89,8 @@ clean:
 
 fclean: clean gci gc
 
-check_fast: default $(PYTHON)
-	SKIP_ASSETS=TRUE PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover ./
-
 check: default $(PYTHON)
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover ./
-
-check_assets: default $(PYTHON)
-	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover assets/
 
 check_euid_fail_fast: $(PYTHON)
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover euid/ -f

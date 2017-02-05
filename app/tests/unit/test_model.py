@@ -382,7 +382,7 @@ class TestModel(unittest.TestCase):
         e = {'kubernetes-control-plane': 1, 'kubernetes-node': 3, 'etcd-member': 4}
 
         inject = crud.InjectSchedule(self.engine, s)
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(LookupError):
             inject.apply_roles()
 
         self.assertEqual(inject.commit_and_close(), (e, False))
