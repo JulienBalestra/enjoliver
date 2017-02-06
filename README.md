@@ -24,7 +24,6 @@ Extra features are (alpha) adds like:
 * easily identify who's who `systemctl list-units "k8s_*"`
 * get logs of a pod by the `journalctl --identifier`
 * creates volumes by pods annotations `rkt.kubernetes.io/host-create-directories: /tmp/my-dir`
-* import environment variables of node / host information (IP + Hostname) inside the pod of avoid discovery process
 
 ## Incoming
 
