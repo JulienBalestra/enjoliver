@@ -265,3 +265,8 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(0, len(json.loads(r.data)))
         r = self.app.get("/scheduler/ip-list/%s" % role)
         self.assertEqual(0, len(json.loads(r.data)))
+
+    def test_scheduler_07(self):
+        role = "etcd-member&kubernetes-control-plane"
+        r = self.app.get("/scheduler/%s" % role)
+        self.assertEqual(1, len(json.loads(r.data)))

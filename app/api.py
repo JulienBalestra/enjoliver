@@ -218,16 +218,17 @@ def get_all_schedules():
 
 @application.route('/scheduler/<string:role>', methods=['GET'])
 def get_schedule_by_role(role):
-    one_role = cache.get(role)
-    if one_role is None:
+    data = cache.get(role)
+    if data is None:
         fetch = crud.FetchSchedule(
             engine=engine,
         )
-        one_role = fetch.get_role(role)
+        multi = role.split("&")
+        data = fetch.get_roles(*multi)
         fetch.close()
-        cache.set(role, one_role, timeout=30)
+        cache.set(role, data, timeout=30)
 
-    return jsonify(one_role)
+    return jsonify(data)
 
 
 @application.route('/scheduler/ip-list/<string:role>', methods=['GET'])
@@ -254,7 +255,7 @@ def schedule_role():
             app.logger.error("ValueError for %s" % request.data)
             return jsonify(
                 {
-                    u"roles": model.Schedule.roles,
+                    u"roles": model.ScheduleRoles.roles,
                     u'selector': {
                         "mac": ""
                     }

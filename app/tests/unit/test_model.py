@@ -463,3 +463,26 @@ class TestModel(unittest.TestCase):
         f = crud.FetchSchedule(self.engine)
         r = f.get_role_ip_list("kubernetes-node")
         self.assertEqual(3, len(r))
+
+    def test_27(self):
+        mac = posts.M08["boot-info"]["mac"]
+        s = {
+            "roles": ["kubernetes-control-plane", "etcd-member"],
+            "selector": {
+                "mac": mac
+            }
+        }
+        e = {'kubernetes-control-plane': 2, 'kubernetes-node': 3, 'etcd-member': 5}
+
+        inject = crud.InjectSchedule(self.engine, s)
+        inject.apply_roles()
+        self.assertEqual(inject.commit_and_close(), (e, True))
+
+        inject = crud.InjectSchedule(self.engine, s)
+        inject.apply_roles()
+        self.assertEqual(inject.commit_and_close(), (e, False))
+
+        fetch = crud.FetchSchedule(self.engine)
+        self.assertEqual(["kubernetes-control-plane", "etcd-member"], fetch.get_roles_by_mac_selector(mac))
+        self.assertEqual(2, len(fetch.get_roles(model.ScheduleRoles.etcd_member,
+                                             model.ScheduleRoles.kubernetes_control_plane)))

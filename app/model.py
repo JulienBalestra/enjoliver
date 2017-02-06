@@ -19,6 +19,7 @@ def compile_regex(regex):
 
     return match
 
+
 mac_regex = compile_regex("^([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})$")
 ipv4_regex = compile_regex(
     "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$")
@@ -117,23 +118,26 @@ class ChassisPort(Base):
         return mac_regex(mac)
 
 
-class Schedule(Base):
-    __tablename__ = 'schedule'
-
+class ScheduleRoles(object):
     etcd_member = "etcd-member"
     kubernetes_control_plane = "kubernetes-control-plane"
     kubernetes_node = "kubernetes-node"
+
     roles = [etcd_member, kubernetes_control_plane, kubernetes_node]
+
+
+class Schedule(Base):
+    __tablename__ = 'schedule'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     created_date = Column(DateTime, default=datetime.datetime.utcnow)
 
     machine_interface = Column(Integer, ForeignKey('machine-interface.id'), nullable=True)
 
-    role = Column(String(len(max(roles, key=len))), nullable=False)
+    role = Column(String(len(max(ScheduleRoles.roles, key=len))), nullable=False)
 
     @validates('role')
     def validate_role(self, key, role_name):
-        if role_name not in Schedule.roles:
-            raise LookupError("%s not in %s" % (role_name, Schedule.roles))
+        if role_name not in ScheduleRoles.roles:
+            raise LookupError("%s not in %s" % (role_name, ScheduleRoles.roles))
         return role_name

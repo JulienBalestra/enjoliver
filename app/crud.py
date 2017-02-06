@@ -1,10 +1,11 @@
 import datetime
 import os
 
+from sqlalchemy import func
 from sqlalchemy.orm import sessionmaker, subqueryload
 
 import logger
-from model import ChassisPort, Chassis, MachineInterface, Machine, Healthz, Schedule
+from model import ChassisPort, Chassis, MachineInterface, Machine, Healthz, Schedule, ScheduleRoles
 
 
 class FetchDiscovery(object):
@@ -328,6 +329,26 @@ class FetchSchedule(object):
 
         return l
 
+    def get_roles(self, *args):
+        s = self.session.query(MachineInterface).join(Schedule).filter(
+            Schedule.role.in_(args)
+        ).group_by(MachineInterface.id).having(func.count(MachineInterface.id) == len(args)).all()
+        l = []
+        for i in s:
+            l.append(
+                {
+                    "mac": i.mac,
+                    "ipv4": i.ipv4,
+                    "cidrv4": i.cidrv4,
+                    "gateway": i.gateway,
+                    "as_boot": i.as_boot,
+                    "name": i.name,
+                    "netmask": i.netmask,
+                    "roles": [k.role for k in i.schedule]
+                }
+            )
+        return l
+
     def get_role_ip_list(self, role):
         s = self.session.query(Schedule).filter(Schedule.role == role).all()
 
@@ -390,7 +411,7 @@ class InjectSchedule(object):
                     raise
         finally:
             roles_rapport = {}
-            for r in Schedule.roles:
+            for r in ScheduleRoles.roles:
                 roles_rapport[r] = self.session.query(Schedule).filter(Schedule.role == r).count()
             self.log.debug("closing")
             self.session.close()
