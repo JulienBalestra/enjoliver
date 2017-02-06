@@ -203,45 +203,45 @@ def discovery_get():
 
 @application.route('/scheduler', methods=['GET'])
 def get_all_schedules():
-    key = "schedules"
-    all_sch = cache.get(key)
-    if all_sch is None:
-        fetch = crud.FetchSchedule(
-            engine=engine,
-        )
-        all_sch = fetch.get_schedules()
-        fetch.close()
-        cache.set(key, all_sch, timeout=30)
+    fetch = crud.FetchSchedule(
+        engine=engine,
+    )
+    all_sch = fetch.get_schedules()
+    fetch.close()
 
     return jsonify(all_sch)
 
 
 @application.route('/scheduler/<string:role>', methods=['GET'])
 def get_schedule_by_role(role):
-    data = cache.get(role)
-    if data is None:
-        fetch = crud.FetchSchedule(
-            engine=engine,
-        )
-        multi = role.split("&")
-        data = fetch.get_roles(*multi)
-        fetch.close()
-        cache.set(role, data, timeout=30)
+    fetch = crud.FetchSchedule(
+        engine=engine,
+    )
+    multi = role.split("&")
+    data = fetch.get_roles(*multi)
+    fetch.close()
+
+    return jsonify(data)
+
+
+@application.route('/scheduler/available', methods=['GET'])
+def get_available_machine():
+    fetch = crud.FetchSchedule(
+        engine=engine,
+    )
+    data = fetch.get_available_machines()
+    fetch.close()
 
     return jsonify(data)
 
 
 @application.route('/scheduler/ip-list/<string:role>', methods=['GET'])
 def get_schedule_role_ip_list(role):
-    key = "ip-list-%s" % role
-    ip_list_role = cache.get(key)
-    if ip_list_role is None:
-        fetch = crud.FetchSchedule(
-            engine=engine,
-        )
-        ip_list_role = fetch.get_role_ip_list(role)
-        fetch.close()
-        cache.set(key, ip_list_role, timeout=30)
+    fetch = crud.FetchSchedule(
+        engine=engine,
+    )
+    ip_list_role = fetch.get_role_ip_list(role)
+    fetch.close()
 
     return jsonify(ip_list_role)
 

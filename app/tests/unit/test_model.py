@@ -486,3 +486,7 @@ class TestModel(unittest.TestCase):
         self.assertEqual(["kubernetes-control-plane", "etcd-member"], fetch.get_roles_by_mac_selector(mac))
         self.assertEqual(2, len(fetch.get_roles(model.ScheduleRoles.etcd_member,
                                              model.ScheduleRoles.kubernetes_control_plane)))
+
+    def test_28(self):
+        a = crud.FetchSchedule(self.engine)
+        self.assertEqual(15, len(a.get_available_machines()))

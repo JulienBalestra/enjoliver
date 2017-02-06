@@ -195,7 +195,8 @@ class TestAPI(unittest.TestCase):
             u"/scheduler",
             u'/static/<path:filename>',
             u'/scheduler/<string:role>',
-            u'/scheduler/ip-list/<string:role>'
+            u'/scheduler/ip-list/<string:role>',
+            u'/scheduler/available'
         ]
         self.maxDiff = None
         result = self.app.get('/')

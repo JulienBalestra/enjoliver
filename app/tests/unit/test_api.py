@@ -124,7 +124,8 @@ class TestAPI(unittest.TestCase):
             u"/scheduler",
             u'/static/<path:filename>',
             u'/scheduler/<string:role>',
-            u'/scheduler/ip-list/<string:role>'
+            u'/scheduler/ip-list/<string:role>',
+            u'/scheduler/available'
         ])
 
     def test_discovery_00(self):
@@ -270,3 +271,10 @@ class TestAPI(unittest.TestCase):
         role = "etcd-member&kubernetes-control-plane"
         r = self.app.get("/scheduler/%s" % role)
         self.assertEqual(1, len(json.loads(r.data)))
+
+    def test_scheduler_08(self):
+        r = self.app.get("/scheduler/available")
+        l = json.loads(r.data)
+        self.assertEqual(1, len(l))
+        for m in l:
+            self.assertEqual([], m["roles"])

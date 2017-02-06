@@ -311,6 +311,25 @@ class FetchSchedule(object):
         r = [k.role for k in s]
         return r
 
+    def get_available_machines(self):
+        s = self.session.query(MachineInterface).filter(
+            MachineInterface.schedule == None, MachineInterface.as_boot == True).all()
+        l = []
+        for i in s:
+            l.append(
+                {
+                    "mac": i.mac,
+                    "ipv4": i.ipv4,
+                    "cidrv4": i.cidrv4,
+                    "gateway": i.gateway,
+                    "as_boot": i.as_boot,
+                    "name": i.name,
+                    "netmask": i.netmask,
+                    "roles": [k.role for k in i.schedule]
+                }
+            )
+        return l
+
     def get_role(self, role):
         s = self.session.query(Schedule).filter(Schedule.role == role).all()
         l = []

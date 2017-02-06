@@ -17,7 +17,7 @@ from app import model
 from common import posts
 
 
-class TestAPIAdvanced(unittest.TestCase):
+class TestAPIGunicorn(unittest.TestCase):
     p_bootcfg = Process
     p_api = Process
 
@@ -47,9 +47,9 @@ class TestAPIAdvanced(unittest.TestCase):
     @staticmethod
     def process_target_bootcfg():
         cmd = [
-            "%s" % TestAPIAdvanced.bootcfg_bin,
-            "-data-path", "%s" % TestAPIAdvanced.test_bootcfg_path,
-            "-assets-path", "%s" % TestAPIAdvanced.assets_path,
+            "%s" % TestAPIGunicorn.bootcfg_bin,
+            "-data-path", "%s" % TestAPIGunicorn.test_bootcfg_path,
+            "-assets-path", "%s" % TestAPIGunicorn.assets_path,
             "-log-level", "debug"
         ]
         os.write(1, "PID  -> %s\n"
@@ -62,12 +62,12 @@ class TestAPIAdvanced(unittest.TestCase):
     def process_target_api():
         api.cache.clear()
         os.environ["API_URI"] = "http://localhost:5000"
-        os.environ["DB_PATH"] = "%s/%s.sqlite" % (TestAPIAdvanced.dbs_path, TestAPIAdvanced.__name__.lower())
-        os.environ["IGNITION_JOURNAL_DIR"] = "%s/ignition_journal" % TestAPIAdvanced.inte_path
+        os.environ["DB_PATH"] = "%s/%s.sqlite" % (TestAPIGunicorn.dbs_path, TestAPIGunicorn.__name__.lower())
+        os.environ["IGNITION_JOURNAL_DIR"] = "%s/ignition_journal" % TestAPIGunicorn.inte_path
         cmd = [
-            "%s/env/bin/gunicorn" % TestAPIAdvanced.project_path,
+            "%s/env/bin/gunicorn" % TestAPIGunicorn.project_path,
             "--chdir",
-            "%s" % TestAPIAdvanced.app_path,
+            "%s" % TestAPIGunicorn.app_path,
             "-b",
             "0.0.0.0:5000",
             "api:app"
@@ -77,7 +77,7 @@ class TestAPIAdvanced(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         time.sleep(0.1)
-        db_path = "%s/%s.sqlite" % (cls.dbs_path, TestAPIAdvanced.__name__.lower())
+        db_path = "%s/%s.sqlite" % (cls.dbs_path, TestAPIGunicorn.__name__.lower())
         db = "sqlite:///%s" % db_path
         journal = "%s/ignition_journal" % cls.inte_path
         try:
@@ -98,10 +98,10 @@ class TestAPIAdvanced(unittest.TestCase):
         assert os.path.isfile(db_path)
         api.engine = engine
 
-        if os.path.isfile("%s" % TestAPIAdvanced.bootcfg_bin) is False:
-            raise IOError("%s" % TestAPIAdvanced.bootcfg_bin)
-        cls.p_bootcfg = Process(target=TestAPIAdvanced.process_target_bootcfg)
-        cls.p_api = Process(target=TestAPIAdvanced.process_target_api)
+        if os.path.isfile("%s" % TestAPIGunicorn.bootcfg_bin) is False:
+            raise IOError("%s" % TestAPIGunicorn.bootcfg_bin)
+        cls.p_bootcfg = Process(target=TestAPIGunicorn.process_target_bootcfg)
+        cls.p_api = Process(target=TestAPIGunicorn.process_target_api)
         os.write(1, "PPID -> %s\n" % os.getpid())
         cls.p_bootcfg.start()
         assert cls.p_bootcfg.is_alive() is True
@@ -165,7 +165,7 @@ class TestAPIAdvanced(unittest.TestCase):
     @staticmethod
     def clean_sandbox():
         dirs = ["%s/%s" % (
-            TestAPIAdvanced.test_bootcfg_path, k) for k in (
+            TestAPIGunicorn.test_bootcfg_path, k) for k in (
                     "profiles", "groups")]
         for d in dirs:
             for f in os.listdir(d):
@@ -247,7 +247,8 @@ class TestAPIAdvanced(unittest.TestCase):
             u"/scheduler",
             u'/static/<path:filename>',
             u'/scheduler/<string:role>',
-            u'/scheduler/ip-list/<string:role>'
+            u'/scheduler/ip-list/<string:role>',
+            u'/scheduler/available'
         ]
         request = urllib2.urlopen("%s/" % self.api_uri)
         response_body = request.read()
@@ -262,7 +263,7 @@ class TestAPIAdvanced(unittest.TestCase):
             urllib2.urlopen("%s/404" % self.api_uri)
 
     def test_04_ipxe(self):
-        marker = "%s-%s" % (TestAPIAdvanced.__name__.lower(), self.test_04_ipxe.__name__)
+        marker = "%s-%s" % (TestAPIGunicorn.__name__.lower(), self.test_04_ipxe.__name__)
         ignition_file = "inte-%s.yaml" % marker
         gen = generator.Generator(
             profile_id="id-%s" % marker,
@@ -289,7 +290,7 @@ class TestAPIAdvanced(unittest.TestCase):
 
     def test_05_ipxe_selector(self):
         mac = "00:00:00:00:00:00"
-        marker = "%s-%s" % (TestAPIAdvanced.__name__.lower(), self.test_05_ipxe_selector.__name__)
+        marker = "%s-%s" % (TestAPIGunicorn.__name__.lower(), self.test_05_ipxe_selector.__name__)
         ignition_file = "inte-%s.yaml" % marker
         gen = generator.Generator(
             profile_id="id-%s" % marker,
