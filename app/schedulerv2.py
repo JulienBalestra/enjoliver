@@ -44,8 +44,9 @@ class CommonScheduler(object):
         :param api_uri: str
         :return: list of interfaces
         """
-        CommonScheduler.log.info("fetch %s" % api_uri)
-        content = urllib2.urlopen("%s/scheduler/available" % api_uri)
+        query = "%s/scheduler/available" % api_uri
+        CommonScheduler.log.info("fetch %s" % query)
+        content = urllib2.urlopen(query)
         response_body = content.read()
         content.close()
         interfaces = json.loads(response_body)
@@ -112,10 +113,14 @@ class CommonScheduler(object):
         return True
 
     def _apply_everything(self):
-        done = 0
+        r = requests.get("%s/scheduler/%s" % (self.api_uri, "&".join(self.roles)))
+        done = len(json.loads(r.content))
+        r.close()
         available_list = self.fetch_available(self.api_uri)
+        self.custom_log(self.apply.__name__, "done:%d available:%d" % (done, len(available_list)))
         for available in available_list:
             done += self._affect(available)
+
         return done
 
 
@@ -153,3 +158,9 @@ class KubernetesNode(CommonScheduler):
 
     def apply(self):
         return self._apply_everything()
+
+
+if __name__ == '__main__':
+    s = KubernetesNode("http://172.20.0.1:5000")
+    s.apply_deps_delay = 5
+    s.apply()
