@@ -3,7 +3,6 @@ import json
 import math
 import os
 import shutil
-import subprocess
 import sys
 import time
 import unittest
@@ -247,7 +246,8 @@ class TestAPIAdvanced(unittest.TestCase):
             u'/metadata',
             u"/scheduler",
             u'/static/<path:filename>',
-            u'/scheduler/<string:role>'
+            u'/scheduler/<string:role>',
+            u'/scheduler/ip-list/<string:role>'
         ]
         request = urllib2.urlopen("%s/" % self.api_uri)
         response_body = request.read()

@@ -230,6 +230,21 @@ def get_schedule_by_role(role):
     return jsonify(one_role)
 
 
+@application.route('/scheduler/ip-list/<string:role>', methods=['GET'])
+def get_schedule_role_ip_list(role):
+    key = "ip-list-%s" % role
+    ip_list_role = cache.get(key)
+    if ip_list_role is None:
+        fetch = crud.FetchSchedule(
+            engine=engine,
+        )
+        ip_list_role = fetch.get_role_ip_list(role)
+        fetch.close()
+        cache.set(key, ip_list_role, timeout=30)
+
+    return jsonify(ip_list_role)
+
+
 @application.route('/scheduler', methods=['POST'])
 def schedule_role():
     if request.content_type != "application/json":

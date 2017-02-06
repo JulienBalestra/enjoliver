@@ -448,3 +448,18 @@ class TestModel(unittest.TestCase):
             self.assertEqual(int, type(i["netmask"]))
             self.assertEqual(unicode, type(i["role"]))
             self.assertEqual(datetime.datetime, type(i["created_date"]))
+
+    def test_24(self):
+        f = crud.FetchSchedule(self.engine)
+        r = f.get_role_ip_list("etcd-member")
+        self.assertEqual(4, len(r))
+
+    def test_25(self):
+        f = crud.FetchSchedule(self.engine)
+        r = f.get_role_ip_list("kubernetes-control-plane")
+        self.assertEqual(1, len(r))
+
+    def test_26(self):
+        f = crud.FetchSchedule(self.engine)
+        r = f.get_role_ip_list("kubernetes-node")
+        self.assertEqual(3, len(r))

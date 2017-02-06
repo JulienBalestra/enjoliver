@@ -328,6 +328,11 @@ class FetchSchedule(object):
 
         return l
 
+    def get_role_ip_list(self, role):
+        s = self.session.query(Schedule).filter(Schedule.role == role).all()
+
+        return [k.interface.ipv4 for k in s]
+
     def close(self):
         self.session.close()
 
