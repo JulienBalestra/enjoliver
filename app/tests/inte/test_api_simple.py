@@ -33,8 +33,9 @@ class TestAPI(unittest.TestCase):
     test_bootcfg_path = "%s/test_bootcfg" % tests_path
 
     bootcfg_port = int(os.getenv("BOOTCFG_PORT", "8080"))
-
     bootcfg_uri = "http://localhost:%d" % bootcfg_port
+
+    api_uri = "http://localhost"
 
     @staticmethod
     def process_target():
@@ -78,7 +79,6 @@ class TestAPI(unittest.TestCase):
         cls.app = api.app.test_client()
         cls.app.testing = True
 
-        # subprocess.check_output(["make"], cwd=cls.project_path)
         if os.path.isfile("%s" % TestAPI.bootcfg_bin) is False:
             raise IOError("%s" % TestAPI.bootcfg_bin)
         cls.p_bootcfg = Process(target=TestAPI.process_target)
@@ -213,6 +213,7 @@ class TestAPI(unittest.TestCase):
         marker = "%s-%s" % (TestAPI.__name__.lower(), self.test_04_ipxe.__name__)
         ignition_file = "inte-%s.yaml" % marker
         gen = generator.Generator(
+            api_uri=self.api_uri,
             profile_id="id-%s" % marker,
             name="name-%s" % marker,
             ignition_id=ignition_file,
@@ -237,11 +238,13 @@ class TestAPI(unittest.TestCase):
         marker = "%s-%s" % (TestAPI.__name__.lower(), self.test_05_ipxe_selector.__name__)
         ignition_file = "inte-%s.yaml" % marker
         gen = generator.Generator(
+            api_uri=self.api_uri,
             profile_id="id-%s" % marker,
             name="name-%s" % marker,
             ignition_id=ignition_file,
             selector={"mac": mac},
-            bootcfg_path=self.test_bootcfg_path)
+            bootcfg_path=self.test_bootcfg_path
+        )
         gen.dumps()
         result = self.app.get('/ipxe')
         self.assertEqual(result.data, "404")

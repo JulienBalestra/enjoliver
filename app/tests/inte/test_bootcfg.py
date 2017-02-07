@@ -66,10 +66,12 @@ class TestBootConfigCommon(TestCase):
         ignition_file = "inte-%s.yaml" % marker
         try:
             cls.gen = generator.Generator(
+                api_uri=cls.api_uri,
                 profile_id="id-%s" % marker,
                 name="name-%s" % marker,
                 ignition_id=ignition_file,
-                bootcfg_path=cls.test_bootcfg_path)
+                bootcfg_path=cls.test_bootcfg_path
+            )
         except IOError:
             os.write(2,
                      "\nWARNING %s override %s in %s\n" %
@@ -79,10 +81,12 @@ class TestBootConfigCommon(TestCase):
             sys.stderr.flush()
             with IOErrorToWarning():
                 cls.gen = generator.Generator(
+                    api_uri=cls.api_uri,
                     profile_id="id-%s" % marker,
                     name="name-%s" % marker,
                     ignition_id=ignition_file,
-                    bootcfg_path=cls.test_bootcfg_path)
+                    bootcfg_path=cls.test_bootcfg_path
+                )
 
         cls.gen.dumps()
 
@@ -263,11 +267,14 @@ class TestBootConfigSelector(TestBootConfigCommon):
     def generator(cls):
         marker = "%s" % cls.__name__.lower()
         ignition_file = "inte-%s.yaml" % marker
-        cls.gen = generator.Generator(profile_id="id-%s" % marker,
-                                      name="name-%s" % marker,
-                                      ignition_id=ignition_file,
-                                      selector={"mac": cls.mac},
-                                      bootcfg_path=cls.test_bootcfg_path)
+        cls.gen = generator.Generator(
+            api_uri=cls.api_uri,
+            profile_id="id-%s" % marker,
+            name="name-%s" % marker,
+            ignition_id=ignition_file,
+            selector={"mac": cls.mac},
+            bootcfg_path=cls.test_bootcfg_path
+        )
         cls.gen.dumps()
 
     def test_02_ipxe(self):
@@ -349,28 +356,37 @@ class TestBootConfigSelectors(TestBootConfigCommon):
     def generator(cls):
         marker_one = "%s-one" % cls.__name__.lower()
         ignition_file = "inte-%s.yaml" % marker_one
-        gen_one = generator.Generator(profile_id="id-%s" % marker_one,
-                                      name="name-%s" % marker_one,
-                                      ignition_id=ignition_file,
-                                      selector={"mac": cls.mac_one},
-                                      bootcfg_path=cls.test_bootcfg_path)
+        gen_one = generator.Generator(
+            api_uri=cls.api_uri,
+            profile_id="id-%s" % marker_one,
+            name="name-%s" % marker_one,
+            ignition_id=ignition_file,
+            selector={"mac": cls.mac_one},
+            bootcfg_path=cls.test_bootcfg_path
+        )
         gen_one.dumps()
 
         marker_two = "%s-two" % cls.__name__.lower()
         ignition_file = "inte-%s.yaml" % marker_two
-        gen_one = generator.Generator(profile_id="id-%s" % marker_two,
-                                      name="name-%s" % marker_two,
-                                      ignition_id=ignition_file,
-                                      selector={"mac": cls.mac_two},
-                                      bootcfg_path=cls.test_bootcfg_path)
+        gen_one = generator.Generator(
+            api_uri=cls.api_uri,
+            profile_id="id-%s" % marker_two,
+            name="name-%s" % marker_two,
+            ignition_id=ignition_file,
+            selector={"mac": cls.mac_two},
+            bootcfg_path=cls.test_bootcfg_path
+        )
         gen_one.dumps()
 
         marker_three = "%s-three" % cls.__name__.lower()
         ignition_file = "inte-testbootconfigselectors-default.yaml"
-        gen_one = generator.Generator(profile_id="id-%s" % marker_three,
-                                      name="name-%s" % marker_three,
-                                      ignition_id=ignition_file,
-                                      bootcfg_path=cls.test_bootcfg_path)
+        gen_one = generator.Generator(
+            api_uri=cls.api_uri,
+            profile_id="id-%s" % marker_three,
+            name="name-%s" % marker_three,
+            ignition_id=ignition_file,
+            bootcfg_path=cls.test_bootcfg_path
+        )
         gen_one.dumps()
 
     def test_ignition_1(self):

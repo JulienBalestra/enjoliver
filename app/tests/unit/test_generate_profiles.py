@@ -1,5 +1,4 @@
 import os
-import subprocess
 from unittest import TestCase
 
 from app import generate_profiles, generate_common
@@ -15,19 +14,22 @@ class IOErrorToWarning(object):
 
 class TestGenerateProfiles(TestCase):
     gen = generate_profiles.GenerateProfile
-    network_environment = "%s/misc/network-environment" % gen.bootcfg_path
     unit_path = "%s" % os.path.dirname(__file__)
     tests_path = "%s" % os.path.split(unit_path)[0]
     test_bootcfg_path = "%s/test_bootcfg" % tests_path
+    api_uri = "http://127.0.0.1:5000"
 
     @classmethod
     def setUpClass(cls):
-        os.environ["API_URI"] = "http://127.0.0.1:5000"
-        subprocess.check_output(["make", "-C", cls.gen.project_path])
         generate_common.GenerateCommon._raise_enof = Warning  # Skip the ignition isfile
         with IOErrorToWarning():
             cls.gen = generate_profiles.GenerateProfile(
-                _id="etcd-proxy", name="etcd-proxy", ignition_id="etcd-proxy.yaml")
+                api_uri=cls.api_uri,
+                _id="etcd-proxy",
+                name="etcd-proxy",
+                ignition_id="etcd-proxy.yaml",
+                bootcfg_path=cls.test_bootcfg_path
+            )
         generate_common.GenerateCommon._raise_enof = IOError
         cls.gen.profiles_path = "%s/test_resources" % cls.tests_path
 
@@ -69,7 +71,12 @@ class TestGenerateProfiles(TestCase):
         }
         with IOErrorToWarning():
             new = generate_profiles.GenerateProfile(
-                _id="etcd-proxy", name="etcd-proxy", ignition_id="etcd-proxy.yaml")
+                api_uri=self.api_uri,
+                _id="etcd-proxy",
+                name="etcd-proxy",
+                ignition_id="etcd-proxy.yaml",
+                bootcfg_path=self.test_bootcfg_path
+            )
         result = new.generate()
         self.assertEqual(expect, result)
 
@@ -77,7 +84,12 @@ class TestGenerateProfiles(TestCase):
         _id = "etcd-test-%s" % self.test_991_dump.__name__
         with IOErrorToWarning():
             new = generate_profiles.GenerateProfile(
-                _id="%s" % _id, name="etcd-test", ignition_id="etcd-test.yaml", bootcfg_path=self.test_bootcfg_path)
+                api_uri=self.api_uri,
+                _id="%s" % _id,
+                name="etcd-test",
+                ignition_id="etcd-test.yaml",
+                bootcfg_path=self.test_bootcfg_path
+            )
         new.dump()
         self.assertTrue(os.path.isfile("%s/profiles/%s.json" % (self.test_bootcfg_path, _id)))
         os.remove("%s/profiles/%s.json" % (self.test_bootcfg_path, _id))

@@ -12,12 +12,7 @@ class GenerateCommon(object):
 
     __metaclass__ = abc.ABCMeta
 
-    app_path = "%s" % os.path.dirname(__file__)
-    project_path = os.path.split(app_path)[0]
-    bootcfg_path = "%s/bootcfg" % project_path
-
     _target_data = None
-    _api_uri = None
     _raise_enof = IOError
 
     log = logger.get_logger("Generator")
@@ -31,24 +26,6 @@ class GenerateCommon(object):
         if self._target_data is not None:
             return self._target_data
         return self.generate()
-
-    @property
-    def api_uri(self):
-        """
-        :rtype: str
-        :return: URI address
-        """
-        if self._api_uri is not None:
-            self.log.debug("return %s" % self._api_uri)
-            return self._api_uri
-        api_uri = os.getenv("API_URI", None)
-        if api_uri is not None:
-            self._api_uri = api_uri
-            self.log.debug("env -> API_URI=%s" % self._api_uri)
-        else:
-            raise AttributeError("API_URI == %s" % api_uri)
-
-        return self._api_uri
 
     def render(self, indent=2):
         self.generate()

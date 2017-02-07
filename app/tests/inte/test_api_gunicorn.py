@@ -266,10 +266,12 @@ class TestAPIGunicorn(unittest.TestCase):
         marker = "%s-%s" % (TestAPIGunicorn.__name__.lower(), self.test_04_ipxe.__name__)
         ignition_file = "inte-%s.yaml" % marker
         gen = generator.Generator(
+            api_uri=self.api_uri,
             profile_id="id-%s" % marker,
             name="name-%s" % marker,
             ignition_id=ignition_file,
-            bootcfg_path=self.test_bootcfg_path)
+            bootcfg_path=self.test_bootcfg_path
+        )
         gen.dumps()
         request = urllib2.urlopen("%s/ipxe" % self.api_uri)
         response_body = request.read()
@@ -293,11 +295,13 @@ class TestAPIGunicorn(unittest.TestCase):
         marker = "%s-%s" % (TestAPIGunicorn.__name__.lower(), self.test_05_ipxe_selector.__name__)
         ignition_file = "inte-%s.yaml" % marker
         gen = generator.Generator(
+            api_uri=self.api_uri,
             profile_id="id-%s" % marker,
             name="name-%s" % marker,
             ignition_id=ignition_file,
             selector={"mac": mac},
-            bootcfg_path=self.test_bootcfg_path)
+            bootcfg_path=self.test_bootcfg_path
+        )
         gen.dumps()
         with self.assertRaises(urllib2.HTTPError):
             urllib2.urlopen("%s/ipxe" % self.api_uri)

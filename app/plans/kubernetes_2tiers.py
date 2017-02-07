@@ -20,7 +20,7 @@ class Kubernetes2Tiers(object):
     def __init__(self,
                  ignition_dict,
                  bootcfg_path="/var/lib/bootcfg",
-                 api_uri="http://127.0.0.1:8000",
+                 api_uri="http://127.0.0.1:5000",
                  extra_selectors=None):
         self.api_uri = api_uri
         self.ignition_dict = ignition_dict
@@ -36,6 +36,7 @@ class Kubernetes2Tiers(object):
 
     def _init_discovery(self):
         gen = generator.Generator(
+            api_uri=self.api_uri,
             profile_id="discovery",
             name="discovery",
             ignition_id="%s.yaml" % self.ignition_dict["discovery"],

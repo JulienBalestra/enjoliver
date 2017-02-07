@@ -36,6 +36,7 @@ class TestKVMDiscoveryClient00(TestKVMDiscoveryClient):
         os.environ["BOOTCFG_IP"] = "172.20.0.1"
         os.environ["API_IP"] = "172.20.0.1"
         gen = generator.Generator(
+            api_uri=self.api_uri,
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
@@ -99,6 +100,7 @@ class TestKVMDiscoveryClient01(TestKVMDiscoveryClient):
         os.environ["BOOTCFG_IP"] = "172.20.0.1"
         os.environ["API_IP"] = "172.20.0.1"
         gen = generator.Generator(
+            api_uri=self.api_uri,
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
@@ -182,6 +184,7 @@ class TestKVMDiscoveryClient02(TestKVMDiscoveryClient):
         os.environ["BOOTCFG_IP"] = "172.20.0.1"
         os.environ["API_IP"] = "172.20.0.1"
         gen = generator.Generator(
+            api_uri=self.api_uri,
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
@@ -257,6 +260,7 @@ class TestKVMDiscoveryClient03(TestKVMDiscoveryClient):
         os.environ["BOOTCFG_IP"] = "172.20.0.1"
         os.environ["API_IP"] = "172.20.0.1"
         gen = generator.Generator(
+            api_uri=self.api_uri,
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
@@ -333,6 +337,7 @@ class TestKVMDiscoveryClient04(TestKVMDiscoveryClient):
         os.environ["BOOTCFG_IP"] = "172.20.0.1"
         os.environ["API_IP"] = "172.20.0.1"
         gen = generator.Generator(
+            api_uri=self.api_uri,
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
@@ -391,6 +396,7 @@ class TestKVMDiscoveryClient05(TestKVMDiscoveryClient):
         os.environ["BOOTCFG_IP"] = "172.20.0.1"
         os.environ["API_IP"] = "172.20.0.1"
         gen = generator.Generator(
+            api_uri=self.api_uri,
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
@@ -462,6 +468,7 @@ class TestKVMDiscoveryClient06(TestKVMDiscoveryClient):
         os.environ["BOOTCFG_IP"] = "172.20.0.1"
         os.environ["API_IP"] = "172.20.0.1"
         gen = generator.Generator(
+            api_uri=self.api_uri,
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,

@@ -159,9 +159,3 @@ class KubernetesNode(CommonScheduler):
 
     def apply(self):
         return self._apply_everything()
-
-
-if __name__ == '__main__':
-    CommonScheduler.apply_deps_delay = 5
-    s = KubernetesNode("http://127.0.0.1:5000")
-    s.apply()

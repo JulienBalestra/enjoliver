@@ -5,9 +5,13 @@ class GenerateProfile(GenerateCommon):
     def __repr__(self):
         return "GenProfile-%s" % self._target_data["id"]
 
-    def __init__(self, _id, name, ignition_id,
-                 bootcfg_path=GenerateCommon.bootcfg_path):
+    def __init__(self,
+                 api_uri,
+                 _id, name,
+                 ignition_id,
+                 bootcfg_path):
 
+        self.api_uri = api_uri
         self.ensure_directory(bootcfg_path)
         self.ensure_directory("%s/ignition" % bootcfg_path)
         try:

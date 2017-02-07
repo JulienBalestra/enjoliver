@@ -30,6 +30,7 @@ class TestKVMBasicPXE(kvm_player.KernelVirtualMachinePlayer):
     def test_00(self):
         marker = "euid-%s-%s" % (TestKVMBasicPXE.__name__.lower(), self.test_00.__name__)
         gen = generator.Generator(
+            api_uri=self.api_uri,
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
@@ -82,6 +83,7 @@ class TestKVMBasicPXE(kvm_player.KernelVirtualMachinePlayer):
         nb_node = 3
         marker = "euid-%s-%s" % (TestKVMBasicPXE.__name__.lower(), self.test_01.__name__)
         gen = generator.Generator(
+            api_uri=self.api_uri,
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,

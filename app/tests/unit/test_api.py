@@ -32,10 +32,6 @@ class TestAPI(unittest.TestCase):
 
         cls.app.testing = True
 
-    @classmethod
-    def tearDownClass(cls):
-        pass
-
     def test_healthz_00(self):
         expect = {
             u'flask': True,

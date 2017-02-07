@@ -9,9 +9,15 @@ class GenerateGroup(GenerateCommon):
     def __repr__(self):
         return "GenGroup[%s]" % self._target_data["id"]
 
-    def __init__(self, _id, name, profile, selector=None, metadata=None,
-                 bootcfg_path=GenerateCommon.bootcfg_path):
-
+    def __init__(self,
+                 api_uri,
+                 _id, name,
+                 profile,
+                 bootcfg_path,
+                 selector=None,
+                 metadata=None,
+                 ):
+        self.api_uri = api_uri
         self.ensure_directory(bootcfg_path)
         self.target_path = self.ensure_directory("%s/groups" % bootcfg_path)
         self.ssh_authorized_keys_dir = "%s/ssh_authorized_keys" % bootcfg_path

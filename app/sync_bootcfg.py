@@ -146,6 +146,7 @@ class ConfigSyncSchedules(object):
             hostname = self.get_dns_name(m["ipv4"], "k8s-control-plane-%d" % i)
             selector.update(self.get_extra_selectors(self.extra_selector))
             gen = generator.Generator(
+                api_uri=self.api_uri,
                 group_id="%s-%d" % (marker, i),  # one per machine
                 profile_id=marker,  # link to ignition
                 name=marker,
@@ -179,6 +180,7 @@ class ConfigSyncSchedules(object):
             hostname = self.get_dns_name(m["ipv4"], "k8s-node-%d" % i)
             selector.update(self.get_extra_selectors(self.extra_selector))
             gen = generator.Generator(
+                api_uri=self.api_uri,
                 group_id="%s-%d" % (marker, i),  # one per machine
                 profile_id=marker,  # link to ignition
                 name=marker,
