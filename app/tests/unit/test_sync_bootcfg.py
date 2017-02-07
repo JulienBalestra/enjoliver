@@ -57,3 +57,20 @@ class TestConfigSyncSchedules(TestCase):
             'rack': '',
             'shortname': 'kubernetes-control-plane-0'},
             d)
+
+    def test_03(self):
+        s = sync_bootcfg.ConfigSyncSchedules(
+            api_uri=self.api_uri,
+            bootcfg_path=self.test_bootcfg_path,
+            ignition_dict=None,
+            extra_selector_dict=None,
+        )
+        d = s.cni_ipam("172.20.0.10/19", "172.20.0.1")
+        self.assertEqual({
+            'gateway': '172.20.0.1',
+            'rangeStart': '172.20.10.1',
+            'rangeEnd': '172.20.10.254',
+            'routes': [{'dst': '0.0.0.0/0'}],
+            'subnet': '172.20.0.0/19',
+            'type': 'host-local'},
+            d)
