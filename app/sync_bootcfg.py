@@ -110,15 +110,27 @@ class ConfigSyncSchedules(object):
         return {}
 
     @property
+    def etcd_member_ip_list(self):
+        return self._query_ip_list(schedulerv2.ScheduleRoles.etcd_member)
+
+    @property
+    def kubernetes_control_plane_ip_list(self):
+        return self._query_ip_list(schedulerv2.ScheduleRoles.kubernetes_control_plane)
+
+    @property
+    def kubernetes_nodes_ip_list(self):
+        return self._query_ip_list(schedulerv2.ScheduleRoles.kubernetes_node)
+
+    @property
     def etcd_initial_cluster(self):
-        ips = self._query_ip_list(schedulerv2.ScheduleRoles.etcd_member)
-        e = ["%s=http://%s:2379" % (k, k) for k in ips]
+        ips = self.etcd_member_ip_list
+        e = ["%s=http://%s:2380" % (k, k) for k in ips]
         random.shuffle(e)
         return ",".join(e)
 
     @property
     def kubernetes_control_plane(self):
-        ips = self._query_ip_list(schedulerv2.ScheduleRoles.kubernetes_control_plane)
+        ips = self.kubernetes_control_plane_ip_list
         k8s = ["http://%s:8080" % k8s for k8s in ips]
         random.shuffle(k8s)
         return ",".join(k8s)
@@ -137,7 +149,7 @@ class ConfigSyncSchedules(object):
                 group_id="%s-%d" % (marker, i),  # one per machine
                 profile_id=marker,  # link to ignition
                 name=marker,
-                ignition_id="%s" % self.ignition_dict[marker],
+                ignition_id="%s.yaml" % self.ignition_dict[marker],
                 bootcfg_path=self.bootcfg_path,
                 selector=selector,
                 extra_metadata={
@@ -160,7 +172,6 @@ class ConfigSyncSchedules(object):
     def kubernetes_nodes(self):
         marker = self.kubernetes_nodes.__name__
         roles = schedulerv2.KubernetesNode.roles
-        print self.etcd_initial_cluster
 
         machine_roles = self._query_roles(*roles)
         for i, m in enumerate(machine_roles):
@@ -171,7 +182,7 @@ class ConfigSyncSchedules(object):
                 group_id="%s-%d" % (marker, i),  # one per machine
                 profile_id=marker,  # link to ignition
                 name=marker,
-                ignition_id="%s" % self.ignition_dict[marker],
+                ignition_id="%s.yaml" % self.ignition_dict[marker],
                 bootcfg_path=self.bootcfg_path,
                 selector=selector,
                 extra_metadata={

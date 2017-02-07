@@ -4,7 +4,7 @@ import sys
 import time
 import unittest
 
-from app import generator, scheduler
+from app import generator, schedulerv2, sync_bootcfg
 
 try:
     import kvm_player
@@ -42,6 +42,14 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
             bootcfg_path=self.test_bootcfg_path
         )
         gen.dumps()
+        sync = sync_bootcfg.ConfigSyncSchedules(
+            api_uri=self.api_uri,
+            bootcfg_path=self.test_bootcfg_path,
+            ignition_dict={
+                "etcd_member_kubernetes_control_plane": "%s-%s" % (marker, "k8s-control-plane"),
+                "kubernetes_nodes": "%s-%s" % (marker, "k8s-node")
+            }
+        )
         for m in nodes:
             destroy, undefine = ["virsh", "destroy", m], \
                                 ["virsh", "undefine", m]
@@ -66,44 +74,41 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
                 time.sleep(self.kvm_sleep_between_node)  # KVM fail to associate nic
 
-            sch_member = scheduler.EtcdMemberScheduler(
-                api_endpoint=self.api_uri,
-                bootcfg_path=self.test_bootcfg_path,
-                ignition_member="%s-emember" % marker,
-                bootcfg_prefix="%s-" % marker
-            )
-            sch_member.etcd_members_nb = 1
+            time.sleep(self.kvm_sleep_between_node * self.kvm_sleep_between_node)
 
-            time.sleep(self.kvm_sleep_between_node * nb_node)
-            for i in xrange(60):
-                if sch_member.apply() is True:
-                    break
-                time.sleep(self.kvm_sleep_between_node)
-
-            self.assertTrue(sch_member.apply())
-
-            sch_cp = scheduler.K8sControlPlaneScheduler(
-                dep_instance=sch_member,
-                ignition_control_plane="%s-k8s-control-plane" % marker,
-                apply_first=False
-            )
-            sch_cp.k8s_api_server_nb = 1
+            sch_cp = schedulerv2.EtcdMemberKubernetesControlPlane(self.api_uri)
+            sch_cp.expected_nb = 1
             for i in xrange(60):
                 if sch_cp.apply() is True:
+                    sync.apply()
                     break
                 time.sleep(self.kvm_sleep_between_node)
 
             self.assertTrue(sch_cp.apply())
+            sch_no = schedulerv2.KubernetesNode(self.api_uri, apply_dep=False)
+            for i in xrange(60):
+                sync.apply()
+                if sch_no.apply() == nb_node - 1:
+                    break
+                time.sleep(self.kvm_sleep_between_node)
+
+            self.assertEqual(nb_node - 1, sch_no.apply())
+            sync.apply()
+
+            time.sleep(self.kvm_sleep_between_node)
+
             to_start = copy.deepcopy(nodes)
             self.kvm_restart_off_machines(to_start)
             time.sleep(self.kvm_sleep_between_node * nb_node)
-            self.etcd_member_len(sch_member.ip_list[0], sch_member.etcd_members_nb)
-            self.etcd_endpoint_health(sch_cp.ip_list)
-            self.k8s_api_health(sch_cp.ip_list)
-            self.etcd_member_k8s_minions(sch_member.ip_list[0], sch_cp.k8s_api_server_nb)
-            self.write_ending(marker)
 
+            self.etcd_member_len(sync.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb)
+            self.etcd_endpoint_health(sync.kubernetes_control_plane_ip_list + sync.kubernetes_nodes_ip_list)
+            self.k8s_api_health(sync.kubernetes_control_plane_ip_list)
+            self.etcd_member_k8s_minions(sync.kubernetes_control_plane_ip_list[0], nb_node)
+            self.write_ending(marker)
         finally:
+            if os.getenv("TEST"):
+                self.iteractive_usage(api_server_uri="http://%s:8080" % sync.kubernetes_control_plane_ip_list[0])
             for i in xrange(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
@@ -129,6 +134,14 @@ class TestKVMK8SBasic1(TestKVMK8sBasic):
             bootcfg_path=self.test_bootcfg_path
         )
         gen.dumps()
+        sync = sync_bootcfg.ConfigSyncSchedules(
+            api_uri=self.api_uri,
+            bootcfg_path=self.test_bootcfg_path,
+            ignition_dict={
+                "etcd_member_kubernetes_control_plane": "%s-%s" % (marker, "k8s-control-plane"),
+                "kubernetes_nodes": "%s-%s" % (marker, "k8s-node")
+            }
+        )
         for m in nodes:
             destroy, undefine = ["virsh", "destroy", m], \
                                 ["virsh", "undefine", m]
@@ -153,59 +166,41 @@ class TestKVMK8SBasic1(TestKVMK8sBasic):
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
                 time.sleep(self.kvm_sleep_between_node)
 
-            sch_member = scheduler.EtcdMemberScheduler(
-                api_endpoint=self.api_uri,
-                bootcfg_path=self.test_bootcfg_path,
-                ignition_member="%s-emember" % marker,
-                bootcfg_prefix="%s-" % marker
-            )
-            sch_member.etcd_members_nb = 1
-            time.sleep(self.kvm_sleep_between_node * nb_node)
-            for i in xrange(60):
-                if sch_member.apply() is True:
-                    break
-                time.sleep(self.kvm_sleep_between_node)
+            time.sleep(self.kvm_sleep_between_node * self.kvm_sleep_between_node)
 
-            self.assertTrue(sch_member.apply())
-
-            sch_cp = scheduler.K8sControlPlaneScheduler(
-                dep_instance=sch_member,
-                ignition_control_plane="%s-k8s-control-plane" % marker,
-                apply_first=False
-            )
-            sch_cp.k8s_api_server_nb = 1
+            sch_cp = schedulerv2.EtcdMemberKubernetesControlPlane(self.api_uri)
+            sch_cp.expected_nb = 1
             for i in xrange(60):
                 if sch_cp.apply() is True:
+                    sync.apply()
                     break
                 time.sleep(self.kvm_sleep_between_node)
 
             self.assertTrue(sch_cp.apply())
-            sch_no = scheduler.K8sNodeScheduler(
-                dep_instance=sch_cp,
-                ignition_node="%s-k8s-node" % marker,
-                apply_first=False
-            )
+            sch_no = schedulerv2.KubernetesNode(self.api_uri, apply_dep=False)
             for i in xrange(60):
-                if sch_no.apply() == 1:
+                sync.apply()
+                if sch_no.apply() == nb_node - 1:
                     break
                 time.sleep(self.kvm_sleep_between_node)
+
+            self.assertEqual(nb_node - 1, sch_no.apply())
+            sync.apply()
+
+            time.sleep(self.kvm_sleep_between_node)
 
             to_start = copy.deepcopy(nodes)
             self.kvm_restart_off_machines(to_start)
             time.sleep(self.kvm_sleep_between_node * nb_node)
 
-            self.etcd_member_len(sch_member.ip_list[0], sch_member.etcd_members_nb)
-            self.etcd_endpoint_health(sch_cp.ip_list)
-            self.k8s_api_health(sch_cp.ip_list)
-            self.etcd_member_k8s_minions(sch_member.ip_list[0], len(sch_no.wide_done_list) - sch_member.etcd_members_nb)
-            self.create_nginx_deploy(sch_cp.ip_list[0])
-            self.pod_nginx_is_running(sch_cp.ip_list[0])
-            self.create_nginx_daemon_set(sch_cp.ip_list[0])
-            self.daemon_set_nginx_are_running(sch_cp.ip_list + sch_no.ip_list)
+            self.etcd_member_len(sync.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb)
+            self.etcd_endpoint_health(sync.kubernetes_control_plane_ip_list + sync.kubernetes_nodes_ip_list)
+            self.k8s_api_health(sync.kubernetes_control_plane_ip_list)
+            self.etcd_member_k8s_minions(sync.kubernetes_control_plane_ip_list[0], nb_node)
             self.write_ending(marker)
         finally:
             if os.getenv("TEST"):
-                self.iteractive_usage(api_server_uri="http://%s:8080" % sch_cp.ip_list[0])
+                self.iteractive_usage(api_server_uri="http://%s:8080" % sync.kubernetes_control_plane_ip_list[0])
             for i in xrange(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \

@@ -233,8 +233,8 @@ class TestEtcdMemberKubernetesControlPlane2(TestAPIGunicornScheduler):
             self.api_uri,
             self.test_bootcfg_path,
             ignition_dict={
-                "etcd_member_kubernetes_control_plane": "inte-testapigunicornscheduler-etcd-k8s-cp.yaml",
-                "kubernetes_nodes": "inte-testapigunicornscheduler-etcd-k8s-cp.yaml",
+                "etcd_member_kubernetes_control_plane": "inte-testapigunicornscheduler-etcd-k8s-cp",
+                "kubernetes_nodes": "inte-testapigunicornscheduler-etcd-k8s-cp",
             }
         )
         s.apply()
@@ -255,7 +255,7 @@ class TestEtcdMemberKubernetesControlPlane3(TestAPIGunicornScheduler):
         r.close()
         self.assertTrue(sch.apply())
 
-        sch_no = schedulerv2.KubernetesNode(self.api_uri)
+        sch_no = schedulerv2.KubernetesNode(self.api_uri, True)
         self.assertEqual(0, sch_no.apply())
         r = requests.post(self.api_discovery, data=json.dumps(posts.M04))
         r.close()
@@ -265,8 +265,8 @@ class TestEtcdMemberKubernetesControlPlane3(TestAPIGunicornScheduler):
             self.api_uri,
             self.test_bootcfg_path,
             ignition_dict={
-                "etcd_member_kubernetes_control_plane": "inte-testapigunicornscheduler-etcd-k8s-cp.yaml",
-                "kubernetes_nodes": "inte-testapigunicornscheduler-etcd-k8s-cp.yaml",
+                "etcd_member_kubernetes_control_plane": "inte-testapigunicornscheduler-etcd-k8s-cp",
+                "kubernetes_nodes": "inte-testapigunicornscheduler-etcd-k8s-cp",
             },
         )
         s.apply()
@@ -279,7 +279,7 @@ class TestEtcdMemberKubernetesControlPlane4(TestAPIGunicornScheduler):
             self.assertEqual(r.status_code, 200)
             r.close()
 
-        sch_no = schedulerv2.KubernetesNode(self.api_uri)
+        sch_no = schedulerv2.KubernetesNode(self.api_uri, True)
 
         self.assertEqual(len(posts.ALL) - schedulerv2.EtcdMemberKubernetesControlPlane.expected_nb, sch_no.apply())
 
@@ -287,8 +287,8 @@ class TestEtcdMemberKubernetesControlPlane4(TestAPIGunicornScheduler):
             self.api_uri,
             self.test_bootcfg_path,
             ignition_dict={
-                "etcd_member_kubernetes_control_plane": "inte-testapigunicornscheduler-etcd-k8s-cp.yaml",
-                "kubernetes_nodes": "inte-testapigunicornscheduler-etcd-k8s-cp.yaml",
+                "etcd_member_kubernetes_control_plane": "inte-testapigunicornscheduler-etcd-k8s-cp",
+                "kubernetes_nodes": "inte-testapigunicornscheduler-etcd-k8s-cp",
             },
             extra_selector_dict={"os": "installed"},
         )

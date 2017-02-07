@@ -146,12 +146,12 @@ class KubernetesNode(CommonScheduler):
 
     def __init__(self,
                  api_uri,
-                 apply_dep=True):
+                 apply_dep):
         self.custom_log("%s.__init__" % self.__name__,
                         "with api_uri %s" % api_uri)
         self.api_uri = api_uri
 
-        if apply_dep:
+        if apply_dep is True:
             self.custom_log("%s.__init__" % self.__name__,
                             "applying deps by instancing %s" % EtcdMemberKubernetesControlPlane.__name__)
             sch_cp = EtcdMemberKubernetesControlPlane(self.api_uri)

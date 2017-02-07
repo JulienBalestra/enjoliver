@@ -14,7 +14,7 @@ import requests
 import yaml
 from kubernetes import client as kc
 
-from app import generator, api, scheduler
+from app import generator, api
 
 
 def is_virtinstall():
@@ -102,11 +102,12 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "%s" % KernelVirtualMachinePlayer.bootcfg_bin,
             "-data-path", "%s" % KernelVirtualMachinePlayer.test_bootcfg_path,
             "-assets-path", "%s" % KernelVirtualMachinePlayer.assets_path,
-            "-log-level", "debug"
+            "-log-level", "error"
         ]
         os.write(1, "PID  -> %s\n"
                     "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
         sys.stdout.flush()
+        os.environ["TERM"] = "xterm"
         os.execve(cmd[0], cmd, os.environ)
 
     @staticmethod
@@ -341,7 +342,6 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     def setUp(self):
         self.clean_sandbox()
         self.api_healthz()
-        scheduler.CommonScheduler.etcd_initial_cluster_set = set()
 
     def virsh(self, cmd, assertion=False, v=None):
         if v is not None:
