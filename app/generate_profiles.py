@@ -39,5 +39,5 @@ class GenerateProfile(GenerateCommon):
 
     def generate(self):
         self._boot()
-        self.log.info("done")
+        self.log.info("done: %s" % self._target_data["name"])
         return self.target_data

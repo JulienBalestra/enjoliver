@@ -64,6 +64,7 @@ class CommonScheduler(object):
         """
 
     def apply_dep(self, dep_instance):
+        self.custom_log(self.apply_dep.__name__, "tries:%d delay:%d" % (self.apply_deps_tries, self.apply_deps_delay))
         for t in xrange(self.apply_deps_tries):
             if dep_instance.apply() is True:
                 return True
@@ -161,6 +162,6 @@ class KubernetesNode(CommonScheduler):
 
 
 if __name__ == '__main__':
-    s = KubernetesNode("http://172.20.0.1:5000")
-    s.apply_deps_delay = 5
+    CommonScheduler.apply_deps_delay = 5
+    s = KubernetesNode("http://127.0.0.1:5000")
     s.apply()

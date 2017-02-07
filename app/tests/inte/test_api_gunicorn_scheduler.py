@@ -13,6 +13,7 @@ import requests
 from app import api
 from app import model
 from app import schedulerv2
+from app import sync_bootcfg
 from common import posts
 
 
@@ -60,6 +61,16 @@ class TestAPIGunicornScheduler(unittest.TestCase):
         os.execv(cmd[0], cmd)
 
     @staticmethod
+    def clean_sandbox():
+        dirs = ["%s/%s" % (TestAPIGunicornScheduler.test_bootcfg_path, k)
+                for k in ("profiles", "groups")]
+        for d in dirs:
+            for f in os.listdir(d):
+                if ".json" in f:
+                    os.write(1, "\r-> remove %s\n\r" % f)
+                    os.remove("%s/%s" % (d, f))
+
+    @staticmethod
     def process_target_api():
         api.cache.clear()
         os.environ["API_URI"] = "http://localhost:5000"
@@ -93,6 +104,9 @@ class TestAPIGunicornScheduler(unittest.TestCase):
             pass
 
         assert os.path.isdir(journal) is False
+
+        cls.clean_sandbox()
+
         engine = api.create_engine(db)
         api.app.config["DB_PATH"] = db_path
         api.app.config["API_URI"] = cls.api_uri
@@ -215,6 +229,16 @@ class TestEtcdMemberKubernetesControlPlane2(TestAPIGunicornScheduler):
         r.close()
         self.assertTrue(sch.apply())
 
+        s = sync_bootcfg.ConfigSyncSchedules(
+            self.api_uri,
+            self.test_bootcfg_path,
+            ignition_dict={
+                "etcd_member_kubernetes_control_plane": "inte-testapigunicornscheduler-etcd-k8s-cp.yaml",
+                "kubernetes_nodes": "inte-testapigunicornscheduler-etcd-k8s-cp.yaml",
+            }
+        )
+        s.apply()
+
 
 class TestEtcdMemberKubernetesControlPlane3(TestAPIGunicornScheduler):
     def test_03(self):
@@ -237,6 +261,16 @@ class TestEtcdMemberKubernetesControlPlane3(TestAPIGunicornScheduler):
         r.close()
         self.assertEqual(1, sch_no.apply())
 
+        s = sync_bootcfg.ConfigSyncSchedules(
+            self.api_uri,
+            self.test_bootcfg_path,
+            ignition_dict={
+                "etcd_member_kubernetes_control_plane": "inte-testapigunicornscheduler-etcd-k8s-cp.yaml",
+                "kubernetes_nodes": "inte-testapigunicornscheduler-etcd-k8s-cp.yaml",
+            },
+        )
+        s.apply()
+
 
 class TestEtcdMemberKubernetesControlPlane4(TestAPIGunicornScheduler):
     def test_04(self):
@@ -248,3 +282,14 @@ class TestEtcdMemberKubernetesControlPlane4(TestAPIGunicornScheduler):
         sch_no = schedulerv2.KubernetesNode(self.api_uri)
 
         self.assertEqual(len(posts.ALL) - schedulerv2.EtcdMemberKubernetesControlPlane.expected_nb, sch_no.apply())
+
+        s = sync_bootcfg.ConfigSyncSchedules(
+            self.api_uri,
+            self.test_bootcfg_path,
+            ignition_dict={
+                "etcd_member_kubernetes_control_plane": "inte-testapigunicornscheduler-etcd-k8s-cp.yaml",
+                "kubernetes_nodes": "inte-testapigunicornscheduler-etcd-k8s-cp.yaml",
+            },
+            extra_selector_dict={"os": "installed"},
+        )
+        s.apply()

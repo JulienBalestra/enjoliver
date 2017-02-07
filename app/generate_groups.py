@@ -74,5 +74,5 @@ class GenerateGroup(GenerateCommon):
     def generate(self):
         self._metadata()
         self._selector()
-        self.log.info("done")
+        self.log.info("done: %s" % self._target_data["id"])
         return self.target_data

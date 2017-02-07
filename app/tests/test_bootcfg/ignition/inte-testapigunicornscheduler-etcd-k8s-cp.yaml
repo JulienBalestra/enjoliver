@@ -1,0 +1,9 @@
+---
+storage:
+  files:
+    - filesystem: root
+      path: /tmp/useless
+      mode: 420
+      contents:
+        inline: |
+          useless
