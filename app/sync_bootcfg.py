@@ -1,6 +1,7 @@
 import json
 import os
 import random
+import re
 import socket
 
 import ipaddr
@@ -44,11 +45,11 @@ class ConfigSyncSchedules(object):
         elif level.lower() == "warning":
             self.log.warning("%s.%s %s" % (self.__name__, func_name, message))
         elif level.lower() == "error":
-            self.log.warning("%s.%s %s" % (self.__name__, func_name, message))
+            self.log.error("%s.%s %s" % (self.__name__, func_name, message))
         else:
             self.log.info("%s.%s %s" % (self.__name__, func_name, message))
 
-    def get_dns_name(self, host_ipv4, default=None):
+    def get_dns_name(self, host_ipv4, default=""):
         """
         Get the DNS name by IPv4 address, fail to a default name
         :param host_ipv4:
@@ -60,12 +61,41 @@ class ConfigSyncSchedules(object):
             return t[0]
         except socket.herror:
             self.custom_log(self.get_dns_name.__name__,
-                            "fail to get host by addr setting default provided: %s" % default, "warning")
+                            "fail to get host by addr %s returning %s" % (host_ipv4, default), "warning")
             return default
 
         except Exception as e:
             self.custom_log(self.get_dns_name.__name__, "fail to get host by addr: %s %s" % (e, e.message), "error")
             raise
+
+    def get_dns_attr(self, fqdn):
+        """
+        TODO: Use LLDP to avoid vendor specific usage
+        :param fqdn: e.g: r13-srv3.dc-1.foo.bar.cr
+        :return:
+        """
+        d = {
+            "shortname": "",
+            "dc": "",
+            "domain": "",
+            "rack": "",
+            "pos": "",
+        }
+        s = fqdn.split(".")
+        d["shortname"] = s[0]
+        try:
+            d["dc"] = s[1]
+        except IndexError:
+            self.custom_log(self.get_dns_attr.__name__, "IndexError %s[1] after split(.)" % fqdn, "error")
+            return d
+        d["domain"] = ".".join(s[1:])
+        try:
+            rack, pos = s[0].split("-")
+            d["rack"] = re.sub("[^0-9]+", "", rack)
+            d["pos"] = re.sub("[^0-9]+", "", pos)
+        except ValueError:
+            self.custom_log(self.get_dns_attr.__name__, "error during the split rack/pos %s" % s[0], "error")
+        return d
 
     @staticmethod
     def cni_ipam(host_cidrv4, host_gateway):
@@ -143,7 +173,8 @@ class ConfigSyncSchedules(object):
         machine_roles = self._query_roles(*roles)
         for i, m in enumerate(machine_roles):
             selector = {"mac": m["mac"]}
-            hostname = self.get_dns_name(m["ipv4"], "k8s-control-plane-%d" % i)
+            fqdn = self.get_dns_name(m["ipv4"], "k8s-control-plane-%d" % i)
+            dns_attr = self.get_dns_attr(fqdn)
             selector.update(self.get_extra_selectors(self.extra_selector))
             gen = generator.Generator(
                 api_uri=self.api_uri,
@@ -164,8 +195,11 @@ class ConfigSyncSchedules(object):
                     "kubelet_name": "%s" % m["ipv4"],
                     "k8s_apiserver_count": len(machine_roles),
                     "k8s_advertise_ip": "%s" % m["ipv4"],
-                    "hostname": hostname,
-                    "cni": json.dumps(self.cni_ipam(m["cidrv4"], m["gateway"]))
+                    # IPAM
+                    "cni": json.dumps(self.cni_ipam(m["cidrv4"], m["gateway"])),
+                    # host
+                    "hostname": dns_attr["shortname"],
+                    "dns_attr": dns_attr,
                 }
             )
             gen.dumps()
@@ -177,7 +211,8 @@ class ConfigSyncSchedules(object):
         machine_roles = self._query_roles(*roles)
         for i, m in enumerate(machine_roles):
             selector = {"mac": m["mac"]}
-            hostname = self.get_dns_name(m["ipv4"], "k8s-node-%d" % i)
+            fqdn = self.get_dns_name(m["ipv4"], "k8s-node-%d" % i)
+            dns_attr = self.get_dns_attr(fqdn)
             selector.update(self.get_extra_selectors(self.extra_selector))
             gen = generator.Generator(
                 api_uri=self.api_uri,
@@ -196,8 +231,11 @@ class ConfigSyncSchedules(object):
                     "kubelet_ip": "%s" % m["ipv4"],
                     "kubelet_name": "%s" % m["ipv4"],
                     "k8s_endpoint": self.kubernetes_control_plane,
-                    "hostname": hostname,
-                    "cni": json.dumps(self.cni_ipam(m["cidrv4"], m["gateway"]))
+                    # IPAM
+                    "cni": json.dumps(self.cni_ipam(m["cidrv4"], m["gateway"])),
+                    # host
+                    "hostname": dns_attr["shortname"],
+                    "dns_attr": dns_attr,
                 }
             )
             gen.dumps()
