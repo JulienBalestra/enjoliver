@@ -7,6 +7,10 @@ import requests
 
 import logger
 from model import ScheduleRoles
+from configs import EnjoliverConfig
+
+
+ec = EnjoliverConfig()
 
 
 class CommonScheduler(object):
@@ -17,8 +21,8 @@ class CommonScheduler(object):
 
     log = logger.get_logger(__file__)
 
-    apply_deps_tries = 15
-    apply_deps_delay = 60
+    apply_deps_tries = ec.apply_deps_tries
+    apply_deps_delay = ec.apply_deps_delay
 
     def custom_log(self, func_name, message, level="info"):
         """
@@ -126,7 +130,7 @@ class CommonScheduler(object):
 
 
 class EtcdMemberKubernetesControlPlane(CommonScheduler):
-    expected_nb = 3
+    expected_nb = ec.etcd_member_kubernetes_control_plane_expected_nb
     roles = [ScheduleRoles.etcd_member, ScheduleRoles.kubernetes_control_plane]
     __name__ = "EtcdMemberKubernetesControlPlane"
 

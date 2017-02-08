@@ -1,4 +1,8 @@
+from configs import EnjoliverConfig
+
 from generate_common import GenerateCommon
+
+ec = EnjoliverConfig()
 
 
 class GenerateProfile(GenerateCommon):
@@ -30,8 +34,8 @@ class GenerateProfile(GenerateCommon):
 
     def _boot(self):
         self._target_data["boot"] = {
-            "kernel": "%s/assets/coreos/serve/coreos_production_pxe.vmlinuz" % self.api_uri,
-            "initrd": ["%s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz" % self.api_uri],
+            "kernel": "%s%s" % (self.api_uri, ec.kernel),
+            "initrd": ["%s%s" % (self.api_uri, ec.initrd)],
             "cmdline": {
                 "coreos.config.url":
                     "%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}" % self.api_uri,

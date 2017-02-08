@@ -14,17 +14,17 @@ import crud
 import logger
 import model
 import s3
+from configs import EnjoliverConfig
+
+ec = EnjoliverConfig()
 
 LOGGER = logger.get_logger(__file__)
 
 app = application = Flask(__name__)
 cache = SimpleCache()
 
-application.config["BOOTCFG_URI"] = os.getenv(
-    "BOOTCFG_URI", "http://127.0.0.1:8080")
-
-application.config["API_URI"] = os.getenv(
-    "API_URI", None)
+application.config["BOOTCFG_URI"] = ec.bootcfg_uri
+application.config["API_URI"] = ec.api_uri
 
 application.config["BOOTCFG_URLS"] = [
     "/",
@@ -34,21 +34,13 @@ application.config["BOOTCFG_URLS"] = [
     "/metadata"
 ]
 
-application.config["DB_PATH"] = os.getenv(
-    "DB_PATH", '%s/enjoliver.sqlite' % os.path.dirname(os.path.abspath(__file__)))
+application.config["DB_PATH"] = ec.db_path
+application.config["DB_URI"] = ec.db_uri
 
-application.config["DB_URI"] = os.getenv(
-    "DB_URI", 'sqlite:///%s' % application.config["DB_PATH"])
+ignition_journal = application.config["IGNITION_JOURNAL_DIR"] = ec.ignition_journal_dir
 
-ignition_journal = application.config["IGNITION_JOURNAL_DIR"] = os.getenv(
-    "IGNITION_JOURNAL_DIR", '%s/ignition_journal' % os.path.dirname(os.path.abspath(__file__)))
-
-application.config["BACKUP_BUCKET_NAME"] = os.getenv(
-    "BACKUP_BUCKET_NAME", "")
-
-application.config["BACKUP_BUCKET_DIRECTORY"] = os.getenv(
-    "BACKUP_BUCKET_DIRECTORY", "enjoliver")
-
+application.config["BACKUP_BUCKET_NAME"] = ec.backup_backup_name
+application.config["BACKUP_BUCKET_DIRECTORY"] = ec.backup_backup_directory
 application.config["BACKUP_LOCK_KEY"] = "backup_lock"
 
 libc = ctypes.CDLL("libc.so.6")  # TODO deep inside the SQLITE sync

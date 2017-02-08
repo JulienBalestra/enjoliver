@@ -5,14 +5,16 @@ from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 
 import logger
+from configs import EnjoliverConfig
 
 
 class S3Operator(object):
     log = logger.get_logger(__file__)
 
     def __init__(self, bucket_name):
-        aws_id = os.getenv("AWS_ACCESS_KEY_ID", None)
-        aws_secret = os.getenv("AWS_SECRET_ACCESS_KEY", None)
+        ec = EnjoliverConfig()
+        aws_id = ec.aws_id
+        aws_secret = ec.aws_secret
 
         if not bucket_name:
             self.log.error("bucket_name=%s" % bucket_name)

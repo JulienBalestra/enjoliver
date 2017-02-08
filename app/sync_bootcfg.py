@@ -10,6 +10,9 @@ import requests
 import generator
 import logger
 import schedulerv2
+from configs import EnjoliverConfig
+
+ec = EnjoliverConfig()
 
 
 class ConfigSyncSchedules(object):
@@ -17,8 +20,8 @@ class ConfigSyncSchedules(object):
 
     log = logger.get_logger(__file__)
 
-    ipam_multiplier = 256
-    ipam_ips = 254
+    ipam_multiplier = ec.ipam_multiplier
+    ipam_ips = ec.ipam_ips
 
     def __init__(self, api_uri, bootcfg_path, ignition_dict, extra_selector_dict=None):
         """
@@ -161,7 +164,7 @@ class ConfigSyncSchedules(object):
     @property
     def kubernetes_control_plane(self):
         ips = self.kubernetes_control_plane_ip_list
-        k8s = ["http://%s:8080" % k8s for k8s in ips]
+        k8s = ["http://%s:%d" % (k8s, ec.kubernetes_api_server_port) for k8s in ips]
         random.shuffle(k8s)
         return ",".join(k8s)
 
@@ -188,8 +191,10 @@ class ConfigSyncSchedules(object):
                     # Etcd
                     "etcd_name": m["ipv4"],
                     "etcd_initial_cluster": self.etcd_initial_cluster,
-                    "etcd_initial_advertise_peer_urls": "http://%s:2380" % m["ipv4"],
-                    "etcd_advertise_client_urls": "http://%s:2379" % m["ipv4"],
+                    "etcd_initial_advertise_peer_urls": "http://%s:%d" % (
+                        m["ipv4"], ec.etcd_initial_advertise_peer_port),
+                    "etcd_advertise_client_urls": "http://%s:%d" % (
+                        m["ipv4"], ec.etcd_advertise_client_port),
                     # K8s Control Plane
                     "kubelet_ip": "%s" % m["ipv4"],
                     "kubelet_name": "%s" % m["ipv4"],
@@ -225,7 +230,8 @@ class ConfigSyncSchedules(object):
                 extra_metadata={
                     # Etcd
                     "etcd_initial_cluster": self.etcd_initial_cluster,
-                    "etcd_advertise_client_urls": "http://%s:2379" % m["ipv4"],
+                    "etcd_advertise_client_urls": "http://%s:%d" % (
+                        m["ipv4"], ec.etcd_advertise_client_port),
                     "etcd_proxy": "on",
                     # Kubelet
                     "kubelet_ip": "%s" % m["ipv4"],
