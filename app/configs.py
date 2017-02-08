@@ -8,6 +8,7 @@ class EnjoliverConfig(object):
 
         # Bootcfg aka CoreOS Baremetal aka Matchbox
         self.bootcfg_uri = "http://127.0.0.1:8080"
+        self.bootcfg_path = "/var/lib/bootcfg"
 
         # Databases
         self.db_path = os.getenv("DB_PATH", '%s/enjoliver.sqlite' % os.path.dirname(os.path.abspath(__file__)))
@@ -42,3 +43,11 @@ class EnjoliverConfig(object):
 
         self.etcd_initial_advertise_peer_port = 2380
         self.etcd_advertise_client_port = 2379
+
+        # Ignition
+        self.ignition_dict = {
+            "discovery": "discovery",
+            "etcd_member_kubernetes_control_plane": "etcd-member-control-plane",
+            "kubernetes_nodes": "k8s-node",
+        }
+        self.extra_selectors = {"os", "installed"}

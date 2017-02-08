@@ -62,3 +62,19 @@ class Kubernetes2Tiers(object):
     @property
     def kubernetes_nodes_ip_list(self):
         return self._sync.kubernetes_nodes_ip_list
+
+
+if __name__ == '__main__':
+    from configs import EnjoliverConfig
+
+    ec = EnjoliverConfig()
+
+    k2t = Kubernetes2Tiers(
+        ignition_dict=ec.ignition_dict,
+        bootcfg_path=ec.bootcfg_path,
+        api_uri=ec.api_uri,
+        extra_selectors=ec.extra_selectors
+    )
+    while True:
+        k2t.apply()
+        time.sleep(60)

@@ -82,9 +82,10 @@ class TestConfigSyncSchedules(TestCase):
             ignition_dict=None,
             extra_selector_dict=None,
         )
-        s.ipam_ips = 1
+
         sync_bootcfg.ConfigSyncSchedules.ipam_ips = 62
         sync_bootcfg.ConfigSyncSchedules.ip_start = 1
+
         d = s.cni_ipam("10.99.33.1/19", "10.99.64.254")
         self.assertEqual({
             "type": "host-local",
