@@ -35,6 +35,7 @@ class EnjoliverConfig(object):
         # Sync Bootcfg
         self.ipam_multiplier = 256
         self.ipam_ips = 254
+        self.ip_start = 0
 
         # Application config
         self.kubernetes_api_server_port = 8080

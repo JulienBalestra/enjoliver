@@ -22,6 +22,7 @@ class ConfigSyncSchedules(object):
 
     ipam_multiplier = ec.ipam_multiplier
     ipam_ips = ec.ipam_ips
+    ip_start = ec.ip_start
 
     def __init__(self, api_uri, bootcfg_path, ignition_dict, extra_selector_dict=None):
         """
@@ -111,7 +112,7 @@ class ConfigSyncSchedules(object):
         host = ipaddr.IPNetwork(host_cidrv4)
         ip_cut = int(host.ip.__str__().split(".")[-1])
         sub = ipaddr.IPNetwork(host.network).ip + (ip_cut * ConfigSyncSchedules.ipam_multiplier)
-        rs = sub + 1
+        rs = sub + 1 + ConfigSyncSchedules.ip_start
         re = sub + ConfigSyncSchedules.ipam_ips
         ipam = {
             "type": "host-local",

@@ -74,3 +74,23 @@ class TestConfigSyncSchedules(TestCase):
             'subnet': '172.20.0.0/19',
             'type': 'host-local'},
             d)
+
+    def test_04(self):
+        s = sync_bootcfg.ConfigSyncSchedules(
+            api_uri=self.api_uri,
+            bootcfg_path=self.test_bootcfg_path,
+            ignition_dict=None,
+            extra_selector_dict=None,
+        )
+        s.ipam_ips = 1
+        sync_bootcfg.ConfigSyncSchedules.ipam_ips = 62
+        sync_bootcfg.ConfigSyncSchedules.ip_start = 1
+        d = s.cni_ipam("10.99.33.1/19", "10.99.64.254")
+        self.assertEqual({
+            "type": "host-local",
+            "subnet": "10.99.32.0/19",
+            "rangeStart": "10.99.33.2",
+            "rangeEnd": "10.99.33.62",
+            "gateway": "10.99.64.254",
+            "routes": [{"dst": "0.0.0.0/0"}]
+        }, d)
