@@ -39,8 +39,8 @@ application.config["DB_URI"] = ec.db_uri
 
 ignition_journal = application.config["IGNITION_JOURNAL_DIR"] = ec.ignition_journal_dir
 
-application.config["BACKUP_BUCKET_NAME"] = ec.backup_backup_name
-application.config["BACKUP_BUCKET_DIRECTORY"] = ec.backup_backup_directory
+application.config["BACKUP_BUCKET_NAME"] = ec.backup_bucket_name
+application.config["BACKUP_BUCKET_DIRECTORY"] = ec.backup_bucket_directory
 application.config["BACKUP_LOCK_KEY"] = "backup_lock"
 
 libc = ctypes.CDLL("libc.so.6")  # TODO deep inside the SQLITE sync

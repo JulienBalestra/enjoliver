@@ -20,8 +20,8 @@ class EnjoliverConfig(object):
         self.aws_id = os.getenv("AWS_ACCESS_KEY_ID", None)
         self.aws_secret = os.getenv("AWS_SECRET_ACCESS_KEY", None)
 
-        self.backup_backup_name = os.getenv("BACKUP_BUCKET_NAME", "")
-        self.backup_backup_directory = os.getenv("BACKUP_BUCKET_DIRECTORY", "enjoliver")
+        self.backup_bucket_name = os.getenv("BACKUP_BUCKET_NAME", "")
+        self.backup_bucket_directory = os.getenv("BACKUP_BUCKET_DIRECTORY", "enjoliver")
 
         # Gen
         self.kernel = "/assets/coreos/serve/coreos_production_pxe.vmlinuz"
@@ -45,6 +45,8 @@ class EnjoliverConfig(object):
         self.etcd_advertise_client_port = 2379
 
         # Ignition
+        # All of them have to be in the bootcfg/ignition
+        # Specify only the title of the file without the extension (.yaml)
         self.ignition_dict = {
             "discovery": "discovery",
             "etcd_member_kubernetes_control_plane": "etcd-member-control-plane",
