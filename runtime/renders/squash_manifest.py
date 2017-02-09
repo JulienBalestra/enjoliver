@@ -10,14 +10,24 @@ if __name__ == "__main__":
     print m
     with open(m, 'r') as f:
         manifest = json.load(f)
-    manifest["dependencies"] = []
-
-    manifest["annotations"].append({
-        "name": "squash-date",
-        "value": "%s" % datetime.datetime.now()
-    })
 
     print json.dumps(manifest, indent=2)
 
-    with open(m, 'w') as f:
-        json.dump(manifest, f)
+    try:
+        if len(manifest["dependencies"]) > 0:
+            manifest["dependencies"] = []
+
+            manifest["annotations"].append({
+                "name": "squash-date",
+                "value": "%s" % datetime.datetime.now()
+            })
+
+            print json.dumps(manifest, indent=2)
+
+            with open(m, 'w') as f:
+                json.dump(manifest, f)
+
+    except KeyError:
+        print "KeyError with dependencies"
+
+    print "No dependencies or already render/squashed"

@@ -26,8 +26,8 @@ $(DEBIAN):
 
 install: $(DEBIAN)
 	@echo ENV IMAGE=$(ACI)/aci-enjoliver
-	IMAGE=$(ACI)/aci-enjoliver make -C $(RUNTIME) install
 	IMAGE=$(ACI)/aci-enjoliver make -C $(RUNTIME) test
+	IMAGE=$(ACI)/aci-enjoliver make -C $(RUNTIME) install
 
 $(ENJOLIVER): install
 	$(RKT) --local-config=$(RUNTIME) image render $(ENJOLIVER_IMAGE) $(ENJOLIVER_RENDER) --overwrite
