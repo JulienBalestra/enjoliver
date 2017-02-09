@@ -1,14 +1,12 @@
 import abc
 import json
 import time
-import urllib2
 
 import requests
 
 import logger
-from model import ScheduleRoles
 from configs import EnjoliverConfig
-
+from model import ScheduleRoles
 
 ec = EnjoliverConfig()
 
@@ -50,12 +48,15 @@ class CommonScheduler(object):
         """
         query = "%s/scheduler/available" % api_uri
         CommonScheduler.log.info("fetch %s" % query)
-        content = urllib2.urlopen(query)
-        response_body = content.read()
-        content.close()
-        interfaces = json.loads(response_body)
-        CommonScheduler.log.info("fetch done with len(%d)" % len(interfaces))
-        return interfaces
+        try:
+            r = requests.get(query)
+            interfaces = json.loads(r.content)
+            r.close()
+            CommonScheduler.log.info("fetch done with len(%d)" % len(interfaces))
+            return interfaces
+        except requests.exceptions.ConnectionError:
+            CommonScheduler.log.error("fetch failed: %s" % query)
+            return []
 
     @abc.abstractmethod
     def apply(self):
@@ -107,26 +108,36 @@ class CommonScheduler(object):
             return False
 
     def _apply_budget(self):
-        r = requests.get("%s/scheduler/%s" % (self.api_uri, "&".join(self.roles)))
-        done = json.loads(r.content)
-        r.close()
-        self.custom_log(self.apply.__name__, "done:%d expected:%d" % (len(done), self.expected_nb))
-        if len(done) < self.expected_nb:
-            self.custom_log(self.apply.__name__, "%d < %d" % (len(done), self.expected_nb))
-            return self.__apply_available_budget()
+        url = "%s/scheduler/%s" % (self.api_uri, "&".join(self.roles))
+        try:
+            r = requests.get(url)
+            done = json.loads(r.content)
+            r.close()
+            self.custom_log(self.apply.__name__, "done:%d expected:%d" % (len(done), self.expected_nb))
+            if len(done) < self.expected_nb:
+                self.custom_log(self.apply.__name__, "%d < %d" % (len(done), self.expected_nb))
+                return self.__apply_available_budget()
 
-        return True
+            return True
+        except requests.exceptions.ConnectionError:
+            self.custom_log(self.apply.__name__, "ConnectionError %s" % url)
+            return False
 
     def _apply_everything(self):
-        r = requests.get("%s/scheduler/%s" % (self.api_uri, "&".join(self.roles)))
-        done = len(json.loads(r.content))
-        r.close()
-        available_list = self.fetch_available(self.api_uri)
-        self.custom_log(self.apply.__name__, "done:%d available:%d" % (done, len(available_list)))
-        for available in available_list:
-            done += self._affect(available)
+        url = "%s/scheduler/%s" % (self.api_uri, "&".join(self.roles))
+        try:
+            r = requests.get(url)
+            done = len(json.loads(r.content))
+            r.close()
+            available_list = self.fetch_available(self.api_uri)
+            self.custom_log(self.apply.__name__, "done:%d available:%d" % (done, len(available_list)))
+            for available in available_list:
+                done += self._affect(available)
 
-        return done
+            return done
+        except requests.exceptions.ConnectionError:
+            self.custom_log(self.apply.__name__, "ConnectionError %s" % url)
+            return 0
 
 
 class EtcdMemberKubernetesControlPlane(CommonScheduler):
