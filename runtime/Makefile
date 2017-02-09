@@ -84,6 +84,11 @@ install: $(DGR) $(RKT)
 	$(DGR) -H $(CWD) install -W $(IMAGE)
 	$(RKT) --local-config=$(CWD) image list
 
+test: $(DGR) $(RKT)
+	@echo ENV eg: IMAGE=$(CWD)/../aci/aci-base
+	test $(IMAGE)
+	$(DGR) -H $(CWD) test -W $(IMAGE)
+
 clean: $(DGR)
 	@echo ENV eg: IMAGE=$(CWD)/../aci/aci-base
 	test $(IMAGE)
