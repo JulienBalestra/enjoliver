@@ -83,4 +83,4 @@ make check_clean
 chown -R root: ${ENJOLIVER}
 make validate
 
-${ROOTFS}/usr/bin --version
+${ROOTFS}/usr/bin/bootcfg --version
