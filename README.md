@@ -27,17 +27,9 @@ Extra features are (alpha) adds like:
 
 ## Incoming
 
-* Programmatic IPAM
-    * remove DHCP for hosts
-    
-* Store the roles in a real database
-    * Remove bootcfg
-    
-* Scheduler
-    * Capable to append custom selectors (os=installed)
-    * Reload the scheduler from
-        * API Best
-        * Pickle Fast
+* Dev
+    * Use qemu-kvm rkt stage1
+  
        
 * Custom @home baremetal CI
     * KVM
