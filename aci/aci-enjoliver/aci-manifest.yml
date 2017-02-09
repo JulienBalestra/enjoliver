@@ -12,6 +12,11 @@ builder:
       - name: GIT_BUNDLE
         value: "true"
 
+tester:
+  aci:
+    dependencies:
+      - static-aci-debian:8
+
 aci:
   dependencies:
     - static-aci-debian:8
