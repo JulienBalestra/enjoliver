@@ -67,7 +67,10 @@ class Kubernetes2Tiers(object):
 if __name__ == '__main__':
     from configs import EnjoliverConfig
 
+    wait = 60
+
     ec = EnjoliverConfig()
+    Kubernetes2Tiers.wait = wait
 
     k2t = Kubernetes2Tiers(
         ignition_dict=ec.ignition_dict,
@@ -77,4 +80,4 @@ if __name__ == '__main__':
     )
     while True:
         k2t.apply()
-        time.sleep(120)
+        time.sleep(k2t.wait * 2)
