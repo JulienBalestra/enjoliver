@@ -5,25 +5,18 @@ builder:
 
   mountPoints:
     - {from: ../../, to: /opt/source-project}
+    - {from: /tmp/enjoliver/runtime, to: /opt/stage2/static-aci-enjoliver/rootfs/opt/enjoliver/runtime}
+
+  app:
+    environment:
+      - name: GIT_BUNDLE
+        value: "true"
 
 aci:
   dependencies:
     - static-aci-debian:8
 
   app:
-    environment:
-      - name: BOOTCFG_URI
-        value: "http://127.0.0.1:8080"
-
-      - name: DB_PATH
-        value: "/var/lib/enjoliver/db.sqlite"
-
-      - name: IGNITION_JOURNAL_DIR
-        value: "/var/lib/enjoliver/ignition-journal"
-
-      - name: BOOTCFG_PATH
-        value: "/var/lib/bootcfg"
-
     mountPoints:
       - name: bootcfg-groups
         path: /var/lib/bootcfg/groups

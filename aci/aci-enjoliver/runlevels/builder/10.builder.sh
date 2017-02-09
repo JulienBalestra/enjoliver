@@ -12,46 +12,43 @@ SOURCE_PROJECT=/opt/source-project
 
 
 apt-get update -q
-apt-get install -y -q curl python build-essential python-virtualenv python-dev git file openssh-client tar rsync
+apt-get install -y -q curl python build-essential python-virtualenv python-dev git file openssh-client tar
 ln -vs /usr/lib/python2.7/dist-packages/virtualenv.py /usr/local/bin/virtualenv
 chmod +x /usr/local/bin/virtualenv
 
 
-### CoreOS Baremetal ###
-BOOTCFG_VERSION=v0.4.2
-BOOTCFG_DIR=${ROOTFS}/usr/bin
-BOOTCFG_INSTALL=/opt/bootcfg_install
-
-BOOTCFG=${BOOTCFG_DIR}/bootcfg
-BOOTCFG_RELEASE=https://github.com/coreos/coreos-baremetal/releases/download/${BOOTCFG_VERSION}/coreos-baremetal-${BOOTCFG_VERSION}-linux-amd64.tar.gz
-
-mkdir -pv ${BOOTCFG_DIR} ${BOOTCFG_INSTALL}
-
-curl -Lf ${BOOTCFG_RELEASE} -o ${BOOTCFG_INSTALL}/bootcfg.tar.gz
-tar -C ${BOOTCFG_INSTALL} -xzf ${BOOTCFG_INSTALL}/bootcfg.tar.gz --strip-components=1
-cp -v ${BOOTCFG_INSTALL}/bootcfg ${BOOTCFG}
-chmod +x ${BOOTCFG}
-${BOOTCFG} --version
-
-
 ### Git Bundle ###
-cd -P ${SOURCE_PROJECT}/bundles
+if [ ${GIT_BUNDLE} == "true" ]
+then
+    cd -P ${SOURCE_PROJECT}/bundles
 
-HEAD=$(git rev-parse HEAD)
+    HEAD=$(git rev-parse HEAD)
 
-# If in a detached HEAD symbolic-ref fail - reattach it in a new branch
-BRANCH=$(git symbolic-ref -q HEAD --short)
-git bundle create ${HEAD}.bundle ${BRANCH} --
-git bundle verify ${HEAD}.bundle
+    # If in a detached HEAD symbolic-ref fail -> Fix before by reattach it in a new branch
+    BRANCH=$(git symbolic-ref -q HEAD --short)
+    git bundle create ${HEAD}.bundle ${BRANCH} --
+    git bundle verify ${HEAD}.bundle
+    REMOTE=${SOURCE_PROJECT}/bundles/${HEAD}.bundle
+else
+    REMOTE=https://github.com/JulienBalestra/enjoliver.git
+    BRANCH=master
+fi
 
-git clone ${HEAD}.bundle ${ENJOLIVER}
+mkdir -pv ${ENJOLIVER}
 cd -P ${ENJOLIVER}
-git checkout ${BRANCH}
+pwd -P
+git init
+git remote add origin ${REMOTE}
+git fetch --all
+git reset --hard origin/${BRANCH}
+git checkout origin/${BRANCH}
 
 
 ### Golang ###
-curl -Lf https://storage.googleapis.com/golang/go1.7.4.linux-amd64.tar.gz -o /tmp/go1.7.4.linux-amd64.tar.gz
-tar -C /usr/local/ -xzf /tmp/go1.7.4.linux-amd64.tar.gz
+GO_VERSION=go1.7.5.linux-amd64.tar.gz
+curl -Lf https://storage.googleapis.com/golang/${GO_VERSION} -o /tmp/${GO_VERSION}
+tar -C /usr/local/ -xzf /tmp/${GO_VERSION}
+rm -v /tmp/${GO_VERSION}
 
 export GOROOT=/usr/local/go
 
@@ -71,18 +68,19 @@ chown -R enjoliver ${ENJOLIVER}
 su - enjoliver -c "make submodules"
 su - enjoliver -c "make runner"
 
-for artifact in lldp/static-aci-lldp-0.aci hyperkube/hyperkube hyperkube/static-aci-hyperkube-0.aci
-do
-    su - enjoliver -c "cp -v ${SOURCE_PROJECT}/${artifact} ${ENJOLIVER}/${artifact}"
-done
+cp -v runtime/bootcfg/bootcfg ${ROOTFS}/usr/bin
+
+make acis
 
 su - enjoliver -c "make assets"
 make validate
 
-su - enjoliver -c "SKIP_ASSETS=TRUE make check"
+su - enjoliver -c "make check"
 make validate
 
 make check_clean
 
 chown -R root: ${ENJOLIVER}
 make validate
+
+${ROOTFS}/usr/bin --version
