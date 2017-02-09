@@ -8,7 +8,7 @@ class EnjoliverConfig(object):
 
         # Bootcfg aka CoreOS Baremetal aka Matchbox
         self.bootcfg_uri = "http://127.0.0.1:8080"
-        self.bootcfg_path = "/var/lib/bootcfg"
+        self.bootcfg_path = os.getenv("BOOTCFG_PATH", "/var/lib/bootcfg")
 
         # Databases
         self.db_path = os.getenv("DB_PATH", '%s/enjoliver.sqlite' % os.path.dirname(os.path.abspath(__file__)))

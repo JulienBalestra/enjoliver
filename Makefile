@@ -49,8 +49,6 @@ acis:
 assets:
 	make -C bootcfg/assets/coreos
 	make -C bootcfg/assets/coreos serve
-	make -C bootcfg/assets/setup-network-environment
-	make -C bootcfg/assets/setup-network-environment serve
 	make -C bootcfg/assets/rkt
 	make -C bootcfg/assets/rkt serve
 	make -C bootcfg/assets/etcd
@@ -61,7 +59,7 @@ assets:
 	make -C bootcfg/assets/fleet serve
 	# Self
 	make -C bootcfg/assets/discoveryC
-	@# Depends on .acis
+	# Depends on .acis
 	make -C bootcfg/assets/lldp
 	make -C bootcfg/assets/hyperkube
 
@@ -72,7 +70,6 @@ clean: check_clean
 	make -C bootcfg/assets/hyperkube fclean
 	make -C bootcfg/assets/lldp fclean
 	make -C bootcfg/assets/rkt fclean
-	make -C bootcfg/assets/setup-network-environment fclean
 
 check_clean:
 	make -C app/tests/ fclean

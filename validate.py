@@ -51,12 +51,6 @@ class TestValidateBootcfgAssets(unittest.TestCase):
         list_dir = os.listdir(rule)
         self.assertIn("etcd.tar.gz", list_dir)
 
-    def test_setup_network_environment(self):
-        rule = "%s/%s/serve" % (
-            self.assets, self.test_setup_network_environment.__name__.replace("test_", "").replace("_", "-"))
-        list_dir = os.listdir(rule)
-        self.assertIn("setup-network-environment", list_dir)
-
 
 if __name__ == '__main__':
     unittest.main()
