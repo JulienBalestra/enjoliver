@@ -77,4 +77,4 @@ if __name__ == '__main__':
     )
     while True:
         k2t.apply()
-        time.sleep(60)
+        time.sleep(120)

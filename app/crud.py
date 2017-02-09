@@ -157,16 +157,17 @@ class InjectDiscovery(object):
 
         self.discovery = discovery
 
+        step = "machine"
         try:
-            self.machine = self._machine()
-            self.interfaces = self._machine_interfaces()
+            self.machine, step = self._machine(), "interfaces"
+            self.interfaces, step = self._machine_interfaces(), "chassis"
 
-            self.chassis = self._chassis()
-            self.chassis_port = self._chassis_port()
+            self.chassis, step = self._chassis(), "chassis_port"
+            self.chassis_port, step = self._chassis_port(), "ignition_journal"
 
             self._ignition_journal()
         except Exception as e:
-            self.log.error("init raise: %s %s %s" % (type(e), e, e.message))
+            self.log.error("init raise: %s %s %s %s -> %s" % (step, type(e), e, e.message, self.discovery))
             self.session.close()
             raise
 
@@ -210,7 +211,7 @@ class InjectDiscovery(object):
 
     def _chassis(self):
         chassis_list = []
-        if self.discovery["lldp"]["is_file"] is False:
+        if self.discovery["lldp"]["is_file"] is False or not self.discovery["lldp"]["data"]["interfaces"]:
             return chassis_list
         for j in self.discovery["lldp"]["data"]["interfaces"]:
             chassis = self.session.query(Chassis).filter(Chassis.mac == j["chassis"]["id"]).count()
@@ -233,7 +234,7 @@ class InjectDiscovery(object):
 
     def _chassis_port(self):
         chassis_port_list = []
-        if self.discovery["lldp"]["is_file"] is False:
+        if self.discovery["lldp"]["is_file"] is False or not self.discovery["lldp"]["data"]["interfaces"]:
             return chassis_port_list
 
         for entry in self.discovery["lldp"]["data"]["interfaces"]:

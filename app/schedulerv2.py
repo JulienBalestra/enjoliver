@@ -47,12 +47,12 @@ class CommonScheduler(object):
         :return: list of interfaces
         """
         query = "%s/scheduler/available" % api_uri
-        CommonScheduler.log.info("fetch %s" % query)
+        CommonScheduler.log.debug("fetch %s" % query)
         try:
             r = requests.get(query)
             interfaces = json.loads(r.content)
             r.close()
-            CommonScheduler.log.info("fetch done with len(%d)" % len(interfaces))
+            CommonScheduler.log.debug("fetch done with len(%d)" % len(interfaces))
             return interfaces
         except requests.exceptions.ConnectionError:
             CommonScheduler.log.error("fetch failed: %s" % query)

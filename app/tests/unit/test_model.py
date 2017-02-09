@@ -201,6 +201,37 @@ class TestModel(unittest.TestCase):
         all_data_new = fetch.get_all()
         self.assertEqual(all_data_new[0]["boot-info"]["uuid"], posts.M01["boot-info"]["uuid"])
 
+    def test_091(self):
+        p = {
+            u'boot-info': {
+                u'random-id': u'618e2763-7ff6-4493-babd-54503896bbe0',
+                u'mac': u'40:a8:f0:3d:ed:a0',
+                u'uuid': u'30343536-3998-5a00-4a34-343630353047'
+            },
+            u'lldp': {
+                u'data': {
+                    u'interfaces': None
+                }, u'is_file': True
+            },
+            u'interfaces': [
+                {u'name': u'lo', u'netmask': 8, u'mac': u'', u'ipv4': u'127.0.0.1', u'cidrv4': u'127.0.0.1/8',
+                 u'gateway': u'10.99.63.254'},
+                {u'name': u'eno1', u'netmask': 19, u'mac': u'40:a8:f0:3d:ed:a0', u'ipv4': u'10.99.34.1',
+                 u'cidrv4': u'10.99.34.1/19', u'gateway': u'10.99.63.254'},
+                {u'name': u'eno2', u'netmask': 19, u'mac': u'40:a8:f0:3d:ed:a1', u'ipv4': u'10.99.34.1',
+                 u'cidrv4': u'10.99.34.1/19', u'gateway': u'10.99.63.254'},
+                {u'name': u'eno3', u'netmask': 19, u'mac': u'40:a8:f0:3d:ed:a2', u'ipv4': u'10.99.34.1',
+                 u'cidrv4': u'10.99.34.1/19', u'gateway': u'10.99.63.254'},
+                {u'name': u'eno4', u'netmask': 19, u'mac': u'40:a8:f0:3d:ed:a3', u'ipv4': u'10.99.34.1',
+                 u'cidrv4': u'10.99.34.1/19', u'gateway': u'10.99.63.254'}
+            ],
+            u'ignition-journal': None
+        }
+        inject = crud.InjectDiscovery(self.engine, self.ignition_journal_path, p)
+        inject.commit_and_close()
+        fetch = crud.FetchDiscovery(self.engine, self.ignition_journal_path)
+        all_data_new = fetch.get_all()
+
     def test_10(self):
         mac = posts.M01["boot-info"]["mac"]
         s = {
@@ -485,8 +516,8 @@ class TestModel(unittest.TestCase):
         fetch = crud.FetchSchedule(self.engine)
         self.assertEqual(["kubernetes-control-plane", "etcd-member"], fetch.get_roles_by_mac_selector(mac))
         self.assertEqual(2, len(fetch.get_roles(model.ScheduleRoles.etcd_member,
-                                             model.ScheduleRoles.kubernetes_control_plane)))
+                                                model.ScheduleRoles.kubernetes_control_plane)))
 
     def test_28(self):
         a = crud.FetchSchedule(self.engine)
-        self.assertEqual(15, len(a.get_available_machines()))
+        self.assertEqual(16, len(a.get_available_machines()))
