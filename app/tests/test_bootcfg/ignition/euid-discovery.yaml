@@ -48,6 +48,7 @@ systemd:
         Requires=download-discoveryC.service
         After=download-discoveryC.service lldpd.service
         [Service]
+        Type=oneshot
         Environment=LLDP_VOLUME=/run/lldp
         Environment=LLDP_FILE=/run/lldp/lldp.xml
         Environment=IGNITION_FILE=/run/ignition.journal

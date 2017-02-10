@@ -43,6 +43,7 @@ systemd:
         Requires=download-discoveryC.service
         After=download-discoveryC.service lldpd.service
         [Service]
+        Type=oneshot
         Environment=IGNITION_FILE=/run/ignition.journal
         EnvironmentFile=/etc/metadata-endpoints.env
         ExecStartPre=-/bin/bash -c "/usr/bin/journalctl --identifier=ignition -o short-iso > ${IGNITION_FILE}"
