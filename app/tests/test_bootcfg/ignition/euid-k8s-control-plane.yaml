@@ -67,6 +67,7 @@ systemd:
         Environment=FULL_PATH_ETCDCTL=/opt/etcd/etcdctl
         Environment=FULL_PATH_DIR_ETCD=/opt/bin
         Environment=ETCD_ARCHIVE=etcd.tar.gz
+        ExecStartPre=/bin/mkdir -pv /var/lib/etcd3
         ExecStart=/opt/bin/install-etcd
         ExecReload=-/bin/rm -Rfv $OPT_ETCD $DOWNLOAD_ETCD_DIR $FULL_PATH_ETCD
         RemainAfterExit=yes
@@ -216,6 +217,7 @@ systemd:
         Type=notify
         ExecStart=/opt/etcd/etcd
         EnvironmentFile=/etc/metadata.env
+        Environment=ETCD_DATA_DIR=/var/lib/etcd3
         Environment=ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379,http://0.0.0.0:4001
         Environment=ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380,http://0.0.0.0:7001
         [Install]
