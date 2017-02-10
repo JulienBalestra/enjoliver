@@ -7,8 +7,8 @@ isLevelEnabled "debug" && set -x
 export LC_ALL=C
 export DEBIAN_FRONTEND=noninteractive
 
-apt-get update -q
-apt-get install -y -q python python-pip python-dev build-essential
+apt-get update -qq
+apt-get install -y -qq python python-pip python-dev build-essential
 
 ENJOLIVER=/opt/enjoliver
 
@@ -18,7 +18,7 @@ pip install -r ${ENJOLIVER}/requirements.txt
 
 pip freeze
 
-ln -s /usr/local/bin/gunicorn /usr/bin/gunicorn
+ln -sv /usr/local/bin/gunicorn /usr/bin/gunicorn
 
 ${ENJOLIVER}/validate.py
 
