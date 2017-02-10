@@ -34,7 +34,17 @@ class ConfigSyncSchedules(object):
         os.environ["API_URI"] = self.api_uri
         self.bootcfg_path = bootcfg_path
         self.ignition_dict = ignition_dict
+        self._ensure_ignition_are_here()
         self.extra_selector = extra_selector_dict if extra_selector_dict else {}
+
+    def _ensure_ignition_are_here(self):
+        for k, v in self.ignition_dict.iteritems():
+            f = "%s/ignition/%s.yaml" % (self.bootcfg_path, v)
+            if os.path.isfile(f) is False:
+                self.custom_log(self._ensure_ignition_are_here.__name__, "%s:%s -> %s is not here" % (k, v, f), "error")
+                raise IOError(f)
+
+            self.custom_log(self._ensure_ignition_are_here.__name__, "%s:%s -> %s is here" % (k, v, f), "info")
 
     def custom_log(self, func_name, message, level="info"):
         """

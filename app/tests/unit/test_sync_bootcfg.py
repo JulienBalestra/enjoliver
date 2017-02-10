@@ -14,7 +14,7 @@ class TestConfigSyncSchedules(TestCase):
         s = sync_bootcfg.ConfigSyncSchedules(
             api_uri=self.api_uri,
             bootcfg_path=self.test_bootcfg_path,
-            ignition_dict=None,
+            ignition_dict={},
             extra_selector_dict=None,
         )
         d = s.get_dns_attr("r13-srv3.dc-1.foo.bar.cr")
@@ -30,7 +30,7 @@ class TestConfigSyncSchedules(TestCase):
         s = sync_bootcfg.ConfigSyncSchedules(
             api_uri=self.api_uri,
             bootcfg_path=self.test_bootcfg_path,
-            ignition_dict=None,
+            ignition_dict={},
             extra_selector_dict=None,
         )
         d = s.get_dns_attr("r13srv3.dc-1.foo.bar.cr")
@@ -46,7 +46,7 @@ class TestConfigSyncSchedules(TestCase):
         s = sync_bootcfg.ConfigSyncSchedules(
             api_uri=self.api_uri,
             bootcfg_path=self.test_bootcfg_path,
-            ignition_dict=None,
+            ignition_dict={},
             extra_selector_dict=None,
         )
         d = s.get_dns_attr("kubernetes-control-plane-0")
@@ -62,7 +62,7 @@ class TestConfigSyncSchedules(TestCase):
         s = sync_bootcfg.ConfigSyncSchedules(
             api_uri=self.api_uri,
             bootcfg_path=self.test_bootcfg_path,
-            ignition_dict=None,
+            ignition_dict={},
             extra_selector_dict=None,
         )
         d = s.cni_ipam("172.20.0.10/19", "172.20.0.1")
@@ -79,7 +79,7 @@ class TestConfigSyncSchedules(TestCase):
         s = sync_bootcfg.ConfigSyncSchedules(
             api_uri=self.api_uri,
             bootcfg_path=self.test_bootcfg_path,
-            ignition_dict=None,
+            ignition_dict={},
             extra_selector_dict=None,
         )
 
@@ -95,3 +95,12 @@ class TestConfigSyncSchedules(TestCase):
             "gateway": "10.99.64.254",
             "routes": [{"dst": "0.0.0.0/0"}]
         }, d)
+
+    def test_05(self):
+        with self.assertRaises(IOError):
+            sync_bootcfg.ConfigSyncSchedules(
+                api_uri=self.api_uri,
+                bootcfg_path=self.test_bootcfg_path,
+                ignition_dict={"etcd-member": "no-here"},
+                extra_selector_dict=None,
+            )
