@@ -45,7 +45,7 @@ class GenerateGroup(GenerateCommon):
             with open(fp, 'r') as key:
                 content = key.read()
             if len(content.split(" ")) < 2:
-                self.log.warning("%s not valid as ssh_authorized_keys" % fp)
+                self.log.debug("%s not valid as ssh_authorized_keys" % fp)
                 continue
             keys.append(content)
 
