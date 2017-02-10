@@ -88,7 +88,6 @@ Extra features are (alpha) adds like:
 
 ## Release
 
-    sudo make acis
     sudo make release
     ls -lh release/*.aci
     
