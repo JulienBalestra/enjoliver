@@ -168,9 +168,16 @@ class ConfigSyncSchedules(object):
     @property
     def etcd_initial_cluster(self):
         ips = self.etcd_member_ip_list
-        e = ["%s=http://%s:2380" % (k, k) for k in ips]
+        e = ["%s=http://%s:%d" % (k, k, ec.etcd_initial_advertise_peer_port) for k in ips]
         random.shuffle(e)
         return ",".join(e)
+
+    @property
+    def etcd_member_uri_list(self):
+        ips = self.etcd_member_ip_list
+        e = ["http://%s:%d" % (k, ec.etcd_advertise_client_port) for k in ips]
+        random.shuffle(e)
+        return e
 
     @property
     def kubernetes_control_plane(self):
@@ -206,6 +213,7 @@ class ConfigSyncSchedules(object):
                         m["ipv4"], ec.etcd_initial_advertise_peer_port),
                     "etcd_advertise_client_urls": "http://%s:%d" % (
                         m["ipv4"], ec.etcd_advertise_client_port),
+                    "etcd_member_uri_list": self.etcd_member_uri_list,
                     # K8s Control Plane
                     "kubelet_ip": "%s" % m["ipv4"],
                     "kubelet_name": "%s" % m["ipv4"],
@@ -213,6 +221,10 @@ class ConfigSyncSchedules(object):
                     "k8s_advertise_ip": "%s" % m["ipv4"],
                     # IPAM
                     "cni": json.dumps(self.cni_ipam(m["cidrv4"], m["gateway"])),
+                    "network": {
+                        "cidrv4": m["cidrv4"],
+                        "gateway": m["gateway"],
+                    },
                     # host
                     "hostname": dns_attr["shortname"],
                     "dns_attr": dns_attr,
@@ -243,6 +255,7 @@ class ConfigSyncSchedules(object):
                     "etcd_initial_cluster": self.etcd_initial_cluster,
                     "etcd_advertise_client_urls": "http://%s:%d" % (
                         m["ipv4"], ec.etcd_advertise_client_port),
+                    "etcd_member_uri_list": self.etcd_member_uri_list,
                     "etcd_proxy": "on",
                     # Kubelet
                     "kubelet_ip": "%s" % m["ipv4"],
@@ -250,6 +263,11 @@ class ConfigSyncSchedules(object):
                     "k8s_endpoint": self.kubernetes_control_plane,
                     # IPAM
                     "cni": json.dumps(self.cni_ipam(m["cidrv4"], m["gateway"])),
+                    "network": {
+                        "cidrv4": m["cidrv4"],
+                        "gateway": m["gateway"],
+                        "ip": m["ipv4"],
+                    },
                     # host
                     "hostname": dns_attr["shortname"],
                     "dns_attr": dns_attr,

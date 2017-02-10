@@ -43,7 +43,7 @@ systemd:
         Requires=download-discoveryC.service
         After=download-discoveryC.service lldpd.service
         [Service]
-        Type=oneshot
+        TimeoutStartSec=10m
         Environment=IGNITION_FILE=/run/ignition.journal
         EnvironmentFile=/etc/metadata-endpoints.env
         ExecStartPre=-/bin/bash -c "/usr/bin/journalctl --identifier=ignition -o short-iso > ${IGNITION_FILE}"
@@ -470,7 +470,7 @@ storage:
           {
             "name": "rkt.kubernetes.io",
             "type": "macvlan",
-            "master": "eth0",
+            "master": "bond0",
             "ipam": {{ .cni }}
           }
 
@@ -706,6 +706,99 @@ storage:
           else
               exit 0
           fi
+
+    - path: /etc/fleet/fleet.conf
+      mode: 0644
+      filesystem: root
+      contents:
+        inline: |
+          etcd_servers = [ "http://127.0.0.1:2379", {{ range $i, $etcd := .etcd_member_uri_list }}{{ if (ne $i 0) }},{{end}}"{{$etcd}}"{{end}} ]
+          metadata = "name={{.dns_attr.shortname}}"
+
+    - path: /etc/modprobe.d/bonding.conf
+      mode: 0644
+      filesystem: root
+      contents:
+        inline: |
+          options bonding mode=1 miimon=100
+
+    - path: /etc/hosts
+      mode: 0644
+      filesystem: root
+      contents:
+        inline: |
+          127.0.0.1	localhost
+
+    - path: /etc/coreos/update.conf
+      mode: 0644
+      filesystem: root
+      contents:
+        inline: |
+          GROUP=stable
+          REBOOT_STRATEGY=off
+
+    - path: /etc/systemd/resolved.conf
+      mode: 0644
+      filesystem: root
+      contents:
+        inline: |
+          [Resolve]
+          DNS=8.8.8.8 8.8.4.4
+          LLMNR=false
+
+    - path: /var/log/journal/.keep
+      mode: 0644
+      filesystem: root
+
+
+networkd:
+  units:
+    - name: 00-bond0.netdev
+      contents: |
+        [NetDev]
+        Name=bond0
+        Kind=bond
+
+    - name: 00-vbond0.netdev
+      contents: |
+        [NetDev]
+        Name=vbond0
+        Kind=macvlan
+        [MACVLAN]
+        Mode=bridge
+
+    - name: 01-ethernet.network
+      contents: |
+        [Match]
+        Name=en*
+        [Network]
+        Bond=bond0
+        LLMNR=false
+
+    - name: 01-ethernet.network
+      contents: |
+        [Match]
+        Name=eth*
+        [Network]
+        Bond=bond0
+        LLMNR=false
+
+    - name: 02-bond0.network
+      contents: |
+        [Match]
+        Name=bond0
+        [Network]
+        MACVLAN=vbond0
+        LLMNR=false
+
+    - name: 03-vbond0.network
+      contents: |
+        [Match]
+        Name=vbond0
+        [Network]
+        Address={{.network.cidrv4}}
+        Gateway={{.network.gateway}}
+        LLMNR=false
 
 
 {{ if index . "ssh_authorized_keys" }}
