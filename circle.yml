@@ -16,5 +16,6 @@ test:
   override:
     - make submodules
     - make runner
+    - make front
     - make assets
     - make check
