@@ -67,6 +67,7 @@ useradd enjoliver -d ${ENJOLIVER}
 chown -R enjoliver ${ENJOLIVER}
 su - enjoliver -c "make submodules"
 su - enjoliver -c "make runner"
+su - enjoliver -c "make front"
 
 cp -v runtime/bootcfg/bootcfg ${ROOTFS}/usr/bin
 

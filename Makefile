@@ -102,7 +102,7 @@ runner:
 release_aci:
 	make -C release
 
-npm:
+front:
 	make -C app/static
 
 config:
@@ -116,7 +116,7 @@ setup:
 	test $(shell id -u -r) -eq 0
 	su - $(MY_USER) -c "make -C $(CWD) submodules"
 	su - $(MY_USER) -c "make -C $(CWD) runner"
-	su - $(MY_USER) -c "make -C $(CWD)/app/static"
+	su - $(MY_USER) -c "make -C $(CWD) front"
 	make -C $(CWD) acis
 	su - $(MY_USER) -c "make -C $(CWD) assets"
 	su - $(MY_USER) -c "make -C $(CWD) validate"
