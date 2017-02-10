@@ -50,7 +50,9 @@ systemd:
         [Service]
         Environment=LLDP_VOLUME=/run/lldp
         Environment=LLDP_FILE=/run/lldp/lldp.xml
+        Environment=IGNITION_FILE=/run/ignition.journal
         EnvironmentFile=-/etc/metadata-endpoints.env
+        ExecStartPre=-/bin/bash -c "/usr/bin/journalctl --identifier=ignition -o short-iso > ${IGNITION_FILE}"
         ExecStartPre=-/usr/bin/rkt run --mount volume=socket,target=/var/run \
            --net=host \
            static-aci-lldp \

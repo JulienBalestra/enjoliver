@@ -7,12 +7,11 @@ systemd:
         [Unit]
         Requires=network-online.target
         After=network-online.target
+        AssertPathExists=!/etc/metadata.env
         [Service]
         Type=oneshot
         EnvironmentFile=/etc/metadata-endpoints.env
         Environment=METADATA=/etc/metadata.env
-        # If the file already exist put the unit on failure
-        ExecStartPre=/usr/bin/test ! -f $METADATA
         ExecStart=/usr/bin/curl ${API_URI}/metadata?${REQUEST_RAW_QUERY} -o $METADATA
         RemainAfterExit=yes
         [Install]
@@ -24,6 +23,7 @@ systemd:
         [Unit]
         Requires=network-online.target
         After=network-online.target
+        AssertFileIsExecutable=!/opt/bin/discoveryC
         [Service]
         Type=oneshot
         Environment=OPT_BIN=/opt/bin
@@ -58,6 +58,7 @@ systemd:
         [Unit]
         Requires=network-online.target
         After=network-online.target
+        AssertFileIsExecutable=!/opt/etcd/etcd
         [Service]
         Type=oneshot
         EnvironmentFile=/etc/metadata-endpoints.env
@@ -80,6 +81,7 @@ systemd:
         [Unit]
         Requires=network-online.target
         After=network-online.target
+        AssertFileIsExecutable=!/opt/fleet/fleetd
         [Service]
         Type=oneshot
         EnvironmentFile=/etc/metadata-endpoints.env
@@ -101,6 +103,7 @@ systemd:
         [Unit]
         Requires=network-online.target
         After=network-online.target
+        AssertFileIsExecutable=!/opt/bin/rkt
         [Service]
         Type=oneshot
         EnvironmentFile=/etc/metadata-endpoints.env
@@ -120,7 +123,7 @@ systemd:
         [Unit]
         Requires=network-online.target
         After=network-online.target
-
+        AssertFileIsExecutable=!/opt/bin/cnitool
         [Service]
         Type=oneshot
         EnvironmentFile=/etc/metadata-endpoints.env
@@ -134,27 +137,13 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
-    - name: cni-dhcp.service
-      enable: true
-      contents: |
-        [Unit]
-        Requires=install-cni.service
-        After=install-cni.service
-
-        [Service]
-        ExecStartPre=-/bin/rm -v /run/cni/dhcp.sock
-        ExecStart=/opt/cni/bin/dhcp daemon
-        Restart=on-failure
-        [Install]
-        WantedBy=multi-user.target
-
     - name: install-hyperkube.service
       enable: true
       contents: |
         [Unit]
         Requires=network-online.target
         After=network-online.target
-
+        AssertFileIsExecutable=!/opt/bin/hyperkube
         [Service]
         Type=oneshot
         EnvironmentFile=/etc/metadata-endpoints.env
@@ -200,6 +189,9 @@ systemd:
         [Install]
         RequiredBy=multi-user.target
 
+    - name: etcd.service
+      enable: false
+
     - name: etcd2.service
       enable: false
 
@@ -212,8 +204,6 @@ systemd:
         After=install-etcd.service
         Conflicts=etcd.service etcd2.service
         [Service]
-        ExecStartPre=/bin/cat /etc/metadata.env
-        ExecStartPre=/bin/ls -l /etc/metadata.env
         Type=notify
         ExecStart=/opt/etcd/etcd
         EnvironmentFile=/etc/metadata.env
@@ -223,15 +213,13 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
-    - name: kubelet-runonce.service
+    - name: kubelet.service
       enable: true
       contents: |
         [Unit]
         After=fetch-metadata.service
         After=installs.target
         Requires=installs.target
-        After=cni-dhcp.service
-        Requires=cni-dhcp.service
         After=rkt-api.service
         Requires=rkt-api.service
 
@@ -240,8 +228,6 @@ systemd:
         Environment=MANIFESTS=/etc/kubernetes/manifests
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
         ExecStartPre=/bin/mkdir -pv $MANIFESTS
-        ExecStartPre=/usr/bin/rkt fetch --insecure-options=all \
-          ${API_URI}/assets/hyperkube/serve/static-aci-hyperkube-0.aci
         ExecStart=/opt/bin/kubelet \
           \
           --network-plugin=cni \
@@ -249,43 +235,9 @@ systemd:
           \
           --pod-manifest-path=${MANIFESTS} \
           --hostname-override=${KUBELET_IP} \
-          --register-schedulable=false \
+          --register-schedulable=true \
           --allow-privileged=true \
-          --runonce=true \
-          --cloud-provider="" \
-          \
-          --container-runtime=rkt \
-          --rkt-path=/opt/bin/rkt \
-          --v=2
-        RestartSec=30s
-        Type=oneshot
-        RemainAfterExit=yes
-
-        [Install]
-        WantedBy=multi-user.target
-
-    - name: kubelet.service
-      enable: true
-      contents: |
-        [Unit]
-        After=kubelet-runonce.service
-        Requires=kubelet-runonce.service
-
-        [Service]
-        EnvironmentFile=/etc/metadata.env
-        Environment=MANIFESTS=/etc/kubernetes/manifests
-        ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
-        ExecStartPre=/bin/mkdir -pv $MANIFESTS
-        ExecStart=/opt/bin/kubelet \
-          \
-          --network-plugin=cni \
-          --cni-conf-dir=/etc/kubernetes/cni/net.d \
-          \
-          --pod-manifest-path=${MANIFESTS} \
-          --hostname-override=${KUBELET_IP} \
-          --register-schedulable=false \
-          --allow-privileged=true \
-          --api-servers=http://127.0.0.1:8080 \
+          --api-servers=${K8S_ENDPOINT} \
           --cloud-provider="" \
           \
           --container-runtime=rkt \
@@ -321,115 +273,10 @@ systemd:
 
     - name: fleet.service
       enable: true
-      dropins:
-        - name: 10-cluster.conf
-          contents: |
-            [Unit]
-            After=fetch-metadata.service
-            [Service]
-            ExecStartPre=/bin/cat /etc/metadata.env
-            ExecStartPre=/bin/ls -l /etc/metadata.env
-            EnvironmentFile=/etc/metadata.env
-            ExecStart=
-            ExecStart=/opt/fleet/fleetd
 
 
 storage:
   files:
-    - path: /etc/kubernetes/manifests/kube-apiserver.yaml
-      filesystem: root
-      contents:
-        inline: |
-          apiVersion: v1
-          kind: Pod
-          metadata:
-            name: kube-apiserver
-            namespace: kube-system
-          spec:
-            hostNetwork: true
-            containers:
-            - name: kube-apiserver
-              image: static-aci-hyperkube:0
-              command:
-              - /hyperkube
-              - apiserver
-              - --bind-address=0.0.0.0
-              - --insecure-bind-address=0.0.0.0
-              - --etcd-servers=http://127.0.0.1:2379
-              - --allow-privileged=true
-              - --service-cluster-ip-range=172.30.0.0/24
-              - --admission-control=NamespaceLifecycle,LimitRanger,DefaultStorageClass,ResourceQuota
-              - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1
-              - --enable-swagger-ui=true
-              livenessProbe:
-                httpGet:
-                  host: 127.0.0.1
-                  port: 8080
-                  path: /healthz
-                initialDelaySeconds: 15
-                timeoutSeconds: 15
-
-    - path: /etc/kubernetes/manifests/kube-controller-manager.yaml
-      filesystem: root
-      contents:
-        inline: |
-          apiVersion: v1
-          kind: Pod
-          metadata:
-            name: kube-controller-manager
-            namespace: kube-system
-          spec:
-            containers:
-            - name: kube-controller-manager
-              image: static-aci-hyperkube:0
-              command:
-              - /hyperkube
-              - controller-manager
-              - --master=http://127.0.0.1:8080
-              - --leader-elect=true
-              resources:
-                requests:
-                  cpu: 200m
-              livenessProbe:
-                httpGet:
-                  host: 127.0.0.1
-                  path: /healthz
-                  port: 10252
-                initialDelaySeconds: 15
-                timeoutSeconds: 15
-            hostNetwork: true
-
-    - path: /etc/kubernetes/manifests/kube-scheduler.yaml
-      filesystem: root
-      contents:
-        inline: |
-          apiVersion: v1
-          kind: Pod
-          metadata:
-            name: kube-scheduler
-            namespace: kube-system
-          spec:
-            hostNetwork: true
-            containers:
-            - name: kube-scheduler
-              image: static-aci-hyperkube:0
-              command:
-              - /hyperkube
-              - scheduler
-              - --master=http://127.0.0.1:8080
-              - --leader-elect=true
-              resources:
-                requests:
-                  cpu: 100m
-              livenessProbe:
-                httpGet:
-                  host: 127.0.0.1
-                  path: /healthz
-                  port: 10251
-                initialDelaySeconds: 15
-                timeoutSeconds: 15
-
-
     - path: /etc/metadata-endpoints.env
       filesystem: root
       mode: 0644
