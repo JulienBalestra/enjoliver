@@ -92,49 +92,43 @@ fclean: clean gci gc
 check: default $(PYTHON)
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover ./
 
-check_euid_fail_fast: $(PYTHON)
+check_euid_fail_fast: $(PYTHON) runtime
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover euid/ -f
 
-check_euid: $(PYTHON)
+check_euid: $(PYTHON) runtime
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover euid/
 
-check_euid_discovery: $(PYTHON)
+check_euid_discovery: $(PYTHON) runtime
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover euid/discovery/
 
-check_euid_discovery_scheduler: $(PYTHON)
-	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/discovery/test_kvm_discovery_scheduler.py
-
-check_euid_discovery_client: $(PYTHON)
+check_euid_discovery_client: $(PYTHON) runtime
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/discovery/test_kvm_discovery_client.py
 
-check_euid_k8s_basic: $(PYTHON)
+check_euid_k8s_basic: $(PYTHON) runtime
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/k8s/test_kvm_k8s_basic.py
 
-check_euid_k8s_fast: $(PYTHON)
+check_euid_k8s_fast: $(PYTHON) runtime
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/k8s/test_kvm_k8s_fast.py
 
-check_euid_it_k8s_fast: $(PYTHON)
+check_euid_it_k8s_fast: $(PYTHON) runtime
 	PYTHONPATH=$(shell pwd)/../.. TEST=TestKVMK8SFast0 $(PYTHON) euid/k8s/test_kvm_k8s_fast.py
 
-check_euid_basic: $(PYTHON)
+check_euid_basic: $(PYTHON) runtime
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover euid/basic/
 
-check_euid_basic_iso: $(PYTHON) $(ISO)
+check_euid_basic_iso: $(PYTHON) $(ISO) runtime
 	KVM_ISO=run PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/basic/test_kvm_basic_iso.py
 
-check_euid_basic_pxe: $(PYTHON) 
+check_euid_basic_pxe: $(PYTHON) runtime
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/basic/test_kvm_basic_pxe.py
 
-check_euid_plans_all_in_one: $(PYTHON)
-	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/plans/test_kvm_plan_all_in_one.py
-
-check_euid_plans_enjolivage: $(PYTHON)
+check_euid_plans_enjolivage: $(PYTHON) runtime
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/plans/test_kvm_plan_k8s_enjolivage.py
 
-check_euid_it_plans_enjolivage: $(PYTHON)
+check_euid_it_plans_enjolivage: $(PYTHON) runtime
 	PYTHONPATH=$(shell pwd)/../.. TEST=TestKVMK8sEnjolivage0 $(PYTHON) euid/plans/test_kvm_plan_k8s_enjolivage.py
 
-check_euid_kvm_player: $(PYTHON)
+check_euid_kvm_player: $(PYTHON) runtime
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/test_kvm_player.py
 
 $(KKK):

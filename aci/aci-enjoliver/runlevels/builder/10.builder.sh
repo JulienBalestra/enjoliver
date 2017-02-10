@@ -12,7 +12,7 @@ SOURCE_PROJECT=/opt/source-project
 
 
 apt-get update -q
-apt-get install -y -q curl python build-essential python-virtualenv python-dev git file openssh-client tar
+apt-get install -y -q curl python build-essential python-virtualenv python-dev git file openssh-client tar npm
 ln -vs /usr/lib/python2.7/dist-packages/virtualenv.py /usr/local/bin/virtualenv
 chmod +x /usr/local/bin/virtualenv
 
