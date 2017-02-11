@@ -68,7 +68,7 @@ Extra features are (alpha) adds like:
 * python-virtualenv
 * qemu-kvm
 * libvirt-bin
-* virt-inst
+* virtinst
 * jq
 * file
 * npm
