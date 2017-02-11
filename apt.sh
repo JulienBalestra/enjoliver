@@ -1,16 +1,13 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bash 
 
-tty -s
-if [ -z ${INSTALL} ] && [ $? -ne ]
-then
-    DEBIAN_FRONTEND=noninteractive
-    INSTALL="-yq"
-fi
+set -e
+
+export DEBIAN_FRONTEND=noninteractive
 
 apt-get update -qq
 
-apt-get install ${INSTALL} curl python python-dev python-virtualenv qemu-kvm libvirt-bin virtinstall jq liblzma-dev mkisofs isolinux file npm make
+apt-get install -y curl python python-dev python-virtualenv qemu-kvm libvirt-bin virtinst jq liblzma-dev mkisofs isolinux file npm make
 
 # Go version have to be > 1.3
-go version || apt-get install ${INSTALL} golang
-jq -h || apt-get install ${INSTALL} jq
+go help || apt-get install -y golang
+jq -h || apt-get install -y jq

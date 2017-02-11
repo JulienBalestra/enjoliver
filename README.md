@@ -41,7 +41,6 @@ Extra features are (alpha) adds like:
 #### Debian / Ubuntu auto-way
 
 
-    sudo apt-get update -qq
     sudo make apt
     
     # MY_USER is your non-root user
@@ -69,9 +68,10 @@ Extra features are (alpha) adds like:
 * python-virtualenv
 * qemu-kvm
 * libvirt-bin
-* virtinstall
+* virt-inst
 * jq
 * file
+* npm
 * golang # > 1.3
 
 
@@ -80,10 +80,10 @@ Extra features are (alpha) adds like:
 
 ##### Optional:
 
-* npm
 * liblzma-dev
 * mkisofs
 * isolinux
+* virt-manager
 
 
 ## Release
