@@ -32,7 +32,6 @@ $(LLDP): install
 	$(SQUASH) $(LLDP_RENDER)/manifest
 	tar -C $(LLDP_RENDER) -cf $(LLDP) manifest rootfs
 	file $(LLDP)
-	$(RKT) --local-config=$(RUNTIME) fetch --insecure-options=all $(LLDP)
 
 clean:
 	IMAGE=$(CWD)/aci-lldp make -C $(RUNTIME) clean

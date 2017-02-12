@@ -29,13 +29,16 @@ install: $(DEBIAN)
 	IMAGE=$(ACI)/aci-enjoliver make -C $(RUNTIME) test
 	IMAGE=$(ACI)/aci-enjoliver make -C $(RUNTIME) install
 
+test: $(DEBIAN)
+	@echo ENV IMAGE=$(ACI)/aci-enjoliver
+	IMAGE=$(ACI)/aci-enjoliver make -C $(RUNTIME) test
+
 $(ENJOLIVER): install
 	$(RKT) --local-config=$(RUNTIME) image render $(ENJOLIVER_IMAGE) $(ENJOLIVER_RENDER) --overwrite
 	chmod +r $(ENJOLIVER_RENDER)/manifest
 	$(SQUASH) $(ENJOLIVER_RENDER)/manifest
 	tar -C $(ENJOLIVER_RENDER) -cf $(ENJOLIVER) manifest rootfs
 	file $(ENJOLIVER)
-	$(RKT) --local-config=$(RUNTIME) fetch --insecure-options=all $(ENJOLIVER)
 
 clean:
 	IMAGE=$(ACI)/aci-enjoliver make -C $(RUNTIME) clean

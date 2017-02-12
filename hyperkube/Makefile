@@ -63,12 +63,6 @@ $(HYPERKUBE): install
 	file $(HYPERKUBE)
 	ls -lh $(HYPERKUBE)
 
-$(HYPERKUBE_COREOS):
-	$(RKT) --local-config=$(RUNTIME) fetch --insecure-options=all $(QUAY_HYPERKUBE_COREOS)
-	$(RKT) --local-config=$(RUNTIME) image export $(QUAY_HYPERKUBE_COREOS) $(HYPERKUBE_COREOS)
-	file $(HYPERKUBE_COREOS)
-	ls -lh $(HYPERKUBE_COREOS)
-
 gc:
 	$(RKT) --local-config=$(RUNTIME) gc --grace-period=0s
 	$(RKT) --local-config=$(RUNTIME) image gc --grace-period=0s
