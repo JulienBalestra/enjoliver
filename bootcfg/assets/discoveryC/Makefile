@@ -9,9 +9,7 @@ $(SERVE):
 	mkdir -vp $(SERVE)
 
 $(TARGET): $(SERVE)
-	make -C ../../../$(PROJECT) clean
-	make -C ../../../$(PROJECT) check
-	make -C ../../../$(PROJECT)
+	make -C ../../../$(PROJECT) re
 	cp -v ../../../$(PROJECT)/$(BIN) $(TARGET)
 
 clean:
