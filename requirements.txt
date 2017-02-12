@@ -5,3 +5,4 @@ requests==2.12.3
 boto==2.44.0
 kubernetes==1.0.0a4
 ipaddr==2.1.11
+meinheld==0.6.1

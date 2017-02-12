@@ -81,6 +81,8 @@ class TestAPIGunicornScheduler(unittest.TestCase):
             "%s/env/bin/gunicorn" % TestAPIGunicornScheduler.project_path,
             "--chdir",
             "%s" % TestAPIGunicornScheduler.app_path,
+            '--worker-class',
+            'egg:meinheld#gunicorn_worker',
             "-b",
             "0.0.0.0:5000",
             "api:app"

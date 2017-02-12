@@ -68,6 +68,8 @@ class TestAPIGunicorn(unittest.TestCase):
             "%s/env/bin/gunicorn" % TestAPIGunicorn.project_path,
             "--chdir",
             "%s" % TestAPIGunicorn.app_path,
+            '--worker-class',
+            'egg:meinheld#gunicorn_worker',
             "-b",
             "0.0.0.0:5000",
             "api:app"

@@ -138,6 +138,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "--chdir",
             "%s" % KernelVirtualMachinePlayer.app_path,
             "api:app",
+            '--worker-class',
+            'egg:meinheld#gunicorn_worker',
             "-b",
             "0.0.0.0:5000",
             "--log-level",
