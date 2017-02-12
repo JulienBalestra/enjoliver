@@ -7,11 +7,6 @@ builder:
     - {from: ../../, to: /opt/source-project}
     - {from: /tmp/enjoliver/runtime, to: /opt/stage2/static-aci-enjoliver/rootfs/opt/enjoliver/runtime}
 
-  app:
-    environment:
-      - name: GIT_BUNDLE
-        value: "true"
-
 tester:
   aci:
     dependencies:

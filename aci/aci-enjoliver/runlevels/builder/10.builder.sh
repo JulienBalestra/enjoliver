@@ -18,7 +18,7 @@ chmod +x /usr/local/bin/virtualenv
 
 
 ### Git Bundle ###
-if [ ${GIT_BUNDLE} == "true" ]
+if [ test -d ${SOURCE_PROJECT}/bundles ]
 then
     cd -P ${SOURCE_PROJECT}/bundles
 
