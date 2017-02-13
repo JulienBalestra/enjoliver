@@ -9,6 +9,14 @@ class EnjoliverConfig(object):
         # Bootcfg aka CoreOS Baremetal aka Matchbox
         self.bootcfg_uri = "http://127.0.0.1:8080"
         self.bootcfg_path = os.getenv("BOOTCFG_PATH", "/var/lib/bootcfg")
+        # For Health check
+        self.bootcfg_urls = [
+            "/",
+            "/boot.ipxe",
+            "/boot.ipxe.0",
+            "/assets",
+            "/metadata"
+        ]
 
         # Databases
         self.db_path = os.getenv("DB_PATH", '%s/enjoliver.sqlite' % os.path.dirname(os.path.abspath(__file__)))
@@ -20,6 +28,7 @@ class EnjoliverConfig(object):
         self.aws_id = os.getenv("AWS_ACCESS_KEY_ID", None)
         self.aws_secret = os.getenv("AWS_SECRET_ACCESS_KEY", None)
 
+        self.backup_lock_key = "backup_lock"
         self.backup_bucket_name = os.getenv("BACKUP_BUCKET_NAME", "")
         self.backup_bucket_directory = os.getenv("BACKUP_BUCKET_DIRECTORY", "enjoliver")
 
@@ -52,4 +61,4 @@ class EnjoliverConfig(object):
             "etcd_member_kubernetes_control_plane": "etcd-member-control-plane",
             "kubernetes_nodes": "k8s-node",
         }
-        self.extra_selectors = {"os", "installed"}
+        self.extra_selectors = {"os": "installed"}

@@ -26,13 +26,7 @@ cache = SimpleCache()
 application.config["BOOTCFG_URI"] = ec.bootcfg_uri
 application.config["API_URI"] = ec.api_uri
 
-application.config["BOOTCFG_URLS"] = [
-    "/",
-    "/boot.ipxe",
-    "/boot.ipxe.0",
-    "/assets",
-    "/metadata"
-]
+application.config["BOOTCFG_URLS"] = ec.bootcfg_urls
 
 application.config["DB_PATH"] = ec.db_path
 application.config["DB_URI"] = ec.db_uri
@@ -41,30 +35,14 @@ ignition_journal = application.config["IGNITION_JOURNAL_DIR"] = ec.ignition_jour
 
 application.config["BACKUP_BUCKET_NAME"] = ec.backup_bucket_name
 application.config["BACKUP_BUCKET_DIRECTORY"] = ec.backup_bucket_directory
-application.config["BACKUP_LOCK_KEY"] = "backup_lock"
+application.config["BACKUP_LOCK_KEY"] = ec.backup_lock_key
 
 libc = ctypes.CDLL("libc.so.6")  # TODO deep inside the SQLITE sync
 engine = None
 
 if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "foreign"):
-    # API URI
-    LOGGER.info("API_URI=%s" % application.config["API_URI"])
-
-    # bootcfg == Coreos-Baremetal
-    LOGGER.info("BOOTCFG_URI=%s" % application.config["BOOTCFG_URI"])
-    LOGGER.info("BOOTCFG_URLS=%s" % application.config["BOOTCFG_URLS"])
-
-    # Database config
-    LOGGER.info("DB_PATH=%s" % application.config["DB_PATH"])
-    LOGGER.info("DB_URI=%s" % application.config["DB_URI"])
-    LOGGER.info("IGNITION_JOURNAL_DIR=%s" % application.config["IGNITION_JOURNAL_DIR"])
-
-    # Backup
-    LOGGER.info("BACKUP_BUCKET_NAME=%s" % application.config["BACKUP_BUCKET_NAME"])
-    LOGGER.info("BACKUP_BUCKET_DIRECTORY=%s" % application.config["BACKUP_BUCKET_DIRECTORY"])
-    LOGGER.info("AWS_ACCESS_KEY_ID=len(%d)" % len(os.getenv("AWS_ACCESS_KEY_ID", "")))
-    LOGGER.info("AWS_SECRET_ACCESS_KEY=len(%d)" % len(os.getenv("AWS_SECRET_ACCESS_KEY", "")))
-    LOGGER.info("BACKUP_LOCK_KEY=%s" % application.config["BACKUP_LOCK_KEY"])
+    for k, v in ec.__dict__.iteritems():
+        LOGGER.info("<config> %s=%s" % (k, v))
 
     # Start the db
     LOGGER.info("Create engine %s" % application.config["DB_URI"])
@@ -76,20 +54,7 @@ if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "foreign
 
 @application.route("/config", methods=["GET"])
 def config():
-    wanted, c = [
-                    "API_URI",
-                    "BOOTCFG_URI",
-                    "BOOTCFG_URLS",
-                    "DB_PATH",
-                    "DB_URI",
-                    "IGNITION_JOURNAL_DIR",
-                    "BACKUP_BUCKET_NAME",
-                    "BACKUP_BUCKET_DIRECTORY",
-                    "BACKUP_LOCK_KEY"
-                ], dict()
-    for elt in wanted:
-        c[elt] = application.config[elt]
-    return jsonify(c)
+    return jsonify(ec.__dict__)
 
 
 @application.route('/', methods=['GET'])
