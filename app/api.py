@@ -1,7 +1,4 @@
-import ctypes
-import math
 import os
-import shutil
 import time
 import urllib2
 
@@ -13,7 +10,7 @@ from werkzeug.contrib.cache import SimpleCache
 import crud
 import logger
 import model
-import s3
+import backup
 from configs import EnjoliverConfig
 
 ec = EnjoliverConfig()
@@ -37,7 +34,6 @@ application.config["BACKUP_BUCKET_NAME"] = ec.backup_bucket_name
 application.config["BACKUP_BUCKET_DIRECTORY"] = ec.backup_bucket_directory
 application.config["BACKUP_LOCK_KEY"] = ec.backup_lock_key
 
-libc = ctypes.CDLL("libc.so.6")  # TODO deep inside the SQLITE sync
 engine = None
 
 if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "foreign"):
@@ -118,14 +114,10 @@ def discovery():
     else:
         r = request.get_json()
 
-    app.logger.debug("application/json \"%s\"" % r)
-
     while cache.get(application.config["BACKUP_LOCK_KEY"]) is not None:
         app.logger.debug("Cache backup is not None")
         time.sleep(0.1)
 
-    # Another logger
-    LOGGER.debug(r)
     try:
         i = crud.InjectDiscovery(engine=engine,
                                  ignition_journal=ignition_journal,
@@ -234,71 +226,7 @@ def schedule_role():
 
 @application.route('/backup/db', methods=['POST'])
 def backup_database():
-    """
-    Backup the db by copying it and uploading to a S3 bucket
-    During the copy of the db a key is set inside the werkzeug cache to avoid writes
-        This key have a TTL and is always unset whatever the status of the backup
-    The application config contains the needed keys for the operation:
-        - BACKUP_BUCKET_NAME
-        - BACKUP_BUCKET_DIRECTORY
-        - DB_PATH
-        - BACKUP_LOCK_KEY
-    :return: Summary of the operation ; copy and upload keys summarize the result success
-    """
-    start = time.time()
-    now_rounded = int(math.ceil(start))
-    dest_s3 = "%s/%s.db" % (application.config["BACKUP_BUCKET_DIRECTORY"], now_rounded)
-    db_path = application.config["DB_PATH"]
-    bucket_name = application.config["BACKUP_BUCKET_NAME"]
-    b = {
-        "copy": False,
-        "upload": False,
-        "source_fs": db_path,
-        "dest_fs": "%s-%s.bak" % (db_path, now_rounded),
-        "dest_s3": dest_s3 if bucket_name else None,
-        "bucket_name": bucket_name,
-        "bucket_uri": "s3://%s/%s" % (bucket_name, dest_s3) if application.config[
-            "BACKUP_BUCKET_NAME"] else None,
-        "size": None,
-        "ts": now_rounded,
-        "backup_duration": None,
-        "lock_duration": None,
-        "already_locked": False,
-    }
-    if cache.get(application.config["BACKUP_LOCK_KEY"]):
-        b["already_locked"] = True
-        return jsonify(b)
-
-    try:
-        source_st = os.stat(b["source_fs"])
-        timeout = math.ceil(source_st.st_size / (1024 * 1024.))
-        app.logger.info("Backup lock key set with timeout == %ss" % timeout)
-        cache.set(application.config["BACKUP_LOCK_KEY"], b["dest_fs"], timeout=timeout)
-        libc.sync()
-        shutil.copy2(db_path, b["dest_fs"])
-        dest_st = os.stat(b["dest_fs"])
-        b["size"], b["copy"] = dest_st.st_size, True
-    except Exception as e:
-        app.logger.error("<%s %s>: %s" % (e, type(e), e.message))
-    finally:
-        cache.delete(application.config["BACKUP_LOCK_KEY"])
-        b["lock_duration"] = time.time() - start
-        app.logger.debug("lock duration: %ss" % b["lock_duration"])
-
-    try:
-        if b["copy"] is False:
-            app.logger.error("copy is False: %s" % b["dest_fs"])
-            raise IOError(b["dest_fs"])
-
-        so = s3.S3Operator(b["bucket_name"])
-        so.upload(b["dest_fs"], b["dest_s3"])
-        b["upload"] = True
-    except Exception as e:
-        app.logger.error("<%s %s>: %s" % (e, type(e), e.message))
-
-    b["backup_duration"] = time.time() - start
-    app.logger.info("backup duration: %ss" % b["backup_duration"])
-    return jsonify(b)
+    return backup.backup_sqlite(cache=cache, application=application)
 
 
 @application.route('/discovery/interfaces', methods=['GET'])
