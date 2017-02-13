@@ -34,9 +34,9 @@ class EnjoliverConfig(object):
         self.etcd_member_kubernetes_control_plane_expected_nb = 3
 
         # Sync Bootcfg
-        self.ipam_multiplier = 256
-        self.ipam_ips = 254
-        self.ip_start = 0
+        self.sub_ips = 256
+        self.range_nb_ips = 253
+        self.skip_ips = 1
 
         # Application config
         self.kubernetes_api_server_port = 8080

@@ -20,9 +20,9 @@ class ConfigSyncSchedules(object):
 
     log = logger.get_logger(__file__)
 
-    ipam_multiplier = ec.ipam_multiplier
-    ipam_ips = ec.ipam_ips
-    ip_start = ec.ip_start
+    ipam_multiplier = ec.sub_ips
+    range_nb_ips = ec.range_nb_ips
+    skip_ips = ec.skip_ips
 
     def __init__(self, api_uri, bootcfg_path, ignition_dict, extra_selector_dict=None):
         """
@@ -120,15 +120,18 @@ class ConfigSyncSchedules(object):
         :return: dict
         """
         host = ipaddr.IPNetwork(host_cidrv4)
+        subnet = host
         ip_cut = int(host.ip.__str__().split(".")[-1])
-        sub = ipaddr.IPNetwork(host.network).ip + (ip_cut * ConfigSyncSchedules.ipam_multiplier)
-        rs = sub + 1 + ConfigSyncSchedules.ip_start
-        re = sub + ConfigSyncSchedules.ipam_ips
+        if ConfigSyncSchedules.ipam_multiplier:
+            sub = ipaddr.IPNetwork(host.network).ip + (ip_cut * ConfigSyncSchedules.ipam_multiplier)
+            host = ipaddr.IPNetwork(sub)
+        range_start = host.ip + ConfigSyncSchedules.skip_ips
+        range_end = range_start + ConfigSyncSchedules.range_nb_ips
         ipam = {
             "type": "host-local",
-            "subnet": "%s/%s" % (host.network.__str__(), host.prefixlen),
-            "rangeStart": rs.__str__(),
-            "rangeEnd": re.__str__(),
+            "subnet": "%s/%s" % (subnet.network.__str__(), subnet.prefixlen),
+            "rangeStart": range_start.__str__(),
+            "rangeEnd": range_end.__str__(),
             "gateway": host_gateway,
             "routes": [{"dst": "0.0.0.0/0"}]
         }
