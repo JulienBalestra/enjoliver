@@ -115,7 +115,7 @@ class CommonScheduler(object):
             r.close()
             self.custom_log(self.apply.__name__, "done:%d expected:%d" % (len(done), self.expected_nb))
             if len(done) < self.expected_nb:
-                self.custom_log(self.apply.__name__, "%d < %d" % (len(done), self.expected_nb))
+                self.custom_log(self.apply.__name__, "%d < %d" % (len(done), self.expected_nb), level="debug")
                 return self.__apply_available_budget()
 
             return True

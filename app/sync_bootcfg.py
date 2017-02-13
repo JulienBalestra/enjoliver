@@ -192,7 +192,6 @@ class ConfigSyncSchedules(object):
     def etcd_member_kubernetes_control_plane(self):
         marker = self.etcd_member_kubernetes_control_plane.__name__
         roles = schedulerv2.EtcdMemberKubernetesControlPlane.roles
-        print self.etcd_initial_cluster
 
         machine_roles = self._query_roles(*roles)
         for i, m in enumerate(machine_roles):
@@ -284,14 +283,14 @@ class ConfigSyncSchedules(object):
 
     def _query_roles(self, *roles):
         roles = "&".join(roles)
-        self.log.info("%s roles='%s'" % (self._query_roles.__name__, roles))
+        self.log.debug("%s roles='%s'" % (self._query_roles.__name__, roles))
         r = requests.get("%s/scheduler/%s" % (self.api_uri, roles))
         d = json.loads(r.content)
         r.close()
         return d
 
     def _query_ip_list(self, role):
-        self.log.info("%s role='%s'" % (self._query_ip_list.__name__, role))
+        self.log.debug("%s role='%s'" % (self._query_ip_list.__name__, role))
         r = requests.get("%s/scheduler/ip-list/%s" % (self.api_uri, role))
         d = json.loads(r.content)
         r.close()
