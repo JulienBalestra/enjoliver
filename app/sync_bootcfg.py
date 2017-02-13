@@ -20,7 +20,7 @@ class ConfigSyncSchedules(object):
 
     log = logger.get_logger(__file__)
 
-    ipam_multiplier = ec.sub_ips
+    sub_ips = ec.sub_ips
     range_nb_ips = ec.range_nb_ips
     skip_ips = ec.skip_ips
 
@@ -122,8 +122,8 @@ class ConfigSyncSchedules(object):
         host = ipaddr.IPNetwork(host_cidrv4)
         subnet = host
         ip_cut = int(host.ip.__str__().split(".")[-1])
-        if ConfigSyncSchedules.ipam_multiplier:
-            sub = ipaddr.IPNetwork(host.network).ip + (ip_cut * ConfigSyncSchedules.ipam_multiplier)
+        if ConfigSyncSchedules.sub_ips:
+            sub = ipaddr.IPNetwork(host.network).ip + (ip_cut * ConfigSyncSchedules.sub_ips)
             host = ipaddr.IPNetwork(sub)
         range_start = host.ip + ConfigSyncSchedules.skip_ips
         range_end = range_start + ConfigSyncSchedules.range_nb_ips

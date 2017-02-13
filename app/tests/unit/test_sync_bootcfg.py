@@ -86,7 +86,7 @@ class TestConfigSyncSchedules(TestCase):
 
         sync_bootcfg.ConfigSyncSchedules.range_nb_ips = 60
         sync_bootcfg.ConfigSyncSchedules.skip_ips = 1
-        sync_bootcfg.ConfigSyncSchedules.ipam_multiplier = 0
+        sync_bootcfg.ConfigSyncSchedules.sub_ips = 0
 
         d = s.cni_ipam("10.99.33.1/19", "10.99.64.254")
         self.assertEqual(json.dumps({
@@ -108,7 +108,7 @@ class TestConfigSyncSchedules(TestCase):
 
         sync_bootcfg.ConfigSyncSchedules.range_nb_ips = 60
         sync_bootcfg.ConfigSyncSchedules.skip_ips = 1
-        sync_bootcfg.ConfigSyncSchedules.ipam_multiplier = 0
+        sync_bootcfg.ConfigSyncSchedules.sub_ips = 0
 
         d = s.cni_ipam("10.99.39.129/19", "10.99.64.254")
         self.assertEqual(json.dumps({
