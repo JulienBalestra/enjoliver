@@ -417,7 +417,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                         os.write(1, "\r-> REMAIN %s for %s\n\r" % (str(ips), self.etcd_endpoint_health.__name__))
 
                 except urllib2.URLError:
-                    os.write(2, "\r-> NOT READY %s for %s\n\r" % (ip, self.etcd_endpoint_health.__name__))
+                    os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (t, tries, ip, self.etcd_endpoint_health.__name__))
                     time.sleep(10)
 
         self.assertEqual(len(ips), 0)
@@ -437,7 +437,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     break
 
             except urllib2.URLError:
-                os.write(2, "\r-> NOT READY %s for %s\n\r" % (ip, self.etcd_member_len.__name__))
+                os.write(2, "\r-> %d/%d NOT READY %s for %s \n\r" % (t, tries, ip, self.etcd_member_len.__name__))
                 time.sleep(10)
 
         self.assertEqual(len(result["members"]), members_nb)
