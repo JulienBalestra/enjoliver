@@ -53,7 +53,8 @@ class EnjoliverConfig(object):
         self.etcd_initial_advertise_peer_port = 2380
         self.etcd_advertise_client_port = 2379
 
-        # Use a real registry in production
+        # Use a real registry in production like:
+        # registry.com/aci-hyperkube:1.5.3-1
         self.k8s_image_url = "static-aci-hyperkube:0"
 
         # Ignition
