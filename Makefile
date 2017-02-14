@@ -2,6 +2,7 @@ CWD=$(shell pwd)
 CHECK=check
 CHECK_EUID=check_euid
 CHECK_EUID_KVM_PLAYER=check_euid_kvm_player
+ENV=$(CWD)/env
 
 default: help
 
@@ -37,6 +38,11 @@ apt:
 	test $(shell id -u -r) -eq 0
 	DEBIAN_FRONTEND=noninteractive INSTALL="-y" ./apt.sh
 
+$(ENV):
+	virtualenv $(ENV) --system-site-packages
+
+pip: $(ENV)
+	$(ENV)/bin/pip install -r requirements.txt
 
 acis:
 	test $(shell id -u -r) -eq 0
