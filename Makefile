@@ -1,7 +1,5 @@
 CWD=$(shell pwd)
 CHECK=check
-CHECK_ASSETS=check_assets
-CHECK_FAST=check_fast
 CHECK_EUID=check_euid
 CHECK_EUID_KVM_PLAYER=check_euid_kvm_player
 
@@ -32,7 +30,6 @@ help:
 	@echo sudo make $(CHECK_EUID)
 	@echo ----------------------
 	@echo Release:
-	@echo sudo make acis
 	@echo sudo make release_aci
 	@echo ----------------------
 
@@ -77,10 +74,6 @@ check_clean:
 $(CHECK):
 	make -C discoveryC/ $(CHECK)
 	make -C app/tests/ $(CHECK)
-
-$(CHECK_FAST):
-	make -C discoveryC/ $(CHECK)
-	make -C app/tests/ $(CHECK_FAST)
 
 $(CHECK_EUID): validate
 	test $(shell id -u -r) -eq 0

@@ -176,9 +176,16 @@ class ConfigSyncSchedules(object):
         return ",".join(e)
 
     @property
-    def etcd_member_uri_list(self):
+    def etcd_member_client_uri_list(self):
         ips = self.etcd_member_ip_list
         e = ["http://%s:%d" % (k, ec.etcd_advertise_client_port) for k in ips]
+        random.shuffle(e)
+        return e
+
+    @property
+    def etcd_member_peer_uri_list(self):
+        ips = self.etcd_member_ip_list
+        e = ["http://%s:%d" % (k, ec.etcd_initial_advertise_peer_port) for k in ips]
         random.shuffle(e)
         return e
 
@@ -216,7 +223,9 @@ class ConfigSyncSchedules(object):
                         m["ipv4"], ec.etcd_initial_advertise_peer_port),
                     "etcd_advertise_client_urls": "http://%s:%d" % (
                         m["ipv4"], ec.etcd_advertise_client_port),
-                    "etcd_member_uri_list": self.etcd_member_uri_list,
+                    "etcd_member_client_uri_list": ",".join(self.etcd_member_client_uri_list),
+                    "etcd_member_peer_uri_list": ",".join(self.etcd_member_peer_uri_list),
+                    "etcd_data_dir": ec.etcd_data_dir,
                     # K8s Control Plane
                     "kubelet_ip": "%s" % m["ipv4"],
                     "kubelet_name": "%s" % m["ipv4"] if fqdn == automatic_name else fqdn,
@@ -228,6 +237,7 @@ class ConfigSyncSchedules(object):
                     "network": {
                         "cidrv4": m["cidrv4"],
                         "gateway": m["gateway"],
+                        "ip": m["ipv4"],
                     },
                     # host
                     "hostname": dns_attr["shortname"],
@@ -260,8 +270,10 @@ class ConfigSyncSchedules(object):
                     "etcd_initial_cluster": self.etcd_initial_cluster,
                     "etcd_advertise_client_urls": "http://%s:%d" % (
                         m["ipv4"], ec.etcd_advertise_client_port),
-                    "etcd_member_uri_list": self.etcd_member_uri_list,
+                    "etcd_member_client_uri_list": ",".join(self.etcd_member_client_uri_list),
+                    "etcd_member_peer_uri_list": ",".join(self.etcd_member_peer_uri_list),
                     "etcd_proxy": "on",
+                    "etcd_data_dir": ec.etcd_data_dir,
                     # Kubelet
                     "kubelet_ip": "%s" % m["ipv4"],
                     "kubelet_name": "%s" % m["ipv4"] if fqdn == automatic_name else fqdn,

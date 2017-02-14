@@ -171,7 +171,6 @@ systemd:
         Type=notify
         ExecStart=/opt/etcd/etcd
         EnvironmentFile=/etc/metadata.env
-        Environment=ETCD_DATA_DIR=/var/lib/etcd3
         Environment=ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379,http://0.0.0.0:4001
         Environment=ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380,http://0.0.0.0:7001
         [Install]
@@ -543,7 +542,7 @@ storage:
       filesystem: root
       contents:
         inline: |
-          etcd_servers = [ "http://127.0.0.1:2379", {{ range $i, $etcd := .etcd_member_uri_list }}{{ if (ne $i 0) }},{{end}}"{{$etcd}}"{{end}} ]
+          etcd_servers = [ "http://127.0.0.1:2379",{{ .etcd_member_client_uri_list }} ]
           metadata = "name={{.dns_attr.shortname}}"
 
     - path: /etc/modprobe.d/bonding.conf

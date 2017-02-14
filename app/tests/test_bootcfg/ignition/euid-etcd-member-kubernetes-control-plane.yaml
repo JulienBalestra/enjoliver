@@ -154,6 +154,21 @@ systemd:
         [Install]
         RequiredBy=multi-user.target
 
+    - name: etcd-operator.service
+      enable: true
+      contents: |
+        [Unit]
+        After=fetch-metadata.service
+
+        [Service]
+        EnvironmentFile=/etc/metadata.env
+        ExecStart=/opt/bin/etcd-operator
+        RestartSec=60s
+        Restart=on-failure
+
+        [Install]
+        RequiredBy=multi-user.target
+
     - name: etcd.service
       enable: false
 
@@ -166,14 +181,20 @@ systemd:
         [Unit]
         After=fetch-metadata.service
         After=install-etcd.service
+        Requires=fetch-metadata.service
+        After=fetch-metadata.service
         Conflicts=etcd.service etcd2.service
+
+        After=etcd-operator.service
+
         [Service]
         Type=notify
         ExecStart=/opt/etcd/etcd
-        EnvironmentFile=/etc/metadata.env
-        Environment=ETCD_DATA_DIR=/var/lib/etcd3
+        EnvironmentFile=-/etc/etcd.env
         Environment=ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379,http://0.0.0.0:4001
         Environment=ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380,http://0.0.0.0:7001
+        RestartSec=60s
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -678,7 +699,7 @@ storage:
       filesystem: root
       contents:
         inline: |
-          etcd_servers = [ "http://127.0.0.1:2379", {{ range $i, $etcd := .etcd_member_uri_list }}{{ if (ne $i 0) }},{{end}}"{{$etcd}}"{{end}} ]
+          etcd_servers = [ http://127.0.0.1:2379,{{ .etcd_member_client_uri_list }} ]
           metadata = "name={{.dns_attr.shortname}}"
 
     - path: /etc/modprobe.d/bonding.conf
@@ -715,6 +736,81 @@ storage:
     - path: /var/log/journal/.keep
       mode: 0644
       filesystem: root
+
+    - path: /opt/bin/etcd-operator
+      filesystem: root
+      mode: 0544
+      contents:
+        inline: |
+          #!/usr/bin/env bash
+          set -o pipefail ; set -ex
+
+          env | grep "^ETCD"
+
+          ETCD_ENV_FILE=/etc/etcd.env
+
+          set +e
+          # Check if the data-dir is empty: First boot
+          if [ ! -d ${ETCD_DATA_DIR}/member ]
+          then
+
+              echo "${ETCD_DATA_DIR}/member is not empty"
+              # Check if there is an existing cluster
+              etcdctl --endpoints ${ETCD_MEMBER_CLIENT_URI_LIST} cluster-health
+              if [ $? -eq 0 ]
+              then
+                echo "Existing cluster"
+                ETCD_INITIAL_CLUSTER_STATE=existing
+                # Check if this new member make a replacement
+                REMOVE=$(etcdctl --endpoints ${ETCD_MEMBER_CLIENT_URI_LIST} member list | \
+                  grep ${NETWORK_IP} | awk 'sub(/:/,"") {print $1}' | sed 's/\[unstarted\]//' )
+
+                if [ $REMOVE ]
+                then
+                  echo "Remove ${REMOVE}"
+                  etcdctl --endpoints ${ETCD_MEMBER_CLIENT_URI_LIST} member remove ${REMOVE}
+                fi
+
+                echo "Extend original cluster"
+                ETCD_INITIAL_CLUSTER=$(etcdctl --endpoints ${ETCD_MEMBER_CLIENT_URI_LIST} member add \
+                  ${NETWORK_IP} "http://${NETWORK_IP}:2380" | grep "ETCD_INITIAL_CLUSTER=" | \
+                  sed 's/ETCD_INITIAL_CLUSTER=//')
+
+                if [ -z $ETCD_INITIAL_CLUSTER ]
+                then
+                  echo "Fail to extend original cluster: ETCD_INITIAL_CLUSTER=${ETCD_INITIAL_CLUSTER}"
+                fi
+
+              else
+                ETCD_INITIAL_CLUSTER_STATE=new
+              fi
+
+            else
+              echo "Already some data in ${ETCD_DATA_DIR}"
+              find ${ETCD_DATA_DIR}
+              cat ${ETCD_ENV_FILE}
+              exit $?
+          fi
+
+          set -e
+
+          if [ -z $ETCD_INITIAL_CLUSTER ]
+          then
+              echo "ETCD_INITIAL_CLUSTER is empty"
+              exit 2
+          fi
+
+          cat << EOF | tee ${ETCD_ENV_FILE}
+          ETCD_INITIAL_CLUSTER=$ETCD_INITIAL_CLUSTER
+          ETCD_INITIAL_CLUSTER_STATE="$ETCD_INITIAL_CLUSTER_STATE"
+          ETCD_ADVERTISE_CLIENT_URLS="http://${NETWORK_IP}:2379"
+          ETCD_INITIAL_ADVERTISE_PEER_URLS="http://${NETWORK_IP}:2380"
+          ETCD_LISTEN_CLIENT_URLS="http://0.0.0.0:2379,http://0.0.0.0:4001"
+          ETCD_LISTEN_PEER_URLS="http://${NETWORK_IP}:2380,http://${NETWORK_IP}:7001"
+          ETCD_NAME=$ETCD_NAME
+          ETCD_DATA_DIR=$ETCD_DATA_DIR
+          EOF
+
 
 
 networkd:

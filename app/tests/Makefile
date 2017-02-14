@@ -113,6 +113,12 @@ check_euid_k8s_fast: $(PYTHON) runtime
 check_euid_it_k8s_fast: $(PYTHON) runtime
 	PYTHONPATH=$(shell pwd)/../.. TEST=TestKVMK8SFast0 $(PYTHON) euid/k8s/test_kvm_k8s_fast.py
 
+check_euid_k8s_etcd_operator: $(PYTHON) runtime
+	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/k8s/test_kvm_k8s_etcd_operator.py
+
+check_euid_it_k8s_etcd_operator: $(PYTHON) runtime
+	PYTHONPATH=$(shell pwd)/../.. TEST=TestKVMK8SEtcdOperator0 $(PYTHON) euid/k8s/test_kvm_k8s_etcd_operator.py
+
 check_euid_basic: $(PYTHON) runtime
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover euid/basic/
 

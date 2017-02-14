@@ -52,6 +52,7 @@ class EnjoliverConfig(object):
 
         self.etcd_initial_advertise_peer_port = 2380
         self.etcd_advertise_client_port = 2379
+        self.etcd_data_dir = "/var/lib/etcd3"
 
         # Use a real registry in production like:
         # registry.com/aci-hyperkube:1.5.3-1
