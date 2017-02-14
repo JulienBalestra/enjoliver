@@ -17,42 +17,6 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
-    - name: download-discoveryC.service
-      enable: true
-      contents: |
-        [Unit]
-        Requires=network-online.target
-        After=network-online.target
-        AssertFileIsExecutable=!/opt/bin/discoveryC
-        [Service]
-        Type=oneshot
-        Environment=OPT_BIN=/opt/bin
-        EnvironmentFile=/etc/metadata-endpoints.env
-        ExecStartPre=/bin/mkdir -pv ${OPT_BIN}
-        ExecStart=/usr/bin/curl -f ${API_URI}/assets/discoveryC/serve/discoveryC \
-          -o ${OPT_BIN}/discoveryC
-        ExecStartPost=/usr/bin/chmod +x ${OPT_BIN}/discoveryC
-        RemainAfterExit=yes
-        [Install]
-        WantedBy=multi-user.target
-
-    - name: discoveryC.service
-      enable: true
-      contents: |
-        [Unit]
-        Requires=download-discoveryC.service
-        After=download-discoveryC.service lldpd.service
-        [Service]
-        TimeoutStartSec=10m
-        Environment=IGNITION_FILE=/run/ignition.journal
-        EnvironmentFile=/etc/metadata-endpoints.env
-        ExecStartPre=-/bin/bash -c "/usr/bin/journalctl --identifier=ignition -o short-iso > ${IGNITION_FILE}"
-        ExecStart=/opt/bin/discoveryC
-        Restart=on-failure
-        RestartSec=5s
-        [Install]
-        WantedBy=multi-user.target
-
     - name: install-etcd.service
       enable: true
       contents: |
@@ -201,7 +165,6 @@ systemd:
       contents: |
         [Unit]
         After=fetch-metadata.service
-        Requires=install-etcd.service
         After=install-etcd.service
         Conflicts=etcd.service etcd2.service
         [Service]
@@ -220,7 +183,6 @@ systemd:
         [Unit]
         After=fetch-metadata.service
         After=installs.target
-        Requires=installs.target
         After=rkt-api.service
         Requires=rkt-api.service
 
@@ -229,6 +191,7 @@ systemd:
         Environment=MANIFESTS=/etc/kubernetes/manifests
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
         ExecStartPre=/bin/mkdir -pv $MANIFESTS
+        # Dev
         ExecStartPre=/usr/bin/rkt fetch --insecure-options=all \
           ${API_URI}/assets/hyperkube/serve/static-aci-hyperkube-0.aci
         ExecStart=/opt/bin/kubelet \
@@ -237,7 +200,8 @@ systemd:
           --cni-conf-dir=/etc/kubernetes/cni/net.d \
           \
           --pod-manifest-path=${MANIFESTS} \
-          --hostname-override=${KUBELET_IP} \
+          --hostname-override=${KUBELET_NAME} \
+          --node-ip=${KUBELET_IP} \
           --register-schedulable=false \
           --allow-privileged=true \
           --runonce=true \
@@ -271,7 +235,8 @@ systemd:
           --cni-conf-dir=/etc/kubernetes/cni/net.d \
           \
           --pod-manifest-path=${MANIFESTS} \
-          --hostname-override=${KUBELET_IP} \
+          --hostname-override=${KUBELET_NAME} \
+          --node-ip=${KUBELET_IP} \
           --register-schedulable=false \
           --allow-privileged=true \
           --api-servers=http://127.0.0.1:8080 \
@@ -292,7 +257,6 @@ systemd:
         [Unit]
         After=fetch-metadata.service
         After=installs.target
-        Requires=installs.target
 
         [Service]
         EnvironmentFile=/etc/metadata.env
@@ -315,9 +279,8 @@ systemd:
           contents: |
             [Unit]
             After=fetch-metadata.service
+            After=installs.target
             [Service]
-            ExecStartPre=/bin/cat /etc/metadata.env
-            ExecStartPre=/bin/ls -l /etc/metadata.env
             EnvironmentFile=/etc/metadata.env
             ExecStart=
             ExecStart=/opt/fleet/fleetd
@@ -338,7 +301,7 @@ storage:
             hostNetwork: true
             containers:
             - name: kube-apiserver
-              image: static-aci-hyperkube:0
+              image: {{.k8s_image_url}}
               command:
               - /hyperkube
               - apiserver
@@ -350,6 +313,9 @@ storage:
               - --admission-control=NamespaceLifecycle,LimitRanger,DefaultStorageClass,ResourceQuota
               - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1
               - --enable-swagger-ui=true
+              resources:
+                requests:
+                  cpu: 200m
               livenessProbe:
                 httpGet:
                   host: 127.0.0.1
@@ -370,7 +336,7 @@ storage:
           spec:
             containers:
             - name: kube-controller-manager
-              image: static-aci-hyperkube:0
+              image: {{.k8s_image_url}}
               command:
               - /hyperkube
               - controller-manager
@@ -401,7 +367,7 @@ storage:
             hostNetwork: true
             containers:
             - name: kube-scheduler
-              image: static-aci-hyperkube:0
+              image: {{.k8s_image_url}}
               command:
               - /hyperkube
               - scheduler
@@ -775,7 +741,7 @@ networkd:
         Bond=bond0
         LLMNR=false
 
-    - name: 01-ethernet.network
+    - name: 02-ethernet.network
       contents: |
         [Match]
         Name=eth*

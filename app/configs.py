@@ -53,6 +53,9 @@ class EnjoliverConfig(object):
         self.etcd_initial_advertise_peer_port = 2380
         self.etcd_advertise_client_port = 2379
 
+        # Use a real registry in production
+        self.k8s_image_url = "static-aci-hyperkube:0"
+
         # Ignition
         # All of them have to be in the bootcfg/ignition
         # Specify only the title of the file without the extension (.yaml)

@@ -195,8 +195,9 @@ class ConfigSyncSchedules(object):
 
         machine_roles = self._query_roles(*roles)
         for i, m in enumerate(machine_roles):
+            automatic_name = "k8s-control-plane-%d" % i
             selector = {"mac": m["mac"]}
-            fqdn = self.get_dns_name(m["ipv4"], "k8s-control-plane-%d" % i)
+            fqdn = self.get_dns_name(m["ipv4"], automatic_name)
             dns_attr = self.get_dns_attr(fqdn)
             selector.update(self.get_extra_selectors(self.extra_selector))
             gen = generator.Generator(
@@ -218,9 +219,10 @@ class ConfigSyncSchedules(object):
                     "etcd_member_uri_list": self.etcd_member_uri_list,
                     # K8s Control Plane
                     "kubelet_ip": "%s" % m["ipv4"],
-                    "kubelet_name": "%s" % m["ipv4"],
+                    "kubelet_name": "%s" % m["ipv4"] if fqdn == automatic_name else fqdn,
                     "k8s_apiserver_count": len(machine_roles),
                     "k8s_advertise_ip": "%s" % m["ipv4"],
+                    "k8s_image_url": ec.k8s_image_url,
                     # IPAM
                     "cni": json.dumps(self.cni_ipam(m["cidrv4"], m["gateway"])),
                     "network": {
@@ -240,8 +242,9 @@ class ConfigSyncSchedules(object):
 
         machine_roles = self._query_roles(*roles)
         for i, m in enumerate(machine_roles):
+            automatic_name = "k8s-node-%d" % i
             selector = {"mac": m["mac"]}
-            fqdn = self.get_dns_name(m["ipv4"], "k8s-node-%d" % i)
+            fqdn = self.get_dns_name(m["ipv4"], automatic_name)
             dns_attr = self.get_dns_attr(fqdn)
             selector.update(self.get_extra_selectors(self.extra_selector))
             gen = generator.Generator(
@@ -261,8 +264,9 @@ class ConfigSyncSchedules(object):
                     "etcd_proxy": "on",
                     # Kubelet
                     "kubelet_ip": "%s" % m["ipv4"],
-                    "kubelet_name": "%s" % m["ipv4"],
+                    "kubelet_name": "%s" % m["ipv4"] if fqdn == automatic_name else fqdn,
                     "k8s_endpoint": self.kubernetes_control_plane,
+                    "k8s_image_url": ec.k8s_image_url,
                     # IPAM
                     "cni": json.dumps(self.cni_ipam(m["cidrv4"], m["gateway"])),
                     "network": {
