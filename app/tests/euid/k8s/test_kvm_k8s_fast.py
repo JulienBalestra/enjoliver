@@ -32,7 +32,7 @@ class TestKVMK8SFast0(TestKVMK8sFast):
         nb_node = 3
         marker = "euid-%s-%s" % (TestKVMK8sFast.__name__.lower(), self.test_00.__name__)
         nodes = ["%s-%d" % (marker, i) for i in xrange(nb_node)]
-        os.environ["BOOTCFG_IP"] = "172.20.0.1"
+        os.environ["MATCHBOX_IP"] = "172.20.0.1"
         os.environ["API_IP"] = "172.20.0.1"
         gen = generator.Generator(
             api_uri=self.api_uri,

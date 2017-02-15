@@ -251,6 +251,25 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
+    - name: kube-proxy.service
+      enable: true
+      contents: |
+        [Unit]
+        After=kubelet.service
+
+        [Service]
+        EnvironmentFile=/etc/metadata.env
+        ExecStart=/opt/bin/proxy \
+          --proxy-mode=iptables \
+          --hostname-override=${KUBELET_NAME} \
+          --master=http://127.0.0.1:8080 \
+          --v=2
+        Restart=always
+        RestartSec=30
+
+        [Install]
+        WantedBy=multi-user.target
+
     - name: fleet.service
       enable: true
       dropins:

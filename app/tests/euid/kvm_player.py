@@ -67,7 +67,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     test_matchbox_path = "%s/test_matchbox" % tests_path
 
-    matchbox_port = int(os.getenv("BOOTCFG_PORT", "8080"))
+    matchbox_port = int(os.getenv("MATCHBOX_PORT", "8080"))
 
     api_port = int(os.getenv("API_PORT", "5000"))
 

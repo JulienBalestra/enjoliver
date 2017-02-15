@@ -139,7 +139,7 @@ class ConfigSyncSchedules(object):
 
     def get_extra_selectors(self, extra_selectors):
         """
-        Extra selectors are passed to Bootcfg
+        Extra selectors are passed to Matchbox
         :param extra_selectors: dict
         :return:
         """

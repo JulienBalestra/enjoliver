@@ -190,7 +190,7 @@ systemd:
         [Service]
         Type=notify
         ExecStart=/opt/etcd/etcd
-        EnvironmentFile=-/etc/etcd.env
+        EnvironmentFile=/etc/etcd.env
         Environment=ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379,http://0.0.0.0:4001
         Environment=ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380,http://0.0.0.0:7001
         RestartSec=60s
@@ -269,6 +269,25 @@ systemd:
           --v=2
         Restart=always
         RestartSec=10
+
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: kube-proxy.service
+      enable: true
+      contents: |
+        [Unit]
+        After=kubelet.service
+
+        [Service]
+        EnvironmentFile=/etc/metadata.env
+        ExecStart=/opt/bin/proxy \
+          --proxy-mode=iptables \
+          --hostname-override=${KUBELET_NAME} \
+          --master=http://127.0.0.1:8080 \
+          --v=2
+        Restart=always
+        RestartSec=30
 
         [Install]
         WantedBy=multi-user.target
