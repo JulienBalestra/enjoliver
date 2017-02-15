@@ -13,14 +13,14 @@ class GenerateGroup(GenerateCommon):
                  api_uri,
                  _id, name,
                  profile,
-                 bootcfg_path,
+                 matchbox_path,
                  selector=None,
                  metadata=None,
                  ):
         self.api_uri = api_uri
-        self.ensure_directory(bootcfg_path)
-        self.target_path = self.ensure_directory("%s/groups" % bootcfg_path)
-        self.ssh_authorized_keys_dir = "%s/ssh_authorized_keys" % bootcfg_path
+        self.ensure_directory(matchbox_path)
+        self.target_path = self.ensure_directory("%s/groups" % matchbox_path)
+        self.ssh_authorized_keys_dir = "%s/ssh_authorized_keys" % matchbox_path
         self.extra_selector = None if not selector else dict(selector)
         self.extra_metadata = {} if not metadata else dict(metadata)
 

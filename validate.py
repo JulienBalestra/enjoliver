@@ -3,10 +3,10 @@ import os
 import unittest
 
 
-class TestValidateBootcfgAssets(unittest.TestCase):
+class TestValidateMatchboxAssets(unittest.TestCase):
     cwd = os.path.dirname(os.path.abspath(__file__))
-    bootcfg = os.getenv("CHECK_BOOTCFG_PATH", "%s/bootcfg" % cwd)
-    assets = "%s/assets" % bootcfg
+    matchbox = os.getenv("CHECK_MATCHBOX_PATH", "%s/matchbox" % cwd)
+    assets = "%s/assets" % matchbox
 
     def test_cni(self):
         rule = "%s/%s/serve" % (self.assets, self.test_cni.__name__.replace("test_", ""))

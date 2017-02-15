@@ -13,12 +13,12 @@ import requests
 from app import api
 from app import model
 from app import schedulerv2
-from app import sync_bootcfg
+from app import sync_matchbox
 from common import posts
 
 
 class TestAPIGunicornScheduler(unittest.TestCase):
-    p_bootcfg = Process
+    p_matchbox = Process
     p_api = Process
 
     inte_path = "%s" % os.path.dirname(__file__)
@@ -26,18 +26,18 @@ class TestAPIGunicornScheduler(unittest.TestCase):
     tests_path = "%s" % os.path.dirname(inte_path)
     app_path = os.path.dirname(tests_path)
     project_path = os.path.dirname(app_path)
-    bootcfg_path = "%s/bootcfg" % project_path
-    assets_path = "%s/bootcfg/assets" % project_path
+    matchbox_path = "%s/matchbox" % project_path
+    assets_path = "%s/matchbox/assets" % project_path
 
     runtime_path = "%s/runtime" % project_path
     rkt_bin = "%s/rkt/rkt" % runtime_path
-    bootcfg_bin = "%s/bootcfg/bootcfg" % runtime_path
+    matchbox_bin = "%s/matchbox/matchbox" % runtime_path
 
-    test_bootcfg_path = "%s/test_bootcfg" % tests_path
+    test_matchbox_path = "%s/test_matchbox" % tests_path
 
-    bootcfg_port = int(os.getenv("BOOTCFG_PORT", "8080"))
+    matchbox_port = int(os.getenv("BOOTCFG_PORT", "8080"))
 
-    bootcfg_uri = "http://localhost:%d" % bootcfg_port
+    matchbox_uri = "http://localhost:%d" % matchbox_port
 
     api_port = int(os.getenv("API_PORT", "5000"))
 
@@ -47,10 +47,10 @@ class TestAPIGunicornScheduler(unittest.TestCase):
     api_discovery = "%s/discovery" % api_uri
 
     @staticmethod
-    def process_target_bootcfg():
+    def process_target_matchbox():
         cmd = [
-            "%s" % TestAPIGunicornScheduler.bootcfg_bin,
-            "-data-path", "%s" % TestAPIGunicornScheduler.test_bootcfg_path,
+            "%s" % TestAPIGunicornScheduler.matchbox_bin,
+            "-data-path", "%s" % TestAPIGunicornScheduler.test_matchbox_path,
             "-assets-path", "%s" % TestAPIGunicornScheduler.assets_path,
             "-log-level", "debug"
         ]
@@ -62,7 +62,7 @@ class TestAPIGunicornScheduler(unittest.TestCase):
 
     @staticmethod
     def clean_sandbox():
-        dirs = ["%s/%s" % (TestAPIGunicornScheduler.test_bootcfg_path, k)
+        dirs = ["%s/%s" % (TestAPIGunicornScheduler.test_matchbox_path, k)
                 for k in ("profiles", "groups")]
         for d in dirs:
             for f in os.listdir(d):
@@ -116,37 +116,37 @@ class TestAPIGunicornScheduler(unittest.TestCase):
         assert os.path.isfile(db_path)
         api.engine = engine
 
-        if os.path.isfile("%s" % TestAPIGunicornScheduler.bootcfg_bin) is False:
-            raise IOError("%s" % TestAPIGunicornScheduler.bootcfg_bin)
-        cls.p_bootcfg = Process(target=TestAPIGunicornScheduler.process_target_bootcfg)
+        if os.path.isfile("%s" % TestAPIGunicornScheduler.matchbox_bin) is False:
+            raise IOError("%s" % TestAPIGunicornScheduler.matchbox_bin)
+        cls.p_matchbox = Process(target=TestAPIGunicornScheduler.process_target_matchbox)
         cls.p_api = Process(target=TestAPIGunicornScheduler.process_target_api)
         os.write(1, "PPID -> %s\n" % os.getpid())
-        cls.p_bootcfg.start()
-        assert cls.p_bootcfg.is_alive() is True
+        cls.p_matchbox.start()
+        assert cls.p_matchbox.is_alive() is True
         cls.p_api.start()
         assert cls.p_api.is_alive() is True
 
-        cls.bootcfg_running(cls.bootcfg_uri, cls.p_bootcfg)
+        cls.matchbox_running(cls.matchbox_uri, cls.p_matchbox)
         cls.api_running(cls.api_uri, cls.p_api)
 
     @classmethod
     def tearDownClass(cls):
-        os.write(1, "TERM -> %d\n" % cls.p_bootcfg.pid)
+        os.write(1, "TERM -> %d\n" % cls.p_matchbox.pid)
         sys.stdout.flush()
-        cls.p_bootcfg.terminate()
-        cls.p_bootcfg.join(timeout=5)
+        cls.p_matchbox.terminate()
+        cls.p_matchbox.join(timeout=5)
         cls.p_api.terminate()
         cls.p_api.join(timeout=5)
         time.sleep(0.1)
 
     @staticmethod
-    def bootcfg_running(bootcfg_endpoint, p_bootcfg):
+    def matchbox_running(matchbox_endpoint, p_matchbox):
         response_body = ""
         response_code = 404
         for i in xrange(100):
-            assert p_bootcfg.is_alive() is True
+            assert p_matchbox.is_alive() is True
             try:
-                request = urllib2.urlopen(bootcfg_endpoint)
+                request = urllib2.urlopen(matchbox_endpoint)
                 response_body = request.read()
                 response_code = request.code
                 request.close()
@@ -158,7 +158,7 @@ class TestAPIGunicornScheduler(unittest.TestCase):
             except urllib2.URLError:
                 time.sleep(0.5)
 
-        assert "bootcfg\n" == response_body
+        assert "matchbox\n" == response_body
         assert 200 == response_code
 
     @staticmethod
@@ -181,7 +181,7 @@ class TestAPIGunicornScheduler(unittest.TestCase):
         assert 200 == response_code
 
     def setUp(self):
-        self.assertTrue(self.p_bootcfg.is_alive())
+        self.assertTrue(self.p_matchbox.is_alive())
         self.assertTrue(self.p_api.is_alive())
         self.api_healthz()
 
@@ -190,7 +190,7 @@ class TestAPIGunicornScheduler(unittest.TestCase):
             u'flask': True,
             u'global': True,
             u'db': True,
-            u'bootcfg': {
+            u'matchbox': {
                 u'/': True,
                 u'/boot.ipxe': True,
                 u'/boot.ipxe.0': True,
@@ -231,9 +231,9 @@ class TestEtcdMemberKubernetesControlPlane2(TestAPIGunicornScheduler):
         r.close()
         self.assertTrue(sch.apply())
 
-        s = sync_bootcfg.ConfigSyncSchedules(
+        s = sync_matchbox.ConfigSyncSchedules(
             self.api_uri,
-            self.test_bootcfg_path,
+            self.test_matchbox_path,
             ignition_dict={
                 "etcd_member_kubernetes_control_plane": "inte-testapigunicornscheduler-etcd-k8s-cp",
                 "kubernetes_nodes": "inte-testapigunicornscheduler-etcd-k8s-cp",
@@ -263,9 +263,9 @@ class TestEtcdMemberKubernetesControlPlane3(TestAPIGunicornScheduler):
         r.close()
         self.assertEqual(1, sch_no.apply())
 
-        s = sync_bootcfg.ConfigSyncSchedules(
+        s = sync_matchbox.ConfigSyncSchedules(
             self.api_uri,
-            self.test_bootcfg_path,
+            self.test_matchbox_path,
             ignition_dict={
                 "etcd_member_kubernetes_control_plane": "inte-testapigunicornscheduler-etcd-k8s-cp",
                 "kubernetes_nodes": "inte-testapigunicornscheduler-etcd-k8s-cp",
@@ -285,9 +285,9 @@ class TestEtcdMemberKubernetesControlPlane4(TestAPIGunicornScheduler):
 
         self.assertEqual(len(posts.ALL) - schedulerv2.EtcdMemberKubernetesControlPlane.expected_nb, sch_no.apply())
 
-        s = sync_bootcfg.ConfigSyncSchedules(
+        s = sync_matchbox.ConfigSyncSchedules(
             self.api_uri,
-            self.test_bootcfg_path,
+            self.test_matchbox_path,
             ignition_dict={
                 "etcd_member_kubernetes_control_plane": "inte-testapigunicornscheduler-etcd-k8s-cp",
                 "kubernetes_nodes": "inte-testapigunicornscheduler-etcd-k8s-cp",

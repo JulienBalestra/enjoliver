@@ -22,36 +22,36 @@ class IOErrorToWarning(object):
 
 
 class TestBootConfigCommon(TestCase):
-    p_bootcfg = Process
+    p_matchbox = Process
     gen = generator.Generator
 
     func_path = "%s" % os.path.dirname(__file__)
     tests_path = "%s" % os.path.split(func_path)[0]
     app_path = os.path.split(tests_path)[0]
     project_path = os.path.split(app_path)[0]
-    bootcfg_path = "%s/bootcfg" % project_path
-    assets_path = "%s/bootcfg/assets" % project_path
+    matchbox_path = "%s/matchbox" % project_path
+    assets_path = "%s/matchbox/assets" % project_path
 
     runtime_path = "%s/runtime" % project_path
     rkt_bin = "%s/rkt/rkt" % runtime_path
-    bootcfg_bin = "%s/bootcfg/bootcfg" % runtime_path
+    matchbox_bin = "%s/matchbox/matchbox" % runtime_path
 
-    test_bootcfg_path = "%s/test_bootcfg" % tests_path
+    test_matchbox_path = "%s/test_matchbox" % tests_path
 
-    bootcfg_port = int(os.getenv("BOOTCFG_PORT", "8080"))
+    matchbox_port = int(os.getenv("MATCHBOX_PORT", "8080"))
 
-    # bootcfg_address = "0.0.0.0:%d" % bootcfg_port
-    bootcfg_endpoint = "http://localhost:%d" % bootcfg_port
+    # matchbox_address = "0.0.0.0:%d" % matchbox_port
+    matchbox_endpoint = "http://localhost:%d" % matchbox_port
 
     api_uri = "http://127.0.0.1:5000"
 
     @staticmethod
     def process_target():
         cmd = [
-            "%s" % TestBootConfigCommon.bootcfg_bin,
-            "-data-path", "%s" % TestBootConfigCommon.test_bootcfg_path,
+            "%s" % TestBootConfigCommon.matchbox_bin,
+            "-data-path", "%s" % TestBootConfigCommon.test_matchbox_path,
             "-assets-path", "%s" % TestBootConfigCommon.assets_path,
-            # "-address", "%s" % TestBootConfigCommon.bootcfg_address,
+            # "-address", "%s" % TestBootConfigCommon.matchbox_address,
             "-log-level", "debug"
         ]
         os.write(1, "PID  -> %s\n"
@@ -70,7 +70,7 @@ class TestBootConfigCommon(TestCase):
                 profile_id="id-%s" % marker,
                 name="name-%s" % marker,
                 ignition_id=ignition_file,
-                bootcfg_path=cls.test_bootcfg_path
+                matchbox_path=cls.test_matchbox_path
             )
         except IOError:
             os.write(2,
@@ -85,7 +85,7 @@ class TestBootConfigCommon(TestCase):
                     profile_id="id-%s" % marker,
                     name="name-%s" % marker,
                     ignition_id=ignition_file,
-                    bootcfg_path=cls.test_bootcfg_path
+                    matchbox_path=cls.test_matchbox_path
                 )
 
         cls.gen.dumps()
@@ -97,29 +97,29 @@ class TestBootConfigCommon(TestCase):
         os.environ["API_URI"] = cls.api_uri
 
         subprocess.check_output(["make"], cwd=cls.project_path)
-        if os.path.isfile("%s" % TestBootConfigCommon.bootcfg_bin) is False:
-            raise IOError("%s" % TestBootConfigCommon.bootcfg_bin)
-        cls.p_bootcfg = Process(target=TestBootConfigCommon.process_target)
+        if os.path.isfile("%s" % TestBootConfigCommon.matchbox_bin) is False:
+            raise IOError("%s" % TestBootConfigCommon.matchbox_bin)
+        cls.p_matchbox = Process(target=TestBootConfigCommon.process_target)
         os.write(1, "PPID -> %s\n" % os.getpid())
-        cls.p_bootcfg.start()
-        assert cls.p_bootcfg.is_alive() is True
+        cls.p_matchbox.start()
+        assert cls.p_matchbox.is_alive() is True
 
         cls.generator()
-        cls.bootcfg_running(cls.bootcfg_endpoint, cls.p_bootcfg)
+        cls.matchbox_running(cls.matchbox_endpoint, cls.p_matchbox)
 
     @classmethod
     def tearDownClass(cls):
-        os.write(1, "TERM -> %d\n" % cls.p_bootcfg.pid)
+        os.write(1, "TERM -> %d\n" % cls.p_matchbox.pid)
         sys.stdout.flush()
-        cls.p_bootcfg.terminate()
-        cls.p_bootcfg.join(timeout=5)
+        cls.p_matchbox.terminate()
+        cls.p_matchbox.join(timeout=5)
         cls.clean_sandbox()
         time.sleep(0.1)
 
     @staticmethod
     def clean_sandbox():
         dirs = ["%s/%s" % (
-            TestBootConfigCommon.test_bootcfg_path, k) for k in (
+            TestBootConfigCommon.test_matchbox_path, k) for k in (
                     "profiles", "groups")]
         for d in dirs:
             for f in os.listdir(d):
@@ -127,7 +127,7 @@ class TestBootConfigCommon(TestCase):
                     os.remove("%s/%s" % (d, f))
 
     def setUp(self):
-        self.assertTrue(self.p_bootcfg.is_alive())
+        self.assertTrue(self.p_matchbox.is_alive())
         try:
             self.assertEqual(self.gen.group.api_uri, self.gen.profile.api_uri)
         except AttributeError:
@@ -135,13 +135,13 @@ class TestBootConfigCommon(TestCase):
             pass
 
     @staticmethod
-    def bootcfg_running(bootcfg_endpoint, p_bootcfg):
+    def matchbox_running(matchbox_endpoint, p_matchbox):
         response_body = ""
         response_code = 404
         for i in xrange(100):
-            assert p_bootcfg.is_alive() is True
+            assert p_matchbox.is_alive() is True
             try:
-                request = urllib2.urlopen(bootcfg_endpoint)
+                request = urllib2.urlopen(matchbox_endpoint)
                 response_body = request.read()
                 response_code = request.code
                 request.close()
@@ -153,25 +153,20 @@ class TestBootConfigCommon(TestCase):
             except urllib2.URLError:
                 time.sleep(0.5)
 
-        assert "bootcfg\n" == response_body
+        assert "matchbox\n" == response_body
         assert 200 == response_code
 
     def test_01_boot_dot_ipxe(self):
-        request = urllib2.urlopen("%s/boot.ipxe" % self.bootcfg_endpoint)
+        request = urllib2.urlopen("%s/boot.ipxe" % self.matchbox_endpoint)
         response = request.read()
         request.close()
         self.assertEqual(
             response,
             "#!ipxe\n"
-            "chain "
-            "ipxe?uuid=${uuid}"
-            "&mac=${net0/mac:hexhyp}"
-            "&domain=${domain}"
-            "&hostname=${hostname}"
-            "&serial=${serial}\n")
+            "chain ipxe?uuid=${uuid}&mac=${mac:hexhyp}&domain=${domain}&hostname=${hostname}&serial=${serial}\n")
 
     def test_02_ipxe(self):
-        request = urllib2.urlopen("%s/ipxe" % self.bootcfg_endpoint)
+        request = urllib2.urlopen("%s/ipxe" % self.matchbox_endpoint)
         response = request.read()
         request.close()
 
@@ -202,38 +197,38 @@ class TestBootConfigCommon(TestCase):
         self.assertEqual(len(lines), 4)
 
     def test_03_assets(self):
-        request = urllib2.urlopen("%s/assets" % self.bootcfg_endpoint)
+        request = urllib2.urlopen("%s/assets" % self.matchbox_endpoint)
         request.close()
         self.assertEqual(200, request.code)
 
     def test_03_assets_coreos(self):
-        request = urllib2.urlopen("%s/assets/coreos" % self.bootcfg_endpoint)
+        request = urllib2.urlopen("%s/assets/coreos" % self.matchbox_endpoint)
         request.close()
         self.assertEqual(200, request.code)
 
     def test_03_assets_coreos_serve(self):
-        request = urllib2.urlopen("%s/assets/coreos/serve" % self.bootcfg_endpoint)
+        request = urllib2.urlopen("%s/assets/coreos/serve" % self.matchbox_endpoint)
         request.close()
         self.assertEqual(200, request.code)
 
     def test_03_assets_coreos_serve_kernel(self):
-        request = urllib2.urlopen("%s/assets/coreos/serve/coreos_production_pxe.vmlinuz" % self.bootcfg_endpoint)
+        request = urllib2.urlopen("%s/assets/coreos/serve/coreos_production_pxe.vmlinuz" % self.matchbox_endpoint)
         request.close()
         self.assertEqual(200, request.code)
 
     def test_03_assets_coreos_serve_initrd(self):
-        request = urllib2.urlopen("%s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz" % self.bootcfg_endpoint)
+        request = urllib2.urlopen("%s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz" % self.matchbox_endpoint)
         request.close()
         self.assertEqual(200, request.code)
 
     def test_03_assets_coreos_serve_404(self):
         with self.assertRaises(urllib2.HTTPError):
-            urllib2.urlopen("%s/assets/coreos/serve/404_request.not-here" % self.bootcfg_endpoint)
+            urllib2.urlopen("%s/assets/coreos/serve/404_request.not-here" % self.matchbox_endpoint)
 
 
 class TestBootConfigHelloWorld(TestBootConfigCommon):
     def test_a0_ignition(self):
-        request = urllib2.urlopen("%s/ignition" % self.bootcfg_endpoint)
+        request = urllib2.urlopen("%s/ignition" % self.matchbox_endpoint)
         response = request.read()
         request.close()
 
@@ -273,12 +268,12 @@ class TestBootConfigSelector(TestBootConfigCommon):
             name="name-%s" % marker,
             ignition_id=ignition_file,
             selector={"mac": cls.mac},
-            bootcfg_path=cls.test_bootcfg_path
+            matchbox_path=cls.test_matchbox_path
         )
         cls.gen.dumps()
 
     def test_02_ipxe(self):
-        request = urllib2.urlopen("%s/ipxe?mac=%s" % (self.bootcfg_endpoint, self.mac))
+        request = urllib2.urlopen("%s/ipxe?mac=%s" % (self.matchbox_endpoint, self.mac))
         response = request.read()
         request.close()
 
@@ -310,14 +305,14 @@ class TestBootConfigSelector(TestBootConfigCommon):
 
     def test_a1_ipxe_raise(self):
         with self.assertRaises(urllib2.HTTPError):
-            urllib2.urlopen("%s/ipxe" % self.bootcfg_endpoint)
+            urllib2.urlopen("%s/ipxe" % self.matchbox_endpoint)
 
     def test_a2_ipxe_raise(self):
         with self.assertRaises(urllib2.HTTPError):
-            urllib2.urlopen("%s/ignition?mac=%s" % (self.bootcfg_endpoint, "01:01:01:01:01:01"))
+            urllib2.urlopen("%s/ignition?mac=%s" % (self.matchbox_endpoint, "01:01:01:01:01:01"))
 
     def test_a0_ignition(self):
-        request = urllib2.urlopen("%s/ignition?mac=%s" % (self.bootcfg_endpoint, self.mac))
+        request = urllib2.urlopen("%s/ignition?mac=%s" % (self.matchbox_endpoint, self.mac))
         response = request.read()
         request.close()
 
@@ -362,7 +357,7 @@ class TestBootConfigSelectors(TestBootConfigCommon):
             name="name-%s" % marker_one,
             ignition_id=ignition_file,
             selector={"mac": cls.mac_one},
-            bootcfg_path=cls.test_bootcfg_path
+            matchbox_path=cls.test_matchbox_path
         )
         gen_one.dumps()
 
@@ -374,7 +369,7 @@ class TestBootConfigSelectors(TestBootConfigCommon):
             name="name-%s" % marker_two,
             ignition_id=ignition_file,
             selector={"mac": cls.mac_two},
-            bootcfg_path=cls.test_bootcfg_path
+            matchbox_path=cls.test_matchbox_path
         )
         gen_one.dumps()
 
@@ -385,12 +380,12 @@ class TestBootConfigSelectors(TestBootConfigCommon):
             profile_id="id-%s" % marker_three,
             name="name-%s" % marker_three,
             ignition_id=ignition_file,
-            bootcfg_path=cls.test_bootcfg_path
+            matchbox_path=cls.test_matchbox_path
         )
         gen_one.dumps()
 
     def test_ignition_1(self):
-        request = urllib2.urlopen("%s/ignition?mac=%s" % (self.bootcfg_endpoint, self.mac_one))
+        request = urllib2.urlopen("%s/ignition?mac=%s" % (self.matchbox_endpoint, self.mac_one))
         response = request.read()
         request.close()
 
@@ -415,7 +410,7 @@ class TestBootConfigSelectors(TestBootConfigCommon):
         self.assertEqual(ign_resp, expect)
 
     def test_ignition_2(self):
-        request = urllib2.urlopen("%s/ignition?mac=%s" % (self.bootcfg_endpoint, self.mac_two))
+        request = urllib2.urlopen("%s/ignition?mac=%s" % (self.matchbox_endpoint, self.mac_two))
         response = request.read()
         request.close()
 
@@ -440,7 +435,7 @@ class TestBootConfigSelectors(TestBootConfigCommon):
         self.assertEqual(ign_resp, expect)
 
     def test_ignition_3(self):
-        request = urllib2.urlopen("%s/ignition?mac=%s" % (self.bootcfg_endpoint, self.mac_three))
+        request = urllib2.urlopen("%s/ignition?mac=%s" % (self.matchbox_endpoint, self.mac_three))
         response = request.read()
         request.close()
 

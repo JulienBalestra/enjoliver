@@ -71,14 +71,14 @@ gci:
 
 $(TESTING_RSA):
 	ssh-keygen -f $(CWD)/$(TESTING_RSA) -t rsa -N ''
-	mkdir -vp $(CWD)/test_bootcfg/ssh_authorized_keys/
-	cp -v $(CWD)/$(TESTING_RSA).pub $(CWD)/test_bootcfg/ssh_authorized_keys/
+	mkdir -vp $(CWD)/test_matchbox/ssh_authorized_keys/
+	cp -v $(CWD)/$(TESTING_RSA).pub $(CWD)/test_matchbox/ssh_authorized_keys/
 
 clean:
 	rm -v $(ISO) || true
 	rm -v $(KKK) || true
 	rm -v $(TESTING_RSA)* || true
-	rm -Rfv test_bootcfg/ssh_authorized_keys || true
+	rm -Rfv test_matchbox/ssh_authorized_keys || true
 	rm -v paths.d/*.json || true
 	rm -Rfv euid/ignition_journal || true
 	rm -Rfv euid/euid.sqlite || true

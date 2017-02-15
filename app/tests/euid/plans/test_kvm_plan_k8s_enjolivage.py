@@ -19,7 +19,7 @@ class TestKVMK8sEnjolivage(kvm_player.KernelVirtualMachinePlayer):
         cls.check_requirements()
         cls.set_rack0()
         cls.set_api()
-        cls.set_bootcfg()
+        cls.set_matchbox()
         cls.set_dnsmasq()
         cls.pause(cls.wait_setup_teardown)
 
@@ -41,7 +41,7 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
                 "etcd_member_kubernetes_control_plane": "%s-%s" % (marker, "etcd-member-control-plane"),
                 "kubernetes_nodes": "%s-%s" % (marker, "k8s-node"),
             },
-            bootcfg_path=self.test_bootcfg_path,
+            matchbox_path=self.test_matchbox_path,
             api_uri=self.api_uri)
 
         for m in nodes:

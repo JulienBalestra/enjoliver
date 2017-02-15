@@ -10,9 +10,9 @@
   [ -x "/usr/bin/gunicorn" ]
 }
 
-@test "bootcfg is a regular executable file" {
-  [ -f "/usr/bin/bootcfg" ]
-  [ -x "/usr/bin/bootcfg" ]
+@test "matchbox is a regular executable file" {
+  [ -f "/usr/bin/matchbox" ]
+  [ -x "/usr/bin/matchbox" ]
 }
 
 @test "validation is OK" {

@@ -18,7 +18,7 @@ class TestKVMDiscoveryClient(kvm_player.KernelVirtualMachinePlayer):
         cls.set_rack0()
         cls.check_requirements()
         cls.set_api()
-        cls.set_bootcfg()
+        cls.set_matchbox()
         cls.set_dnsmasq()
         cls.pause(cls.wait_setup_teardown)
 
@@ -40,7 +40,7 @@ class TestKVMDiscoveryClient00(TestKVMDiscoveryClient):
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
-            bootcfg_path=self.test_bootcfg_path
+            matchbox_path=self.test_matchbox_path
         )
         gen.dumps()
 
@@ -104,7 +104,7 @@ class TestKVMDiscoveryClient01(TestKVMDiscoveryClient):
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
-            bootcfg_path=self.test_bootcfg_path
+            matchbox_path=self.test_matchbox_path
         )
         gen.dumps()
 
@@ -174,7 +174,7 @@ class TestKVMDiscoveryClient02(TestKVMDiscoveryClient):
         cls.check_requirements()
         cls.set_rack0()
         cls.set_api()
-        cls.set_bootcfg()
+        cls.set_matchbox()
         cls.set_dnsmasq()
         cls.set_lldp()
         cls.pause(cls.wait_setup_teardown)
@@ -188,7 +188,7 @@ class TestKVMDiscoveryClient02(TestKVMDiscoveryClient):
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
-            bootcfg_path=self.test_bootcfg_path
+            matchbox_path=self.test_matchbox_path
         )
         gen.dumps()
 
@@ -249,7 +249,7 @@ class TestKVMDiscoveryClient03(TestKVMDiscoveryClient):
         cls.check_requirements()
         cls.set_rack0()
         cls.set_api()
-        cls.set_bootcfg()
+        cls.set_matchbox()
         cls.set_dnsmasq()
         cls.set_lldp()
         cls.pause(cls.wait_setup_teardown)
@@ -264,7 +264,7 @@ class TestKVMDiscoveryClient03(TestKVMDiscoveryClient):
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
-            bootcfg_path=self.test_bootcfg_path
+            matchbox_path=self.test_matchbox_path
         )
         gen.dumps()
 
@@ -341,7 +341,7 @@ class TestKVMDiscoveryClient04(TestKVMDiscoveryClient):
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
-            bootcfg_path=self.test_bootcfg_path
+            matchbox_path=self.test_matchbox_path
         )
         gen.dumps()
 
@@ -400,7 +400,7 @@ class TestKVMDiscoveryClient05(TestKVMDiscoveryClient):
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
-            bootcfg_path=self.test_bootcfg_path
+            matchbox_path=self.test_matchbox_path
         )
         gen.dumps()
 
@@ -472,7 +472,7 @@ class TestKVMDiscoveryClient06(TestKVMDiscoveryClient):
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
-            bootcfg_path=self.test_bootcfg_path
+            matchbox_path=self.test_matchbox_path
         )
         gen.dumps()
 

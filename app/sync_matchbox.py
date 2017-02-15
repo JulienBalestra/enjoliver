@@ -24,22 +24,22 @@ class ConfigSyncSchedules(object):
     range_nb_ips = ec.range_nb_ips
     skip_ips = ec.skip_ips
 
-    def __init__(self, api_uri, bootcfg_path, ignition_dict, extra_selector_dict=None):
+    def __init__(self, api_uri, matchbox_path, ignition_dict, extra_selector_dict=None):
         """
         :param api_uri: http://1.1.1.1:5000
-        :param bootcfg_path: /var/lib/bootcfg
+        :param matchbox_path: /var/lib/matchbox
         :param ignition_dict: ignition.yaml
         """
         self.api_uri = api_uri
         os.environ["API_URI"] = self.api_uri
-        self.bootcfg_path = bootcfg_path
+        self.matchbox_path = matchbox_path
         self.ignition_dict = ignition_dict
         self._ensure_ignition_are_here()
         self.extra_selector = extra_selector_dict if extra_selector_dict else {}
 
     def _ensure_ignition_are_here(self):
         for k, v in self.ignition_dict.iteritems():
-            f = "%s/ignition/%s.yaml" % (self.bootcfg_path, v)
+            f = "%s/ignition/%s.yaml" % (self.matchbox_path, v)
             if os.path.isfile(f) is False:
                 self.custom_log(self._ensure_ignition_are_here.__name__, "%s:%s -> %s is not here" % (k, v, f), "error")
                 raise IOError(f)
@@ -214,7 +214,7 @@ class ConfigSyncSchedules(object):
                 profile_id=marker,  # link to ignition
                 name=marker,
                 ignition_id="%s.yaml" % self.ignition_dict[marker],
-                bootcfg_path=self.bootcfg_path,
+                matchbox_path=self.matchbox_path,
                 selector=selector,
                 extra_metadata={
                     # Etcd
@@ -265,7 +265,7 @@ class ConfigSyncSchedules(object):
                 profile_id=marker,  # link to ignition
                 name=marker,
                 ignition_id="%s.yaml" % self.ignition_dict[marker],
-                bootcfg_path=self.bootcfg_path,
+                matchbox_path=self.matchbox_path,
                 selector=selector,
                 extra_metadata={
                     # Etcd

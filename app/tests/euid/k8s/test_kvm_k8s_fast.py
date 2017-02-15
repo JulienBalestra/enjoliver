@@ -4,7 +4,7 @@ import sys
 import time
 import unittest
 
-from app import generator, schedulerv2, sync_bootcfg
+from app import generator, schedulerv2, sync_matchbox
 
 try:
     import kvm_player
@@ -19,7 +19,7 @@ class TestKVMK8sFast(kvm_player.KernelVirtualMachinePlayer):
         cls.check_requirements()
         cls.set_rack0()
         cls.set_api()
-        cls.set_bootcfg()
+        cls.set_matchbox()
         cls.set_dnsmasq()
         cls.pause(cls.wait_setup_teardown)
 
@@ -39,12 +39,12 @@ class TestKVMK8SFast0(TestKVMK8sFast):
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
-            bootcfg_path=self.test_bootcfg_path
+            matchbox_path=self.test_matchbox_path
         )
         gen.dumps()
-        sync = sync_bootcfg.ConfigSyncSchedules(
+        sync = sync_matchbox.ConfigSyncSchedules(
             api_uri=self.api_uri,
-            bootcfg_path=self.test_bootcfg_path,
+            matchbox_path=self.test_matchbox_path,
             ignition_dict={
                 "etcd_member_kubernetes_control_plane": "%s-%s" % (marker, "k8s-control-plane"),
                 "kubernetes_nodes": "%s-%s" % (marker, "k8s-node")

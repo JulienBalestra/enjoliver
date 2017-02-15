@@ -21,25 +21,25 @@ RKT=$(RKT_DIR)/rkt
 RKT_DOWNLOAD_TAR=$(RKT_DIR)/$(RKT_TAR)
 
 
-# BOOTCFG
-BOOTCFG_VERSION=v0.4.2
-BOOTCFG_GITHUB_DOWNLOAD=https://github.com/coreos/coreos-baremetal/releases/download
-BOOTCFG_TAR=coreos-baremetal-$(BOOTCFG_VERSION)-linux-amd64.tar.gz
-BOOTCFG_GITHUB=$(BOOTCFG_GITHUB_DOWNLOAD)/$(BOOTCFG_VERSION)/$(BOOTCFG_TAR)
-BOOTCFG_DIR=$(CWD)/bootcfg
-BOOTCFG=$(BOOTCFG_DIR)/bootcfg
-BOOTCFG_DOWNLOAD_TAR=$(BOOTCFG_DIR)/$(BOOTCFG_TAR)
+# MATCHBOX
+MATCHBOX_VERSION=v0.5.0
+MATCHBOX_GITHUB_DOWNLOAD=https://github.com/coreos/matchbox/releases/download
+MATCHBOX_TAR=matchbox-$(MATCHBOX_VERSION)-linux-amd64.tar.gz
+MATCHBOX_GITHUB=$(MATCHBOX_GITHUB_DOWNLOAD)/$(MATCHBOX_VERSION)/$(MATCHBOX_TAR)
+MATCHBOX_DIR=$(CWD)/matchbox
+MATCHBOX=$(MATCHBOX_DIR)/matchbox
+MATCHBOX_DOWNLOAD_TAR=$(MATCHBOX_DIR)/$(MATCHBOX_TAR)
 
 
 default: setup
 
-$(BOOTCFG_DOWNLOAD_TAR):
-	mkdir -pv $(BOOTCFG_DIR)
-	curl -fL $(BOOTCFG_GITHUB) -o $(BOOTCFG_DOWNLOAD_TAR)
+$(MATCHBOX_DOWNLOAD_TAR):
+	mkdir -pv $(MATCHBOX_DIR)
+	curl -fL $(MATCHBOX_GITHUB) -o $(MATCHBOX_DOWNLOAD_TAR)
 
-$(BOOTCFG): $(BOOTCFG_DOWNLOAD_TAR)
-	tar -C $(BOOTCFG_DIR) -xzf $(BOOTCFG_DIR)/$(BOOTCFG_TAR) --strip-components=1
-	$(BOOTCFG) --version
+$(MATCHBOX): $(MATCHBOX_DOWNLOAD_TAR)
+	tar -C $(MATCHBOX_DIR) -xzf $(MATCHBOX_DIR)/$(MATCHBOX_TAR) --strip-components=1
+	$(MATCHBOX) --version
 
 
 $(DGR_DOWNLOAD_TAR):
@@ -62,7 +62,7 @@ $(RKT): $(RKT_DOWNLOAD_TAR)
 	$(RKT) --local-config=$(CWD) image list
 
 
-setup: $(RKT) $(DGR) $(BOOTCFG)
+setup: $(MATCHBOX) $(RKT) $(DGR)
 
 gc:
 	$(RKT) --local-config=$(CWD) gc --grace-period=0s

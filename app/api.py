@@ -20,10 +20,10 @@ LOGGER = logger.get_logger(__file__)
 app = application = Flask(__name__)
 cache = SimpleCache()
 
-application.config["BOOTCFG_URI"] = ec.bootcfg_uri
+application.config["MATCHBOX_URI"] = ec.matchbox_uri
 application.config["API_URI"] = ec.api_uri
 
-application.config["BOOTCFG_URLS"] = ec.bootcfg_urls
+application.config["MATCHBOX_URLS"] = ec.matchbox_urls
 
 application.config["DB_PATH"] = ec.db_path
 application.config["DB_URI"] = ec.db_uri
@@ -75,17 +75,17 @@ def healthz():
         "global": True,
         "flask": True,
         "db": False,
-        "bootcfg": {k: False for k in application.config["BOOTCFG_URLS"]}
+        "matchbox": {k: False for k in application.config["MATCHBOX_URLS"]}
     }
-    if app.config["BOOTCFG_URI"] is None:
-        application.logger.error("BOOTCFG_URI is None")
-    for k in status["bootcfg"]:
+    if app.config["MATCHBOX_URI"] is None:
+        application.logger.error("MATCHBOX_URI is None")
+    for k in status["matchbox"]:
         try:
-            r = requests.get("%s%s" % (app.config["BOOTCFG_URI"], k))
+            r = requests.get("%s%s" % (app.config["MATCHBOX_URI"], k))
             r.close()
-            status["bootcfg"][k] = True
+            status["matchbox"][k] = True
         except Exception as e:
-            status["bootcfg"][k] = False
+            status["matchbox"][k] = False
             status["global"] = False
             LOGGER.error(e)
     try:
@@ -269,7 +269,7 @@ def discovery_ignition_journal_summary():
 @application.route('/boot.ipxe.0', methods=['GET'])
 def boot_ipxe():
     """
-    Replace the bootcfg/boot.ipxe by insert retry for dhcp and full URL for the chain
+    Replace the matchbox/boot.ipxe by insert retry for dhcp and full URL for the chain
     :return: str
     """
     try:
@@ -279,11 +279,11 @@ def boot_ipxe():
         app.logger.debug("%s" % flask_uri)
 
     except Exception as e:
-        flask_uri = application.config["BOOTCFG_URI"]
+        flask_uri = application.config["MATCHBOX_URI"]
         app.logger.error("<%s %s>: %s" % (e, type(e), e.message))
-        app.logger.warning("Fall back to BOOTCFG_URI: %s" % flask_uri)
+        app.logger.warning("Fall back to MATCHBOX_URI: %s" % flask_uri)
         if flask_uri is None:
-            raise AttributeError("BOTH API_URI and BOOTCFG_URI are None")
+            raise AttributeError("BOTH API_URI and MATCHBOX_URI are None")
 
     response = \
         "#!ipxe\n" \
@@ -302,55 +302,55 @@ def boot_ipxe():
 
 @application.route("/ignition", methods=["GET"])
 def ignition():
-    bootcfg_uri = application.config.get("BOOTCFG_URI")
-    if bootcfg_uri:
-        bootcfg_resp = requests.get("%s%s" % (bootcfg_uri, request.full_path))
-        d = bootcfg_resp.content
-        bootcfg_resp.close()
-        return d, bootcfg_resp.status_code
+    matchbox_uri = application.config.get("MATCHBOX_URI")
+    if matchbox_uri:
+        matchbox_resp = requests.get("%s%s" % (matchbox_uri, request.full_path))
+        d = matchbox_resp.content
+        matchbox_resp.close()
+        return d, matchbox_resp.status_code
 
-    return "bootcfg=%s" % bootcfg_uri, 403
+    return "matchbox=%s" % matchbox_uri, 403
 
 
 @application.route("/metadata", methods=["GET"])
 def metadata():
-    bootcfg_uri = application.config.get("BOOTCFG_URI")
-    if bootcfg_uri:
-        bootcfg_resp = requests.get("%s%s" % (bootcfg_uri, request.full_path))
-        d = bootcfg_resp.content
-        bootcfg_resp.close()
-        return d, bootcfg_resp.status_code
+    matchbox_uri = application.config.get("MATCHBOX_URI")
+    if matchbox_uri:
+        matchbox_resp = requests.get("%s%s" % (matchbox_uri, request.full_path))
+        d = matchbox_resp.content
+        matchbox_resp.close()
+        return d, matchbox_resp.status_code
 
-    return "bootcfg=%s" % bootcfg_uri, 403
+    return "matchbox=%s" % matchbox_uri, 403
 
 
 @app.route('/assets', defaults={'path': ''})
 @app.route('/assets/<path:path>')
 def assets(path):
-    bootcfg_uri = application.config.get("BOOTCFG_URI")
-    if bootcfg_uri:
-        url = "%s/assets/%s" % (bootcfg_uri, path)
-        bootcfg_resp = requests.get(url)
-        d = bootcfg_resp.content
-        bootcfg_resp.close()
-        return d, bootcfg_resp.status_code
+    matchbox_uri = application.config.get("MATCHBOX_URI")
+    if matchbox_uri:
+        url = "%s/assets/%s" % (matchbox_uri, path)
+        matchbox_resp = requests.get(url)
+        d = matchbox_resp.content
+        matchbox_resp.close()
+        return d, matchbox_resp.status_code
 
-    return "bootcfg=%s" % bootcfg_uri, 403
+    return "matchbox=%s" % matchbox_uri, 403
 
 
 @application.route('/ipxe', methods=['GET'])
 def ipxe():
     """
-    Fetch the bootcfg/ipxe?<key>=<value> and insert retry for dhcp
+    Fetch the matchbox/ipxe?<key>=<value> and insert retry for dhcp
     :return: str
     """
     try:
-        bootcfg_resp = urllib2.urlopen(
+        matchbox_resp = urllib2.urlopen(
             "%s%s" % (
-                app.config["BOOTCFG_URI"],
+                app.config["MATCHBOX_URI"],
                 request.full_path))
-        resp_list = bootcfg_resp.readlines()
-        bootcfg_resp.close()
+        resp_list = matchbox_resp.readlines()
+        matchbox_resp.close()
         if len(resp_list) == 4:
             resp_list.insert(1, "echo start /ipxe\n")
         else:

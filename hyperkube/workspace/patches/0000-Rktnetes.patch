@@ -35,8 +35,34 @@ index 5be3f8b..72f44fb 100644
 +
  	authDir            = "auth.d"
  	dockerAuthTemplate = `{"rktKind":"dockerAuth","rktVersion":"v1","registries":[%q],"credentials":{"user":%q,"password":%q}}`
-
-
+ 
+@@ -809,6 +813,22 @@ func (r *Runtime) newAppcRuntimeApp(pod *api.Pod, podIP string, c api.Container,
+ 		return err
+ 	}
+ 
++	// TODO Dry this
++	kubelet_ip := os.Getenv("KUBELET_IP")
++	if kubelet_ip != "" {
++		opts.Envs = append(opts.Envs, kubecontainer.EnvVar{
++			"KUBELET_IP",
++			kubelet_ip,
++		})
++	}
++	kubelet_name := os.Getenv("KUBELET_NAME")
++	if kubelet_name != "" {
++		opts.Envs = append(opts.Envs, kubecontainer.EnvVar{
++			"KUBELET_NAME",
++			kubelet_name,
++		})
++	}
++
+ 	// Create additional mount for termintation message path.
+ 	mount, err := r.makeContainerLogMount(opts, &c)
+ 	if err != nil {
+@@ -1111,6 +1131,28 @@ func (r *Runtime) getSelinuxContext(opt *api.SELinuxOptions) (string, error) {
+ 	return strings.Join(ctx, ":"), nil
+ }
+ 
 +// Rkt doesn't create the directory if not existing
 +// Use the annotations of the Pod to create an ExecStartPre=/bin/mkdir -pv [...]
 +func hostCreateDirectoriesByAnnotations(annotations map[string]string) (string, bool) {

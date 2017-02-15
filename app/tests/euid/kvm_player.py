@@ -38,7 +38,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     >>> def setUpClass(cls):
     >>>     cls.check_requirements()
     >>>     cls.set_api()
-    >>>     cls.set_bootcfg()
+    >>>     cls.set_matchbox()
     >>>     cls.set_dnsmasq()
     >>>     cls.set_lldp()
     >>>     cls.set_rack0()
@@ -47,7 +47,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     """
     __name__ = "KernelVirtualMachinePlayer"
 
-    p_bootcfg = multiprocessing.Process
+    p_matchbox = multiprocessing.Process
     p_dnsmasq = multiprocessing.Process
     p_api = multiprocessing.Process
     p_lldp = multiprocessing.Process
@@ -58,16 +58,16 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     tests_path = "%s" % os.path.dirname(euid_path)
     app_path = os.path.dirname(tests_path)
     project_path = os.path.dirname(app_path)
-    bootcfg_path = "%s/bootcfg" % project_path
-    assets_path = "%s/bootcfg/assets" % project_path
+    matchbox_path = "%s/matchbox" % project_path
+    assets_path = "%s/matchbox/assets" % project_path
 
     runtime_path = "%s/runtime" % project_path
     rkt_bin = "%s/rkt/rkt" % runtime_path
-    bootcfg_bin = "%s/bootcfg/bootcfg" % runtime_path
+    matchbox_bin = "%s/matchbox/matchbox" % runtime_path
 
-    test_bootcfg_path = "%s/test_bootcfg" % tests_path
+    test_matchbox_path = "%s/test_matchbox" % tests_path
 
-    bootcfg_port = int(os.getenv("BOOTCFG_PORT", "8080"))
+    matchbox_port = int(os.getenv("BOOTCFG_PORT", "8080"))
 
     api_port = int(os.getenv("API_PORT", "5000"))
 
@@ -97,10 +97,10 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             os.write(2, "\r==> sleep finish\n\r")
 
     @staticmethod
-    def process_target_bootcfg():
+    def process_target_matchbox():
         cmd = [
-            "%s" % KernelVirtualMachinePlayer.bootcfg_bin,
-            "-data-path", "%s" % KernelVirtualMachinePlayer.test_bootcfg_path,
+            "%s" % KernelVirtualMachinePlayer.matchbox_bin,
+            "-data-path", "%s" % KernelVirtualMachinePlayer.test_matchbox_path,
             "-assets-path", "%s" % KernelVirtualMachinePlayer.assets_path,
             "-log-level", "error"
         ]
@@ -231,21 +231,21 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         cls.clean_sandbox()
 
         if os.path.isfile("%s" % KernelVirtualMachinePlayer.rkt_bin) is False or \
-                        os.path.isfile("%s" % KernelVirtualMachinePlayer.bootcfg_bin) is False:
+                        os.path.isfile("%s" % KernelVirtualMachinePlayer.matchbox_bin) is False:
             os.write(2, "Call 'make runtime' as user for:\n"
                         "- %s\n" % KernelVirtualMachinePlayer.rkt_bin +
-                     "- %s\n" % KernelVirtualMachinePlayer.bootcfg_bin)
+                     "- %s\n" % KernelVirtualMachinePlayer.matchbox_bin)
             exit(2)
         os.write(1, "PPID -> %s\n" % os.getpid())
 
     @classmethod
-    def set_bootcfg(cls):
-        cls.p_bootcfg = multiprocessing.Process(target=KernelVirtualMachinePlayer.process_target_bootcfg,
-                                                name="bootcfg")
-        cls.p_bootcfg.start()
+    def set_matchbox(cls):
+        cls.p_matchbox = multiprocessing.Process(target=KernelVirtualMachinePlayer.process_target_matchbox,
+                                                name="matchbox")
+        cls.p_matchbox.start()
         time.sleep(0.5)
-        assert cls.p_bootcfg.is_alive() is True
-        cls.p_list.append(cls.p_bootcfg)
+        assert cls.p_matchbox.is_alive() is True
+        cls.p_list.append(cls.p_matchbox)
 
     @classmethod
     def set_rack0(cls):
@@ -318,7 +318,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     @staticmethod
     def clean_sandbox():
-        dirs = ["%s/%s" % (KernelVirtualMachinePlayer.test_bootcfg_path, k)
+        dirs = ["%s/%s" % (KernelVirtualMachinePlayer.test_matchbox_path, k)
                 for k in ("profiles", "groups")]
         for d in dirs:
             for f in os.listdir(d):

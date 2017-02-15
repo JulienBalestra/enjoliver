@@ -70,7 +70,7 @@ su - enjoliver -c "make runner"
 su - enjoliver -c "make front"
 su - enjoliver -c "make pip"
 
-cp -v runtime/bootcfg/bootcfg ${ROOTFS}/usr/bin
+cp -v runtime/matchbox/matchbox ${ROOTFS}/usr/bin
 
 make acis
 
@@ -85,4 +85,4 @@ make check_clean
 chown -R root: ${ENJOLIVER}
 make validate
 
-${ROOTFS}/usr/bin/bootcfg --version
+${ROOTFS}/usr/bin/matchbox --version

@@ -15,7 +15,7 @@ class TestKernelVirtualMachinePlayer(kvm_player.KernelVirtualMachinePlayer):
         cls.check_requirements()
         cls.set_rack0()
         cls.set_api()
-        cls.set_bootcfg()
+        cls.set_matchbox()
         cls.set_dnsmasq()
         cls.set_lldp()
         cls.pause(cls.wait_setup_teardown)

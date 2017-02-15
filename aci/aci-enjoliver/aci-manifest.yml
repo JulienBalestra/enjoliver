@@ -18,11 +18,11 @@ aci:
 
   app:
     mountPoints:
-      - name: bootcfg-groups
-        path: /var/lib/bootcfg/groups
+      - name: matchbox-groups
+        path: /var/lib/matchbox/groups
 
-      - name: bootcfg-profiles
-        path: /var/lib/bootcfg/profiles
+      - name: matchbox-profiles
+        path: /var/lib/matchbox/profiles
 
       - name: enjoliver-path
         path: /var/lib/enjoliver

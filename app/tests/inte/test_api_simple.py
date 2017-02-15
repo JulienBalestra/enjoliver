@@ -16,32 +16,32 @@ from common import posts
 
 
 class TestAPI(unittest.TestCase):
-    p_bootcfg = Process
+    p_matchbox = Process
 
     int_path = "%s" % os.path.dirname(__file__)
     dbs_path = "%s/dbs" % int_path
     tests_path = "%s" % os.path.dirname(int_path)
     app_path = os.path.dirname(tests_path)
     project_path = os.path.dirname(app_path)
-    bootcfg_path = "%s/bootcfg" % project_path
-    assets_path = "%s/bootcfg/assets" % project_path
+    matchbox_path = "%s/matchbox" % project_path
+    assets_path = "%s/matchbox/assets" % project_path
 
     runtime_path = "%s/runtime" % project_path
     rkt_bin = "%s/rkt/rkt" % runtime_path
-    bootcfg_bin = "%s/bootcfg/bootcfg" % runtime_path
+    matchbox_bin = "%s/matchbox/matchbox" % runtime_path
 
-    test_bootcfg_path = "%s/test_bootcfg" % tests_path
+    test_matchbox_path = "%s/test_matchbox" % tests_path
 
-    bootcfg_port = int(os.getenv("BOOTCFG_PORT", "8080"))
-    bootcfg_uri = "http://localhost:%d" % bootcfg_port
+    matchbox_port = int(os.getenv("MATCHBOX_PORT", "8080"))
+    matchbox_uri = "http://localhost:%d" % matchbox_port
 
     api_uri = "http://localhost"
 
     @staticmethod
     def process_target():
         cmd = [
-            "%s" % TestAPI.bootcfg_bin,
-            "-data-path", "%s" % TestAPI.test_bootcfg_path,
+            "%s" % TestAPI.matchbox_bin,
+            "-data-path", "%s" % TestAPI.test_matchbox_path,
             "-assets-path", "%s" % TestAPI.assets_path,
             "-log-level", "debug"
         ]
@@ -79,31 +79,31 @@ class TestAPI(unittest.TestCase):
         cls.app = api.app.test_client()
         cls.app.testing = True
 
-        if os.path.isfile("%s" % TestAPI.bootcfg_bin) is False:
-            raise IOError("%s" % TestAPI.bootcfg_bin)
-        cls.p_bootcfg = Process(target=TestAPI.process_target)
+        if os.path.isfile("%s" % TestAPI.matchbox_bin) is False:
+            raise IOError("%s" % TestAPI.matchbox_bin)
+        cls.p_matchbox = Process(target=TestAPI.process_target)
         os.write(1, "PPID -> %s\n" % os.getpid())
-        cls.p_bootcfg.start()
-        assert cls.p_bootcfg.is_alive() is True
+        cls.p_matchbox.start()
+        assert cls.p_matchbox.is_alive() is True
 
-        cls.bootcfg_running(cls.bootcfg_uri, cls.p_bootcfg)
+        cls.matchbox_running(cls.matchbox_uri, cls.p_matchbox)
 
     @classmethod
     def tearDownClass(cls):
-        os.write(1, "TERM -> %d\n" % cls.p_bootcfg.pid)
+        os.write(1, "TERM -> %d\n" % cls.p_matchbox.pid)
         sys.stdout.flush()
-        cls.p_bootcfg.terminate()
-        cls.p_bootcfg.join(timeout=5)
+        cls.p_matchbox.terminate()
+        cls.p_matchbox.join(timeout=5)
         time.sleep(0.1)
 
     @staticmethod
-    def bootcfg_running(bootcfg_endpoint, p_bootcfg):
+    def matchbox_running(matchbox_endpoint, p_matchbox):
         response_body = ""
         response_code = 404
         for i in xrange(100):
-            assert p_bootcfg.is_alive() is True
+            assert p_matchbox.is_alive() is True
             try:
-                request = urllib2.urlopen(bootcfg_endpoint)
+                request = urllib2.urlopen(matchbox_endpoint)
                 response_body = request.read()
                 response_code = request.code
                 request.close()
@@ -115,13 +115,13 @@ class TestAPI(unittest.TestCase):
             except urllib2.URLError:
                 time.sleep(0.5)
 
-        assert "bootcfg\n" == response_body
+        assert "matchbox\n" == response_body
         assert 200 == response_code
 
     @staticmethod
     def clean_sandbox():
         dirs = ["%s/%s" % (
-            TestAPI.test_bootcfg_path, k) for k in (
+            TestAPI.test_matchbox_path, k) for k in (
                     "profiles", "groups")]
         for d in dirs:
             for f in os.listdir(d):
@@ -129,7 +129,7 @@ class TestAPI(unittest.TestCase):
                     os.remove("%s/%s" % (d, f))
 
     def setUp(self):
-        self.assertTrue(self.p_bootcfg.is_alive())
+        self.assertTrue(self.p_matchbox.is_alive())
         self.clean_sandbox()
         api.cache.clear()
 
@@ -138,7 +138,7 @@ class TestAPI(unittest.TestCase):
             u'flask': True,
             u'global': True,
             u'db': True,
-            u'bootcfg': {
+            u'matchbox': {
                 u'/': True,
                 u'/boot.ipxe': True,
                 u'/boot.ipxe.0': True,
@@ -217,7 +217,7 @@ class TestAPI(unittest.TestCase):
             profile_id="id-%s" % marker,
             name="name-%s" % marker,
             ignition_id=ignition_file,
-            bootcfg_path=self.test_bootcfg_path)
+            matchbox_path=self.test_matchbox_path)
         gen.dumps()
         result = self.app.get('/ipxe')
         expect = "#!ipxe\n" \
@@ -243,7 +243,7 @@ class TestAPI(unittest.TestCase):
             name="name-%s" % marker,
             ignition_id=ignition_file,
             selector={"mac": mac},
-            bootcfg_path=self.test_bootcfg_path
+            matchbox_path=self.test_matchbox_path
         )
         gen.dumps()
         result = self.app.get('/ipxe')

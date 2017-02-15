@@ -7,10 +7,10 @@ class EnjoliverConfig(object):
         self.api_uri = os.getenv("API_URI", None)
 
         # Bootcfg aka CoreOS Baremetal aka Matchbox
-        self.bootcfg_uri = "http://127.0.0.1:8080"
-        self.bootcfg_path = os.getenv("BOOTCFG_PATH", "/var/lib/bootcfg")
+        self.matchbox_uri = "http://127.0.0.1:8080"
+        self.matchbox_path = os.getenv("MATCHBOX_PATH", "/var/lib/matchbox")
         # For Health check
-        self.bootcfg_urls = [
+        self.matchbox_urls = [
             "/",
             "/boot.ipxe",
             "/boot.ipxe.0",
@@ -42,7 +42,7 @@ class EnjoliverConfig(object):
 
         self.etcd_member_kubernetes_control_plane_expected_nb = 3
 
-        # Sync Bootcfg
+        # Sync Matchbox
         self.sub_ips = 256
         self.range_nb_ips = 253
         self.skip_ips = 1
@@ -60,7 +60,7 @@ class EnjoliverConfig(object):
         self.k8s_image_url = "static-aci-hyperkube:0"
 
         # Ignition
-        # All of them have to be in the bootcfg/ignition
+        # All of them have to be in the matchbox/ignition
         # Specify only the title of the file without the extension (.yaml)
         self.ignition_dict = {
             "discovery": "discovery",

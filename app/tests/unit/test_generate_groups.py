@@ -8,7 +8,7 @@ class TestGenerateGroups(TestCase):
     gen = generate_groups.GenerateGroup
     unit_path = "%s" % os.path.dirname(__file__)
     tests_path = "%s" % os.path.split(unit_path)[0]
-    test_bootcfg_path = "%s/test_bootcfg" % tests_path
+    test_matchbox_path = "%s/test_matchbox" % tests_path
     api_uri = "http://127.0.0.1:5000"
 
     @classmethod
@@ -18,7 +18,7 @@ class TestGenerateGroups(TestCase):
             _id="etcd-proxy",
             name="etcd-proxy",
             profile="TestGenerateProfiles",
-            bootcfg_path=cls.test_bootcfg_path
+            matchbox_path=cls.test_matchbox_path
         )
         cls.gen.profiles_path = "%s/test_resources" % cls.tests_path
 
@@ -51,7 +51,7 @@ class TestGenerateGroups(TestCase):
             _id="etcd-proxy",
             name="etcd-proxy",
             profile="etcd-proxy.yaml",
-            bootcfg_path=self.test_bootcfg_path
+            matchbox_path=self.test_matchbox_path
         )
         result = new.generate()
         self.assertEqual(expect["profile"], result["profile"])
@@ -66,18 +66,18 @@ class TestGenerateGroups(TestCase):
             _id=_id,
             name="etcd-test",
             profile="etcd-test.yaml",
-            bootcfg_path=self.test_bootcfg_path
+            matchbox_path=self.test_matchbox_path
         )
         new.dump()
-        self.assertTrue(os.path.isfile("%s/groups/%s.json" % (self.test_bootcfg_path, _id)))
-        os.remove("%s/groups/%s.json" % (self.test_bootcfg_path, _id))
+        self.assertTrue(os.path.isfile("%s/groups/%s.json" % (self.test_matchbox_path, _id)))
+        os.remove("%s/groups/%s.json" % (self.test_matchbox_path, _id))
 
 
 class TestGenerateGroupsSelectorLower(TestCase):
     gen = generate_groups.GenerateGroup
     unit_path = "%s" % os.path.dirname(__file__)
     tests_path = "%s" % os.path.split(unit_path)[0]
-    test_bootcfg_path = "%s/test_bootcfg" % tests_path
+    test_matchbox_path = "%s/test_matchbox" % tests_path
     api_uri = "http://127.0.0.1:5000"
 
     @classmethod
@@ -90,7 +90,7 @@ class TestGenerateGroupsSelectorLower(TestCase):
             name="etcd-proxy",
             profile="TestGenerateProfiles",
             selector={"mac": "08:00:27:37:28:2e"},
-            bootcfg_path=cls.test_bootcfg_path
+            matchbox_path=cls.test_matchbox_path
         )
 
     @classmethod
@@ -133,7 +133,7 @@ class TestGenerateGroupsSelectorLower(TestCase):
             api_uri=self.api_uri,
             _id="etcd-proxy", name="etcd-proxy", profile="etcd-proxy.yaml",
             selector={"mac": "08:00:27:37:28:2e"},
-            bootcfg_path=self.test_bootcfg_path)
+            matchbox_path=self.test_matchbox_path)
         result = new.generate()
         result["metadata"]['ssh_authorized_keys'] = []
         self.assertEqual(expect, result)
@@ -143,19 +143,19 @@ class TestGenerateGroupsSelectorLower(TestCase):
         new = generate_groups.GenerateGroup(
             api_uri=self.api_uri,
             _id="%s" % _id, name="etcd-test", profile="etcd-test.yaml",
-            bootcfg_path=self.test_bootcfg_path,
+            matchbox_path=self.test_matchbox_path,
             selector={"mac": "08:00:27:37:28:2e"}
         )
         new.dump()
-        self.assertTrue(os.path.isfile("%s/groups/%s.json" % (self.test_bootcfg_path, _id)))
-        os.remove("%s/groups/%s.json" % (self.test_bootcfg_path, _id))
+        self.assertTrue(os.path.isfile("%s/groups/%s.json" % (self.test_matchbox_path, _id)))
+        os.remove("%s/groups/%s.json" % (self.test_matchbox_path, _id))
 
 
 class TestGenerateGroupsSelectorUpper(TestCase):
     gen = generate_groups.GenerateGroup
     unit_path = "%s" % os.path.dirname(__file__)
     tests_path = "%s" % os.path.split(unit_path)[0]
-    test_bootcfg_path = "%s/test_bootcfg" % tests_path
+    test_matchbox_path = "%s/test_matchbox" % tests_path
     api_uri = "http://127.0.0.1:5000"
 
     @classmethod
@@ -168,7 +168,7 @@ class TestGenerateGroupsSelectorUpper(TestCase):
             name="etcd-proxy",
             profile="TestGenerateProfiles",
             selector={"mac": "08:00:27:37:28:2E"},
-            bootcfg_path=cls.test_bootcfg_path
+            matchbox_path=cls.test_matchbox_path
         )
 
     def test_00_ip_address(self):
@@ -206,7 +206,7 @@ class TestGenerateGroupsSelectorUpper(TestCase):
             name="etcd-proxy",
             profile="etcd-proxy.yaml",
             selector={"mac": "08:00:27:37:28:2e"},
-            bootcfg_path=self.test_bootcfg_path
+            matchbox_path=self.test_matchbox_path
         )
         result = new.generate()
         result["metadata"]['ssh_authorized_keys'] = []
@@ -217,19 +217,19 @@ class TestGenerateGroupsSelectorUpper(TestCase):
         new = generate_groups.GenerateGroup(
             api_uri=self.api_uri,
             _id="%s" % _id, name="etcd-test", profile="etcd-test.yaml",
-            bootcfg_path=self.test_bootcfg_path,
+            matchbox_path=self.test_matchbox_path,
             selector={"mac": "08:00:27:37:28:2e"}
         )
         new.dump()
-        self.assertTrue(os.path.isfile("%s/groups/%s.json" % (self.test_bootcfg_path, _id)))
-        os.remove("%s/groups/%s.json" % (self.test_bootcfg_path, _id))
+        self.assertTrue(os.path.isfile("%s/groups/%s.json" % (self.test_matchbox_path, _id)))
+        os.remove("%s/groups/%s.json" % (self.test_matchbox_path, _id))
 
 
 class TestGenerateGroupsExtraMetadata(TestCase):
     gen = generate_groups.GenerateGroup
     unit_path = "%s" % os.path.dirname(__file__)
     tests_path = "%s" % os.path.split(unit_path)[0]
-    test_bootcfg_path = "%s/test_bootcfg" % tests_path
+    test_matchbox_path = "%s/test_matchbox" % tests_path
     api_uri = "http://127.0.0.1:5000"
 
     @classmethod
@@ -244,7 +244,7 @@ class TestGenerateGroupsExtraMetadata(TestCase):
             selector={"mac": "08:00:27:37:28:2E"},
             metadata={"etcd_initial_cluster": "static0=http://192.168.1.1:2379",
                       "api_seed": "http://192.168.1.2:5000"},
-            bootcfg_path=cls.test_bootcfg_path
+            matchbox_path=cls.test_matchbox_path
         )
 
     def test_00_api_uri(self):
@@ -282,7 +282,7 @@ class TestGenerateGroupsExtraMetadata(TestCase):
             api_uri=self.api_uri,
             _id="etcd-proxy", name="etcd-proxy", profile="etcd-proxy.yaml",
             selector={"mac": "08:00:27:37:28:2e"},
-            bootcfg_path=self.test_bootcfg_path
+            matchbox_path=self.test_matchbox_path
         )
         result = new.generate()
         result["metadata"]["ssh_authorized_keys"] = []
@@ -293,9 +293,9 @@ class TestGenerateGroupsExtraMetadata(TestCase):
         new = generate_groups.GenerateGroup(
             api_uri=self.api_uri,
             _id="%s" % _id, name="etcd-test", profile="etcd-test.yaml",
-            bootcfg_path=self.test_bootcfg_path,
+            matchbox_path=self.test_matchbox_path,
             selector={"mac": "08:00:27:37:28:2e"}
         )
         new.dump()
-        self.assertTrue(os.path.isfile("%s/groups/%s.json" % (self.test_bootcfg_path, _id)))
-        os.remove("%s/groups/%s.json" % (self.test_bootcfg_path, _id))
+        self.assertTrue(os.path.isfile("%s/groups/%s.json" % (self.test_matchbox_path, _id)))
+        os.remove("%s/groups/%s.json" % (self.test_matchbox_path, _id))

@@ -12,7 +12,7 @@ apt-get install -y -qq python python-pip python-dev build-essential
 
 ENJOLIVER=/opt/enjoliver
 
-ln -sv ${ENJOLIVER}/bootcfg /var/lib/bootcfg
+ln -sv ${ENJOLIVER}/matchbox /var/lib/matchbox
 pip install --upgrade pip
 pip install -r ${ENJOLIVER}/requirements.txt
 
@@ -22,6 +22,6 @@ ln -sv /usr/local/bin/gunicorn /usr/bin/gunicorn
 
 ${ENJOLIVER}/validate.py
 
-bootcfg --version
+matchbox --version
 
 echo "build done"

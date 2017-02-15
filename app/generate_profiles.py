@@ -13,17 +13,17 @@ class GenerateProfile(GenerateCommon):
                  api_uri,
                  _id, name,
                  ignition_id,
-                 bootcfg_path):
+                 matchbox_path):
 
         self.api_uri = api_uri
-        self.ensure_directory(bootcfg_path)
-        self.ensure_directory("%s/ignition" % bootcfg_path)
+        self.ensure_directory(matchbox_path)
+        self.ensure_directory("%s/ignition" % matchbox_path)
         try:
-            self.ensure_file("%s/ignition/%s" % (bootcfg_path, ignition_id))
+            self.ensure_file("%s/ignition/%s" % (matchbox_path, ignition_id))
         except Warning:
-            self.log.warning("not here %s/ignition/%s\n" % (bootcfg_path, ignition_id))
+            self.log.warning("not here %s/ignition/%s\n" % (matchbox_path, ignition_id))
 
-        self.target_path = self.ensure_directory("%s/profiles" % bootcfg_path)
+        self.target_path = self.ensure_directory("%s/profiles" % matchbox_path)
         self._target_data = {
             "id": "%s" % _id,
             "name": "%s" % name,

@@ -21,7 +21,7 @@ class TestKVMBasicISO(kvm_player.KernelVirtualMachinePlayer):
     def setUpClass(cls):
         cls.check_requirements()
         cls.set_rack0()
-        cls.set_bootcfg()
+        cls.set_matchbox()
         cls.set_dnsmasq()
         cls.set_api()
         cls.pause(cls.wait_setup_teardown)
@@ -33,7 +33,7 @@ class TestKVMBasicISO(kvm_player.KernelVirtualMachinePlayer):
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
-            bootcfg_path=self.test_bootcfg_path
+            matchbox_path=self.test_matchbox_path
         )
         gen.dumps()
 
@@ -87,7 +87,7 @@ class TestKVMBasicISO(kvm_player.KernelVirtualMachinePlayer):
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
-            bootcfg_path=self.test_bootcfg_path
+            matchbox_path=self.test_matchbox_path
         )
         gen.dumps()
 
@@ -169,7 +169,7 @@ class TestKVMBasicISO(kvm_player.KernelVirtualMachinePlayer):
                     profile_id="%s" % machine_marker,
                     name="%s" % machine_marker,
                     ignition_id="%s.yaml" % machine_marker,
-                    bootcfg_path=self.test_bootcfg_path,
+                    matchbox_path=self.test_matchbox_path,
                     selector={"mac": "%s%d" % (base_mac, i)}
                 )
                 gen.dumps()

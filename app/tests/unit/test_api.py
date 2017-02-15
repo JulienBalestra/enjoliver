@@ -37,7 +37,7 @@ class TestAPI(unittest.TestCase):
             u'flask': True,
             u'global': False,
             u'db': True,
-            u'bootcfg': {
+            u'matchbox': {
                 u'/boot.ipxe': False,
                 u'/boot.ipxe.0': False,
                 u'/': False,

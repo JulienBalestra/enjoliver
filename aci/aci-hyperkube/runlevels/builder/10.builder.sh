@@ -6,6 +6,9 @@ set -ex
 
 export LC_ALL=C
 
+apt-get update -qq
+apt-get install -y iptables
+
 SOURCE_PROJECT=/opt/source-project
 
 cp -v ${SOURCE_PROJECT}/hyperkube/hyperkube ${ROOTFS}

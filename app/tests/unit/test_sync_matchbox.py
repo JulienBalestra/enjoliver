@@ -2,19 +2,19 @@ import json
 import os
 from unittest import TestCase
 
-from app import sync_bootcfg
+from app import sync_matchbox
 
 
 class TestConfigSyncSchedules(TestCase):
     unit_path = "%s" % os.path.dirname(__file__)
     tests_path = "%s" % os.path.split(unit_path)[0]
-    test_bootcfg_path = "%s/test_bootcfg" % tests_path
+    test_matchbox_path = "%s/test_matchbox" % tests_path
     api_uri = "http://127.0.0.1:5000"
 
     def test_00(self):
-        s = sync_bootcfg.ConfigSyncSchedules(
+        s = sync_matchbox.ConfigSyncSchedules(
             api_uri=self.api_uri,
-            bootcfg_path=self.test_bootcfg_path,
+            matchbox_path=self.test_matchbox_path,
             ignition_dict={},
             extra_selector_dict=None,
         )
@@ -28,9 +28,9 @@ class TestConfigSyncSchedules(TestCase):
         }, d)
 
     def test_01(self):
-        s = sync_bootcfg.ConfigSyncSchedules(
+        s = sync_matchbox.ConfigSyncSchedules(
             api_uri=self.api_uri,
-            bootcfg_path=self.test_bootcfg_path,
+            matchbox_path=self.test_matchbox_path,
             ignition_dict={},
             extra_selector_dict=None,
         )
@@ -44,9 +44,9 @@ class TestConfigSyncSchedules(TestCase):
         }, d)
 
     def test_02(self):
-        s = sync_bootcfg.ConfigSyncSchedules(
+        s = sync_matchbox.ConfigSyncSchedules(
             api_uri=self.api_uri,
-            bootcfg_path=self.test_bootcfg_path,
+            matchbox_path=self.test_matchbox_path,
             ignition_dict={},
             extra_selector_dict=None,
         )
@@ -60,9 +60,9 @@ class TestConfigSyncSchedules(TestCase):
             d)
 
     def test_03(self):
-        s = sync_bootcfg.ConfigSyncSchedules(
+        s = sync_matchbox.ConfigSyncSchedules(
             api_uri=self.api_uri,
-            bootcfg_path=self.test_bootcfg_path,
+            matchbox_path=self.test_matchbox_path,
             ignition_dict={},
             extra_selector_dict=None,
         )
@@ -77,16 +77,16 @@ class TestConfigSyncSchedules(TestCase):
             json.dumps(d, indent=2))
 
     def test_04(self):
-        s = sync_bootcfg.ConfigSyncSchedules(
+        s = sync_matchbox.ConfigSyncSchedules(
             api_uri=self.api_uri,
-            bootcfg_path=self.test_bootcfg_path,
+            matchbox_path=self.test_matchbox_path,
             ignition_dict={},
             extra_selector_dict=None,
         )
 
-        sync_bootcfg.ConfigSyncSchedules.range_nb_ips = 60
-        sync_bootcfg.ConfigSyncSchedules.skip_ips = 1
-        sync_bootcfg.ConfigSyncSchedules.sub_ips = 0
+        sync_matchbox.ConfigSyncSchedules.range_nb_ips = 60
+        sync_matchbox.ConfigSyncSchedules.skip_ips = 1
+        sync_matchbox.ConfigSyncSchedules.sub_ips = 0
 
         d = s.cni_ipam("10.99.33.1/19", "10.99.64.254")
         self.assertEqual(json.dumps({
@@ -99,16 +99,16 @@ class TestConfigSyncSchedules(TestCase):
         }, indent=2), json.dumps(d, indent=2))
 
     def test_04_1(self):
-        s = sync_bootcfg.ConfigSyncSchedules(
+        s = sync_matchbox.ConfigSyncSchedules(
             api_uri=self.api_uri,
-            bootcfg_path=self.test_bootcfg_path,
+            matchbox_path=self.test_matchbox_path,
             ignition_dict={},
             extra_selector_dict=None,
         )
 
-        sync_bootcfg.ConfigSyncSchedules.range_nb_ips = 60
-        sync_bootcfg.ConfigSyncSchedules.skip_ips = 1
-        sync_bootcfg.ConfigSyncSchedules.sub_ips = 0
+        sync_matchbox.ConfigSyncSchedules.range_nb_ips = 60
+        sync_matchbox.ConfigSyncSchedules.skip_ips = 1
+        sync_matchbox.ConfigSyncSchedules.sub_ips = 0
 
         d = s.cni_ipam("10.99.39.129/19", "10.99.64.254")
         self.assertEqual(json.dumps({
@@ -122,9 +122,9 @@ class TestConfigSyncSchedules(TestCase):
 
     def test_05(self):
         with self.assertRaises(IOError):
-            sync_bootcfg.ConfigSyncSchedules(
+            sync_matchbox.ConfigSyncSchedules(
                 api_uri=self.api_uri,
-                bootcfg_path=self.test_bootcfg_path,
+                matchbox_path=self.test_matchbox_path,
                 ignition_dict={"etcd-member": "no-here"},
                 extra_selector_dict=None,
             )

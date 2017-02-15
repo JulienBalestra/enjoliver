@@ -16,7 +16,7 @@ class TestGenerateProfiles(TestCase):
     gen = generate_profiles.GenerateProfile
     unit_path = "%s" % os.path.dirname(__file__)
     tests_path = "%s" % os.path.split(unit_path)[0]
-    test_bootcfg_path = "%s/test_bootcfg" % tests_path
+    test_matchbox_path = "%s/test_matchbox" % tests_path
     api_uri = "http://127.0.0.1:5000"
 
     @classmethod
@@ -28,7 +28,7 @@ class TestGenerateProfiles(TestCase):
                 _id="etcd-proxy",
                 name="etcd-proxy",
                 ignition_id="etcd-proxy.yaml",
-                bootcfg_path=cls.test_bootcfg_path
+                matchbox_path=cls.test_matchbox_path
             )
         generate_common.GenerateCommon._raise_enof = IOError
         cls.gen.profiles_path = "%s/test_resources" % cls.tests_path
@@ -75,7 +75,7 @@ class TestGenerateProfiles(TestCase):
                 _id="etcd-proxy",
                 name="etcd-proxy",
                 ignition_id="etcd-proxy.yaml",
-                bootcfg_path=self.test_bootcfg_path
+                matchbox_path=self.test_matchbox_path
             )
         result = new.generate()
         self.assertEqual(expect, result)
@@ -88,8 +88,8 @@ class TestGenerateProfiles(TestCase):
                 _id="%s" % _id,
                 name="etcd-test",
                 ignition_id="etcd-test.yaml",
-                bootcfg_path=self.test_bootcfg_path
+                matchbox_path=self.test_matchbox_path
             )
         new.dump()
-        self.assertTrue(os.path.isfile("%s/profiles/%s.json" % (self.test_bootcfg_path, _id)))
-        os.remove("%s/profiles/%s.json" % (self.test_bootcfg_path, _id))
+        self.assertTrue(os.path.isfile("%s/profiles/%s.json" % (self.test_matchbox_path, _id)))
+        os.remove("%s/profiles/%s.json" % (self.test_matchbox_path, _id))

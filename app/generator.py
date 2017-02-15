@@ -12,7 +12,7 @@ class Generator(object):
                  profile_id,
                  name,
                  ignition_id,
-                 bootcfg_path,
+                 matchbox_path,
                  selector=None,
                  group_id=None,
                  extra_metadata=None):
@@ -22,7 +22,7 @@ class Generator(object):
             _id=profile_id,
             name=name,
             ignition_id=ignition_id,
-            bootcfg_path=bootcfg_path)
+            matchbox_path=matchbox_path)
 
         self.group = GenerateGroup(
             api_uri=api_uri,
@@ -31,7 +31,7 @@ class Generator(object):
             profile=profile_id,  # TODO
             selector=selector,
             metadata=extra_metadata,
-            bootcfg_path=bootcfg_path)
+            matchbox_path=matchbox_path)
 
     def generate_profile(self):
         return self.profile.generate()

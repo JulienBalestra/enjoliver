@@ -21,7 +21,7 @@ class TestKVMBasicPXE(kvm_player.KernelVirtualMachinePlayer):
     def setUpClass(cls):
         cls.check_requirements()
         cls.set_rack0()
-        cls.set_bootcfg()
+        cls.set_matchbox()
         cls.set_dnsmasq()
         cls.set_api()
         cls.pause(cls.wait_setup_teardown)
@@ -34,7 +34,7 @@ class TestKVMBasicPXE(kvm_player.KernelVirtualMachinePlayer):
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
-            bootcfg_path=self.test_bootcfg_path
+            matchbox_path=self.test_matchbox_path
         )
         gen.dumps()
 
@@ -87,7 +87,7 @@ class TestKVMBasicPXE(kvm_player.KernelVirtualMachinePlayer):
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
-            bootcfg_path=self.test_bootcfg_path
+            matchbox_path=self.test_matchbox_path
         )
         gen.dumps()
 

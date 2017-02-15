@@ -50,29 +50,29 @@ acis:
 	make -C hyperkube
 
 assets:
-	make -C bootcfg/assets/coreos
-	make -C bootcfg/assets/coreos serve
-	make -C bootcfg/assets/rkt
-	make -C bootcfg/assets/rkt serve
-	make -C bootcfg/assets/etcd
-	make -C bootcfg/assets/etcd serve
-	make -C bootcfg/assets/cni
-	make -C bootcfg/assets/cni serve
-	make -C bootcfg/assets/fleet
-	make -C bootcfg/assets/fleet serve
+	make -C matchbox/assets/coreos
+	make -C matchbox/assets/coreos serve
+	make -C matchbox/assets/rkt
+	make -C matchbox/assets/rkt serve
+	make -C matchbox/assets/etcd
+	make -C matchbox/assets/etcd serve
+	make -C matchbox/assets/cni
+	make -C matchbox/assets/cni serve
+	make -C matchbox/assets/fleet
+	make -C matchbox/assets/fleet serve
 	# Self
-	make -C bootcfg/assets/discoveryC
+	make -C matchbox/assets/discoveryC
 	# Depends on .acis
-	make -C bootcfg/assets/lldp
-	make -C bootcfg/assets/hyperkube
+	make -C matchbox/assets/lldp
+	make -C matchbox/assets/hyperkube
 
 clean: check_clean
-	make -C bootcfg/assets/cni fclean
-	make -C bootcfg/assets/coreos fclean
-	make -C bootcfg/assets/discoveryC fclean
-	make -C bootcfg/assets/hyperkube fclean
-	make -C bootcfg/assets/lldp fclean
-	make -C bootcfg/assets/rkt fclean
+	make -C matchbox/assets/cni fclean
+	make -C matchbox/assets/coreos fclean
+	make -C matchbox/assets/discoveryC fclean
+	make -C matchbox/assets/hyperkube fclean
+	make -C matchbox/assets/lldp fclean
+	make -C matchbox/assets/rkt fclean
 
 check_clean:
 	make -C app/tests/ fclean
