@@ -1,4 +1,4 @@
-VERSION=1284.2.0
+VERSION=1313.0.0
 
 SERVE=serve
 
@@ -51,7 +51,7 @@ clean:
 
 $(SERVE):
 	@ls -dF $(VERSION)
-	ln -vs $(VERSION) $(SERVE)
+	ln -vsf $(VERSION) $(SERVE)
 
 fclean: clean
 	@find * -maxdepth 1 -type d -exec rm -Rfv {} \;
