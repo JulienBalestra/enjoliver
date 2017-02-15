@@ -82,7 +82,7 @@ class TestGenerateGroupsSelectorLower(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        os.environ["BOOTCFG_URI"] = "http://127.0.0.1:8080"
+        os.environ["MATCHBOX_URI"] = "http://127.0.0.1:8080"
         os.environ["API_URI"] = "http://127.0.0.1:5000"
         cls.gen = generate_groups.GenerateGroup(
             api_uri=cls.api_uri,
@@ -160,7 +160,7 @@ class TestGenerateGroupsSelectorUpper(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        os.environ["BOOTCFG_URI"] = "http://127.0.0.1:8080"
+        os.environ["MATCHBOX_URI"] = "http://127.0.0.1:8080"
         os.environ["API_URI"] = "http://127.0.0.1:5000"
         cls.gen = generate_groups.GenerateGroup(
             api_uri=cls.api_uri,
@@ -234,7 +234,7 @@ class TestGenerateGroupsExtraMetadata(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        os.environ["BOOTCFG_URI"] = "http://127.0.0.1:8080"
+        os.environ["MATCHBOX_URI"] = "http://127.0.0.1:8080"
         os.environ["API_URI"] = "http://127.0.0.1:5000"
         cls.gen = generate_groups.GenerateGroup(
             api_uri=cls.api_uri,
