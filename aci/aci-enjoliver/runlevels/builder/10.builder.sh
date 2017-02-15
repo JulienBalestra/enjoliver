@@ -18,7 +18,7 @@ chmod +x /usr/local/bin/virtualenv
 
 
 ### Git Bundle ###
-if [ test -d ${SOURCE_PROJECT}/bundles ]
+if [ -d ${SOURCE_PROJECT}/bundles ]
 then
     cd -P ${SOURCE_PROJECT}/bundles
 
@@ -68,6 +68,7 @@ chown -R enjoliver ${ENJOLIVER}
 su - enjoliver -c "make submodules"
 su - enjoliver -c "make runner"
 su - enjoliver -c "make front"
+su - enjoliver -c "make pip"
 
 cp -v runtime/bootcfg/bootcfg ${ROOTFS}/usr/bin
 

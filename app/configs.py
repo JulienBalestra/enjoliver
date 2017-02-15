@@ -49,6 +49,7 @@ class EnjoliverConfig(object):
 
         # Application config
         self.kubernetes_api_server_port = 8080
+        self.kubernetes_service_cluster_ip_range = "172.30.0.0/24"
 
         self.etcd_initial_advertise_peer_port = 2380
         self.etcd_advertise_client_port = 2379
@@ -67,3 +68,7 @@ class EnjoliverConfig(object):
             "kubernetes_nodes": "k8s-node",
         }
         self.extra_selectors = {"os": "installed"}
+
+        # Logging level
+        # DEBUG or INFO
+        self.logging_level = "DEBUG"

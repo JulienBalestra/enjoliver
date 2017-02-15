@@ -176,7 +176,7 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
-    - name: kubelet.service
+    - name: kubelet-runonce.service
       enable: true
       contents: |
         [Unit]
@@ -184,6 +184,44 @@ systemd:
         After=installs.target
         After=rkt-api.service
         Requires=rkt-api.service
+
+        [Service]
+        EnvironmentFile=/etc/metadata.env
+        Environment=MANIFESTS=/etc/kubernetes/manifests
+        ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
+        ExecStartPre=/bin/mkdir -pv $MANIFESTS
+        # Dev
+        ExecStartPre=/usr/bin/rkt fetch --insecure-options=all \
+          ${API_URI}/assets/hyperkube/serve/static-aci-hyperkube-0.aci
+        ExecStart=/opt/bin/kubelet \
+          \
+          --network-plugin=cni \
+          --cni-conf-dir=/etc/kubernetes/cni/net.d \
+          \
+          --pod-manifest-path=${MANIFESTS} \
+          --hostname-override=${KUBELET_NAME} \
+          --node-ip=${KUBELET_IP} \
+          --register-schedulable=false \
+          --allow-privileged=true \
+          --runonce=true \
+          --cloud-provider="" \
+          \
+          --container-runtime=rkt \
+          --rkt-path=/opt/bin/rkt \
+          --v=2
+        RestartSec=30s
+        Type=oneshot
+        RemainAfterExit=yes
+
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: kubelet.service
+      enable: true
+      contents: |
+        [Unit]
+        After=kubelet-runonce.service
+        Requires=kubelet-runonce.service
 
         [Service]
         EnvironmentFile=/etc/metadata.env
@@ -200,32 +238,12 @@ systemd:
           --node-ip=${KUBELET_IP} \
           --register-schedulable=true \
           --allow-privileged=true \
-          --api-servers=${K8S_ENDPOINT} \
+          --api-servers=http://127.0.0.1:8080 \
+          --node-labels=node=true \
           --cloud-provider="" \
           \
           --container-runtime=rkt \
           --rkt-path=/opt/bin/rkt \
-          --v=2
-        Restart=always
-        RestartSec=10
-
-        [Install]
-        WantedBy=multi-user.target
-
-    - name: kube-proxy.service
-      enable: false
-      contents: |
-        [Unit]
-        After=fetch-metadata.service
-        After=installs.target
-
-        [Service]
-        EnvironmentFile=/etc/metadata.env
-        ExecStart=/opt/bin/proxy \
-          --masquerade-all \
-          --proxy-mode=iptables \
-          --hostname-override=${KUBELET_IP} \
-          --master=${K8S_ENDPOINT} \
           --v=2
         Restart=always
         RestartSec=10
@@ -249,6 +267,39 @@ systemd:
 
 storage:
   files:
+    - path: /etc/kubernetes/manifests/kube-apiserver.yaml
+      filesystem: root
+      contents:
+        inline: |
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: kube-apiserver
+            namespace: kube-system
+          spec:
+            hostNetwork: true
+            containers:
+            - name: kube-apiserver
+              image: {{.k8s_image_url}}
+              command:
+              - /hyperkube
+              - apiserver
+              - proxy
+              - --bind-address=127.0.0.1
+              - --insecure-bind-address=127.0.0.1
+              - --etcd-servers=http://127.0.0.1:2379
+              - --service-cluster-ip-range={{.k8s_service_cluster_ip_range}}
+              resources:
+                requests:
+                  cpu: 200m
+              livenessProbe:
+                httpGet:
+                  host: 127.0.0.1
+                  port: 8080
+                  path: /healthz
+                initialDelaySeconds: 15
+                timeoutSeconds: 15
+
     - path: /etc/metadata-endpoints.env
       filesystem: root
       mode: 0644

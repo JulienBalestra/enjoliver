@@ -145,12 +145,13 @@ class ConfigSyncSchedules(object):
         """
         if extra_selectors:
             if type(extra_selectors) is dict:
-                self.custom_log(self.get_extra_selectors.__name__, "extra selectors: %s" % extra_selectors)
+                self.custom_log(self.get_extra_selectors.__name__, "extra selectors: %s" % extra_selectors,
+                                level="debug")
                 return extra_selectors
 
             self.custom_log(self.get_extra_selectors.__name__, "invalid extra selectors: %s" % extra_selectors,
                             level="error")
-            raise TypeError("%s is not type dict" % extra_selectors)
+            raise TypeError("%s %s is not type dict" % (extra_selectors, type(extra_selectors)))
 
         self.custom_log(self.get_extra_selectors.__name__, "no extra selectors",
                         level="debug")
@@ -232,6 +233,7 @@ class ConfigSyncSchedules(object):
                     "k8s_apiserver_count": len(machine_roles),
                     "k8s_advertise_ip": "%s" % m["ipv4"],
                     "k8s_image_url": ec.k8s_image_url,
+                    "k8s_service_cluster_ip_range": ec.kubernetes_service_cluster_ip_range,
                     # IPAM
                     "cni": json.dumps(self.cni_ipam(m["cidrv4"], m["gateway"])),
                     "network": {
@@ -279,6 +281,7 @@ class ConfigSyncSchedules(object):
                     "kubelet_name": "%s" % m["ipv4"] if fqdn == automatic_name else fqdn,
                     "k8s_endpoint": self.kubernetes_control_plane,
                     "k8s_image_url": ec.k8s_image_url,
+                    "k8s_service_cluster_ip_range": ec.kubernetes_service_cluster_ip_range,
                     # IPAM
                     "cni": json.dumps(self.cni_ipam(m["cidrv4"], m["gateway"])),
                     "network": {

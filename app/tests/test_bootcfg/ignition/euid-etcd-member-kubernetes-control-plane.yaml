@@ -261,31 +261,11 @@ systemd:
           --register-schedulable=false \
           --allow-privileged=true \
           --api-servers=http://127.0.0.1:8080 \
+          --node-labels=control-plane=true \
           --cloud-provider="" \
           \
           --container-runtime=rkt \
           --rkt-path=/opt/bin/rkt \
-          --v=2
-        Restart=always
-        RestartSec=10
-
-        [Install]
-        WantedBy=multi-user.target
-
-    - name: kube-proxy.service
-      enable: false
-      contents: |
-        [Unit]
-        After=fetch-metadata.service
-        After=installs.target
-
-        [Service]
-        EnvironmentFile=/etc/metadata.env
-        ExecStart=/opt/bin/proxy \
-          --masquerade-all \
-          --proxy-mode=iptables \
-          --hostname-override=${KUBELET_IP} \
-          --master=${K8S_ENDPOINT} \
           --v=2
         Restart=always
         RestartSec=10
@@ -330,7 +310,7 @@ storage:
               - --insecure-bind-address=0.0.0.0
               - --etcd-servers=http://127.0.0.1:2379
               - --allow-privileged=true
-              - --service-cluster-ip-range=172.30.0.0/24
+              - --service-cluster-ip-range={{.k8s_service_cluster_ip_range}}
               - --admission-control=NamespaceLifecycle,LimitRanger,DefaultStorageClass,ResourceQuota
               - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1
               - --enable-swagger-ui=true
