@@ -1,20 +1,23 @@
 import logging
+
 from configs import EnjoliverConfig
 
 formatter = logging.Formatter('\r%(levelname)-7s %(module)-13s %(funcName)s %(message)s')
-
-consoleHandler = logging.StreamHandler()
-consoleHandler.setLevel(logging.INFO)
-consoleHandler.setFormatter(formatter)
 
 ec = EnjoliverConfig()
 
 
 def get_logger(name):
     logger = logging.getLogger(name)
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+
     if ec.logging_level == "DEBUG":
         logger.setLevel(logging.DEBUG)
+        console_handler.setLevel(logging.DEBUG)
     else:
         logger.setLevel(logging.INFO)
-    logger.addHandler(consoleHandler)
+        console_handler.setLevel(logging.INFO)
+
+    logger.addHandler(console_handler)
     return logger
