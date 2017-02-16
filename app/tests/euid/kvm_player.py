@@ -241,7 +241,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     @classmethod
     def set_matchbox(cls):
         cls.p_matchbox = multiprocessing.Process(target=KernelVirtualMachinePlayer.process_target_matchbox,
-                                                name="matchbox")
+                                                 name="matchbox")
         cls.p_matchbox.start()
         time.sleep(0.5)
         assert cls.p_matchbox.is_alive() is True
@@ -389,13 +389,14 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 try:
                     self.virsh(start, assertion=True), os.write(1, "\r")
                     to_start.pop(i)
-                    time.sleep(4)
+                    time.sleep(self.kvm_sleep_between_node)
 
                 except RuntimeError:
                     # virsh raise this
                     pass
 
-            time.sleep(1)
+            time.sleep(self.kvm_sleep_between_node)
+
         self.assertEqual(len(to_start), 0)
 
     def etcd_endpoint_health(self, ips, tries=30):
@@ -417,8 +418,10 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                         os.write(1, "\r-> REMAIN %s for %s\n\r" % (str(ips), self.etcd_endpoint_health.__name__))
 
                 except urllib2.URLError:
-                    os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (t, tries, ip, self.etcd_endpoint_health.__name__))
-                    time.sleep(10)
+                    pass
+                os.write(2,
+                         "\r-> %d/%d NOT READY %s for %s\n\r" % (t, tries, ip, self.etcd_endpoint_health.__name__))
+                time.sleep(self.kvm_sleep_between_node)
 
         self.assertEqual(len(ips), 0)
 
@@ -437,8 +440,9 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     break
 
             except urllib2.URLError:
-                os.write(2, "\r-> %d/%d NOT READY %s for %s \n\r" % (t, tries, ip, self.etcd_member_len.__name__))
-                time.sleep(10)
+                pass
+            os.write(2, "\r-> %d/%d NOT READY %s for %s \n\r" % (t, tries, ip, self.etcd_member_len.__name__))
+            time.sleep(self.kvm_sleep_between_node)
 
         self.assertEqual(len(result["members"]), members_nb)
 
@@ -457,7 +461,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
             except urllib2.URLError:
                 pass
-            os.write(2, "\r-> NOT READY %s %s\n\r" % (ip, self.etcd_member_k8s_minions.__name__))
+            os.write(2, "\r-> %d/%d NOT READY %s %s\n\r" % (t, tries, ip, self.etcd_member_k8s_minions.__name__))
             time.sleep(self.kvm_sleep_between_node)
 
         self.assertEqual(len(result["node"]["nodes"]), nodes_nb)
@@ -482,8 +486,9 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                         os.write(1, "\r-> REMAIN %s for %s\n\r" % (str(ips), self.k8s_api_health.__name__))
 
                 except urllib2.URLError:
-                    os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (t + 1, tries, ip, self.k8s_api_health.__name__))
-                    time.sleep(self.kvm_sleep_between_node)
+                    pass
+                os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (t + 1, tries, ip, self.k8s_api_health.__name__))
+                time.sleep(self.kvm_sleep_between_node)
         self.assertEqual(len(ips), 0)
 
     def create_nginx_deploy(self, api_server_ip):
