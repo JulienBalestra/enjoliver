@@ -144,7 +144,6 @@ systemd:
       contents: |
         [Unit]
         After=install-rkt.service
-        Requires=install-rkt.service
 
         [Service]
         ExecStart=/opt/bin/rkt api-service
@@ -221,7 +220,8 @@ systemd:
       contents: |
         [Unit]
         After=kubelet-runonce.service
-        Requires=kubelet-runonce.service
+        After=rkt-api.service
+        Requires=rkt-api.service
 
         [Service]
         EnvironmentFile=/etc/metadata.env
