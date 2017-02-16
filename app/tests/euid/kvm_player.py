@@ -77,7 +77,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     dev_null = open("/dev/null", "w")
 
     kvm_sleep_between_node = 3
-    wait_setup_teardown = 3
+    wait_setup_teardown = 1.5
 
     os.environ["API_URI"] = api_uri
 
@@ -308,6 +308,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "--local-config=%s" % KernelVirtualMachinePlayer.tests_path,
             "gc",
             "--grace-period=0s"])
+        cls.clean_sandbox()
         cls.pause(cls.wait_setup_teardown)
         cls.write_ending(cls.__name__)
 

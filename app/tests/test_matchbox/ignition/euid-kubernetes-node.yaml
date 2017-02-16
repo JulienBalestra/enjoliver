@@ -144,7 +144,6 @@ systemd:
       contents: |
         [Unit]
         After=install-rkt.service
-        Requires=install-rkt.service
 
         [Service]
         ExecStart=/opt/bin/rkt api-service
@@ -173,6 +172,8 @@ systemd:
         EnvironmentFile=/etc/metadata.env
         Environment=ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379,http://0.0.0.0:4001
         Environment=ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380,http://0.0.0.0:7001
+        RestartSec=60s
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -221,7 +222,8 @@ systemd:
       contents: |
         [Unit]
         After=kubelet-runonce.service
-        Requires=kubelet-runonce.service
+        After=rkt-api.service
+        Requires=rkt-api.service
 
         [Service]
         EnvironmentFile=/etc/metadata.env

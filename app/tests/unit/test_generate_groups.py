@@ -1,11 +1,11 @@
 import os
 from unittest import TestCase
 
-from app import generate_groups
+from app import generator
 
 
 class TestGenerateGroups(TestCase):
-    gen = generate_groups.GenerateGroup
+    gen = generator.GenerateGroup
     unit_path = "%s" % os.path.dirname(__file__)
     tests_path = "%s" % os.path.split(unit_path)[0]
     test_matchbox_path = "%s/test_matchbox" % tests_path
@@ -13,7 +13,7 @@ class TestGenerateGroups(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.gen = generate_groups.GenerateGroup(
+        cls.gen = generator.GenerateGroup(
             api_uri=cls.api_uri,
             _id="etcd-proxy",
             name="etcd-proxy",
@@ -46,7 +46,7 @@ class TestGenerateGroups(TestCase):
             'id': 'etcd-proxy',
             'name': 'etcd-proxy'
         }
-        new = generate_groups.GenerateGroup(
+        new = generator.GenerateGroup(
             api_uri=self.api_uri,
             _id="etcd-proxy",
             name="etcd-proxy",
@@ -61,7 +61,7 @@ class TestGenerateGroups(TestCase):
 
     def test_991_dump(self):
         _id = "etcd-test-%s" % self.test_991_dump.__name__
-        new = generate_groups.GenerateGroup(
+        new = generator.GenerateGroup(
             api_uri=self.api_uri,
             _id=_id,
             name="etcd-test",
@@ -70,11 +70,23 @@ class TestGenerateGroups(TestCase):
         )
         new.dump()
         self.assertTrue(os.path.isfile("%s/groups/%s.json" % (self.test_matchbox_path, _id)))
+        new.dump()
+        self.assertTrue(os.path.isfile("%s/groups/%s.json" % (self.test_matchbox_path, _id)))
+        new = generator.GenerateGroup(
+            api_uri=self.api_uri,
+            _id=_id,
+            name="etcd-test",
+            profile="etcd-test.yaml",
+            matchbox_path=self.test_matchbox_path,
+            selector={"one": "selector"}
+        )
+        new.dump()
+        self.assertTrue(os.path.isfile("%s/groups/%s.json" % (self.test_matchbox_path, _id)))
         os.remove("%s/groups/%s.json" % (self.test_matchbox_path, _id))
 
 
 class TestGenerateGroupsSelectorLower(TestCase):
-    gen = generate_groups.GenerateGroup
+    gen = generator.GenerateGroup
     unit_path = "%s" % os.path.dirname(__file__)
     tests_path = "%s" % os.path.split(unit_path)[0]
     test_matchbox_path = "%s/test_matchbox" % tests_path
@@ -84,7 +96,7 @@ class TestGenerateGroupsSelectorLower(TestCase):
     def setUpClass(cls):
         os.environ["MATCHBOX_URI"] = "http://127.0.0.1:8080"
         os.environ["API_URI"] = "http://127.0.0.1:5000"
-        cls.gen = generate_groups.GenerateGroup(
+        cls.gen = generator.GenerateGroup(
             api_uri=cls.api_uri,
             _id="etcd-proxy",
             name="etcd-proxy",
@@ -129,7 +141,7 @@ class TestGenerateGroupsSelectorLower(TestCase):
             'name': 'etcd-proxy',
             'selector': {'mac': '08:00:27:37:28:2e'}
         }
-        new = generate_groups.GenerateGroup(
+        new = generator.GenerateGroup(
             api_uri=self.api_uri,
             _id="etcd-proxy", name="etcd-proxy", profile="etcd-proxy.yaml",
             selector={"mac": "08:00:27:37:28:2e"},
@@ -140,7 +152,7 @@ class TestGenerateGroupsSelectorLower(TestCase):
 
     def test_991_dump(self):
         _id = "etcd-test-%s" % self.test_991_dump.__name__
-        new = generate_groups.GenerateGroup(
+        new = generator.GenerateGroup(
             api_uri=self.api_uri,
             _id="%s" % _id, name="etcd-test", profile="etcd-test.yaml",
             matchbox_path=self.test_matchbox_path,
@@ -152,7 +164,7 @@ class TestGenerateGroupsSelectorLower(TestCase):
 
 
 class TestGenerateGroupsSelectorUpper(TestCase):
-    gen = generate_groups.GenerateGroup
+    gen = generator.GenerateGroup
     unit_path = "%s" % os.path.dirname(__file__)
     tests_path = "%s" % os.path.split(unit_path)[0]
     test_matchbox_path = "%s/test_matchbox" % tests_path
@@ -162,7 +174,7 @@ class TestGenerateGroupsSelectorUpper(TestCase):
     def setUpClass(cls):
         os.environ["MATCHBOX_URI"] = "http://127.0.0.1:8080"
         os.environ["API_URI"] = "http://127.0.0.1:5000"
-        cls.gen = generate_groups.GenerateGroup(
+        cls.gen = generator.GenerateGroup(
             api_uri=cls.api_uri,
             _id="etcd-proxy",
             name="etcd-proxy",
@@ -201,7 +213,7 @@ class TestGenerateGroupsSelectorUpper(TestCase):
             'name': 'etcd-proxy',
             'selector': {'mac': '08:00:27:37:28:2e'}
         }
-        new = generate_groups.GenerateGroup(
+        new = generator.GenerateGroup(
             api_uri=self.api_uri, _id="etcd-proxy",
             name="etcd-proxy",
             profile="etcd-proxy.yaml",
@@ -214,7 +226,7 @@ class TestGenerateGroupsSelectorUpper(TestCase):
 
     def test_991_dump(self):
         _id = "etcd-test-%s" % self.test_991_dump.__name__
-        new = generate_groups.GenerateGroup(
+        new = generator.GenerateGroup(
             api_uri=self.api_uri,
             _id="%s" % _id, name="etcd-test", profile="etcd-test.yaml",
             matchbox_path=self.test_matchbox_path,
@@ -226,7 +238,7 @@ class TestGenerateGroupsSelectorUpper(TestCase):
 
 
 class TestGenerateGroupsExtraMetadata(TestCase):
-    gen = generate_groups.GenerateGroup
+    gen = generator.GenerateGroup
     unit_path = "%s" % os.path.dirname(__file__)
     tests_path = "%s" % os.path.split(unit_path)[0]
     test_matchbox_path = "%s/test_matchbox" % tests_path
@@ -236,7 +248,7 @@ class TestGenerateGroupsExtraMetadata(TestCase):
     def setUpClass(cls):
         os.environ["MATCHBOX_URI"] = "http://127.0.0.1:8080"
         os.environ["API_URI"] = "http://127.0.0.1:5000"
-        cls.gen = generate_groups.GenerateGroup(
+        cls.gen = generator.GenerateGroup(
             api_uri=cls.api_uri,
             _id="etcd-proxy",
             name="etcd-proxy",
@@ -278,7 +290,7 @@ class TestGenerateGroupsExtraMetadata(TestCase):
             'name': 'etcd-proxy',
             'selector': {'mac': '08:00:27:37:28:2e'}
         }
-        new = generate_groups.GenerateGroup(
+        new = generator.GenerateGroup(
             api_uri=self.api_uri,
             _id="etcd-proxy", name="etcd-proxy", profile="etcd-proxy.yaml",
             selector={"mac": "08:00:27:37:28:2e"},
@@ -290,7 +302,7 @@ class TestGenerateGroupsExtraMetadata(TestCase):
 
     def test_991_dump(self):
         _id = "etcd-test-%s" % self.test_991_dump.__name__
-        new = generate_groups.GenerateGroup(
+        new = generator.GenerateGroup(
             api_uri=self.api_uri,
             _id="%s" % _id, name="etcd-test", profile="etcd-test.yaml",
             matchbox_path=self.test_matchbox_path,

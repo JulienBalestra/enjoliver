@@ -105,17 +105,14 @@ class ChassisPort(Base):
     __tablename__ = 'chassis-port'
     id = Column(Integer, primary_key=True, autoincrement=True)
 
-    mac = Column(String(17), nullable=False)
+    # Some constructor doesn't return a MAC address for the ID of a Port
+    mac = Column(String, nullable=False)
     chassis_id = Column(Integer, ForeignKey('chassis.id'))
 
     machine_interface_id = Column(Integer, ForeignKey('machine-interface.id'))
 
     def __repr__(self):
         return "<%s: mac:%s chassis_mac:%s>" % (ChassisPort.__name__, self.mac, self.chassis_id)
-
-    @validates('mac')
-    def validate_mac(self, key, mac):
-        return mac_regex(mac)
 
 
 class ScheduleRoles(object):

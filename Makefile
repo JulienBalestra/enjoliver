@@ -74,7 +74,14 @@ clean: check_clean
 	make -C matchbox/assets/lldp fclean
 	make -C matchbox/assets/rkt fclean
 
+clean_after_assets:
+	rm -v cni/cni.tar.gz
+	make -C discoveryC clean
+	make -C hyperkube clean
+	make -C lldp clean
+
 check_clean:
+	rm -Rfv env
 	make -C app/tests/ fclean
 
 $(CHECK):

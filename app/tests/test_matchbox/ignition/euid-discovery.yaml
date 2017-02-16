@@ -100,6 +100,7 @@ storage:
 
           # Standards
           REQUEST_RAW_QUERY="{{.request.raw_query}}"
+          NORMALIZED_MAC='"{{.request.query.mac}}"'
 
     - path: /opt/installer
       filesystem: root
@@ -120,7 +121,8 @@ storage:
               curl -f ${API_URI}/ignition?${REQUEST_RAW_QUERY} -o ${NEW_IGNITION}
 
               diff /run/ignition.json ${NEW_IGNITION}
-              if [ $? -eq 1 ]
+              curl -f ${API_URI}/scheduler | jq -e ". | has(${NORMALIZED_MAC})"
+              if [ $? -eq 0 ]
               then
                   udevadm settle
                   systemctl poweroff

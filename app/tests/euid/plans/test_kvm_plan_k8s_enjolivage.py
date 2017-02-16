@@ -4,7 +4,7 @@ import sys
 import time
 import unittest
 
-from app.plans import kubernetes_2tiers
+from app.plans import k8s_2t
 
 try:
     import kvm_player
@@ -35,7 +35,7 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
         os.environ["MATCHBOX_IP"] = "172.20.0.1"
         os.environ["API_IP"] = "172.20.0.1"
 
-        plan_k8s_2t = kubernetes_2tiers.Kubernetes2Tiers(
+        plan_k8s_2t = k8s_2t.Kubernetes2Tiers(
             {
                 "discovery": marker,
                 "etcd_member_kubernetes_control_plane": "%s-%s" % (marker, "etcd-member-control-plane"),

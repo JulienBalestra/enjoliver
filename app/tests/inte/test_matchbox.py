@@ -10,15 +10,15 @@ import time
 
 import sys
 
-from app import generator, generate_common
+from app import generator
 
 
 class IOErrorToWarning(object):
     def __enter__(self):
-        generate_common.GenerateCommon._raise_enof = Warning
+        generator.GenerateCommon._raise_enof = Warning
 
     def __exit__(self, ext, exv, trb):
-        generate_common.GenerateCommon._raise_enof = IOError
+        generator.GenerateCommon._raise_enof = IOError
 
 
 class TestBootConfigCommon(TestCase):
@@ -76,7 +76,7 @@ class TestBootConfigCommon(TestCase):
             os.write(2,
                      "\nWARNING %s override %s in %s\n" %
                      (cls.__name__,
-                      generate_common.GenerateCommon._raise_enof,
+                      generator.GenerateCommon._raise_enof,
                       Warning))
             sys.stderr.flush()
             with IOErrorToWarning():

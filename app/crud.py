@@ -167,7 +167,7 @@ class InjectDiscovery(object):
 
             self._ignition_journal()
         except Exception as e:
-            self.log.error("init raise: %s %s %s %s -> %s" % (step, type(e), e, e.message, self.discovery))
+            self.log.error("raise: %s %s %s %s -> %s" % (step, type(e), e, e.message, self.discovery))
             self.session.close()
             raise
 
@@ -396,7 +396,7 @@ class InjectSchedule(object):
             self.log.error(m)
             self.session.close()
             raise AttributeError(m)
-        self.log.info("init with mac: %s" % self.mac)
+        self.log.info("mac: %s" % self.mac)
 
     def apply_roles(self):
         for role in self.data["roles"]:

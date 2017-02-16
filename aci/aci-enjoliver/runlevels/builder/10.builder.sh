@@ -77,6 +77,9 @@ make acis
 su - enjoliver -c "make assets"
 make validate
 
+make clean_after_assets
+make validate
+
 su - enjoliver -c "make check"
 make validate
 
