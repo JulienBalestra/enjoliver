@@ -1,19 +1,20 @@
 import os
 from unittest import TestCase
 
-from app import generate_profiles, generate_common
+import generator
+from app import generator
 
 
 class IOErrorToWarning(object):
     def __enter__(self):
-        generate_common.GenerateCommon._raise_enof = Warning
+        generator.GenerateCommon._raise_enof = Warning
 
     def __exit__(self, ext, exv, trb):
-        generate_common.GenerateCommon._raise_enof = IOError
+        generator.GenerateCommon._raise_enof = IOError
 
 
 class TestGenerateProfiles(TestCase):
-    gen = generate_profiles.GenerateProfile
+    gen = generator.GenerateProfile
     unit_path = "%s" % os.path.dirname(__file__)
     tests_path = "%s" % os.path.split(unit_path)[0]
     test_matchbox_path = "%s/test_matchbox" % tests_path
@@ -21,16 +22,16 @@ class TestGenerateProfiles(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        generate_common.GenerateCommon._raise_enof = Warning  # Skip the ignition isfile
+        generator.GenerateCommon._raise_enof = Warning  # Skip the ignition isfile
         with IOErrorToWarning():
-            cls.gen = generate_profiles.GenerateProfile(
+            cls.gen = generator.GenerateProfile(
                 api_uri=cls.api_uri,
                 _id="etcd-proxy",
                 name="etcd-proxy",
                 ignition_id="etcd-proxy.yaml",
                 matchbox_path=cls.test_matchbox_path
             )
-        generate_common.GenerateCommon._raise_enof = IOError
+        generator.GenerateCommon._raise_enof = IOError
         cls.gen.profiles_path = "%s/test_resources" % cls.tests_path
 
     def test_01_boot(self):
@@ -70,7 +71,7 @@ class TestGenerateProfiles(TestCase):
             "name": "etcd-proxy"
         }
         with IOErrorToWarning():
-            new = generate_profiles.GenerateProfile(
+            new = generator.GenerateProfile(
                 api_uri=self.api_uri,
                 _id="etcd-proxy",
                 name="etcd-proxy",
@@ -83,7 +84,7 @@ class TestGenerateProfiles(TestCase):
     def test_991_dump(self):
         _id = "etcd-test-%s" % self.test_991_dump.__name__
         with IOErrorToWarning():
-            new = generate_profiles.GenerateProfile(
+            new = generator.GenerateProfile(
                 api_uri=self.api_uri,
                 _id="%s" % _id,
                 name="etcd-test",

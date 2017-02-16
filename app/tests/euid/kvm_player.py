@@ -308,6 +308,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "--local-config=%s" % KernelVirtualMachinePlayer.tests_path,
             "gc",
             "--grace-period=0s"])
+        cls.clean_sandbox()
         cls.pause(cls.wait_setup_teardown)
         cls.write_ending(cls.__name__)
 

@@ -172,6 +172,8 @@ systemd:
         EnvironmentFile=/etc/metadata.env
         Environment=ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379,http://0.0.0.0:4001
         Environment=ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380,http://0.0.0.0:7001
+        RestartSec=60s
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 

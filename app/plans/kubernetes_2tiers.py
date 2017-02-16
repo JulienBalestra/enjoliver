@@ -32,7 +32,7 @@ class Kubernetes2Tiers(object):
         self._sch_k8s_node = schedulerv2.KubernetesNode(self.api_uri, apply_dep=False)
 
         self._sync = sync_matchbox.ConfigSyncSchedules(self.api_uri, self.matchbox_path, self.ignition_dict,
-                                                      extra_selectors)
+                                                       extra_selectors)
 
     def _init_discovery(self):
         gen = generator.Generator(
@@ -80,4 +80,4 @@ if __name__ == '__main__':
     )
     while True:
         k2t.apply()
-        time.sleep(k2t.wait * 2)
+        time.sleep(k2t.wait)

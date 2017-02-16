@@ -1,7 +1,7 @@
 import logging
 from configs import EnjoliverConfig
 
-formatter = logging.Formatter('%(asctime)-8s %(levelname)-5s %(module)-4s %(message)s')
+formatter = logging.Formatter('\r%(levelname)-7s %(module)-13s %(message)s')
 
 consoleHandler = logging.StreamHandler()
 consoleHandler.setLevel(logging.INFO)
