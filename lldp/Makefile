@@ -34,12 +34,12 @@ $(LLDP): install
 	file $(LLDP)
 
 clean:
-	IMAGE=$(CWD)/aci-lldp make -C $(RUNTIME) clean
-	$(RKT) --local-config=$(RUNTIME) image gc --grace-period=0s
+	rm -v $(LLDP) || true
 
 fclean: clean
 	IMAGE=$(ACI)/aci-$(BASE) make -C $(RUNTIME) clean
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) clean
-	rm -v $(LLDP) || true
+	IMAGE=$(CWD)/aci-lldp make -C $(RUNTIME) clean
+	$(RKT) --local-config=$(RUNTIME) image gc --grace-period=0s
 
 re: clean default
