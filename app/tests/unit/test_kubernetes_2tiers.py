@@ -1,7 +1,7 @@
 import os
 from unittest import TestCase
 
-from app.plans import kubernetes_2tiers
+from app.plans import k8s_2t
 
 
 class TestKubernetes2tiers(TestCase):
@@ -24,13 +24,13 @@ class TestKubernetes2tiers(TestCase):
         self.clean_sandbox()
 
     def test_00(self):
-        kubernetes_2tiers.Kubernetes2Tiers(
+        k8s_2t.Kubernetes2Tiers(
             ignition_dict={"discovery": "unit-testkubernetes2tiers-discovery"},
             matchbox_path=self.test_matchbox_path,
             api_uri=self.api_uri,
             extra_selectors={}
         )
-        kubernetes_2tiers.Kubernetes2Tiers(
+        k8s_2t.Kubernetes2Tiers(
             ignition_dict={"discovery": "unit-testkubernetes2tiers-discovery"},
             matchbox_path=self.test_matchbox_path,
             api_uri=self.api_uri,

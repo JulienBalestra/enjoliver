@@ -281,14 +281,14 @@ class ConfigSyncSchedules(object):
 
     def _query_roles(self, *roles):
         roles = "&".join(roles)
-        self.log.debug("%s roles='%s'" % (self._query_roles.__name__, roles))
+        self.log.debug("roles='%s'" % roles)
         r = requests.get("%s/scheduler/%s" % (self.api_uri, roles))
         d = json.loads(r.content)
         r.close()
         return d
 
     def _query_ip_list(self, role):
-        self.log.debug("%s role='%s'" % (self._query_ip_list.__name__, role))
+        self.log.debug("role='%s'" % role)
         r = requests.get("%s/scheduler/ip-list/%s" % (self.api_uri, role))
         d = json.loads(r.content)
         r.close()
