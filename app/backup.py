@@ -6,9 +6,11 @@ import time
 
 from flask import jsonify
 
+import logger
 import s3
 
 libc = ctypes.CDLL("libc.so.6")  # TODO deep inside the SQLITE sync
+LOGGER = logger.get_logger(__file__)
 
 
 def backup_sqlite(cache, application):
@@ -25,6 +27,7 @@ def backup_sqlite(cache, application):
     """
     start = time.time()
     now_rounded = int(math.ceil(start))
+    LOGGER.info("start %s" % now_rounded)
     dest_s3 = "%s/%s.db" % (application.config["BACKUP_BUCKET_DIRECTORY"], now_rounded)
     db_path = application.config["DB_PATH"]
     bucket_name = application.config["BACKUP_BUCKET_NAME"]
@@ -45,35 +48,37 @@ def backup_sqlite(cache, application):
     }
     if cache.get(application.config["BACKUP_LOCK_KEY"]):
         b["already_locked"] = True
+        LOGGER.warning("already_locked")
         return jsonify(b)
 
     try:
         source_st = os.stat(b["source_fs"])
         timeout = math.ceil(source_st.st_size / (1024 * 1024.))
-        application.logger.info("Backup lock key set with timeout == %ss" % timeout)
+        LOGGER.info("Backup lock key set with timeout == %ss" % timeout)
         cache.set(application.config["BACKUP_LOCK_KEY"], b["dest_fs"], timeout=timeout)
         libc.sync()
         shutil.copy2(db_path, b["dest_fs"])
         dest_st = os.stat(b["dest_fs"])
         b["size"], b["copy"] = dest_st.st_size, True
+        LOGGER.info("backup copy done %s size:%s" % (b["dest_fs"], dest_st.st_size))
     except Exception as e:
-        application.logger.error("<%s %s>: %s" % (e, type(e), e.message))
+        LOGGER.error("<%s %s>: %s" % (e, type(e), e.message))
     finally:
         cache.delete(application.config["BACKUP_LOCK_KEY"])
         b["lock_duration"] = time.time() - start
-        application.logger.debug("lock duration: %ss" % b["lock_duration"])
+        LOGGER.debug("lock duration: %ss" % b["lock_duration"])
 
     try:
         if b["copy"] is False:
-            application.logger.error("copy is False: %s" % b["dest_fs"])
+            LOGGER.error("copy is False: %s" % b["dest_fs"])
             raise IOError(b["dest_fs"])
 
         so = s3.S3Operator(b["bucket_name"])
         so.upload(b["dest_fs"], b["dest_s3"])
         b["upload"] = True
     except Exception as e:
-        application.logger.error("<%s %s>: %s" % (e, type(e), e.message))
+        LOGGER.error("<%s %s>: %s" % (e, type(e), e.message))
 
     b["backup_duration"] = time.time() - start
-    application.logger.info("backup duration: %ss" % b["backup_duration"])
+    LOGGER.info("backup duration: %ss" % b["backup_duration"])
     return jsonify(b)

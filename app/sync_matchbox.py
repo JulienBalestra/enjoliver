@@ -41,27 +41,10 @@ class ConfigSyncSchedules(object):
         for k, v in self.ignition_dict.iteritems():
             f = "%s/ignition/%s.yaml" % (self.matchbox_path, v)
             if os.path.isfile(f) is False:
-                self.custom_log(self._ensure_ignition_are_here.__name__, "%s:%s -> %s is not here" % (k, v, f), "error")
+                self.log.error("%s:%s -> %s is not here" % (k, v, f))
                 raise IOError(f)
 
-            self.custom_log(self._ensure_ignition_are_here.__name__, "%s:%s -> %s is here" % (k, v, f), "info")
-
-    def custom_log(self, func_name, message, level="info"):
-        """
-        Custom log method
-        :param func_name: func.__name__
-        :param message: message to display
-        :param level: log level (will be lower() anyway)
-        :return: None
-        """
-        if level.lower() == "debug":
-            self.log.debug("%s.%s %s" % (self.__name__, func_name, message))
-        elif level.lower() == "warning":
-            self.log.warning("%s.%s %s" % (self.__name__, func_name, message))
-        elif level.lower() == "error":
-            self.log.error("%s.%s %s" % (self.__name__, func_name, message))
-        else:
-            self.log.info("%s.%s %s" % (self.__name__, func_name, message))
+            self.log.info("%s:%s -> %s is here" % (k, v, f))
 
     def get_dns_name(self, host_ipv4, default=""):
         """
@@ -74,12 +57,11 @@ class ConfigSyncSchedules(object):
             t = socket.gethostbyaddr(host_ipv4)
             return t[0]
         except socket.herror:
-            self.custom_log(self.get_dns_name.__name__,
-                            "fail to get host by addr %s returning %s" % (host_ipv4, default), "warning")
+            self.log.warning("fail to get host by addr %s returning %s" % (host_ipv4, default))
             return default
 
         except Exception as e:
-            self.custom_log(self.get_dns_name.__name__, "fail to get host by addr: %s %s" % (e, e.message), "error")
+            self.log.error("fail to get host by addr: %s %s" % (e, e.message))
             raise
 
     def get_dns_attr(self, fqdn):
@@ -100,7 +82,7 @@ class ConfigSyncSchedules(object):
         try:
             d["dc"] = s[1]
         except IndexError:
-            self.custom_log(self.get_dns_attr.__name__, "IndexError %s[1] after split(.)" % fqdn, "error")
+            self.log.error("IndexError %s[1] after split(.)" % fqdn)
             return d
         d["domain"] = ".".join(s[1:])
         try:
@@ -108,7 +90,7 @@ class ConfigSyncSchedules(object):
             d["rack"] = re.sub("[^0-9]+", "", rack)
             d["pos"] = re.sub("[^0-9]+", "", pos)
         except ValueError:
-            self.custom_log(self.get_dns_attr.__name__, "error during the split rack/pos %s" % s[0], "error")
+            self.log.error("error during the split rack/pos %s" % s[0])
         return d
 
     @staticmethod
@@ -145,16 +127,13 @@ class ConfigSyncSchedules(object):
         """
         if extra_selectors:
             if type(extra_selectors) is dict:
-                self.custom_log(self.get_extra_selectors.__name__, "extra selectors: %s" % extra_selectors,
-                                level="debug")
+                self.log.debug("extra selectors: %s" % extra_selectors)
                 return extra_selectors
 
-            self.custom_log(self.get_extra_selectors.__name__, "invalid extra selectors: %s" % extra_selectors,
-                            level="error")
+            self.log.error("invalid extra selectors: %s" % extra_selectors)
             raise TypeError("%s %s is not type dict" % (extra_selectors, type(extra_selectors)))
 
-        self.custom_log(self.get_extra_selectors.__name__, "no extra selectors",
-                        level="debug")
+        self.log.debug("no extra selectors")
         return {}
 
     @property
