@@ -28,7 +28,7 @@ build: $(BUILDER_ENJOLIVER)
 	@echo ENV IMAGE=$(ACI)/aci-enjoliver
 	IMAGE=$(ACI)/aci-enjoliver make -C $(RUNTIME) build
 
-install: $(BUILDER_ENJOLIVER)
+install: build
 	@echo ENV IMAGE=$(ACI)/aci-enjoliver
 	IMAGE=$(ACI)/aci-enjoliver make -C $(RUNTIME) install
 
