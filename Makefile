@@ -19,7 +19,7 @@ help:
 	@echo make validate
 	@echo
 	@echo All in one:
-	@echo sudo MY_USER= setup
+	@echo sudo MY_USER= make setup
 	@echo ----------------------
 	@echo Testing:
 	@echo make $(CHECK)
