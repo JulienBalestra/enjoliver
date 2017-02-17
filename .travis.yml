@@ -10,7 +10,7 @@ sudo: required
 dist: trusty
 
 before_install:
-  - sudo apt-get update -q || true
+  - sudo apt-get update -qq
 
 install:
   - sudo make apt
