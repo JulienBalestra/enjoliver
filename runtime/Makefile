@@ -41,8 +41,10 @@ ac: $(ACSERVER)
 
 $(ACSERVER):
 	cd $(ACSERVER_DIR) && ln -sfv vendor src
-	cd $(ACSERVER_DIR) &&  GOPATH=$(ACSERVER_DIR) ./gomake || true
+	cd $(ACSERVER_DIR) && mkdir -pv dist src/github.com/appc/acserver
 	cd $(ACSERVER_DIR) && ln -sfv $(ACSERVER_DIR)/dist src/github.com/appc/acserver/dist
+	cd $(ACSERVER_DIR) &&  GOPATH=$(ACSERVER_DIR) go get golang.org/x/tools/cmd/goimports
+	cd $(ACSERVER_DIR) &&  GOPATH=$(ACSERVER_DIR) PATH=GOPATH=$(ACSERVER_DIR)/bin/$(PATH) ./gomake || true
 	cd $(ACSERVER_DIR) && GOPATH=$(ACSERVER_DIR) go build
 
 $(MATCHBOX_DOWNLOAD_TAR):
@@ -86,7 +88,7 @@ build: $(DGR) $(RKT)
 	@echo ENV eg: IMAGE=$(CWD)/../aci/debian
 	test $(IMAGE)
 	$(DGR) -H $(CWD) config
-	$(DGR) -H $(CWD) build -W $(IMAGE) -k
+	$(DGR) -H $(CWD) build -W $(IMAGE) -k -c
 	$(RKT) --local-config=$(CWD) gc --grace-period=24h
 
 install: $(DGR) $(RKT)
