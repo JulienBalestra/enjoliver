@@ -353,6 +353,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         cls.clean_sandbox()
         cls.pause(cls.wait_setup_teardown)
         cls.write_ending(cls.__name__)
+        subprocess.check_output(["reset", "-q"])
 
     @staticmethod
     def write_ending(message):
@@ -385,6 +386,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 raise
 
     def setUp(self):
+        subprocess.call(["reset", "-q"])
         self.clean_sandbox()
         self.api_healthz()
 
