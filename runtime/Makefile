@@ -44,7 +44,7 @@ $(ACSERVER):
 	cd $(ACSERVER_DIR) && mkdir -pv dist src/github.com/appc/acserver
 	cd $(ACSERVER_DIR) && ln -sfv $(ACSERVER_DIR)/dist src/github.com/appc/acserver/dist
 	cd $(ACSERVER_DIR) &&  GOPATH=$(ACSERVER_DIR) go get golang.org/x/tools/cmd/goimports
-	cd $(ACSERVER_DIR) &&  GOPATH=$(ACSERVER_DIR) PATH=GOPATH=$(ACSERVER_DIR)/bin/$(PATH) ./gomake || true
+	cd $(ACSERVER_DIR) &&  GOPATH=$(ACSERVER_DIR) PATH=$(ACSERVER_DIR)/bin/:$(PATH) ./gomake || true
 	cd $(ACSERVER_DIR) && GOPATH=$(ACSERVER_DIR) go build
 
 $(MATCHBOX_DOWNLOAD_TAR):
