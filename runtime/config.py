@@ -58,9 +58,11 @@ def acserver_config(path):
         for l in f:
             if "enjoliver.local" in l:
                 return
-
-    with open("/etc/hosts", 'a') as f:
-        f.write("127.0.0.1 enjoliver.local # added by %s\n" % os.path.abspath(__file__))
+    try:
+        with open("/etc/hosts", 'a') as f:
+            f.write("127.0.0.1 enjoliver.local # added by %s\n" % os.path.abspath(__file__))
+    except IOError:
+        os.write(2, "/etc/hosts ignore: run as sudo")
 
 
 if __name__ == "__main__":
