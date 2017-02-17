@@ -4,3 +4,6 @@
 [submodule "cni"]
 	path = cni
 	url = https://github.com/containernetworking/cni.git
+[submodule "runtime/acserver"]
+	path = runtime/acserver
+	url = https://github.com/JulienBalestra/acserver.git

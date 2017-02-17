@@ -31,7 +31,19 @@ MATCHBOX=$(MATCHBOX_DIR)/matchbox
 MATCHBOX_DOWNLOAD_TAR=$(MATCHBOX_DIR)/$(MATCHBOX_TAR)
 
 
+# ACSERVER
+ACSERVER_DIR=$(CWD)/acserver
+ACSERVER=$(ACSERVER_DIR)/acserver
+
 default: setup
+
+ac: $(ACSERVER)
+
+$(ACSERVER):
+	cd $(ACSERVER_DIR) && ln -sfv vendor src
+	cd $(ACSERVER_DIR) &&  GOPATH=$(ACSERVER_DIR) ./gomake || true
+	cd $(ACSERVER_DIR) && ln -sfv $(ACSERVER_DIR)/dist src/github.com/appc/acserver/dist
+	cd $(ACSERVER_DIR) && GOPATH=$(ACSERVER_DIR) go build
 
 $(MATCHBOX_DOWNLOAD_TAR):
 	mkdir -pv $(MATCHBOX_DIR)
@@ -62,7 +74,7 @@ $(RKT): $(RKT_DOWNLOAD_TAR)
 	$(RKT) --local-config=$(CWD) image list
 
 
-setup: $(MATCHBOX) $(RKT) $(DGR)
+setup: $(MATCHBOX) $(RKT) $(DGR) $(ACSERVER)
 
 gc:
 	$(RKT) --local-config=$(CWD) gc --grace-period=0s
@@ -71,28 +83,33 @@ gci:
 	$(RKT) --local-config=$(CWD) image gc --grace-period=0s
 
 build: $(DGR) $(RKT)
-	@echo ENV eg: IMAGE=$(CWD)/../aci/aci-base
+	@echo ENV eg: IMAGE=$(CWD)/../aci/debian
 	test $(IMAGE)
 	$(DGR) -H $(CWD) config
-	$(DGR) -H $(CWD) build -W $(IMAGE)
-	$(RKT) --local-config=$(CWD) image list
+	$(DGR) -H $(CWD) build -W $(IMAGE) -k
 	$(RKT) --local-config=$(CWD) gc --grace-period=0s
 
 install: $(DGR) $(RKT)
-	@echo ENV eg: IMAGE=$(CWD)/../aci/aci-base
+	@echo ENV eg: IMAGE=$(CWD)/../aci/debian
 	test $(IMAGE)
 	$(DGR) -H $(CWD) install -W $(IMAGE)
 	$(RKT) --local-config=$(CWD) image list
 
+push: $(DGR) $(RKT)
+	@echo ENV eg: IMAGE=$(CWD)/../aci/debian
+	test $(IMAGE)
+	$(DGR) -H $(CWD) push -W $(IMAGE)
+
 test: $(DGR) $(RKT)
-	@echo ENV eg: IMAGE=$(CWD)/../aci/aci-base
+	@echo ENV eg: IMAGE=$(CWD)/../aci/debian
 	test $(IMAGE)
 	$(DGR) -H $(CWD) test -W $(IMAGE)
 
 clean: $(DGR)
-	@echo ENV eg: IMAGE=$(CWD)/../aci/aci-base
+	@echo ENV eg: IMAGE=$(CWD)/../aci/debian
 	test $(IMAGE)
 	$(DGR) -H $(CWD) clean -W $(IMAGE)
+	$(RKT) --local-config=$(CWD) gc --grace-period=0s
 	$(RKT) --local-config=$(CWD) image gc --grace-period=0s
 	$(RKT) --local-config=$(CWD) image list
 
@@ -104,4 +121,4 @@ fclean:
 	rm -Rf renders/*.render || true
 	rm -Rf target || true
 
-.PHONY: $(DGR) $(RKT) setup build install clean fclean
+.PHONY: $(DGR) $(RKT) $(ACSERVER) setup build install clean fclean

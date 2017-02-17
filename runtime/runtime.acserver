@@ -8,4 +8,4 @@ then
 fi
 set -x
 ${sudo} ${cwd}/config.py
-${sudo} ${cwd}/rkt/rkt --local-config=${cwd} $@
+${sudo} ${cwd}/acserver/acserver ac-config.yml
