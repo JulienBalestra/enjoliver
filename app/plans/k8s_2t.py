@@ -13,6 +13,8 @@ except ImportError:
 import schedulerv2
 import sync_matchbox
 
+from configs import EnjoliverConfig
+
 
 class Kubernetes2Tiers(object):
     wait = 10
@@ -35,12 +37,17 @@ class Kubernetes2Tiers(object):
                                                        extra_selectors)
 
     def _init_discovery(self):
+        local_ec = EnjoliverConfig()
         gen = generator.Generator(
             api_uri=self.api_uri,
             profile_id="discovery",
             name="discovery",
             ignition_id="%s.yaml" % self.ignition_dict["discovery"],
-            matchbox_path=self.matchbox_path
+            matchbox_path=self.matchbox_path,
+            extra_metadata={
+                "hyperkube_image_url": local_ec.lldp_image_url,
+                "etc_hosts": local_ec.etc_hosts,
+            }
         )
         gen.dumps()
 
@@ -65,8 +72,6 @@ class Kubernetes2Tiers(object):
 
 
 if __name__ == '__main__':
-    from configs import EnjoliverConfig
-
     wait = 60
 
     ec = EnjoliverConfig()

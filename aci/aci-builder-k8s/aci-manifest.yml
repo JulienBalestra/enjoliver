@@ -1,4 +1,4 @@
-name: static-aci-builder-k8s:0
+name: enjoliver.local/builder-k8s:latest
 aci:
   dependencies:
-    - static-aci-debian:8
+    - enjoliver.local/debian:latest

@@ -62,9 +62,6 @@ assets:
 	make -C matchbox/assets/fleet serve
 	# Self
 	make -C matchbox/assets/discoveryC
-	# Depends on .acis
-	make -C matchbox/assets/lldp
-	make -C matchbox/assets/hyperkube
 
 clean: check_clean
 	make -C matchbox/assets/cni fclean

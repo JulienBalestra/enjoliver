@@ -196,6 +196,7 @@ class ConfigSyncSchedules(object):
                 matchbox_path=self.matchbox_path,
                 selector=selector,
                 extra_metadata={
+                    "etc_hosts": ec.etc_hosts,
                     # Etcd
                     "etcd_name": m["ipv4"],
                     "etcd_initial_cluster": self.etcd_initial_cluster,
@@ -211,7 +212,7 @@ class ConfigSyncSchedules(object):
                     "kubelet_name": "%s" % m["ipv4"] if fqdn == automatic_name else fqdn,
                     "k8s_apiserver_count": len(machine_roles),
                     "k8s_advertise_ip": "%s" % m["ipv4"],
-                    "k8s_image_url": ec.k8s_image_url,
+                    "hyperkube_image_url": ec.hyperkube_image_url,
                     "k8s_service_cluster_ip_range": ec.kubernetes_service_cluster_ip_range,
                     # IPAM
                     "cni": json.dumps(self.cni_ipam(m["cidrv4"], m["gateway"])),
@@ -247,6 +248,7 @@ class ConfigSyncSchedules(object):
                 matchbox_path=self.matchbox_path,
                 selector=selector,
                 extra_metadata={
+                    "etc_hosts": ec.etc_hosts,
                     # Etcd
                     "etcd_initial_cluster": self.etcd_initial_cluster,
                     "etcd_advertise_client_urls": "http://%s:%d" % (
@@ -259,7 +261,7 @@ class ConfigSyncSchedules(object):
                     "kubelet_ip": "%s" % m["ipv4"],
                     "kubelet_name": "%s" % m["ipv4"] if fqdn == automatic_name else fqdn,
                     "k8s_endpoint": self.kubernetes_control_plane,
-                    "k8s_image_url": ec.k8s_image_url,
+                    "hyperkube_image_url": ec.hyperkube_image_url,
                     "k8s_service_cluster_ip_range": ec.kubernetes_service_cluster_ip_range,
                     # IPAM
                     "cni": json.dumps(self.cni_ipam(m["cidrv4"], m["gateway"])),

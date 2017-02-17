@@ -56,9 +56,9 @@ matchbox/assets/setup-network-environment/1.0.1/
 *.bundle
 /discoveryC/dist/
 /aci/aci-enjoliver/target/
-/release/enjoliver.render/
+/enjoliver/enjoliver.render/
 /app/ignition_journal/
-/release/ignition-journal/
+/enjoliver/ignition-journal/
 /app/tests/unit/test_resources/
 /app/tests/unit/test_resources/test_00/
 /app/tests/unit/unittest_resources/test_00
@@ -66,11 +66,11 @@ matchbox/assets/setup-network-environment/1.0.1/
 /app/tests/unit/unittest_resources/test_00.downloaded
 /app/tests/inte/dbs/testapiadvanced.sqlite*.bak
 /app/tests/inte/test_resources/
-/release/db.sqlite-*.bak
+/enjoliver/db.sqlite-*.bak
 *.sqlite-*.bak
-/release/var_lib_matchbox/groups/*.json
-/release/var_lib_matchbox/profiles/*.json
-/release/var_lib_enjoliver/ignition-journal/
+/enjoliver/var_lib_matchbox/groups/*.json
+/enjoliver/var_lib_matchbox/profiles/*.json
+/enjoliver/var_lib_enjoliver/ignition-journal/
 /runtime/rkt/
 /runtime/dgr/
 /runtime/config.yml

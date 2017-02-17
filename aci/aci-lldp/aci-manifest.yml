@@ -1,4 +1,11 @@
-name: static-aci-lldp:0
+name: enjoliver.local/lldp:latest
 aci:
   dependencies:
-    - static-aci-debian:8
+    - enjoliver.local/debian:latest
+
+  app:
+    exec: ["/usr/sbin/lldpd", "-ddd"]
+
+    mountPoints:
+      - name: socket
+        path: /var/run
