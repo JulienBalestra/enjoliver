@@ -78,7 +78,7 @@ clean_after_assets:
 	make -C lldp clean
 
 check_clean:
-	rm -Rfv env
+	rm -Rf env
 	make -C app/tests/ fclean
 
 $(CHECK):
