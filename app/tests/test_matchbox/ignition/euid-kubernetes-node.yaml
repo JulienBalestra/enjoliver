@@ -213,8 +213,7 @@ systemd:
           --rkt-path=/opt/bin/rkt \
           --v=2
         RestartSec=10s
-        Type=oneshot
-        RemainAfterExit=yes
+        Restart=on-failure
 
         [Install]
         WantedBy=multi-user.target

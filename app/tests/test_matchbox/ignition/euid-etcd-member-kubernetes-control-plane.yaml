@@ -108,6 +108,7 @@ systemd:
         [Unit]
         Requires=network-online.target
         After=network-online.target
+        After=install-rkt.service
         AssertFileIsExecutable=!/opt/bin/hyperkube
         [Service]
         Type=oneshot
@@ -231,8 +232,7 @@ systemd:
           --rkt-path=/opt/bin/rkt \
           --v=2
         RestartSec=10s
-        Type=oneshot
-        RemainAfterExit=yes
+        Restart=on-failure
 
         [Install]
         WantedBy=multi-user.target
