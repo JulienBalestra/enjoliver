@@ -87,7 +87,7 @@ build: $(DGR) $(RKT)
 	test $(IMAGE)
 	$(DGR) -H $(CWD) config
 	$(DGR) -H $(CWD) build -W $(IMAGE) -k
-	$(RKT) --local-config=$(CWD) gc --grace-period=0s
+	$(RKT) --local-config=$(CWD) gc --grace-period=24h
 
 install: $(DGR) $(RKT)
 	@echo ENV eg: IMAGE=$(CWD)/../aci/debian
