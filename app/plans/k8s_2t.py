@@ -45,7 +45,7 @@ class Kubernetes2Tiers(object):
             ignition_id="%s.yaml" % self.ignition_dict["discovery"],
             matchbox_path=self.matchbox_path,
             extra_metadata={
-                "hyperkube_image_url": local_ec.lldp_image_url,
+                "lldp_image_url": local_ec.lldp_image_url,
                 "etc_hosts": local_ec.etc_hosts,
             }
         )
