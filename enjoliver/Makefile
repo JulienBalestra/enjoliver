@@ -9,8 +9,7 @@ DEBIAN=debian
 BUILDER_K8S=builder-k8s
 BUILDER_ENJOLIVER=builder-enjoliver
 
-default: test
-
+default: push
 
 $(DEBIAN):
 	@echo ENV IMAGE=$(ACI)/aci-$(DEBIAN)
