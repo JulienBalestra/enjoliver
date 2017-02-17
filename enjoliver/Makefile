@@ -6,39 +6,39 @@ RKT=$(RUNTIME)/rkt/rkt
 ACI=$(PROJECT)/aci
 
 DEBIAN=debian
+BUILDER_K8S=builder-k8s
+BUILDER_ENJOLIVER=builder-enjoliver
 
-ENJOLIVER_VERSION=0
-ENJOLIVER=static-aci-enjoliver-$(ENJOLIVER_VERSION).aci
-
-ENJOLIVER_IMAGE=static-aci-enjoliver:$(ENJOLIVER_VERSION)
-
-RENDERS=$(RUNTIME)/renders
-SQUASH=$(RENDERS)/squash_manifest.py
-ENJOLIVER_RENDER=$(RENDERS)/enjoliver.render
-
-
-default: $(ENJOLIVER)
+default: test
 
 
 $(DEBIAN):
 	@echo ENV IMAGE=$(ACI)/aci-$(DEBIAN)
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) install
 
-install: $(DEBIAN)
+$(BUILDER_K8S): $(DEBIAN)
+	@echo ENV IMAGE=$(ACI)/aci-$(BUILDER_K8S)
+	IMAGE=$(ACI)/aci-$(BUILDER_K8S) make -C $(RUNTIME) install
+
+$(BUILDER_ENJOLIVER): $(BUILDER_K8S)
+	@echo ENV IMAGE=$(ACI)/aci-$(BUILDER_K8S)
+	IMAGE=$(ACI)/aci-$(BUILDER_ENJOLIVER) make -C $(RUNTIME) install
+
+build: $(BUILDER_ENJOLIVER)
 	@echo ENV IMAGE=$(ACI)/aci-enjoliver
-	IMAGE=$(ACI)/aci-enjoliver make -C $(RUNTIME) test
+	IMAGE=$(ACI)/aci-enjoliver make -C $(RUNTIME) build
+
+install: $(BUILDER_ENJOLIVER)
+	@echo ENV IMAGE=$(ACI)/aci-enjoliver
 	IMAGE=$(ACI)/aci-enjoliver make -C $(RUNTIME) install
 
-test: $(DEBIAN)
+test: install
 	@echo ENV IMAGE=$(ACI)/aci-enjoliver
 	IMAGE=$(ACI)/aci-enjoliver make -C $(RUNTIME) test
 
-$(ENJOLIVER): install
-	$(RKT) --local-config=$(RUNTIME) image render $(ENJOLIVER_IMAGE) $(ENJOLIVER_RENDER) --overwrite
-	chmod +r $(ENJOLIVER_RENDER)/manifest
-	$(SQUASH) $(ENJOLIVER_RENDER)/manifest
-	tar -C $(ENJOLIVER_RENDER) -cf $(ENJOLIVER) manifest rootfs
-	file $(ENJOLIVER)
+push: test
+	@echo ENV IMAGE=$(ACI)/aci-enjoliver
+	IMAGE=$(ACI)/aci-enjoliver make -C $(RUNTIME) push
 
 clean:
 	IMAGE=$(ACI)/aci-enjoliver make -C $(RUNTIME) clean

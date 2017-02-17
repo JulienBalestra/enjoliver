@@ -102,8 +102,8 @@ validate:
 runner:
 	make -C runtime
 
-release_aci:
-	make -C release
+enjoliver_aci:
+	make -C enjoliver
 
 front:
 	make -C app/static
