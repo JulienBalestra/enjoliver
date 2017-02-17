@@ -2,7 +2,7 @@ name: enjoliver.local/hyperkube:latest
 
 builder:
   dependencies:
-    - enjoliver.local/builder-k8s:latest
+    - enjoliver.local/builder-hyperkube:latest
 
   mountPoints:
     - {from: ../../, to: /opt/source-project}

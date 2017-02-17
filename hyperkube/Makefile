@@ -8,7 +8,7 @@ ACI=$(PROJECT)/aci
 HYPERKUBE_BIN=hyperkube
 
 DEBIAN=debian
-BUILDER_K8S=builder-k8s
+BUILDER_HYPERKUBE=builder-hyperkube
 HYPERKUBE=hyperkube
 
 
@@ -19,17 +19,17 @@ $(DEBIAN):
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) install
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) push
 
-$(BUILDER_K8S): $(DEBIAN)
-	@echo ENV IMAGE=$(ACI)/aci-$(BUILDER_K8S)
-	IMAGE=$(ACI)/aci-$(BUILDER_K8S) make -C $(RUNTIME) install
+$(BUILDER_HYPERKUBE): $(DEBIAN)
+	@echo ENV IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE)
+	IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE) make -C $(RUNTIME) install
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) push
 
-$(HYPERKUBE_BIN): $(BUILDER_K8S)
+$(HYPERKUBE_BIN): $(BUILDER_HYPERKUBE)
 	@echo ENV IMAGE=$(ACI)/aci-hyperkube
 	IMAGE=$(ACI)/aci-hyperkube make -C $(RUNTIME) build
 	ls -lh $(HYPERKUBE_BIN)
 
-install: $(DEBIAN) $(BUILDER_K8S)
+install: $(DEBIAN) $(BUILDER_HYPERKUBE)
 	@echo ENV IMAGE=$(ACI)/aci-hyperkube
 	IMAGE=$(ACI)/aci-hyperkube make -C $(RUNTIME) install
 
@@ -50,6 +50,6 @@ clean: gc
 	IMAGE=$(ACI)/aci-hyperkube make -C $(RUNTIME) clean
 
 fclean: clean
-	IMAGE=$(CWD)/aci-$(BUILDER_K8S) make -C $(RUNTIME) clean
+	IMAGE=$(CWD)/aci-$(BUILDER_HYPERKUBE) make -C $(RUNTIME) clean
 
 re: clean $(HYPERKUBE)

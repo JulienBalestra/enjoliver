@@ -8,4 +8,4 @@ then
 fi
 set -x
 ${sudo} ${cwd}/config.py
-${sudo} ${cwd}/acserver/acserver ac-config.yml
+${sudo} ${cwd}/acserver/acserver ${cwd}/ac-config.yml

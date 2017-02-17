@@ -1,4 +1,4 @@
-name: enjoliver.local/builder-k8s:latest
+name: enjoliver.local/builder-hyperkube:latest
 aci:
   dependencies:
     - enjoliver.local/debian:latest

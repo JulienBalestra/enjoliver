@@ -46,8 +46,13 @@ pip: $(ENV)
 
 acis:
 	test $(shell id -u -r) -eq 0
+	# Check if the port is available
+	curl 127.0.0.1 && exit 1 || true
+	./runtime/runtime.acserver &
 	make -C lldp
 	make -C hyperkube
+	# Stop the acserver without extended option
+	ps | grep acserver | cut -f1 -d ' ' | xargs -t kill
 
 assets:
 	make -C matchbox/assets/coreos

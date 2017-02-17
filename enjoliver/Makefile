@@ -6,7 +6,7 @@ RKT=$(RUNTIME)/rkt/rkt
 ACI=$(PROJECT)/aci
 
 DEBIAN=debian
-BUILDER_K8S=builder-k8s
+BUILDER_HYPERKUBE=builder-hyperkube
 BUILDER_ENJOLIVER=builder-enjoliver
 
 default: push
@@ -15,12 +15,12 @@ $(DEBIAN):
 	@echo ENV IMAGE=$(ACI)/aci-$(DEBIAN)
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) install
 
-$(BUILDER_K8S): $(DEBIAN)
-	@echo ENV IMAGE=$(ACI)/aci-$(BUILDER_K8S)
-	IMAGE=$(ACI)/aci-$(BUILDER_K8S) make -C $(RUNTIME) install
+$(BUILDER_HYPERKUBE): $(DEBIAN)
+	@echo ENV IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE)
+	IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE) make -C $(RUNTIME) install
 
-$(BUILDER_ENJOLIVER): $(BUILDER_K8S)
-	@echo ENV IMAGE=$(ACI)/aci-$(BUILDER_K8S)
+$(BUILDER_ENJOLIVER): $(BUILDER_HYPERKUBE)
+	@echo ENV IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE)
 	IMAGE=$(ACI)/aci-$(BUILDER_ENJOLIVER) make -C $(RUNTIME) install
 
 build: $(BUILDER_ENJOLIVER)

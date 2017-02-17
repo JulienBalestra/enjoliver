@@ -21,7 +21,7 @@ install: $(DEBIAN)
 	@echo ENV IMAGE=$(ACI)/aci-lldp
 	IMAGE=$(ACI)/aci-$(LLDP) make -C $(RUNTIME) install
 
-push:
+push: $(DEBIAN)
 	IMAGE=$(ACI)/aci-$(LLDP) make -C $(RUNTIME) push
 
 clean:
