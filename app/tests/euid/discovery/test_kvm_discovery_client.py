@@ -172,6 +172,7 @@ class TestKVMDiscoveryClient02(TestKVMDiscoveryClient):
     @classmethod
     def setUpClass(cls):
         cls.check_requirements()
+        cls.set_acserver()
         cls.set_rack0()
         cls.set_api()
         cls.set_matchbox()
@@ -188,7 +189,12 @@ class TestKVMDiscoveryClient02(TestKVMDiscoveryClient):
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
-            matchbox_path=self.test_matchbox_path
+            matchbox_path=self.test_matchbox_path,
+            extra_metadata={
+                "lldp_image_url": self.ec.lldp_image_url,
+                "etc_hosts": self.ec.etc_hosts,
+
+            }
         )
         gen.dumps()
 
@@ -247,6 +253,7 @@ class TestKVMDiscoveryClient03(TestKVMDiscoveryClient):
     @classmethod
     def setUpClass(cls):
         cls.check_requirements()
+        cls.set_acserver()
         cls.set_rack0()
         cls.set_api()
         cls.set_matchbox()
@@ -264,7 +271,11 @@ class TestKVMDiscoveryClient03(TestKVMDiscoveryClient):
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
-            matchbox_path=self.test_matchbox_path
+            matchbox_path=self.test_matchbox_path,
+            extra_metadata={
+                "lldp_image_url": self.ec.lldp_image_url,
+                "etc_hosts": self.ec.etc_hosts,
+            }
         )
         gen.dumps()
 
@@ -317,6 +328,8 @@ class TestKVMDiscoveryClient03(TestKVMDiscoveryClient):
 
             self.write_ending(marker)
         finally:
+            if os.getenv("TEST"):
+                self.iteractive_usage()
             for i in xrange(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
@@ -341,7 +354,11 @@ class TestKVMDiscoveryClient04(TestKVMDiscoveryClient):
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
-            matchbox_path=self.test_matchbox_path
+            matchbox_path=self.test_matchbox_path,
+            extra_metadata={
+                "lldp_image_url": self.ec.lldp_image_url,
+                "etc_hosts": self.ec.etc_hosts,
+            }
         )
         gen.dumps()
 
@@ -400,7 +417,11 @@ class TestKVMDiscoveryClient05(TestKVMDiscoveryClient):
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
-            matchbox_path=self.test_matchbox_path
+            matchbox_path=self.test_matchbox_path,
+            extra_metadata={
+                "lldp_image_url": self.ec.lldp_image_url,
+                "etc_hosts": self.ec.etc_hosts,
+            }
         )
         gen.dumps()
 
@@ -472,7 +493,11 @@ class TestKVMDiscoveryClient06(TestKVMDiscoveryClient):
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
-            matchbox_path=self.test_matchbox_path
+            matchbox_path=self.test_matchbox_path,
+            extra_metadata={
+                "lldp_image_url": self.ec.lldp_image_url,
+                "etc_hosts": self.ec.etc_hosts,
+            }
         )
         gen.dumps()
 
@@ -539,4 +564,4 @@ class TestKVMDiscoveryClient06(TestKVMDiscoveryClient):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main(defaultTest=os.getenv("TEST"))

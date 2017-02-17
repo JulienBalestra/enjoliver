@@ -108,13 +108,18 @@ systemd:
         [Unit]
         Requires=network-online.target
         After=network-online.target
+        After=install-rkt.service
         AssertFileIsExecutable=!/opt/bin/hyperkube
         [Service]
         Type=oneshot
         EnvironmentFile=/etc/metadata-endpoints.env
         Environment=FULL_PATH_DIR_HYPERKUBE=/opt/bin
         Environment=FULL_PATH_HYPERKUBE=/opt/bin/hyperkube
-        ExecStart=/opt/bin/install-hyperkube
+        ExecStartPre=/opt/rkt/rkt fetch --insecure-options=all {{.hyperkube_image_url}}
+        ExecStartPre=/opt/rkt/rkt image extract --rootfs-only --overwrite {{.hyperkube_image_url}} /tmp/hyperkube
+        ExecStartPre=/bin/cp -v /tmp/hyperkube/hyperkube /opt/bin/hyperkube
+        ExecStart=/bin/bash -c 'cd /opt/bin && ./hyperkube --make-symlinks'
+
         ExecReload=-/bin/rm -v $FULL_PATH_HYPERKUBE \
           ${FULL_PATH_DIR_HYPERKUBE}/apiserver \
           ${FULL_PATH_DIR_HYPERKUBE}/controller-manager \
@@ -191,9 +196,6 @@ systemd:
         Environment=MANIFESTS=/etc/kubernetes/manifests
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
         ExecStartPre=/bin/mkdir -pv $MANIFESTS
-        # Dev
-        ExecStartPre=/usr/bin/rkt fetch --insecure-options=all \
-          ${API_URI}/assets/hyperkube/serve/static-aci-hyperkube-0.aci
         ExecStart=/opt/bin/kubelet \
           \
           --network-plugin=cni \
@@ -210,7 +212,7 @@ systemd:
           --container-runtime=rkt \
           --rkt-path=/opt/bin/rkt \
           --v=2
-        RestartSec=30s
+        RestartSec=10s
         Type=oneshot
         RemainAfterExit=yes
 
@@ -301,7 +303,7 @@ storage:
             hostNetwork: true
             containers:
             - name: kube-apiserver
-              image: {{.k8s_image_url}}
+              image: {{.hyperkube_image_url}}
               command:
               - /hyperkube
               - apiserver
@@ -425,43 +427,6 @@ storage:
           else
               exit 0
           fi
-
-    - path: /opt/bin/install-hyperkube
-      filesystem: root
-      mode: 0544
-      contents:
-        inline: |
-          #!/bin/bash
-          set -xv
-
-          function is_var {
-              if [ -z $1 ]
-              then
-                  echo 'Variable name have to be in $1' >&2
-                  exit 1
-              fi
-              if [ -z $2 ]
-              then
-                  echo "Variable $1 have to be set" >&2
-                  exit 1
-              fi
-
-          }
-
-          is_var FULL_PATH_DIR_HYPERKUBE ${FULL_PATH_DIR_HYPERKUBE}
-          is_var FULL_PATH_HYPERKUBE ${FULL_PATH_HYPERKUBE}
-
-          ${FULL_PATH_HYPERKUBE} --version && exit 0
-
-          set -e +v
-
-          mkdir -pv ${FULL_PATH_DIR_HYPERKUBE}
-          curl ${API_URI}/assets/hyperkube/serve/hyperkube -o ${FULL_PATH_HYPERKUBE}
-          chmod +x ${FULL_PATH_HYPERKUBE}
-
-          cd ${FULL_PATH_DIR_HYPERKUBE}
-          ${FULL_PATH_HYPERKUBE} --version
-          ${FULL_PATH_HYPERKUBE} --make-symlinks
 
     - path: /opt/bin/install-rkt
       filesystem: root
@@ -630,6 +595,11 @@ storage:
       contents:
         inline: |
           127.0.0.1	localhost
+          {{ if index . "etc_hosts" }}
+          {{ range $element := .etc_hosts }}
+          {{$element}}
+          {{end}}
+          {{end}}
 
     - path: /etc/coreos/update.conf
       mode: 0644

@@ -4,7 +4,7 @@ import sys
 import time
 import unittest
 
-from app import generator, schedulerv2, sync_matchbox
+from app import generator, schedulerv2, sync_matchbox, configs
 
 try:
     import kvm_player
@@ -17,6 +17,7 @@ class TestKVMK8sBasic(kvm_player.KernelVirtualMachinePlayer):
     @classmethod
     def setUpClass(cls):
         cls.check_requirements()
+        cls.set_acserver()
         cls.set_rack0()
         cls.set_api()
         cls.set_matchbox()
@@ -40,7 +41,11 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
-            matchbox_path=self.test_matchbox_path
+            matchbox_path=self.test_matchbox_path,
+            extra_metadata={
+                "lldp_image_url": self.ec.lldp_image_url,
+                "etc_hosts": self.ec.etc_hosts,
+            }
         )
         gen.dumps()
         sync = sync_matchbox.ConfigSyncSchedules(
@@ -133,7 +138,11 @@ class TestKVMK8SBasic1(TestKVMK8sBasic):
             profile_id="%s" % marker,
             name="%s" % marker,
             ignition_id="%s.yaml" % marker,
-            matchbox_path=self.test_matchbox_path
+            matchbox_path=self.test_matchbox_path,
+            extra_metadata={
+                "lldp_image_url": self.ec.lldp_image_url,
+                "etc_hosts": self.ec.etc_hosts,
+            }
         )
         gen.dumps()
         sync = sync_matchbox.ConfigSyncSchedules(

@@ -34,7 +34,6 @@ $(PYTHON):
 	$(PYTHON) --version
 
 runtime:
-	make -C $(RUNTIME)
 	$(CWD)/config.py
 
 
@@ -72,7 +71,7 @@ gci:
 $(TESTING_RSA):
 	ssh-keygen -f $(CWD)/$(TESTING_RSA) -t rsa -N ''
 	mkdir -vp $(CWD)/test_matchbox/ssh_authorized_keys/
-	cp -v $(CWD)/$(TESTING_RSA).pub $(CWD)/test_matchbox/ssh_authorized_keys/
+	ln -svf $(CWD)/$(TESTING_RSA).pub $(CWD)/test_matchbox/ssh_authorized_keys/
 
 clean:
 	rm -v $(ISO) || true

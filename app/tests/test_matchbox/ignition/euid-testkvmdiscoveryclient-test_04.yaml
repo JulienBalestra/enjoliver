@@ -32,9 +32,9 @@ systemd:
         EnvironmentFile=-/etc/metadata-endpoints.env
         Environment=IGNITION_FILE=/run/ignition.journal
         ExecStartPre=-/bin/bash -c "/usr/bin/journalctl --identifier=ignition -o short-iso > ${IGNITION_FILE}"
-        ExecStartPre=-/usr/bin/rkt run --mount volume=socket,target=/var/run \
+        ExecStartPre=-/usr/bin/rkt run --insecure-options=all --mount volume=socket,target=/var/run \
            --net=host \
-           static-aci-lldp \
+           {{.lldp_image_url}} \
            --volume socket,kind=host,source=${LLDP_VOLUME} \
            --exec opt/bin/lldp-export
         ExecStart=/opt/bin/discoveryC
@@ -45,6 +45,17 @@ systemd:
 
 storage:
   files:
+    - path: /etc/hosts
+      mode: 0644
+      filesystem: root
+      contents:
+        inline: |
+          127.0.0.1	localhost
+          {{ if index . "etc_hosts" }}
+          {{ range $element := .etc_hosts }}
+          {{$element}}
+          {{end}}
+          {{end}}
 
     - path: /etc/hostname
       filesystem: root

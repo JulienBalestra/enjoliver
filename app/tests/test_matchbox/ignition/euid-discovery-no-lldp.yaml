@@ -52,6 +52,17 @@ systemd:
 
 storage:
   files:
+    - path: /etc/hosts
+      mode: 0644
+      filesystem: root
+      contents:
+        inline: |
+          127.0.0.1	localhost
+          {{ if index . "etc_hosts" }}
+          {{ range $element := .etc_hosts }}
+          {{$element}}
+          {{end}}
+          {{end}}
 
     - path: /etc/hostname
       filesystem: root
