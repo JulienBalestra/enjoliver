@@ -1,0 +1,4 @@
+name: enjoliver.local/builder-enjoliver:latest
+aci:
+  dependencies:
+    - enjoliver.local/builder-k8s:latest
