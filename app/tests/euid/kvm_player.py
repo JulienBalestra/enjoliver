@@ -37,6 +37,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     >>> @classmethod
     >>> def setUpClass(cls):
     >>>     cls.check_requirements()
+    >>>     cls.set_acserver()
     >>>     cls.set_api()
     >>>     cls.set_matchbox()
     >>>     cls.set_dnsmasq()
