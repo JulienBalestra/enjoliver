@@ -70,6 +70,16 @@ def plan():
     os.execve(cmd[0], cmd, os.environ)
 
 
+def validate():
+    cmd = [
+        python,
+        "%s/validate.py" % project_path
+    ]
+    os.write(1, "PID  -> %s\n"
+                "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
+    os.execve(cmd[0], cmd, os.environ)
+
+
 def show_config():
     for k, v in ec.__dict__.iteritems():
         print "%s=%s" % (k, v)
@@ -77,7 +87,7 @@ def show_config():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='Enjoliver')
-    parser.add_argument('task', type=str, choices=["gunicorn", "plan", "matchbox", "show-config"],
+    parser.add_argument('task', type=str, choices=["gunicorn", "plan", "matchbox", "show-config", "validate"],
                         help="Choose your task to run")
     task = parser.parse_args().task
     if task == "gunicorn":
@@ -89,5 +99,7 @@ if __name__ == '__main__':
         matchbox()
     elif task == "show-config":
         show_config()
+    elif task == "validate":
+        validate()
     else:
         raise AttributeError("%s not a choice" % task)
