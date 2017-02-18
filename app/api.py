@@ -43,8 +43,8 @@ if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "foreign
     # Start the db
     LOGGER.info("Create engine %s" % application.config["DB_URI"])
     engine = create_engine(application.config["DB_URI"])
-    LOGGER.info("Create model %s" % application.config["DB_URI"])
-    model.Base.metadata.create_all(engine)
+    # LOGGER.info("Create model %s" % application.config["DB_URI"])
+    # model.Base.metadata.create_all(engine)
     LOGGER.info("Engine with <driver: %s> " % engine.driver)
 
 

@@ -5,10 +5,12 @@ class EnjoliverConfig(object):
     def __init__(self):
         # Flask Public endpoint
         self.api_uri = os.getenv("API_URI", None)
+        self.gunicorn_workers = 1
 
         # Bootcfg aka CoreOS Baremetal aka Matchbox
         self.matchbox_uri = "http://127.0.0.1:8080"
         self.matchbox_path = os.getenv("MATCHBOX_PATH", "/var/lib/matchbox")
+        self.matchbox_assets = os.getenv("MATCHBOX_ASSETS", "%s/assets" % self.matchbox_path)
         # For Health check
         self.matchbox_urls = [
             "/",

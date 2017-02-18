@@ -78,14 +78,8 @@ class TestAPIGunicornScheduler(unittest.TestCase):
             TestAPIGunicornScheduler.dbs_path, TestAPIGunicornScheduler.__name__.lower())
         os.environ["IGNITION_JOURNAL_DIR"] = "%s/ignition_journal" % TestAPIGunicornScheduler.inte_path
         cmd = [
-            "%s/env/bin/gunicorn" % TestAPIGunicornScheduler.project_path,
-            "--chdir",
-            "%s" % TestAPIGunicornScheduler.app_path,
-            '--worker-class',
-            'egg:meinheld#gunicorn_worker',
-            "-b",
-            "0.0.0.0:5000",
-            "api:app"
+            "%s/manage.py" % TestAPIGunicornScheduler.project_path,
+            "gunicorn"
         ]
         os.execve(cmd[0], cmd, os.environ)
 

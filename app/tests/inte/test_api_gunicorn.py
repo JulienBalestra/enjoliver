@@ -65,14 +65,8 @@ class TestAPIGunicorn(unittest.TestCase):
         os.environ["DB_PATH"] = "%s/%s.sqlite" % (TestAPIGunicorn.dbs_path, TestAPIGunicorn.__name__.lower())
         os.environ["IGNITION_JOURNAL_DIR"] = "%s/ignition_journal" % TestAPIGunicorn.inte_path
         cmd = [
-            "%s/env/bin/gunicorn" % TestAPIGunicorn.project_path,
-            "--chdir",
-            "%s" % TestAPIGunicorn.app_path,
-            '--worker-class',
-            'egg:meinheld#gunicorn_worker',
-            "-b",
-            "0.0.0.0:5000",
-            "api:app"
+            "%s/manage.py" % TestAPIGunicorn.project_path,
+            "gunicorn"
         ]
         os.execve(cmd[0], cmd, os.environ)
 

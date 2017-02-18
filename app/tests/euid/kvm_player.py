@@ -102,11 +102,10 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     @staticmethod
     def process_target_matchbox():
+        os.environ["MATCHBOX_PATH"] = KernelVirtualMachinePlayer.test_matchbox_path
         cmd = [
-            "%s" % KernelVirtualMachinePlayer.matchbox_bin,
-            "-data-path", "%s" % KernelVirtualMachinePlayer.test_matchbox_path,
-            "-assets-path", "%s" % KernelVirtualMachinePlayer.assets_path,
-            "-log-level", "error"
+            "%s/manage.py" % KernelVirtualMachinePlayer.project_path,
+            "matchbox"
         ]
         os.write(1, "PID  -> %s\n"
                     "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
@@ -150,16 +149,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         except (IOError, ValueError):
             pass
         cmd = [
-            "%s/env/bin/gunicorn" % KernelVirtualMachinePlayer.project_path,
-            "--chdir",
-            "%s" % KernelVirtualMachinePlayer.app_path,
-            "api:app",
-            '--worker-class',
-            'egg:meinheld#gunicorn_worker',
-            "-b",
-            "0.0.0.0:5000",
-            "--log-level",
-            "debug"
+            "%s/manage.py" % KernelVirtualMachinePlayer.project_path,
+            "gunicorn"
         ]
         os.write(1, "PID  -> %s\n"
                     "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
