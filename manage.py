@@ -32,6 +32,7 @@ def gunicorn():
         "--chdir",
         app_path,
         "api:app",
+        "--worker-class",
         'egg:meinheld#gunicorn_worker',
         "-b",
         "0.0.0.0:5000",
