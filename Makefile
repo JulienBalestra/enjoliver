@@ -51,8 +51,8 @@ acis:
 	./runtime/runtime.acserver &
 	make -C lldp
 	make -C hyperkube
-	# Stop the acserver without extended option
-	ps | grep acserver | cut -f1 -d ' ' | xargs -t kill
+	# Find a better way to stop it
+	pkill acserver
 
 assets:
 	make -C matchbox/assets/coreos
@@ -104,7 +104,7 @@ submodules:
 validate:
 	@./validate.py
 
-runner:
+runner: submodules
 	make -C runtime
 
 enjoliver_aci:
