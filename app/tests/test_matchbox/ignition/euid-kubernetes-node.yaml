@@ -199,7 +199,7 @@ systemd:
         ExecStart=/opt/bin/kubelet \
           \
           --network-plugin=cni \
-          --cni-conf-dir=/etc/kubernetes/cni/net.d \
+          --cni-conf-dir=/etc/rkt/net.d \
           \
           --pod-manifest-path=${MANIFESTS} \
           --hostname-override=${KUBELET_NAME} \
@@ -234,7 +234,7 @@ systemd:
         ExecStart=/opt/bin/kubelet \
           \
           --network-plugin=cni \
-          --cni-conf-dir=/etc/kubernetes/cni/net.d \
+          --cni-conf-dir=/etc/rkt/net.d \
           \
           --pod-manifest-path=${MANIFESTS} \
           --hostname-override=${KUBELET_NAME} \
@@ -365,7 +365,7 @@ storage:
               "location": "/opt/rkt/stage1-coreos.aci"
           }
 
-    - path: /etc/kubernetes/cni/net.d/10-k8s.conf
+    - path: /etc/rkt/net.d/10-k8s.conf
       filesystem: root
       mode: 0644
       contents:
