@@ -34,7 +34,6 @@ serve
 /app/tests/paths.d/paths.json
 /app/tests/testing.id_rsa
 /app/tests/testing.id_rsa.pub
-/app/tests/test_matchbox/ssh_authorized_keys/
 /lldp/aci-base/target/
 /aci/aci-builder-k8s/target/
 /hyperkube/workspace/hyperkube
