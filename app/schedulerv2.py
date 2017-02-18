@@ -77,15 +77,16 @@ class CommonScheduler(object):
         return 1
 
     def __apply_available_budget(self):
-        available = self.fetch_available(self.api_uri)
-        if len(available) >= self.expected_nb:
+        available_list = self.fetch_available(self.api_uri)
+        if len(available_list) >= self.expected_nb:
             self.log.info("starting...")
+            available_list.sort()
             for i in range(self.expected_nb):
-                self._affect(available[i])
+                self._affect(available_list[i])
             return True
 
         else:
-            self.log.info("not enough item")
+            self.log.info("not enough item %d/%d" % (len(available_list), self.expected_nb))
             return False
 
     def _apply_budget(self):
@@ -111,6 +112,7 @@ class CommonScheduler(object):
             done = len(json.loads(r.content))
             r.close()
             available_list = self.fetch_available(self.api_uri)
+            available_list.sort()
             self.log.info("done:%d available:%d" % (done, len(available_list)))
             for available in available_list:
                 done += self._affect(available)

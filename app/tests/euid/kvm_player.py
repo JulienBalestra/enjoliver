@@ -14,7 +14,7 @@ import requests
 import yaml
 from kubernetes import client as kc
 
-from app import generator, api
+from app import generator, api, configs
 
 
 def is_virtinstall():
@@ -37,6 +37,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     >>> @classmethod
     >>> def setUpClass(cls):
     >>>     cls.check_requirements()
+    >>>     cls.set_acserver()
     >>>     cls.set_api()
     >>>     cls.set_matchbox()
     >>>     cls.set_dnsmasq()
@@ -64,6 +65,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     runtime_path = "%s/runtime" % project_path
     rkt_bin = "%s/rkt/rkt" % runtime_path
     matchbox_bin = "%s/matchbox/matchbox" % runtime_path
+    acserver_bin = "%s/acserver/acserver" % runtime_path
 
     test_matchbox_path = "%s/test_matchbox" % tests_path
 
@@ -77,7 +79,9 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     dev_null = open("/dev/null", "w")
 
     kvm_sleep_between_node = 3
-    wait_setup_teardown = 1.5
+    wait_setup_teardown = 3
+
+    ec = configs.EnjoliverConfig()
 
     os.environ["API_URI"] = api_uri
 
@@ -103,6 +107,18 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "-data-path", "%s" % KernelVirtualMachinePlayer.test_matchbox_path,
             "-assets-path", "%s" % KernelVirtualMachinePlayer.assets_path,
             "-log-level", "error"
+        ]
+        os.write(1, "PID  -> %s\n"
+                    "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
+        sys.stdout.flush()
+        os.environ["TERM"] = "xterm"
+        os.execve(cmd[0], cmd, os.environ)
+
+    @staticmethod
+    def process_target_acserver():
+        cmd = [
+            "%s" % KernelVirtualMachinePlayer.acserver_bin,
+            "%s/ac-config.yml" % KernelVirtualMachinePlayer.runtime_path
         ]
         os.write(1, "PID  -> %s\n"
                     "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
@@ -183,7 +199,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "--local-config=%s" % KernelVirtualMachinePlayer.tests_path,
             "fetch",
             "--insecure-options=all",
-            "%s/lldp/serve/static-aci-lldp-0.aci" % KernelVirtualMachinePlayer.assets_path]
+            KernelVirtualMachinePlayer.ec.lldp_image_url]
         assert subprocess.call(cmd) == 0
 
     @staticmethod
@@ -192,7 +208,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "%s" % KernelVirtualMachinePlayer.rkt_bin,
             "--local-config=%s" % KernelVirtualMachinePlayer.tests_path,
             "run",
-            "static-aci-lldp",
+            KernelVirtualMachinePlayer.ec.lldp_image_url,
             "--insecure-options=all",
             "--net=host",
             "--interactive",
@@ -222,6 +238,20 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         os.write(1, "DNSMASQ ready\n\r")
         sys.stdout.flush()
 
+    @staticmethod
+    def acserver_is_running():
+        url = "http://enjoliver.local"
+        for t in range(10):
+            try:
+                r = requests.get(url)
+                r.close()
+                return
+            except Exception as e:
+                os.write(2, "\r GET -> %s : %s %s \n\r" % (url, e, e.message))
+            time.sleep(1)
+        r = requests.get(url)
+        r.close()
+
     @classmethod
     def check_requirements(cls):
         # TODO validate the assets in this method
@@ -230,11 +260,13 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
         cls.clean_sandbox()
 
-        if os.path.isfile("%s" % KernelVirtualMachinePlayer.rkt_bin) is False or \
-                        os.path.isfile("%s" % KernelVirtualMachinePlayer.matchbox_bin) is False:
+        if os.path.isfile(KernelVirtualMachinePlayer.rkt_bin) is False or \
+                        os.path.isfile(KernelVirtualMachinePlayer.matchbox_bin) is False or \
+                        os.path.isfile(KernelVirtualMachinePlayer.acserver_bin) is False:
             os.write(2, "Call 'make runtime' as user for:\n"
                         "- %s\n" % KernelVirtualMachinePlayer.rkt_bin +
-                     "- %s\n" % KernelVirtualMachinePlayer.matchbox_bin)
+                     "- %s\n" % KernelVirtualMachinePlayer.matchbox_bin +
+                     "- %s\n" % KernelVirtualMachinePlayer.acserver_bin)
             exit(2)
         os.write(1, "PPID -> %s\n" % os.getpid())
 
@@ -282,6 +314,15 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         cls.p_list.append(cls.p_api)
 
     @classmethod
+    def set_acserver(cls):
+        cls.p_acserver = multiprocessing.Process(target=KernelVirtualMachinePlayer.process_target_acserver,
+                                                 name="acserver")
+        cls.p_acserver.start()
+        time.sleep(0.5)
+        assert cls.p_acserver.is_alive() is True
+        cls.p_list.append(cls.p_acserver)
+
+    @classmethod
     def set_lldp(cls):
         cls.fetch_lldpd()
         cls.p_lldp = multiprocessing.Process(target=KernelVirtualMachinePlayer.process_target_lldpd, name="lldp")
@@ -300,8 +341,9 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             if p.is_alive():
                 os.write(1, "\n\rTERM -> %s %s\n\r" % (p.pid, p.name))
                 p.terminate()
-                p.join(timeout=cls.wait_setup_teardown)
+                p.join()
                 os.write(1, "\rEND -> %s %s\n\r" % (p.exitcode, p.name))
+            os.write(1, "\rEXITED -> %s %s\n\r" % (p.exitcode, p.name))
 
         subprocess.call([
             "%s" % KernelVirtualMachinePlayer.rkt_bin,
@@ -311,6 +353,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         cls.clean_sandbox()
         cls.pause(cls.wait_setup_teardown)
         cls.write_ending(cls.__name__)
+        subprocess.check_output(["reset", "-q"])
 
     @staticmethod
     def write_ending(message):
@@ -343,6 +386,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 raise
 
     def setUp(self):
+        subprocess.call(["reset", "-q"])
         self.clean_sandbox()
         self.api_healthz()
 
@@ -390,14 +434,13 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 try:
                     self.virsh(start, assertion=True), os.write(1, "\r")
                     to_start.pop(i)
-                    time.sleep(self.kvm_sleep_between_node)
+                    time.sleep(4)
 
                 except RuntimeError:
                     # virsh raise this
                     pass
 
-            time.sleep(self.kvm_sleep_between_node)
-
+            time.sleep(1)
         self.assertEqual(len(to_start), 0)
 
     def etcd_endpoint_health(self, ips, tries=30):
@@ -419,10 +462,9 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                         os.write(1, "\r-> REMAIN %s for %s\n\r" % (str(ips), self.etcd_endpoint_health.__name__))
 
                 except urllib2.URLError:
-                    pass
-                os.write(2,
-                         "\r-> %d/%d NOT READY %s for %s\n\r" % (t, tries, ip, self.etcd_endpoint_health.__name__))
-                time.sleep(self.kvm_sleep_between_node)
+                    os.write(2,
+                             "\r-> %d/%d NOT READY %s for %s\n\r" % (t, tries, ip, self.etcd_endpoint_health.__name__))
+                    time.sleep(10)
 
         self.assertEqual(len(ips), 0)
 
@@ -441,9 +483,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     break
 
             except urllib2.URLError:
-                pass
-            os.write(2, "\r-> %d/%d NOT READY %s for %s \n\r" % (t, tries, ip, self.etcd_member_len.__name__))
-            time.sleep(self.kvm_sleep_between_node)
+                os.write(2, "\r-> %d/%d NOT READY %s for %s \n\r" % (t, tries, ip, self.etcd_member_len.__name__))
+                time.sleep(10)
 
         self.assertEqual(len(result["members"]), members_nb)
 
@@ -462,7 +503,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
             except urllib2.URLError:
                 pass
-            os.write(2, "\r-> %d/%d NOT READY %s %s\n\r" % (t, tries, ip, self.etcd_member_k8s_minions.__name__))
+            os.write(2, "\r-> NOT READY %s %s\n\r" % (ip, self.etcd_member_k8s_minions.__name__))
             time.sleep(self.kvm_sleep_between_node)
 
         self.assertEqual(len(result["node"]["nodes"]), nodes_nb)
@@ -487,9 +528,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                         os.write(1, "\r-> REMAIN %s for %s\n\r" % (str(ips), self.k8s_api_health.__name__))
 
                 except urllib2.URLError:
-                    pass
-                os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (t + 1, tries, ip, self.k8s_api_health.__name__))
-                time.sleep(self.kvm_sleep_between_node)
+                    os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (t + 1, tries, ip, self.k8s_api_health.__name__))
+                    time.sleep(self.kvm_sleep_between_node)
         self.assertEqual(len(ips), 0)
 
     def create_nginx_deploy(self, api_server_ip):

@@ -23,19 +23,6 @@ class TestValidateMatchboxAssets(unittest.TestCase):
         list_dir = os.listdir(rule)
         self.assertIn("discoveryC", list_dir)
 
-    @unittest.skipIf(os.getenv("SKIP_HYPERKUBE"), "Skip hyperkube")
-    def test_hyperkube(self):
-        rule = "%s/%s/serve" % (self.assets, self.test_hyperkube.__name__.replace("test_", ""))
-        list_dir = os.listdir(rule)
-        self.assertIn("hyperkube", list_dir)
-        self.assertIn("static-aci-hyperkube-0.aci", list_dir)
-
-    @unittest.skipIf(os.getenv("SKIP_LLDP"), "Skip lldp")
-    def test_lldp(self):
-        rule = "%s/%s/serve" % (self.assets, self.test_lldp.__name__.replace("test_", ""))
-        list_dir = os.listdir(rule)
-        self.assertIn("static-aci-lldp-0.aci", list_dir)
-
     def test_rkt(self):
         rule = "%s/%s/serve" % (self.assets, self.test_rkt.__name__.replace("test_", ""))
         list_dir = os.listdir(rule)

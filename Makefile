@@ -19,7 +19,7 @@ help:
 	@echo make validate
 	@echo
 	@echo All in one:
-	@echo sudo MY_USER= setup
+	@echo sudo MY_USER= make setup
 	@echo ----------------------
 	@echo Testing:
 	@echo make $(CHECK)
@@ -46,8 +46,13 @@ pip: $(ENV)
 
 acis:
 	test $(shell id -u -r) -eq 0
+	# Check if the port is available
+	curl 127.0.0.1 && exit 1 || true
+	./runtime/runtime.acserver &
 	make -C lldp
 	make -C hyperkube
+	# Find a better way to stop it
+	pkill acserver
 
 assets:
 	make -C matchbox/assets/coreos
@@ -62,9 +67,6 @@ assets:
 	make -C matchbox/assets/fleet serve
 	# Self
 	make -C matchbox/assets/discoveryC
-	# Depends on .acis
-	make -C matchbox/assets/lldp
-	make -C matchbox/assets/hyperkube
 
 clean: check_clean
 	make -C matchbox/assets/cni fclean
@@ -81,7 +83,7 @@ clean_after_assets:
 	make -C lldp clean
 
 check_clean:
-	rm -Rfv env
+	rm -Rf env
 	make -C app/tests/ fclean
 
 $(CHECK):
@@ -102,11 +104,11 @@ submodules:
 validate:
 	@./validate.py
 
-runner:
+runner: submodules
 	make -C runtime
 
-release_aci:
-	make -C release
+enjoliver_aci:
+	make -C enjoliver
 
 front:
 	make -C app/static

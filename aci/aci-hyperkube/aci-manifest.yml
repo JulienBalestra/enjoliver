@@ -1,12 +1,17 @@
-name: static-aci-hyperkube:0
+name: enjoliver.local/hyperkube:latest
 
 builder:
   dependencies:
-    - static-aci-debian:8
+    - enjoliver.local/builder-hyperkube:latest
 
   mountPoints:
     - {from: ../../, to: /opt/source-project}
 
+tester:
+  aci:
+    dependencies:
+      - enjoliver.local/debian:latest
+
 aci:
   dependencies:
-    - static-aci-debian:8
+    - enjoliver.local/debian:latest

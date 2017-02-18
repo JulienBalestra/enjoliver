@@ -1,7 +1,7 @@
-name: static-aci-enjoliver:0
+name: enjoliver.local/enjoliver:latest
 builder:
   dependencies:
-    - static-aci-debian:8
+    - enjoliver.local/builder-enjoliver:latest
 
   mountPoints:
     - {from: ../../, to: /opt/source-project}
@@ -10,11 +10,11 @@ builder:
 tester:
   aci:
     dependencies:
-      - static-aci-debian:8
+      - enjoliver.local/debian:latest
 
 aci:
   dependencies:
-    - static-aci-debian:8
+    - enjoliver.local/debian:latest
 
   app:
     mountPoints:

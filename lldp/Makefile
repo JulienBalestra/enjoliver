@@ -7,31 +7,22 @@ ACI=$(PROJECT)/aci
 
 DEBIAN=debian
 
-LLDP_VERSION=0
-LLDP=static-aci-lldp-$(LLDP_VERSION).aci
+LLDP=lldp
 
-LLDP_IMAGE=static-aci-lldp:$(LLDP_VERSION)
 
-RENDERS=$(RUNTIME)/renders
-SQUASH=$(RENDERS)/squash_manifest.py
-LLDP_RENDER=$(RENDERS)/lldp.render
-
-default: $(LLDP)
+default: push
 
 $(DEBIAN):
 	@echo ENV IMAGE=$(ACI)/aci-$(DEBIAN)
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) install
+	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) push
 
 install: $(DEBIAN)
 	@echo ENV IMAGE=$(ACI)/aci-lldp
-	IMAGE=$(ACI)/aci-lldp make -C $(RUNTIME) install
+	IMAGE=$(ACI)/aci-$(LLDP) make -C $(RUNTIME) install
 
-$(LLDP): install
-	$(RKT) --local-config=$(RUNTIME) image render $(LLDP_IMAGE) $(LLDP_RENDER) --overwrite
-	chmod +r $(LLDP_RENDER)/manifest
-	$(SQUASH) $(LLDP_RENDER)/manifest
-	tar -C $(LLDP_RENDER) -cf $(LLDP) manifest rootfs
-	file $(LLDP)
+push: $(DEBIAN)
+	IMAGE=$(ACI)/aci-$(LLDP) make -C $(RUNTIME) push
 
 clean:
 	rm -v $(LLDP) || true

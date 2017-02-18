@@ -2,12 +2,11 @@ import logging
 
 from configs import EnjoliverConfig
 
-formatter = logging.Formatter('\r%(levelname)-7s %(module)-13s %(funcName)s %(message)s')
-
 ec = EnjoliverConfig()
 
 
 def get_logger(name):
+    formatter = logging.Formatter('%(levelname)-7s %(module)-13s %(funcName)s %(message)s')
     logger = logging.getLogger(name)
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)

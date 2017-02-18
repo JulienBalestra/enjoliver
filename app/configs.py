@@ -56,8 +56,9 @@ class EnjoliverConfig(object):
         self.etcd_data_dir = "/var/lib/etcd3"
 
         # Use a real registry in production like:
-        # registry.com/aci-hyperkube:1.5.3-1
-        self.k8s_image_url = "static-aci-hyperkube:0"
+        # enjoliver.local/hyperkube:latest
+        self.lldp_image_url = "enjoliver.local/lldp:latest"
+        self.hyperkube_image_url = "enjoliver.local/hyperkube:latest"
 
         # Ignition
         # All of them have to be in the matchbox/ignition
@@ -72,3 +73,7 @@ class EnjoliverConfig(object):
         # Logging level
         # DEBUG or INFO
         self.logging_level = "DEBUG"
+
+        self.etc_hosts = [
+            "172.20.0.1 enjoliver.local"
+        ]

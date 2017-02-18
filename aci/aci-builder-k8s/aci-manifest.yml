@@ -1,4 +1,0 @@
-name: static-aci-builder-k8s:0
-aci:
-  dependencies:
-    - static-aci-debian:8

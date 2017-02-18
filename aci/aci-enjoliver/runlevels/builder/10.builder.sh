@@ -11,12 +11,6 @@ ENJOLIVER=${ROOTFS}/opt/enjoliver
 SOURCE_PROJECT=/opt/source-project
 
 
-apt-get update -q
-apt-get install -y -q curl python build-essential python-virtualenv python-dev git file openssh-client tar npm
-ln -vs /usr/lib/python2.7/dist-packages/virtualenv.py /usr/local/bin/virtualenv
-chmod +x /usr/local/bin/virtualenv
-
-
 ### Git Bundle ###
 if [ -d ${SOURCE_PROJECT}/bundles ]
 then
@@ -45,18 +39,7 @@ git checkout origin/${BRANCH}
 
 
 ### Golang ###
-GO_VERSION=go1.7.5.linux-amd64.tar.gz
-curl -Lf https://storage.googleapis.com/golang/${GO_VERSION} -o /tmp/${GO_VERSION}
-tar -C /usr/local/ -xzf /tmp/${GO_VERSION}
-rm -v /tmp/${GO_VERSION}
-
-export GOROOT=/usr/local/go
-
-for b in $(ls ${GOROOT}/bin/)
-do
-    ln -sv ${GOROOT}/bin/${b} /usr/local/bin/${b}
-done
-
+GOROOT=/usr/local/go
 go version
 
 
@@ -72,12 +55,7 @@ su - enjoliver -c "make pip"
 
 cp -v runtime/matchbox/matchbox ${ROOTFS}/usr/bin
 
-make acis
-
 su - enjoliver -c "make assets"
-make validate
-
-make clean_after_assets
 make validate
 
 su - enjoliver -c "make check"

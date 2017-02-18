@@ -21,6 +21,7 @@ class TestKVMK8sEnjolivage(kvm_player.KernelVirtualMachinePlayer):
         cls.set_api()
         cls.set_matchbox()
         cls.set_dnsmasq()
+        cls.set_acserver()
         cls.pause(cls.wait_setup_teardown)
 
 
