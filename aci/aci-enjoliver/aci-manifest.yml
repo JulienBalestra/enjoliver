@@ -5,12 +5,12 @@ builder:
 
   mountPoints:
     - {from: ../../, to: /opt/source-project}
-    - {from: /tmp/enjoliver/runtime, to: /opt/stage2/static-aci-enjoliver/rootfs/opt/enjoliver/runtime}
+#    - {from: /tmp/enjoliver/runtime, to: /opt/stage2/static-aci-enjoliver/rootfs/opt/enjoliver/runtime}
 
 tester:
   aci:
     dependencies:
-      - enjoliver.local/debian:latest
+      - enjoliver.local/builder-enjoliver:latest
 
 aci:
   dependencies:

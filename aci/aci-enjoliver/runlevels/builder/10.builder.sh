@@ -7,7 +7,7 @@ isLevelEnabled "debug" && set -x
 export LC_ALL=C
 export DEBIAN_FRONTEND=noninteractive
 
-ENJOLIVER=${ROOTFS}/opt/enjoliver
+ENJOLIVER=/opt/enjoliver
 SOURCE_PROJECT=/opt/source-project
 
 
@@ -53,17 +53,10 @@ su - enjoliver -c "make runner"
 su - enjoliver -c "make front"
 su - enjoliver -c "make pip"
 
-cp -v runtime/matchbox/matchbox ${ROOTFS}/usr/bin
-
 su - enjoliver -c "make assets"
+make clean_after_assets
 make validate
-
-su - enjoliver -c "make check"
-make validate
-
-make check_clean
 
 chown -R root: ${ENJOLIVER}
-make validate
 
-${ROOTFS}/usr/bin/matchbox --version
+mv ${ENJOLIVER} ${ROOTFS}/opt

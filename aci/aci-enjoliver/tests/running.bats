@@ -1,21 +1,18 @@
 #!/dgr/bin/bats
 
-@test "gunicorn is a regular executable file" {
-  [ -f "/usr/local/bin/gunicorn" ]
-  [ -x "/usr/local/bin/gunicorn" ]
+
+
+@test "Tests are OK" {
+  make -C /opt/enjoliver check
+  [ $? -eq 0 ]
 }
 
-@test "gunicorn is a link executable file" {
-  [ -s "/usr/bin/gunicorn" ]
-  [ -x "/usr/bin/gunicorn" ]
-}
-
-@test "matchbox is a regular executable file" {
-  [ -f "/usr/bin/matchbox" ]
-  [ -x "/usr/bin/matchbox" ]
+@test "Default config" {
+  /opt/enjoliver/manage.py show-config
+  [ $? -eq 0 ]
 }
 
 @test "validation is OK" {
-    make -C /opt/enjoliver validate
+    /opt/enjoliver/manage.py validate
   [ $? -eq 0 ]
 }
