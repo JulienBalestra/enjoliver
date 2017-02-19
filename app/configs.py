@@ -30,6 +30,7 @@ class EnjoliverConfig(object):
         # if self.api_uri is None:
         #     raise AttributeError("api_uri have to be set")
         self.gunicorn_workers = self.config_override("gunicorn_workers", 1)
+        self.gunicorn_worker_type = self.config_override("gunicorn_worker_type", "sync")
 
         # Bootcfg aka CoreOS Baremetal aka Matchbox
         self.matchbox_uri = self.config_override("matchbox_uri", "http://127.0.0.1:8080")
@@ -116,6 +117,10 @@ class EnjoliverConfig(object):
         self.gunicorn_pid_file = self.config_override("gunicorn_pid_file",
                                                       "%s/gunicorn.pid" % os.path.dirname(__file__))
         self.plan_pid_file = self.config_override("plan_pid_file", "%s/plan.pid" % os.path.dirname(__file__))
+
+        if self.logging_level.lower() == "debug":
+            for k, v in self.__dict__.iteritems():
+                os.write(2, "<config> %s=%s\n" % (k, v))
 
 
 if __name__ == '__main__':

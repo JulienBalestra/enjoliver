@@ -44,14 +44,13 @@ application.config["BACKUP_LOCK_KEY"] = ec.backup_lock_key
 
 engine = None
 
-if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "foreign"):
-    for k, v in ec.__dict__.iteritems():
-        LOGGER.info("<config> %s=%s" % (k, v))
-
+if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "_"):
     # Start the db engine
     LOGGER.info("Create engine %s" % application.config["DB_URI"])
     engine = create_engine(application.config["DB_URI"])
     LOGGER.info("Engine with <driver: %s> " % engine.driver)
+    LOGGER.info("Clear the cache")
+    cache.clear()
 
 
 @application.route("/shutdown", methods=["POST"])

@@ -31,17 +31,17 @@ def gunicorn(ec):
         app_path,
         "api:app",
         "--worker-class",
-        'egg:meinheld#gunicorn_worker',
+        ec.gunicorn_worker_type,
         "-b",
         "0.0.0.0:5000",
         "--log-level",
         ec.logging_level.lower(),
         "-w",
-        "%s" % ec.gunicorn_workers
+        "%s" % ec.gunicorn_workers,
     ]
     os.write(1, "PID  -> %s\n"
                 "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
-    with open(ec.plan_pid_file, "w") as f:
+    with open(ec.gunicorn_pid_file, "w") as f:
         f.write("%d" % os.getpid())
     os.execve(cmd[0], cmd, os.environ)
 
@@ -54,7 +54,7 @@ def matchbox(ec):
         "-data-path",
         "%s" % ec.matchbox_path,
         "-log-level",
-        ec.logging_level.lower()
+        ec.logging_level.lower(),
     ]
     os.write(1, "PID  -> %s\n"
                 "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
@@ -66,7 +66,7 @@ def matchbox(ec):
 def plan(ec):
     cmd = [
         python,
-        "%s/plans/k8s_2t.py" % app_path
+        "%s/plans/k8s_2t.py" % app_path,
     ]
     os.write(1, "PID  -> %s\n"
                 "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
@@ -78,7 +78,7 @@ def plan(ec):
 def validate():
     cmd = [
         python,
-        "%s/validate.py" % project_path
+        "%s/validate.py" % project_path,
     ]
     os.write(1, "PID  -> %s\n"
                 "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
