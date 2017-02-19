@@ -11,10 +11,11 @@ from multiprocessing import Process
 
 import requests
 
-from app import api
+from app import configs
 from app import generator
-from app import model
 from common import posts
+
+ec = configs.EnjoliverConfig()
 
 
 class TestAPIGunicorn(unittest.TestCase):
@@ -22,48 +23,28 @@ class TestAPIGunicorn(unittest.TestCase):
     p_api = Process
 
     inte_path = "%s" % os.path.dirname(__file__)
-    dbs_path = "%s/dbs" % inte_path
     tests_path = "%s" % os.path.dirname(inte_path)
     app_path = os.path.dirname(tests_path)
     project_path = os.path.dirname(app_path)
-    matchbox_path = "%s/matchbox" % project_path
     assets_path = "%s/matchbox/assets" % project_path
-
-    runtime_path = "%s/runtime" % project_path
-    rkt_bin = "%s/rkt/rkt" % runtime_path
-    matchbox_bin = "%s/matchbox/matchbox" % runtime_path
-
     test_matchbox_path = "%s/test_matchbox" % tests_path
-
-    matchbox_port = int(os.getenv("MATCHBOX_PORT", "8080"))
-
-    matchbox_uri = "http://localhost:%d" % matchbox_port
-
-    api_port = int(os.getenv("API_PORT", "5000"))
-
-    api_address = "0.0.0.0:%d" % api_port
-    api_uri = "http://localhost:%d" % api_port
 
     @staticmethod
     def process_target_matchbox():
+        os.environ["ENJOLIVER_MATCHBOX_PATH"] = TestAPIGunicorn.test_matchbox_path
+        os.environ["ENJOLIVER_MATCHBOX_ASSETS"] = TestAPIGunicorn.assets_path
         cmd = [
-            "%s" % TestAPIGunicorn.matchbox_bin,
-            "-data-path", "%s" % TestAPIGunicorn.test_matchbox_path,
-            "-assets-path", "%s" % TestAPIGunicorn.assets_path,
-            "-log-level", "debug"
+            "%s/manage.py" % TestAPIGunicorn.project_path,
+            "matchbox"
         ]
         os.write(1, "PID  -> %s\n"
                     "exec -> %s\n" % (
                      os.getpid(), " ".join(cmd)))
         sys.stdout.flush()
-        os.execv(cmd[0], cmd)
+        os.execve(cmd[0], cmd, os.environ)
 
     @staticmethod
     def process_target_api():
-        api.cache.clear()
-        os.environ["API_URI"] = "http://localhost:5000"
-        os.environ["DB_PATH"] = "%s/%s.sqlite" % (TestAPIGunicorn.dbs_path, TestAPIGunicorn.__name__.lower())
-        os.environ["IGNITION_JOURNAL_DIR"] = "%s/ignition_journal" % TestAPIGunicorn.inte_path
         cmd = [
             "%s/manage.py" % TestAPIGunicorn.project_path,
             "gunicorn"
@@ -73,29 +54,16 @@ class TestAPIGunicorn(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         time.sleep(0.1)
-        db_path = "%s/%s.sqlite" % (cls.dbs_path, TestAPIGunicorn.__name__.lower())
-        db = "sqlite:///%s" % db_path
-        journal = "%s/ignition_journal" % cls.inte_path
         try:
-            os.remove(db_path)
+            os.remove(ec.db_path)
         except OSError:
             pass
 
         try:
-            shutil.rmtree(journal)
+            shutil.rmtree(ec.ignition_journal_dir)
         except OSError:
             pass
 
-        assert os.path.isdir(journal) is False
-        engine = api.create_engine(db)
-        api.app.config["DB_PATH"] = db_path
-        api.app.config["API_URI"] = cls.api_uri
-        model.Base.metadata.create_all(engine)
-        assert os.path.isfile(db_path)
-        api.engine = engine
-
-        if os.path.isfile("%s" % TestAPIGunicorn.matchbox_bin) is False:
-            raise IOError("%s" % TestAPIGunicorn.matchbox_bin)
         cls.p_matchbox = Process(target=TestAPIGunicorn.process_target_matchbox)
         cls.p_api = Process(target=TestAPIGunicorn.process_target_api)
         os.write(1, "PPID -> %s\n" % os.getpid())
@@ -104,8 +72,8 @@ class TestAPIGunicorn(unittest.TestCase):
         cls.p_api.start()
         assert cls.p_api.is_alive() is True
 
-        cls.matchbox_running(cls.matchbox_uri, cls.p_matchbox)
-        cls.api_running(cls.api_uri, cls.p_api)
+        cls.matchbox_running(ec.matchbox_uri, cls.p_matchbox)
+        cls.api_running(ec.api_uri, cls.p_api)
 
     @classmethod
     def tearDownClass(cls):
@@ -185,7 +153,7 @@ class TestAPIGunicorn(unittest.TestCase):
                 u'/assets': True,
                 u"/metadata": True
             }}
-        request = urllib2.urlopen("%s/healthz" % self.api_uri)
+        request = urllib2.urlopen("%s/healthz" % ec.api_uri)
         response_body = request.read()
         response_code = request.code
         request.close()
@@ -198,8 +166,8 @@ class TestAPIGunicorn(unittest.TestCase):
             "echo start /boot.ipxe\n" \
             ":retry_dhcp\n" \
             "dhcp || goto retry_dhcp\n" \
-            "chain http://localhost:5000/ipxe?uuid=${uuid}&mac=${net0/mac:hexhyp}&domain=${domain}&hostname=${hostname}&serial=${serial}\n"
-        request = urllib2.urlopen("%s/boot.ipxe" % self.api_uri)
+            "chain http://127.0.0.1:5000/ipxe?uuid=${uuid}&mac=${net0/mac:hexhyp}&domain=${domain}&hostname=${hostname}&serial=${serial}\n"
+        request = urllib2.urlopen("%s/boot.ipxe" % ec.api_uri)
         response_body = request.read()
         response_code = request.code
         request.close()
@@ -212,8 +180,8 @@ class TestAPIGunicorn(unittest.TestCase):
             "echo start /boot.ipxe\n" \
             ":retry_dhcp\n" \
             "dhcp || goto retry_dhcp\n" \
-            "chain http://localhost:5000/ipxe?uuid=${uuid}&mac=${net0/mac:hexhyp}&domain=${domain}&hostname=${hostname}&serial=${serial}\n"
-        request = urllib2.urlopen("%s/boot.ipxe" % self.api_uri)
+            "chain http://127.0.0.1:5000/ipxe?uuid=${uuid}&mac=${net0/mac:hexhyp}&domain=${domain}&hostname=${hostname}&serial=${serial}\n"
+        request = urllib2.urlopen("%s/boot.ipxe" % ec.api_uri)
         response_body = request.read()
         response_code = request.code
         request.close()
@@ -244,9 +212,10 @@ class TestAPIGunicorn(unittest.TestCase):
             u'/static/<path:filename>',
             u'/scheduler/<string:role>',
             u'/scheduler/ip-list/<string:role>',
-            u'/scheduler/available'
+            u'/scheduler/available',
+            u'/shutdown'
         ]
-        request = urllib2.urlopen("%s/" % self.api_uri)
+        request = urllib2.urlopen("%s/" % ec.api_uri)
         response_body = request.read()
         response_code = request.code
         request.close()
@@ -256,20 +225,20 @@ class TestAPIGunicorn(unittest.TestCase):
 
     def test_03_ipxe_404(self):
         with self.assertRaises(urllib2.HTTPError):
-            urllib2.urlopen("%s/404" % self.api_uri)
+            urllib2.urlopen("%s/404" % ec.api_uri)
 
     def test_04_ipxe(self):
         marker = "%s-%s" % (TestAPIGunicorn.__name__.lower(), self.test_04_ipxe.__name__)
         ignition_file = "inte-%s.yaml" % marker
         gen = generator.Generator(
-            api_uri=self.api_uri,
+            api_uri=ec.api_uri,
             profile_id="id-%s" % marker,
             name="name-%s" % marker,
             ignition_id=ignition_file,
             matchbox_path=self.test_matchbox_path
         )
         gen.dumps()
-        request = urllib2.urlopen("%s/ipxe" % self.api_uri)
+        request = urllib2.urlopen("%s/ipxe" % ec.api_uri)
         response_body = request.read()
         response_code = request.code
         request.close()
@@ -291,7 +260,7 @@ class TestAPIGunicorn(unittest.TestCase):
         marker = "%s-%s" % (TestAPIGunicorn.__name__.lower(), self.test_05_ipxe_selector.__name__)
         ignition_file = "inte-%s.yaml" % marker
         gen = generator.Generator(
-            api_uri=self.api_uri,
+            api_uri=ec.api_uri,
             profile_id="id-%s" % marker,
             name="name-%s" % marker,
             ignition_id=ignition_file,
@@ -300,9 +269,9 @@ class TestAPIGunicorn(unittest.TestCase):
         )
         gen.dumps()
         with self.assertRaises(urllib2.HTTPError):
-            urllib2.urlopen("%s/ipxe" % self.api_uri)
+            urllib2.urlopen("%s/ipxe" % ec.api_uri)
 
-        request = urllib2.urlopen("%s/ipxe?mac=%s" % (self.api_uri, mac))
+        request = urllib2.urlopen("%s/ipxe?mac=%s" % (ec.api_uri, mac))
         response_body = request.read()
         response_code = request.code
         request.close()
@@ -318,14 +287,14 @@ class TestAPIGunicorn(unittest.TestCase):
         self.assertEqual(response_code, 200)
 
     def test_06_discovery_00(self):
-        req = urllib2.Request("%s/discovery" % self.api_uri, json.dumps(posts.M01),
+        req = urllib2.Request("%s/discovery" % ec.api_uri, json.dumps(posts.M01),
                               {'Content-Type': 'application/json'})
         f = urllib2.urlopen(req)
         self.assertEqual(200, f.code)
         response = f.read()
         f.close()
         self.assertEqual(json.loads(response), {u'total_elt': 1, u'new': True})
-        req = urllib2.Request("%s/discovery/interfaces" % self.api_uri)
+        req = urllib2.Request("%s/discovery/interfaces" % ec.api_uri)
         f = urllib2.urlopen(req)
         self.assertEqual(200, f.code)
         response = json.loads(f.read())
@@ -345,7 +314,7 @@ class TestAPIGunicorn(unittest.TestCase):
         f.close()
         self.assertEqual(expect, response)
 
-        req = urllib2.Request("%s/discovery" % self.api_uri)
+        req = urllib2.Request("%s/discovery" % ec.api_uri)
         f = urllib2.urlopen(req)
         self.assertEqual(200, f.code)
         response = json.loads(f.read())
@@ -375,14 +344,14 @@ class TestAPIGunicorn(unittest.TestCase):
         self.assertEqual(first["interfaces"][0]["mac"], expect["interfaces"][0]["mac"])
         self.assertEqual(first["interfaces"][0]["as_boot"], expect["interfaces"][0]["as_boot"])
 
-        req = urllib2.Request("%s/discovery/ignition-journal/b7f5f93a-b029-475f-b3a4-479ba198cb8a" % self.api_uri)
+        req = urllib2.Request("%s/discovery/ignition-journal/b7f5f93a-b029-475f-b3a4-479ba198cb8a" % ec.api_uri)
         f = urllib2.urlopen(req)
         self.assertEqual(200, f.code)
         response = json.loads(f.read())
         self.assertEqual(39, len(response))
 
     def test_06_discovery_01(self):
-        req = urllib2.Request("%s/discovery" % self.api_uri, json.dumps(posts.M02),
+        req = urllib2.Request("%s/discovery" % ec.api_uri, json.dumps(posts.M02),
                               {'Content-Type': 'application/json'})
         f = urllib2.urlopen(req)
         self.assertEqual(200, f.code)
@@ -391,18 +360,18 @@ class TestAPIGunicorn(unittest.TestCase):
         self.assertEqual(json.loads(response), {u'total_elt': 2, u'new': True})
 
     def test_06_discovery_02(self):
-        req = urllib2.Request("%s/discovery" % self.api_uri, json.dumps(posts.M03),
+        req = urllib2.Request("%s/discovery" % ec.api_uri, json.dumps(posts.M03),
                               {'Content-Type': 'application/json'})
         f = urllib2.urlopen(req)
         self.assertEqual(200, f.code)
         response = f.read()
         f.close()
         self.assertEqual(json.loads(response), {u'total_elt': 3, u'new': True})
-        all_machines = urllib2.urlopen("%s/discovery" % self.api_uri)
+        all_machines = urllib2.urlopen("%s/discovery" % ec.api_uri)
         content = json.loads(all_machines.read())
         all_machines.close()
 
-        req = urllib2.Request("%s/discovery" % self.api_uri, json.dumps(posts.M01),
+        req = urllib2.Request("%s/discovery" % ec.api_uri, json.dumps(posts.M01),
                               {'Content-Type': 'application/json'})
         f = urllib2.urlopen(req)
         self.assertEqual(200, f.code)
@@ -417,7 +386,7 @@ class TestAPIGunicorn(unittest.TestCase):
         :return:
         """
         for i, p in enumerate(posts.ALL):
-            req = urllib2.Request("%s/discovery" % self.api_uri, json.dumps(p),
+            req = urllib2.Request("%s/discovery" % ec.api_uri, json.dumps(p),
                                   {'Content-Type': 'application/json'})
             f = urllib2.urlopen(req)
             self.assertEqual(200, f.code)
@@ -433,24 +402,24 @@ class TestAPIGunicorn(unittest.TestCase):
         """
         Cache non regression
         """
-        r = requests.get("%s/discovery" % self.api_uri)
+        r = requests.get("%s/discovery" % ec.api_uri)
         l = len(json.loads(r.content))
         r.close()
         self.assertEqual(l, len(posts.ALL))
         now = time.time()
         nb = 100
         for i in xrange(nb):
-            r = requests.get("%s/discovery" % self.api_uri)
+            r = requests.get("%s/discovery" % ec.api_uri)
             r.close()
         self.assertTrue(now + (nb // 100) > time.time())
-        r = requests.get("%s/discovery" % self.api_uri)
+        r = requests.get("%s/discovery" % ec.api_uri)
         l = len(json.loads(r.content))
         r.close()
         self.assertEqual(l, len(posts.ALL))
 
     def test_08_backup(self):
         n = int(math.floor(time.time()))
-        r = requests.post("%s/backup/db" % self.api_uri)
+        r = requests.post("%s/backup/db" % ec.api_uri)
         s = json.loads(r.content)
         r.close()
         self.assertTrue(s["copy"])

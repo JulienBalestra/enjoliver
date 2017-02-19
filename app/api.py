@@ -2,23 +2,31 @@ import os
 import time
 import urllib2
 
+import psutil
 import requests
 from flask import Flask, request, json, jsonify, render_template, Response
 from sqlalchemy import create_engine
-from werkzeug.contrib.cache import SimpleCache
 
+import backup
 import crud
 import logger
 import model
-import backup
 from configs import EnjoliverConfig
 
 ec = EnjoliverConfig()
 
+if "werkzeug_cache" in ec.__dict__ and ec.werkzeug_cache == "SimpleCache":
+    from werkzeug.contrib.cache import SimpleCache
+
+    cache = SimpleCache()
+else:
+    from werkzeug.contrib.cache import FileSystemCache
+
+    cache = FileSystemCache("/tmp/werkzeug-cache")
+
 LOGGER = logger.get_logger(__file__)
 
 app = application = Flask(__name__)
-cache = SimpleCache()
 
 application.config["MATCHBOX_URI"] = ec.matchbox_uri
 application.config["API_URI"] = ec.api_uri
@@ -44,6 +52,41 @@ if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "foreign
     LOGGER.info("Create engine %s" % application.config["DB_URI"])
     engine = create_engine(application.config["DB_URI"])
     LOGGER.info("Engine with <driver: %s> " % engine.driver)
+
+
+@application.route("/shutdown", methods=["POST"])
+def shutdown():
+    LOGGER.warning("shutdown asked")
+    backup.backup_sqlite(cache=cache, application=application)
+    pid_files = [ec.plan_pid_file, ec.matchbox_pid_file]
+    gunicorn_pid = None
+    pid_list = []
+
+    for pid_file in pid_files:
+        try:
+            with open(pid_file) as f:
+                pid_list.append(int(f.read()))
+        except IOError:
+            LOGGER.error("IOError -> %s" % pid_file)
+
+    try:
+        with open(ec.gunicorn_pid_file) as f:
+            gunicorn_pid = int(f.read())
+    except IOError:
+        LOGGER.error("IOError -> %s" % ec.gunicorn_pid_file)
+
+    for i, pid in enumerate(pid_list):
+        p = psutil.Process(pid)
+        LOGGER.warning("SIGTERM -> %d" % pid)
+        p.terminate()
+        LOGGER.warning("wait -> %d" % pid)
+        p.wait()
+        LOGGER.warning("%d running: %s " % (pid, p.is_running()))
+
+    pid_list.append(gunicorn_pid)
+    p = psutil.Process(gunicorn_pid)
+    p.terminate()
+    return Response("SIGTERM to %s\n" % pid_list, status=200, mimetype="text/plain")
 
 
 @application.route("/config", methods=["GET"])
@@ -113,7 +156,7 @@ def discovery():
         r = request.get_json()
 
     while cache.get(application.config["BACKUP_LOCK_KEY"]) is not None:
-        app.logger.debug("Cache backup is not None")
+        app.logger.warning("Cache backup is not None")
         time.sleep(0.1)
 
     try:
@@ -295,7 +338,7 @@ def boot_ipxe():
         "hostname=${hostname}&" \
         "serial=${serial}\n" % flask_uri
     app.logger.debug("%s" % response)
-    return response
+    return Response(response, status=200, mimetype="text/plain")
 
 
 @application.route("/ignition", methods=["GET"])
@@ -305,9 +348,9 @@ def ignition():
         matchbox_resp = requests.get("%s%s" % (matchbox_uri, request.full_path))
         d = matchbox_resp.content
         matchbox_resp.close()
-        return d, matchbox_resp.status_code
+        return Response(d, status=matchbox_resp.status_code, mimetype="text/plain")
 
-    return "matchbox=%s" % matchbox_uri, 403
+    return Response("matchbox=%s" % matchbox_uri, status=403, mimetype="text/plain")
 
 
 @application.route("/metadata", methods=["GET"])
@@ -317,9 +360,9 @@ def metadata():
         matchbox_resp = requests.get("%s%s" % (matchbox_uri, request.full_path))
         d = matchbox_resp.content
         matchbox_resp.close()
-        return d, matchbox_resp.status_code
+        return Response(d, status=matchbox_resp.status_code, mimetype="text/plain")
 
-    return "matchbox=%s" % matchbox_uri, 403
+    return Response("matchbox=%s" % matchbox_uri, status=403, mimetype="text/plain")
 
 
 @app.route('/assets', defaults={'path': ''})
@@ -333,7 +376,7 @@ def assets(path):
         matchbox_resp.close()
         return Response(response=d, mimetype="application/octet-stream")
 
-    return "matchbox=%s" % matchbox_uri, 403
+    return Response("matchbox=%s" % matchbox_uri, status=403, mimetype="text/plain")
 
 
 @application.route('/ipxe', methods=['GET'])
@@ -356,15 +399,16 @@ def ipxe():
 
         response = "".join(resp_list)
         app.logger.debug("%s" % response)
-        return response, 200
+        return Response(response, status=200, mimetype="text/plain")
 
     except urllib2.URLError:
-        return "404", 404
+        app.logger.warning("404")
+        return Response("404", status=404, mimetype="text/plain")
 
 
 @app.errorhandler(404)
 def page_not_found(error):
-    return '404\n', 404
+    return Response("404", status=404, mimetype="text/plain")
 
 
 @application.route('/ui', methods=['GET'])
