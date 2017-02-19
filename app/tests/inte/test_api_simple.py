@@ -2,7 +2,6 @@ import httplib
 import json
 import os
 import shutil
-import subprocess
 import sys
 import time
 import unittest
@@ -10,9 +9,12 @@ import urllib2
 from multiprocessing import Process
 
 from app import api
-from app import model
+from app import configs
 from app import generator
+from app import model
 from common import posts
+
+ec = configs.EnjoliverConfig()
 
 
 class TestAPI(unittest.TestCase):
@@ -26,67 +28,48 @@ class TestAPI(unittest.TestCase):
     matchbox_path = "%s/matchbox" % project_path
     assets_path = "%s/matchbox/assets" % project_path
 
-    runtime_path = "%s/runtime" % project_path
-    rkt_bin = "%s/rkt/rkt" % runtime_path
-    matchbox_bin = "%s/matchbox/matchbox" % runtime_path
-
     test_matchbox_path = "%s/test_matchbox" % tests_path
 
-    matchbox_port = int(os.getenv("MATCHBOX_PORT", "8080"))
-    matchbox_uri = "http://localhost:%d" % matchbox_port
-
-    api_uri = "http://localhost"
-
     @staticmethod
-    def process_target():
+    def process_target_matchbox():
+        os.environ["ENJOLIVER_MATCHBOX_PATH"] = TestAPI.test_matchbox_path
+        os.environ["ENJOLIVER_MATCHBOX_ASSETS"] = TestAPI.assets_path
         cmd = [
-            "%s" % TestAPI.matchbox_bin,
-            "-data-path", "%s" % TestAPI.test_matchbox_path,
-            "-assets-path", "%s" % TestAPI.assets_path,
-            "-log-level", "debug"
+            "%s/manage.py" % TestAPI.project_path,
+            "matchbox"
         ]
         os.write(1, "PID  -> %s\n"
                     "exec -> %s\n" % (
                      os.getpid(), " ".join(cmd)))
         sys.stdout.flush()
-        os.execv(cmd[0], cmd)
+        os.execve(cmd[0], cmd, os.environ)
 
     @classmethod
     def setUpClass(cls):
         time.sleep(0.1)
-        db_path = "%s/%s.sqlite" % (cls.dbs_path, TestAPI.__name__.lower())
-        journal = "%s/ignition_journal" % cls.int_path
-        db = "sqlite:///%s" % db_path
         try:
-            os.remove(db_path)
+            os.remove(ec.db_path)
         except OSError:
             pass
-        engine = api.create_engine(db)
+        engine = api.create_engine(ec.db_uri)
         model.Base.metadata.create_all(engine)
         api.engine = engine
         api.cache.clear()
-        api.application.config["API_URI"] = "http://localhost"
-
-        assert os.path.isfile(db_path)
 
         try:
-            shutil.rmtree(journal)
+            shutil.rmtree(ec.ignition_journal_dir)
         except OSError:
             pass
 
-        assert os.path.isdir(journal) is False
-        api.ignition_journal = journal
         cls.app = api.app.test_client()
         cls.app.testing = True
 
-        if os.path.isfile("%s" % TestAPI.matchbox_bin) is False:
-            raise IOError("%s" % TestAPI.matchbox_bin)
-        cls.p_matchbox = Process(target=TestAPI.process_target)
+        cls.p_matchbox = Process(target=TestAPI.process_target_matchbox)
         os.write(1, "PPID -> %s\n" % os.getpid())
         cls.p_matchbox.start()
         assert cls.p_matchbox.is_alive() is True
 
-        cls.matchbox_running(cls.matchbox_uri, cls.p_matchbox)
+        cls.matchbox_running(ec.matchbox_uri, cls.p_matchbox)
 
     @classmethod
     def tearDownClass(cls):
@@ -156,7 +139,7 @@ class TestAPI(unittest.TestCase):
             "echo start /boot.ipxe\n" \
             ":retry_dhcp\n" \
             "dhcp || goto retry_dhcp\n" \
-            "chain http://localhost/ipxe?uuid=${uuid}&mac=${net0/mac:hexhyp}&domain=${domain}&hostname=${hostname}&serial=${serial}\n"
+            "chain http://127.0.0.1:5000/ipxe?uuid=${uuid}&mac=${net0/mac:hexhyp}&domain=${domain}&hostname=${hostname}&serial=${serial}\n"
         result = self.app.get('/boot.ipxe')
         self.assertEqual(result.status_code, 200)
         self.assertEqual(result.data, expect)
@@ -167,7 +150,7 @@ class TestAPI(unittest.TestCase):
             "echo start /boot.ipxe\n" \
             ":retry_dhcp\n" \
             "dhcp || goto retry_dhcp\n" \
-            "chain http://localhost/ipxe?uuid=${uuid}&mac=${net0/mac:hexhyp}&domain=${domain}&hostname=${hostname}&serial=${serial}\n"
+            "chain http://127.0.0.1:5000/ipxe?uuid=${uuid}&mac=${net0/mac:hexhyp}&domain=${domain}&hostname=${hostname}&serial=${serial}\n"
         result = self.app.get('/boot.ipxe.0')
         self.assertEqual(result.status_code, 200)
         self.assertEqual(result.data, expect)
@@ -196,7 +179,8 @@ class TestAPI(unittest.TestCase):
             u'/static/<path:filename>',
             u'/scheduler/<string:role>',
             u'/scheduler/ip-list/<string:role>',
-            u'/scheduler/available'
+            u'/scheduler/available',
+            u'/shutdown'
         ]
         self.maxDiff = None
         result = self.app.get('/')
@@ -213,7 +197,7 @@ class TestAPI(unittest.TestCase):
         marker = "%s-%s" % (TestAPI.__name__.lower(), self.test_04_ipxe.__name__)
         ignition_file = "inte-%s.yaml" % marker
         gen = generator.Generator(
-            api_uri=self.api_uri,
+            api_uri=ec.api_uri,
             profile_id="id-%s" % marker,
             name="name-%s" % marker,
             ignition_id=ignition_file,
@@ -238,7 +222,7 @@ class TestAPI(unittest.TestCase):
         marker = "%s-%s" % (TestAPI.__name__.lower(), self.test_05_ipxe_selector.__name__)
         ignition_file = "inte-%s.yaml" % marker
         gen = generator.Generator(
-            api_uri=self.api_uri,
+            api_uri=ec.api_uri,
             profile_id="id-%s" % marker,
             name="name-%s" % marker,
             ignition_id=ignition_file,
