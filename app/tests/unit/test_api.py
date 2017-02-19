@@ -4,8 +4,11 @@ import shutil
 import unittest
 
 from app import api
+from app import configs
 from app import model
 from common import posts
+
+ec = configs.EnjoliverConfig()
 
 
 class TestAPI(unittest.TestCase):
@@ -14,20 +17,17 @@ class TestAPI(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        db_path = "%s/%s.sqlite" % (cls.dbs_path, TestAPI.__name__.lower())
-        db = "sqlite:///%s" % db_path
         try:
-            os.remove(db_path)
+            os.remove(ec.db_path)
         except OSError:
             pass
         api.ignition_journal = "%s/ignition_journal" % cls.unit_path
 
         shutil.rmtree(api.ignition_journal, ignore_errors=True)
 
-        engine = api.create_engine(db)
+        engine = api.create_engine(ec.db_uri)
         model.Base.metadata.create_all(engine)
         api.engine = engine
-        api.application.config["API_URI"] = "http://localhost"
         cls.app = api.app.test_client()
 
         cls.app.testing = True
@@ -55,7 +55,7 @@ class TestAPI(unittest.TestCase):
                  'echo start /boot.ipxe\n' \
                  ':retry_dhcp\n' \
                  'dhcp || goto retry_dhcp\n' \
-                 'chain http://localhost/ipxe?' \
+                 'chain http://127.0.0.1:5000/ipxe?' \
                  'uuid=${uuid}&' \
                  'mac=${net0/mac:hexhyp}&' \
                  'domain=${domain}&' \
@@ -72,7 +72,7 @@ class TestAPI(unittest.TestCase):
                  'echo start /boot.ipxe\n' \
                  ':retry_dhcp\n' \
                  'dhcp || goto retry_dhcp\n' \
-                 'chain http://localhost/ipxe?' \
+                 'chain http://127.0.0.1:5000/ipxe?' \
                  'uuid=${uuid}&' \
                  'mac=${net0/mac:hexhyp}&' \
                  'domain=${domain}&' \
@@ -92,7 +92,7 @@ class TestAPI(unittest.TestCase):
         result = self.app.get('/fake')
         self.assertEqual(result.status_code, 404)
         content = result.data
-        self.assertEqual(content, "404\n")
+        self.assertEqual(content, "404")
 
     def test_root(self):
         result = self.app.get('/')
@@ -121,7 +121,8 @@ class TestAPI(unittest.TestCase):
             u'/static/<path:filename>',
             u'/scheduler/<string:role>',
             u'/scheduler/ip-list/<string:role>',
-            u'/scheduler/available'
+            u'/scheduler/available',
+            u'/shutdown'
         ])
 
     def test_discovery_00(self):
