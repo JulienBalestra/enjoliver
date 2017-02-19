@@ -40,11 +40,9 @@ if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "foreign
     for k, v in ec.__dict__.iteritems():
         LOGGER.info("<config> %s=%s" % (k, v))
 
-    # Start the db
+    # Start the db engine
     LOGGER.info("Create engine %s" % application.config["DB_URI"])
     engine = create_engine(application.config["DB_URI"])
-    # LOGGER.info("Create model %s" % application.config["DB_URI"])
-    # model.Base.metadata.create_all(engine)
     LOGGER.info("Engine with <driver: %s> " % engine.driver)
 
 

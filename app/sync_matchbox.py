@@ -136,17 +136,22 @@ class ConfigSyncSchedules(object):
         self.log.debug("no extra selectors")
         return {}
 
+    @staticmethod
+    def sort_the_list(l):
+        l.sort()
+        return l
+
     @property
     def etcd_member_ip_list(self):
-        return self._query_ip_list(schedulerv2.ScheduleRoles.etcd_member)
+        return self.sort_the_list(self._query_ip_list(schedulerv2.ScheduleRoles.etcd_member))
 
     @property
     def kubernetes_control_plane_ip_list(self):
-        return self._query_ip_list(schedulerv2.ScheduleRoles.kubernetes_control_plane)
+        return self.sort_the_list(self._query_ip_list(schedulerv2.ScheduleRoles.kubernetes_control_plane))
 
     @property
     def kubernetes_nodes_ip_list(self):
-        return self._query_ip_list(schedulerv2.ScheduleRoles.kubernetes_node)
+        return self.sort_the_list(self._query_ip_list(schedulerv2.ScheduleRoles.kubernetes_node))
 
     @property
     def etcd_initial_cluster(self):
@@ -182,6 +187,7 @@ class ConfigSyncSchedules(object):
 
         machine_roles = self._query_roles(*roles)
         for i, m in enumerate(machine_roles):
+            random.seed(m["mac"].__hash__())
             automatic_name = "k8s-control-plane-%d" % i
             selector = {"mac": m["mac"]}
             fqdn = self.get_dns_name(m["ipv4"], automatic_name)
@@ -234,6 +240,7 @@ class ConfigSyncSchedules(object):
 
         machine_roles = self._query_roles(*roles)
         for i, m in enumerate(machine_roles):
+            random.seed(m["mac"].__hash__())
             automatic_name = "k8s-node-%d" % i
             selector = {"mac": m["mac"]}
             fqdn = self.get_dns_name(m["ipv4"], automatic_name)
@@ -287,6 +294,7 @@ class ConfigSyncSchedules(object):
         r = requests.get("%s/scheduler/%s" % (self.api_uri, roles))
         d = json.loads(r.content)
         r.close()
+        d.sort()
         return d
 
     def _query_ip_list(self, role):
@@ -294,4 +302,5 @@ class ConfigSyncSchedules(object):
         r = requests.get("%s/scheduler/ip-list/%s" % (self.api_uri, role))
         d = json.loads(r.content)
         r.close()
+        d.sort()
         return d
