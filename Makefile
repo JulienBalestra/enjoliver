@@ -107,7 +107,7 @@ runner: submodules
 	make -C runtime
 
 enjoliver_aci:
-	make -C enjoliver
+	make -C enjoliver test
 
 front:
 	make -C app/static
