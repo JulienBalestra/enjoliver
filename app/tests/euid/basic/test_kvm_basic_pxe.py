@@ -14,6 +14,7 @@ except ImportError:
     import kvm_player
 
 
+@unittest.skipIf(os.getenv("KVM_PXE", None) is None, "TestKVMBasicPXE need env KVM_PXE=whatever")
 class TestKVMBasicPXE(kvm_player.KernelVirtualMachinePlayer):
     flask_ok_port = 5050
 

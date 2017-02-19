@@ -93,9 +93,9 @@ def show_configs(ec):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='Enjoliver')
     parser.add_argument('task', type=str, choices=["gunicorn", "plan", "matchbox", "show-configs", "validate"],
-                        help="Choose your task to run")
+                        help="Choose the task to run")
     parser.add_argument('--configs', type=str, default="%s/configs.yaml" % app_path,
-                        help="Choose your configs file")
+                        help="Choose the yaml config file")
     task = parser.parse_args().task
     f = parser.parse_args().configs
     ec = configs.EnjoliverConfig(f)

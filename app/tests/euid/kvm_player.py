@@ -81,9 +81,10 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     kvm_sleep_between_node = 3
     wait_setup_teardown = 3
 
+    os.environ["ENJOLIVER_API_URI"] = api_uri
+    os.environ["ENJOLIVER_MATCHBOX_PATH"] = test_matchbox_path
+    os.environ["ENJOLIVER_MATCHBOX_ASSETS"] = assets_path
     ec = configs.EnjoliverConfig()
-
-    os.environ["API_URI"] = api_uri
 
     @staticmethod
     def pause(t=600):
@@ -127,25 +128,19 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     @staticmethod
     def process_target_api():
-        api.cache.clear()
-        db_path = "%s/euid.sqlite" % KernelVirtualMachinePlayer.euid_path
-        journal = "%s/ignition_journal" % KernelVirtualMachinePlayer.euid_path
-
         try:
-            os.remove(db_path)
+            os.remove(KernelVirtualMachinePlayer.ec.db_path)
         except OSError:
             pass
 
-        shutil.rmtree(journal, ignore_errors=True)
+        shutil.rmtree(KernelVirtualMachinePlayer.ec.ignition_journal_dir, ignore_errors=True)
 
-        os.environ["DB_PATH"] = db_path
-        os.environ["IGNITION_JOURNAL_DIR"] = journal
         try:
             with open("%s/.config/enjoliver/config.json" % os.getenv("HOME")) as f:
                 conf = json.load(f)
-                os.environ["AWS_ACCESS_KEY_ID"] = conf["AWS_ACCESS_KEY_ID"]
-                os.environ["AWS_SECRET_ACCESS_KEY"] = conf["AWS_SECRET_ACCESS_KEY"]
-                os.environ["BACKUP_BUCKET_NAME"] = "bbcenjoliver-dev"
+                os.environ["ENJOLIVER_AWS_ACCESS_KEY_ID"] = conf["AWS_ACCESS_KEY_ID"]
+                os.environ["ENJOLIVER_AWS_SECRET_ACCESS_KEY"] = conf["AWS_SECRET_ACCESS_KEY"]
+                os.environ["ENJOLIVER_BACKUP_BUCKET_NAME"] = "bbcenjoliver-dev"
         except (IOError, ValueError):
             pass
         cmd = [
