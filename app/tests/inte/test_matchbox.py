@@ -1,16 +1,16 @@
 import httplib
 import json
 import os
-import urllib2
-from unittest import TestCase
-from multiprocessing import Process
-import subprocess
-
-import time
-
 import sys
+import time
+import urllib2
+from multiprocessing import Process
+from unittest import TestCase
 
 from app import generator
+from app import configs
+
+# ec = configs.EnjoliverConfig()
 
 
 class IOErrorToWarning(object):
@@ -47,18 +47,17 @@ class TestBootConfigCommon(TestCase):
 
     @staticmethod
     def process_target():
+        os.environ["ENJOLIVER_MATCHBOX_PATH"] = TestBootConfigCommon.test_matchbox_path
+        os.environ["ENJOLIVER_MATCHBOX_ASSETS"] = TestBootConfigCommon.assets_path
         cmd = [
-            "%s" % TestBootConfigCommon.matchbox_bin,
-            "-data-path", "%s" % TestBootConfigCommon.test_matchbox_path,
-            "-assets-path", "%s" % TestBootConfigCommon.assets_path,
-            # "-address", "%s" % TestBootConfigCommon.matchbox_address,
-            "-log-level", "debug"
+            "%s/manage.py" % TestBootConfigCommon.project_path,
+            "matchbox"
         ]
         os.write(1, "PID  -> %s\n"
                     "exec -> %s\n" % (
                      os.getpid(), " ".join(cmd)))
         sys.stdout.flush()
-        os.execv(cmd[0], cmd)
+        os.execve(cmd[0], cmd, os.environ)
 
     @classmethod
     def generator(cls):
@@ -94,9 +93,6 @@ class TestBootConfigCommon(TestCase):
     def setUpClass(cls):
         time.sleep(0.1)
         cls.clean_sandbox()
-        os.environ["API_URI"] = cls.api_uri
-
-        subprocess.check_output(["make"], cwd=cls.project_path)
         if os.path.isfile("%s" % TestBootConfigCommon.matchbox_bin) is False:
             raise IOError("%s" % TestBootConfigCommon.matchbox_bin)
         cls.p_matchbox = Process(target=TestBootConfigCommon.process_target)

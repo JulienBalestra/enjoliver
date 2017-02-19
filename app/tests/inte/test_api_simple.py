@@ -36,7 +36,7 @@ class TestAPI(unittest.TestCase):
         os.environ["ENJOLIVER_MATCHBOX_ASSETS"] = TestAPI.assets_path
         cmd = [
             "%s/manage.py" % TestAPI.project_path,
-            "matchbox"
+            "matchbox",
         ]
         os.write(1, "PID  -> %s\n"
                     "exec -> %s\n" % (
@@ -56,10 +56,7 @@ class TestAPI(unittest.TestCase):
         api.engine = engine
         api.cache.clear()
 
-        try:
-            shutil.rmtree(ec.ignition_journal_dir)
-        except OSError:
-            pass
+        shutil.rmtree(ec.ignition_journal_dir, ignore_errors=True)
 
         cls.app = api.app.test_client()
         cls.app.testing = True

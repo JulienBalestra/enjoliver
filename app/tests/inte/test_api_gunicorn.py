@@ -45,24 +45,23 @@ class TestAPIGunicorn(unittest.TestCase):
 
     @staticmethod
     def process_target_api():
+        os.environ["ENJOLIVER_API_URI"] = "http://127.0.0.1:5000"
         cmd = [
             "%s/manage.py" % TestAPIGunicorn.project_path,
-            "gunicorn"
+            "gunicorn",
         ]
         os.execve(cmd[0], cmd, os.environ)
 
     @classmethod
     def setUpClass(cls):
         time.sleep(0.1)
+        cls.clean_sandbox()
         try:
             os.remove(ec.db_path)
         except OSError:
             pass
 
-        try:
-            shutil.rmtree(ec.ignition_journal_dir)
-        except OSError:
-            pass
+        shutil.rmtree(ec.ignition_journal_dir, ignore_errors=True)
 
         cls.p_matchbox = Process(target=TestAPIGunicorn.process_target_matchbox)
         cls.p_api = Process(target=TestAPIGunicorn.process_target_api)
@@ -128,9 +127,8 @@ class TestAPIGunicorn(unittest.TestCase):
 
     @staticmethod
     def clean_sandbox():
-        dirs = ["%s/%s" % (
-            TestAPIGunicorn.test_matchbox_path, k) for k in (
-                    "profiles", "groups")]
+        dirs = ["%s/%s" % (TestAPIGunicorn.test_matchbox_path, k) for k in (
+            "profiles", "groups")]
         for d in dirs:
             for f in os.listdir(d):
                 if ".json" in f:

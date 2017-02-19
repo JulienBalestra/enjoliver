@@ -76,10 +76,7 @@ class TestAPIGunicornScheduler(unittest.TestCase):
         except OSError:
             pass
 
-        try:
-            shutil.rmtree(ec.ignition_journal_dir)
-        except OSError:
-            pass
+        shutil.rmtree(ec.ignition_journal_dir, ignore_errors=True)
 
         cls.clean_sandbox()
 
