@@ -59,4 +59,11 @@ make validate
 
 chown -R root: ${ENJOLIVER}
 
+rm -Rf ${ENJOLIVER}/chain
+rm -Rf ${ENJOLIVER}/cni
+rm -Rf ${ENJOLIVER}/discoveryC
+rm -Rf ${ENJOLIVER}/.git
+
+find  ${ENJOLIVER}/runtime -not -name matchbox -delete || true
+
 mv ${ENJOLIVER} ${ROOTFS}/opt

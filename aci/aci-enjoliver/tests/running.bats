@@ -2,7 +2,12 @@
 
 
 @test "Tests are OK" {
-  make -C /opt/enjoliver check
+  make -C /opt/enjoliver/app/tests check
+  [ $? -eq 0 ]
+}
+
+@test "Default config" {
+  /opt/enjoliver/manage.py show-configs
   [ $? -eq 0 ]
 }
 
