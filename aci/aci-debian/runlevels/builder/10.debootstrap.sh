@@ -29,6 +29,6 @@ cd /
 zcat /tmp/gpgv/data.tar.xz | tar xvh
 
 echo 'Debootstrapping new Jessie image'
-LANG=C /usr/bin/cdebootstrap-static --arch=amd64 --flavour=minimal --verbose jessie ${ROOTFS}
+LANG=C /usr/bin/cdebootstrap-static --arch=amd64 --flavour=minimal jessie ${ROOTFS}
 
 rm -Rf  ${ROOTFS}/usr/share/locale/*

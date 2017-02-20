@@ -27,9 +27,9 @@ logging_level: 'DEBUG'
 apply_deps_tries: 15
 apply_deps_delay: 60
 
-#matchbox_pid_file: '~/enjoliver/app/matchbox.pid'
-#gunicorn_pid_file: '~/enjoliver/enjoliver/app/gunicorn.pid'
-#plan_pid_file: '~/enjoliver/enjoliver/app/plan.pid'
+#matchbox_pid_file: '/opt/enjoliver/app/matchbox.pid'
+#gunicorn_pid_file: '/opt/enjoliver/app/gunicorn.pid'
+#plan_pid_file: '/opt/enjoliver/app/plan.pid'
 
 gunicorn_worker_type: 'gevent'
 gunicorn_workers: 1

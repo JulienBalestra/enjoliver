@@ -19,9 +19,19 @@ from app import (
 
 
 def init_db(ec):
+    if "sqlite://" in ec.db_uri:
+        directory = os.path.exists(os.path.dirname(ec.db_path))
+        if not directory:
+            os.makedirs(directory)
+
     import sqlalchemy
     engine = sqlalchemy.create_engine(ec.db_uri)
     model.Base.metadata.create_all(engine)
+
+
+def init_journal_dir(ec):
+    if not ec.ignition_journal_dir:
+        os.makedirs(ec.ignition_journal_dir)
 
 
 def gunicorn(ec):
@@ -103,6 +113,7 @@ if __name__ == '__main__':
     ec = configs.EnjoliverConfig(f)
     if task == "gunicorn":
         init_db(ec)
+        init_journal_dir(ec)
         gunicorn(ec)
     elif task == "plan":
         plan(ec)
