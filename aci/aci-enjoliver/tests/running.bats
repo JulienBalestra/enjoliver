@@ -1,14 +1,13 @@
 #!/dgr/bin/bats
 
 
-
 @test "Tests are OK" {
   make -C /opt/enjoliver check
   [ $? -eq 0 ]
 }
 
 @test "Default config" {
-  /opt/enjoliver/manage.py show-config
+  /opt/enjoliver/manage.py show-configs
   [ $? -eq 0 ]
 }
 
