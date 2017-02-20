@@ -64,7 +64,8 @@ class ConfigSyncSchedules(object):
             self.log.error("fail to get host by addr: %s %s" % (e, e.message))
             raise
 
-    def get_dns_attr(self, fqdn):
+    @staticmethod
+    def get_dns_attr(log, fqdn):
         """
         TODO: Use LLDP to avoid vendor specific usage
         :param fqdn: e.g: r13-srv3.dc-1.foo.bar.cr
@@ -82,7 +83,7 @@ class ConfigSyncSchedules(object):
         try:
             d["dc"] = s[1]
         except IndexError:
-            self.log.error("IndexError %s[1] after split(.)" % fqdn)
+            log.error("IndexError %s[1] after split(.)" % fqdn)
             return d
         d["domain"] = ".".join(s[1:])
         try:
@@ -90,7 +91,7 @@ class ConfigSyncSchedules(object):
             d["rack"] = re.sub("[^0-9]+", "", rack)
             d["pos"] = re.sub("[^0-9]+", "", pos)
         except ValueError:
-            self.log.error("error during the split rack/pos %s" % s[0])
+            log.error("error during the split rack/pos %s" % s[0])
         return d
 
     @staticmethod
@@ -191,7 +192,7 @@ class ConfigSyncSchedules(object):
             automatic_name = "k8s-control-plane-%d" % i
             selector = {"mac": m["mac"]}
             fqdn = self.get_dns_name(m["ipv4"], automatic_name)
-            dns_attr = self.get_dns_attr(fqdn)
+            dns_attr = self.get_dns_attr(self.log, fqdn)
             selector.update(self.get_extra_selectors(self.extra_selector))
             gen = generator.Generator(
                 api_uri=self.api_uri,
@@ -244,7 +245,7 @@ class ConfigSyncSchedules(object):
             automatic_name = "k8s-node-%d" % i
             selector = {"mac": m["mac"]}
             fqdn = self.get_dns_name(m["ipv4"], automatic_name)
-            dns_attr = self.get_dns_attr(fqdn)
+            dns_attr = self.get_dns_attr(self.log, fqdn)
             selector.update(self.get_extra_selectors(self.extra_selector))
             gen = generator.Generator(
                 api_uri=self.api_uri,

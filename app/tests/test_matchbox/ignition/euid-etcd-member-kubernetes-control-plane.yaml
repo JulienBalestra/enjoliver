@@ -163,6 +163,7 @@ systemd:
       contents: |
         [Unit]
         After=fetch-metadata.service
+        Requires=install-etcd.service
 
         [Service]
         EnvironmentFile=/etc/metadata.env
@@ -174,9 +175,11 @@ systemd:
         RequiredBy=multi-user.target
 
     - name: etcd.service
+      mask: true
       enable: false
 
     - name: etcd2.service
+      mask: true
       enable: false
 
     - name: etcd3.service
@@ -185,7 +188,6 @@ systemd:
         [Unit]
         After=fetch-metadata.service
         After=install-etcd.service
-        After=fetch-metadata.service
         Conflicts=etcd.service etcd2.service
 
         After=etcd-operator.service
@@ -198,6 +200,7 @@ systemd:
         Environment=ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380,http://0.0.0.0:7001
         RestartSec=60s
         Restart=on-failure
+        LimitNOFILE=65826
         [Install]
         WantedBy=multi-user.target
 
@@ -208,11 +211,13 @@ systemd:
         After=fetch-metadata.service
         After=installs.target
         After=rkt-api.service
+        After=etcd3.service
         Requires=rkt-api.service
 
         [Service]
         EnvironmentFile=/etc/metadata.env
         Environment=MANIFESTS=/etc/kubernetes/manifests
+        ExecStartPre=/opt/etcd/etcdctl ls
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
         ExecStartPre=/bin/mkdir -pv $MANIFESTS
         ExecStart=/opt/bin/kubelet \
@@ -300,6 +305,7 @@ systemd:
             [Unit]
             After=fetch-metadata.service
             After=installs.target
+            After=etcd3.service
             [Service]
             EnvironmentFile=/etc/metadata.env
             ExecStart=
@@ -403,7 +409,6 @@ storage:
                   port: 10251
                 initialDelaySeconds: 15
                 timeoutSeconds: 15
-
 
     - path: /etc/metadata-endpoints.env
       filesystem: root

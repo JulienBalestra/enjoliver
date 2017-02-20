@@ -159,9 +159,11 @@ systemd:
         RequiredBy=multi-user.target
 
     - name: etcd.service
+      mask: true
       enable: false
 
     - name: etcd2.service
+      mask: true
       enable: false
 
     - name: etcd3.service
@@ -189,11 +191,13 @@ systemd:
         After=fetch-metadata.service
         After=installs.target
         After=rkt-api.service
+        After=etcd3.service
         Requires=rkt-api.service
 
         [Service]
         EnvironmentFile=/etc/metadata.env
         Environment=MANIFESTS=/etc/kubernetes/manifests
+        ExecStartPre=/opt/etcd/etcdctl ls
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
         ExecStartPre=/bin/mkdir -pv $MANIFESTS
         ExecStart=/opt/bin/kubelet \
@@ -281,6 +285,7 @@ systemd:
             [Unit]
             After=fetch-metadata.service
             After=installs.target
+            After=etcd3.service
             [Service]
             EnvironmentFile=/etc/metadata.env
             ExecStart=
@@ -417,6 +422,8 @@ storage:
           tar -C ${OPT_CNI} -xzvf /tmp/${CNI_ARCHIVE}
           ln -sv ${OPT_CNI}/bin/cnitool ${FULL_PATH_DIR_CNI}
 
+          rm -Rfv ${CNI_ARCHIVE}
+
           set +e
 
           ${FULL_PATH_CNI}
@@ -511,6 +518,8 @@ storage:
           mv -v ${DOWNLOAD_ETCD_DIR}/etcdctl ${FULL_PATH_ETCDCTL}
           ln -s ${FULL_PATH_ETCDCTL} /opt/bin
 
+          rm -Rfv ${DOWNLOAD_ETCD_DIR}
+
           set +e
 
           ${FULL_PATH_ETCD} --version
@@ -564,6 +573,8 @@ storage:
           mv -v ${DOWNLOAD_FLEET_DIR}/fleetctl ${FULL_PATH_FLEETCTL}
           ln -s ${FULL_PATH_FLEETCTL} /opt/bin
 
+          rm -Rfv ${DOWNLOAD_FLEET_DIR}
+
           set +e
 
           ${FULL_PATH_FLEET} --version
@@ -579,7 +590,7 @@ storage:
       filesystem: root
       contents:
         inline: |
-          etcd_servers = [ "http://127.0.0.1:2379",{{ .etcd_member_client_uri_list }} ]
+          etcd_servers = [ http://127.0.0.1:2379,{{ .etcd_member_client_uri_list }} ]
           metadata = "name={{.dns_attr.shortname}}"
 
     - path: /etc/modprobe.d/bonding.conf
