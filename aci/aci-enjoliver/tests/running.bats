@@ -6,11 +6,6 @@
   [ $? -eq 0 ]
 }
 
-@test "Default config" {
-  /opt/enjoliver/manage.py show-configs
-  [ $? -eq 0 ]
-}
-
 @test "validation is OK" {
     /opt/enjoliver/manage.py validate
   [ $? -eq 0 ]

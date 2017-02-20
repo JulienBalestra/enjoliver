@@ -28,6 +28,7 @@ class EnjoliverConfig(object):
         #     raise AttributeError("api_uri have to be set")
         self.gunicorn_workers = self.config_override("gunicorn_workers", 1)
         self.gunicorn_worker_type = self.config_override("gunicorn_worker_type", "sync")
+        self.gunicorn_bind = self.config_override("gunicorn_bind", "0.0.0.0:5000")
 
         # Bootcfg aka CoreOS Baremetal aka Matchbox
         self.matchbox_uri = self.config_override("matchbox_uri", "http://127.0.0.1:8080")

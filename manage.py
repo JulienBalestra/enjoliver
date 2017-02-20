@@ -33,7 +33,7 @@ def gunicorn(ec):
         "--worker-class",
         ec.gunicorn_worker_type,
         "-b",
-        "0.0.0.0:5000",
+        ec.gunicorn_bind,
         "--log-level",
         ec.logging_level.lower(),
         "-w",

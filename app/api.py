@@ -15,7 +15,7 @@ from configs import EnjoliverConfig
 
 ec = EnjoliverConfig()
 
-if "werkzeug_cache" in ec.__dict__ and ec.werkzeug_cache == "SimpleCache":
+if int(ec.gunicorn_workers) == 1:
     from werkzeug.contrib.cache import SimpleCache
 
     cache = SimpleCache()
