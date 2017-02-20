@@ -56,7 +56,7 @@ if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "_"):
 @application.route("/shutdown", methods=["POST"])
 def shutdown():
     LOGGER.warning("shutdown asked")
-    backup.backup_sqlite(cache=cache, application=application)
+    # backup.backup_sqlite(cache=cache, application=application)
     pid_files = [ec.plan_pid_file, ec.matchbox_pid_file]
     gunicorn_pid = None
     pid_list = []
@@ -64,31 +64,35 @@ def shutdown():
     for pid_file in pid_files:
         try:
             with open(pid_file) as f:
-                pid_list.append(int(f.read()))
+                pid_number = int(f.read())
+            os.remove(pid_file)
+            pid_list.append(psutil.Process(pid_number))
         except IOError:
             LOGGER.error("IOError -> %s" % pid_file)
+        except psutil.NoSuchProcess as e:
+            LOGGER.error("%s already dead: %s" % (e, pid_file))
 
     try:
         with open(ec.gunicorn_pid_file) as f:
-            gunicorn_pid = int(f.read())
+            pid_number = int(f.read())
+        os.remove(ec.gunicorn_pid_file)
+        gunicorn_pid = psutil.Process(pid_number)
     except IOError:
         LOGGER.error("IOError -> %s" % ec.gunicorn_pid_file)
+    except psutil.NoSuchProcess as e:
+        LOGGER.error("%s already dead: %s" % (e, ec.gunicorn_pid_file))
 
-    for i, pid in enumerate(pid_list):
-        try:
-            p = psutil.Process(pid)
-            LOGGER.warning("SIGTERM -> %d" % pid)
-            p.terminate()
-            LOGGER.warning("wait -> %d" % pid)
-            p.wait()
-            LOGGER.warning("%d running: %s " % (pid, p.is_running()))
-        except psutil.NoSuchProcess:
-            LOGGER.error("%d already dead" % pid)
+    for pid in pid_list:
+        LOGGER.info("SIGTERM -> %s" % pid)
+        pid.terminate()
+        LOGGER.info("wait -> %s" % pid)
+        pid.wait()
+        LOGGER.info("%s running: %s " % (pid, pid.is_running()))
 
     pid_list.append(gunicorn_pid)
-    p = psutil.Process(gunicorn_pid)
-    p.terminate()
-    return Response("SIGTERM to %s\n" % pid_list, status=200, mimetype="text/plain")
+    l = ["%s" % k for k in pid_list]
+    gunicorn_pid.terminate()
+    return jsonify(l)
 
 
 @application.route("/config", methods=["GET"])

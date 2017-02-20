@@ -105,7 +105,7 @@ push: $(DGR) $(RKT)
 test: $(DGR) $(RKT)
 	@echo ENV eg: IMAGE=$(CWD)/../aci/debian
 	test $(IMAGE)
-	$(DGR) -H $(CWD) test -W $(IMAGE)
+	$(DGR) -H $(CWD) test -W $(IMAGE) --loglevel="debug"
 
 clean: $(DGR)
 	@echo ENV eg: IMAGE=$(CWD)/../aci/debian
