@@ -13,7 +13,7 @@ extra_selectors:
   os: 'installed'
 
 api_uri: 'http://127.0.0.1:5000'
-assets_server_uri: 'http://172.20.0.1'
+#assets_server_uri: 'http://172.20.0.1'
 #kernel: '/assets/coreos/serve/coreos_production_pxe.vmlinuz'
 #initrd: '/assets/coreos/serve/coreos_production_pxe_image.cpio.gz'
 
@@ -31,8 +31,8 @@ apply_deps_delay: 60
 #gunicorn_pid_file: '~/enjoliver/enjoliver/app/gunicorn.pid'
 #plan_pid_file: '~/enjoliver/enjoliver/app/plan.pid'
 
-gunicorn_worker_type: 'sync'
-gunicorn_workers: 3
+gunicorn_worker_type: 'gevent'
+gunicorn_workers: 1
 gunicorn_bind: "0.0.0.0:5000"
 
 #db_path: '/var/lib/enjoliver/enjoliver.sqlite'
