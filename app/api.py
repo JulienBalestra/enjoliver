@@ -1,4 +1,5 @@
 import os
+import socket
 import time
 import urllib2
 
@@ -11,6 +12,7 @@ import backup
 import crud
 import logger
 import model
+import sync_matchbox
 from configs import EnjoliverConfig
 
 ec = EnjoliverConfig()
@@ -424,6 +426,11 @@ def user_interface():
 
 @application.route('/ui/view/machine', methods=['GET'])
 def user_view_machine():
+    """
+    TODO This will change to use VueJS and avoid multiple queries
+    :return:
+    """
+
     key = "discovery"
     all_data = cache.get(key)
     if all_data is None:
@@ -434,16 +441,25 @@ def user_view_machine():
         all_data = fetch.get_all()
         cache.set(key, all_data, timeout=30)
 
-    res = [["created-date", "updated-date", "uuid", "cidr-boot", "mac-boot"]]
+    res = [["created-date", "updated-date", "cidr-boot", "mac-boot", "shortname", "roles"]]
     for i in all_data:
         sub_list = list()
         sub_list.append(i["boot-info"]["created-date"])
         sub_list.append(i["boot-info"]["updated-date"])
-        sub_list.append(i["boot-info"]["uuid"])
         for j in i["interfaces"]:
             if j["as_boot"]:
                 sub_list.append(j["cidrv4"])
                 sub_list.append(j["mac"])
+                try:
+                    fqdn = socket.gethostbyaddr(j["cidrv4"].split("/")[0])
+                    dns_attr = sync_matchbox.ConfigSyncSchedules.get_dns_attr(LOGGER, fqdn)
+                    sub_list.append(dns_attr["shortname"])
+                except socket.herror:
+                    sub_list.append("unknown")
+                s = crud.FetchSchedule(engine)
+                roles = s.get_roles_by_mac_selector(j["mac"])
+                sub_list.append(roles if roles else "available")
+
         res.append(sub_list)
 
     return jsonify(res)

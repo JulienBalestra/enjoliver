@@ -18,7 +18,7 @@ class TestConfigSyncSchedules(TestCase):
             ignition_dict={},
             extra_selector_dict=None,
         )
-        d = s.get_dns_attr("r13-srv3.dc-1.foo.bar.cr")
+        d = s.get_dns_attr(s.log, "r13-srv3.dc-1.foo.bar.cr")
         self.assertEqual({
             'dc': 'dc-1',
             'shortname': 'r13-srv3',
@@ -34,7 +34,7 @@ class TestConfigSyncSchedules(TestCase):
             ignition_dict={},
             extra_selector_dict=None,
         )
-        d = s.get_dns_attr("r13srv3.dc-1.foo.bar.cr")
+        d = s.get_dns_attr(s.log, "r13srv3.dc-1.foo.bar.cr")
         self.assertEqual({
             'dc': 'dc-1',
             'shortname': 'r13srv3',
@@ -50,7 +50,7 @@ class TestConfigSyncSchedules(TestCase):
             ignition_dict={},
             extra_selector_dict=None,
         )
-        d = s.get_dns_attr("kubernetes-control-plane-0")
+        d = s.get_dns_attr(s.log, "kubernetes-control-plane-0")
         self.assertEqual({
             'dc': '',
             'domain': '',
