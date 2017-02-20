@@ -75,12 +75,15 @@ def shutdown():
         LOGGER.error("IOError -> %s" % ec.gunicorn_pid_file)
 
     for i, pid in enumerate(pid_list):
-        p = psutil.Process(pid)
-        LOGGER.warning("SIGTERM -> %d" % pid)
-        p.terminate()
-        LOGGER.warning("wait -> %d" % pid)
-        p.wait()
-        LOGGER.warning("%d running: %s " % (pid, p.is_running()))
+        try:
+            p = psutil.Process(pid)
+            LOGGER.warning("SIGTERM -> %d" % pid)
+            p.terminate()
+            LOGGER.warning("wait -> %d" % pid)
+            p.wait()
+            LOGGER.warning("%d running: %s " % (pid, p.is_running()))
+        except psutil.NoSuchProcess:
+            LOGGER.error("%d already dead" % pid)
 
     pid_list.append(gunicorn_pid)
     p = psutil.Process(gunicorn_pid)
