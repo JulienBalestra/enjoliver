@@ -11,7 +11,7 @@ export GOROOT=/usr/local/go
 export GOPATH=/go
 export PATH=$PATH:/go/bin:/usr/local/go/bin
 
-VERSION=v1.5.2
+VERSION=v1.5.3
 
 # Fetch sources
 WORK_DIR="${GOPATH}/k8s.io/kubernetes"
