@@ -95,7 +95,8 @@ class CommonScheduler(object):
             r = requests.get(url)
             done = json.loads(r.content)
             r.close()
-            self.log.info("done:%d expected:%d" % (len(done), self.expected_nb))
+            if done != self.expected_nb:
+                self.log.info("%s -> done:%d expected:%d" % ("&".join(self.roles), len(done), self.expected_nb))
             if len(done) < self.expected_nb:
                 self.log.debug("%d < %d" % (len(done), self.expected_nb))
                 return self.__apply_available_budget()
@@ -113,7 +114,8 @@ class CommonScheduler(object):
             r.close()
             available_list = self.fetch_available(self.api_uri)
             available_list.sort()
-            self.log.info("done:%d available:%d" % (done, len(available_list)))
+            if available_list:
+                self.log.info("%s -> done:%d available:%d" % ("&".join(self.roles), done, len(available_list)))
             for available in available_list:
                 done += self._affect(available)
 
