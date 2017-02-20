@@ -458,7 +458,7 @@ def user_view_machine():
                     sub_list.append("unknown")
                 s = crud.FetchSchedule(engine)
                 roles = s.get_roles_by_mac_selector(j["mac"])
-                sub_list.append(roles if roles else "no-role")
+                sub_list.append(roles if roles else "none")
 
         res.append(sub_list)
 
