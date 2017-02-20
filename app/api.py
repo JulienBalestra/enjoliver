@@ -451,7 +451,7 @@ def user_view_machine():
                 sub_list.append(j["cidrv4"])
                 sub_list.append(j["mac"])
                 try:
-                    fqdn = socket.gethostbyaddr(j["cidrv4"].split("/")[0])
+                    fqdn = socket.gethostbyaddr(j["cidrv4"].split("/")[0])[0]
                     dns_attr = sync_matchbox.ConfigSyncSchedules.get_dns_attr(LOGGER, fqdn)
                     sub_list.append(dns_attr["shortname"])
                 except socket.herror:

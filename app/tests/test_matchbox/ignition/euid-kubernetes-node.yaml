@@ -233,6 +233,7 @@ systemd:
         [Service]
         EnvironmentFile=/etc/metadata.env
         Environment=MANIFESTS=/etc/kubernetes/manifests
+        ExecStartPre=/opt/etcd/etcdctl ls
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
         ExecStartPre=/bin/mkdir -pv $MANIFESTS
         ExecStart=/opt/bin/kubelet \
