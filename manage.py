@@ -49,6 +49,8 @@ def gunicorn(ec):
 def matchbox(ec):
     cmd = [
         "%s/runtime/matchbox/matchbox" % project_path,
+        "-address",
+        ec.matchbox_uri.replace("https://", "").replace("http://", ""),
         "-assets-path",
         "%s" % ec.matchbox_assets,
         "-data-path",

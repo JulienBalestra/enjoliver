@@ -1,4 +1,5 @@
 import os
+import time
 
 import yaml
 
@@ -18,12 +19,8 @@ class EnjoliverConfig(object):
             return default
 
     def __init__(self, yaml_full_path="%s/configs.yaml" % os.path.dirname(__file__)):
-        try:
-            with open(yaml_full_path) as f:
-                self.c = yaml.load(f)
-        except IOError:
-            with open(yaml_full_path.replace(".yaml", ".yml")) as f:
-                self.c = yaml.load(f)
+        with open(yaml_full_path) as f:
+            self.c = yaml.load(f)
 
         # Flask Public endpoint
         self.api_uri = self.config_override("api_uri", None)
@@ -63,8 +60,11 @@ class EnjoliverConfig(object):
         self.backup_bucket_directory = self.config_override("backup_bucket_directory", "enjoliver")
 
         # Gen
-        self.kernel = self.config_override("kernel", "/assets/coreos/serve/coreos_production_pxe.vmlinuz")
-        self.initrd = self.config_override("initrd", "/assets/coreos/serve/coreos_production_pxe_image.cpio.gz")
+        self.assets_server_uri = self.config_override("assets_server_uri", None)
+        self.kernel = self.config_override("kernel",
+                                           "/assets/coreos/serve/coreos_production_pxe.vmlinuz")
+        self.initrd = self.config_override("initrd",
+                                           "/assets/coreos/serve/coreos_production_pxe_image.cpio.gz")
 
         # Scheduler
         self.apply_deps_tries = self.config_override("apply_deps_tries", 15)
@@ -119,10 +119,18 @@ class EnjoliverConfig(object):
         self.plan_pid_file = self.config_override("plan_pid_file", "%s/plan.pid" % os.path.dirname(__file__))
 
         if self.logging_level.lower() == "debug":
+            s = '-' * 5
+            os.write(2, "%s\nconfigs file: %s\n%s\n" % (s, yaml_full_path, s))
             for k, v in self.__dict__.iteritems():
-                os.write(2, "<config> %s=%s\n" % (k, v))
+                os.write(2, "DEBUG Configs %s=%s\n" % (k, v))
+            os.write(2, "configs file: %s\n%s\n" % (yaml_full_path, s * 5))
 
 
 if __name__ == '__main__':
     ec = EnjoliverConfig("%s/configs.yaml" % os.path.dirname(__file__))
-    print yaml.dump(ec)
+    time.sleep(0.5)
+    for k, v in ec.__dict__.iteritems():
+        if type(v) is str:
+            print "%s: '%s'" % (k, v)
+        else:
+            print "%s: %s" % (k, v)

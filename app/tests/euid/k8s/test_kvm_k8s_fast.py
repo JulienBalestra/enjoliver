@@ -62,7 +62,7 @@ class TestKVMK8SFast0(TestKVMK8sFast):
                     "--name",
                     "%s" % m,
                     "--network=bridge:rack0,model=virtio",
-                    "--memory=%d" % (self.get_optimized_memory() // 2),
+                    "--memory=%d" % self.get_optimized_memory(nb_node),
                     "--vcpus=2",
                     "--pxe",
                     "--disk",

@@ -1,38 +1,57 @@
-api_uri: "http://127.0.0.1:5000"
-apply_deps_delay: 60
+#aws_id: null
+#aws_secret: null
+#backup_bucket_name: ''
+backup_bucket_directory: 'enjoliver'
+backup_lock_key: 'backup_lock'
+
+ignition_dict:
+  kubernetes_nodes: 'k8s-node'
+  etcd_member_kubernetes_control_plane: 'etcd-member-control-plane'
+  discovery': 'discovery'
+
+extra_selectors:
+  os: 'installed'
+
+api_uri: 'http://127.0.0.1:5000'
+#assets_server_uri: 'http://172.20.0.1:8080'
+#kernel: '/assets/coreos/serve/coreos_production_pxe.vmlinuz'
+#initrd: '/assets/coreos/serve/coreos_production_pxe_image.cpio.gz'
+
+matchbox_path: '/var/lib/matchbox'
+matchbox_uri: 'http://127.0.0.1:8080'
+matchbox_assets: '/var/lib/matchbox/assets'
+matchbox_urls: ['/', '/boot.ipxe', '/boot.ipxe.0', '/assets', '/metadata']
+
+logging_level: 'DEBUG'
+
 apply_deps_tries: 15
-aws_id: null
-aws_secret: null
-backup_bucket_directory: "enjoliver"
-backup_bucket_name: ''
-backup_lock_key: "backup_lock"
-#db_path: null
-#db_uri: null
-etc_hosts: ["172.20.0.1 enjoliver.local"]
-etcd_advertise_client_port: 2379
-etcd_data_dir: "/var/lib/etcd3"
-etcd_initial_advertise_peer_port: 2380
+apply_deps_delay: 60
+
+#matchbox_pid_file: '~/enjoliver/app/matchbox.pid'
+#gunicorn_pid_file: '~/enjoliver/enjoliver/app/gunicorn.pid'
+#plan_pid_file: '~/enjoliver/enjoliver/app/plan.pid'
+
+gunicorn_worker_type: 'sync'
+gunicorn_workers: 3
+
+#db_path: '/var/lib/enjoliver/enjoliver.sqlite'
+#db_uri: 'sqlite:////var/lib/enjoliver/enjoliver.sqlite'
+#ignition_journal_dir: '/var/lib/enjoliver/ignition_journal'
+
 etcd_member_kubernetes_control_plane_expected_nb: 3
-extra_selectors: {os: "installed"}
-gunicorn_pid_file: null
-gunicorn_workers: 1
-hyperkube_image_url: "enjoliver.local/hyperkube:latest"
-ignition_dict: {discovery: "discovery", etcd_member_kubernetes_control_plane: "etcd-member-control-plane",
-  kubernetes_nodes: "k8s-node"}
-ignition_journal_dir: null
-initrd: "/assets/coreos/serve/coreos_production_pxe_image.cpio.gz"
-kernel: "/assets/coreos/serve/coreos_production_pxe.vmlinuz"
+
+etcd_data_dir: '/var/lib/etcd3'
+etcd_advertise_client_port: 2379
+etcd_initial_advertise_peer_port: 2380
 kubernetes_api_server_port: 8080
-kubernetes_service_cluster_ip_range: "172.30.0.0/24"
-lldp_image_url: "enjoliver.local/lldp:latest"
-logging_level: "DEBUG"
-matchbox_assets: "/var/lib/matchbox/assets"
-matchbox_path: "/var/lib/matchbox"
-matchbox_pid_file: null
-matchbox_uri: "http://127.0.0.1:8080"
-matchbox_urls: ["/", "/boot.ipxe", "/boot.ipxe.0", "/assets", "/metadata"]
-plan_pid_file: null
-range_nb_ips: 253
+
+kubernetes_service_cluster_ip_range: '172.30.0.0/24'
+
 skip_ips: 1
+range_nb_ips: 253
 sub_ips: 256
-werkzeug_cache: "SimpleCache"
+
+lldp_image_url: 'enjoliver.local/lldp:latest'
+hyperkube_image_url: 'enjoliver.local/hyperkube:latest'
+
+etc_hosts: ['172.20.0.1 enjoliver.local']

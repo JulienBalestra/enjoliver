@@ -137,8 +137,8 @@ class GenerateProfile(GenerateCommon):
 
     def _boot(self):
         self._target_data["boot"] = {
-            "kernel": "%s%s" % (self.api_uri, ec.kernel),
-            "initrd": ["%s%s" % (self.api_uri, ec.initrd)],
+            "kernel": "%s%s" % (ec.assets_server_uri if ec.assets_server_uri else self.api_uri, ec.kernel),
+            "initrd": ["%s%s" % (ec.assets_server_uri if ec.assets_server_uri else self.api_uri, ec.initrd)],
             "cmdline": {
                 "coreos.config.url":
                     "%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}" % self.api_uri,

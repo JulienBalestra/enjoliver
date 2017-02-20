@@ -113,22 +113,22 @@ systemd:
         [Service]
         Type=oneshot
         EnvironmentFile=/etc/metadata-endpoints.env
-        Environment=FULL_PATH_DIR_HYPERKUBE=/opt/bin
-        Environment=FULL_PATH_HYPERKUBE=/opt/bin/hyperkube
         ExecStartPre=/opt/rkt/rkt fetch --insecure-options=all {{.hyperkube_image_url}}
         ExecStartPre=/opt/rkt/rkt image extract --rootfs-only --overwrite {{.hyperkube_image_url}} /tmp/hyperkube
         ExecStartPre=/bin/cp -v /tmp/hyperkube/hyperkube /opt/bin/hyperkube
+        ExecStartPre=/bin/rm -Rfv /tmp/hyperkube
         ExecStart=/bin/bash -c 'cd /opt/bin && ./hyperkube --make-symlinks'
 
-        ExecReload=-/bin/rm -v $FULL_PATH_HYPERKUBE \
-          ${FULL_PATH_DIR_HYPERKUBE}/apiserver \
-          ${FULL_PATH_DIR_HYPERKUBE}/controller-manager \
-          ${FULL_PATH_DIR_HYPERKUBE}/federation-apiserver \
-          ${FULL_PATH_DIR_HYPERKUBE}/federation-controller-manager \
-          ${FULL_PATH_DIR_HYPERKUBE}/kubectl \
-          ${FULL_PATH_DIR_HYPERKUBE}/kubelet \
-          ${FULL_PATH_DIR_HYPERKUBE}/proxy \
-          ${FULL_PATH_DIR_HYPERKUBE}/scheduler
+        ExecReload=-/bin/rm -v \
+          /opt/bin/hyperkube \
+          /opt/bin/apiserver \
+          /opt/bin/controller-manager \
+          /opt/bin/federation-apiserver \
+          /opt/bin/federation-controller-manager \
+          /opt/bin/kubectl \
+          /opt/bin/kubelet \
+          /opt/bin/proxy \
+          /opt/bin/scheduler
 
         RemainAfterExit=yes
         [Install]
@@ -500,6 +500,8 @@ storage:
           tar -C ${OPT_CNI} -xzvf /tmp/${CNI_ARCHIVE}
           ln -sv ${OPT_CNI}/bin/cnitool ${FULL_PATH_DIR_CNI}
 
+          rm -Rfv ${CNI_ARCHIVE}
+
           set +e
 
           ${FULL_PATH_CNI}
@@ -549,6 +551,7 @@ storage:
           done
           ln -sv ${OPT_RKT}/rkt /opt/bin
           ${FULL_PATH_RKT} version
+          rm -Rfv ${DOWNLOAD_RKT_DIR}
 
     - path: /opt/bin/install-etcd
       filesystem: root
@@ -592,6 +595,8 @@ storage:
           mv -v ${DOWNLOAD_ETCD_DIR}/etcd ${FULL_PATH_ETCD}
           mv -v ${DOWNLOAD_ETCD_DIR}/etcdctl ${FULL_PATH_ETCDCTL}
           ln -s ${FULL_PATH_ETCDCTL} /opt/bin
+
+          rm -Rfv ${DOWNLOAD_ETCD_DIR}
 
           set +e
 
@@ -645,6 +650,8 @@ storage:
           mv -v ${DOWNLOAD_FLEET_DIR}/fleetd ${FULL_PATH_FLEET}
           mv -v ${DOWNLOAD_FLEET_DIR}/fleetctl ${FULL_PATH_FLEETCTL}
           ln -s ${FULL_PATH_FLEETCTL} /opt/bin
+
+          rm -Rfv ${DOWNLOAD_FLEET_DIR}
 
           set +e
 

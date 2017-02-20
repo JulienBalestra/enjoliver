@@ -106,7 +106,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         os.environ["MATCHBOX_PATH"] = KernelVirtualMachinePlayer.test_matchbox_path
         cmd = [
             "%s/manage.py" % KernelVirtualMachinePlayer.project_path,
-            "matchbox"
+            "matchbox",
         ]
         os.write(1, "PID  -> %s\n"
                     "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
@@ -128,12 +128,15 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     @staticmethod
     def process_target_api():
+        os.environ["ENJOLIVER_DB_PATH"] = "%s/enjoliver.sqlite" % KernelVirtualMachinePlayer.euid_path
+        os.environ["ENJOLIVER_IGNITION_JOURNAL_DIR"] = "%s/ignition_journal" % KernelVirtualMachinePlayer.euid_path
+
         try:
-            os.remove(KernelVirtualMachinePlayer.ec.db_path)
+            os.remove(os.environ["ENJOLIVER_DB_PATH"])
         except OSError:
             pass
 
-        shutil.rmtree(KernelVirtualMachinePlayer.ec.ignition_journal_dir, ignore_errors=True)
+        shutil.rmtree(os.environ["ENJOLIVER_IGNITION_JOURNAL_DIR"], ignore_errors=True)
 
         try:
             with open("%s/.config/enjoliver/config.json" % os.getenv("HOME")) as f:
@@ -143,9 +146,10 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 os.environ["ENJOLIVER_BACKUP_BUCKET_NAME"] = "bbcenjoliver-dev"
         except (IOError, ValueError):
             pass
+
         cmd = [
             "%s/manage.py" % KernelVirtualMachinePlayer.project_path,
-            "gunicorn"
+            "gunicorn",
         ]
         os.write(1, "PID  -> %s\n"
                     "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
@@ -588,10 +592,11 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         self.assertEqual(len(ips), 0)
 
     @staticmethod
-    def get_optimized_memory():
+    def get_optimized_memory(nb_nodes):
         mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
         mem_gib = mem_bytes / (1024. ** 3)
-        return mem_gib * 1024 if mem_gib > 3 else 3 * 1024
+        usable_mem_gib = mem_gib * (1.2 if mem_gib > 12 else 1)
+        return (usable_mem_gib // nb_nodes) * 1024
 
     def kubectl_proxy(self, api_server_uri, proxy_port):
         def run():
