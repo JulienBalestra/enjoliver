@@ -95,7 +95,7 @@ class CommonScheduler(object):
             r = requests.get(url)
             done = json.loads(r.content)
             r.close()
-            if done != self.expected_nb:
+            if len(done) != self.expected_nb:
                 self.log.info("%s -> done:%d expected:%d" % ("&".join(self.roles), len(done), self.expected_nb))
             if len(done) < self.expected_nb:
                 self.log.debug("%d < %d" % (len(done), self.expected_nb))
