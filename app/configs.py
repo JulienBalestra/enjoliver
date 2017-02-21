@@ -6,11 +6,14 @@ import yaml
 class EnjoliverConfig(object):
     def config_override(self, key, default):
         env = "ENJOLIVER_%s" % key.upper()
-        e = os.getenv(env, None)
-        if e is not None:
+        try:
+            e = os.environ[key]
             print "RECOGNIZED ENV %s=%s" % (env, e)
             self.from_env[key] = e
             return e
+        except KeyError:
+            pass
+
         try:
             return self.from_yaml[key]
         except KeyError:
