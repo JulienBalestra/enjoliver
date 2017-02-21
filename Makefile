@@ -51,8 +51,8 @@ acserver:
 	./runtime/runtime.acserver &
 
 acis: acserver
-	make -C lldp
-	make -C hyperkube
+	make -C lldp || pkill acserver && exit 1
+	make -C hyperkube || pkill acserver && exit 1
 	# Find a better way to stop it
 	pkill acserver
 
@@ -109,7 +109,7 @@ setup_runtime: submodules
 	make -C runtime
 
 aci_enjoliver: acserver
-	make -C enjoliver test
+	make -C enjoliver test || pkill acserver && exit 1
 	# Find a better way to stop it
 	pkill acserver
 
@@ -128,6 +128,7 @@ dev_setup:
 	su - $(MY_USER) -c "make -C $(CWD) submodules"
 	su - $(MY_USER) -c "make -C $(CWD) setup_runtime"
 	su - $(MY_USER) -c "make -C $(CWD) front"
+	su - $(MY_USER) -c "make -C $(CWD) pip"
 	make -C $(CWD) acis
 	su - $(MY_USER) -c "make -C $(CWD) assets"
 	su - $(MY_USER) -c "make -C $(CWD) validate"
@@ -140,5 +141,6 @@ prod_setup:
 	su - $(MY_USER) -c "make -C $(CWD) submodules"
 	su - $(MY_USER) -c "make -C $(CWD) setup_runtime"
 	su - $(MY_USER) -c "make -C $(CWD) front"
+	su - $(MY_USER) -c "make -C $(CWD) pip"
 	su - $(MY_USER) -c "make -C $(CWD) assets"
 	su - $(MY_USER) -c "make -C $(CWD) validate"
