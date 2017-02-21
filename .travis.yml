@@ -12,8 +12,6 @@ dist: trusty
 before_install:
   - sudo apt-get autoclean
   - sudo apt-get autoremove
-  - sudo apt-get update
-  - sudo apt-get upgrade
 
 install:
   - sudo make apt
