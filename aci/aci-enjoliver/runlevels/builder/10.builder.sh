@@ -51,8 +51,6 @@ chown -R ${MY_USER}: ${ENJOLIVER}
 
 make prod_setup
 
-make clean_after_assets
-
 chown -R root: ${ENJOLIVER}
 
 rm -Rf ${ENJOLIVER}/chain
