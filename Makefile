@@ -44,11 +44,13 @@ $(ENV):
 pip: $(ENV)
 	$(ENV)/bin/pip install -r requirements.txt
 
-acis:
+acserver:
 	test $(shell id -u -r) -eq 0
 	# Check if the port is available
 	curl 127.0.0.1 && exit 1 || true
 	./runtime/runtime.acserver &
+
+acis: acserver
 	make -C lldp
 	make -C hyperkube
 	# Find a better way to stop it
@@ -103,11 +105,13 @@ submodules:
 validate:
 	@./validate.py
 
-runner: submodules
+setup_runtime: submodules
 	make -C runtime
 
-enjoliver_aci:
+aci_enjoliver: acserver
 	make -C enjoliver test
+	# Find a better way to stop it
+	pkill acserver
 
 front:
 	make -C app/static
@@ -117,14 +121,24 @@ config:
 	touch $(HOME)/.config/enjoliver/config.env
 	touch $(HOME)/.config/enjoliver/config.json
 
-setup:
+dev_setup:
 	echo "Need MY_USER for non root operations"
 	test $(MY_USER)
 	test $(shell id -u -r) -eq 0
 	su - $(MY_USER) -c "make -C $(CWD) submodules"
-	su - $(MY_USER) -c "make -C $(CWD) runner"
+	su - $(MY_USER) -c "make -C $(CWD) setup_runtime"
 	su - $(MY_USER) -c "make -C $(CWD) front"
 	make -C $(CWD) acis
 	su - $(MY_USER) -c "make -C $(CWD) assets"
 	su - $(MY_USER) -c "make -C $(CWD) validate"
 	su - $(MY_USER) -c "make -C $(CWD) config"
+
+prod_setup:
+	echo "Need MY_USER for non root operations"
+	test $(MY_USER)
+	test $(shell id -u -r) -eq 0
+	su - $(MY_USER) -c "make -C $(CWD) submodules"
+	su - $(MY_USER) -c "make -C $(CWD) setup_runtime"
+	su - $(MY_USER) -c "make -C $(CWD) front"
+	su - $(MY_USER) -c "make -C $(CWD) assets"
+	su - $(MY_USER) -c "make -C $(CWD) validate"

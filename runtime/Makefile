@@ -1,8 +1,7 @@
 CWD=$(shell pwd)
 
-
 # DGR
-DGR_VERSION=v80
+DGR_VERSION=v81
 DGR_GITHUB_DOWNLOAD=https://github.com/blablacar/dgr/releases/download
 DGR_TAR=dgr-$(DGR_VERSION)-linux-amd64.tar.gz
 DGR_GITHUB=$(DGR_GITHUB_DOWNLOAD)/$(DGR_VERSION)/$(DGR_TAR)
@@ -10,16 +9,14 @@ DGR_DIR=$(CWD)/dgr
 DGR=$(DGR_DIR)/dgr
 DGR_DOWNLOAD_TAR=$(DGR_DIR)/$(DGR_TAR)
 
-
 # RKT
-RKT_VERSION=v1.23.0
+RKT_VERSION=v1.25.0
 RKT_GITHUB_DOWNLOAD=https://github.com/coreos/rkt/releases/download
 RKT_TAR=rkt-$(RKT_VERSION).tar.gz
 RKT_GITHUB=$(RKT_GITHUB_DOWNLOAD)/$(RKT_VERSION)/$(RKT_TAR)
 RKT_DIR=$(CWD)/rkt
 RKT=$(RKT_DIR)/rkt
 RKT_DOWNLOAD_TAR=$(RKT_DIR)/$(RKT_TAR)
-
 
 # MATCHBOX
 MATCHBOX_VERSION=v0.5.0
@@ -30,14 +27,11 @@ MATCHBOX_DIR=$(CWD)/matchbox
 MATCHBOX=$(MATCHBOX_DIR)/matchbox
 MATCHBOX_DOWNLOAD_TAR=$(MATCHBOX_DIR)/$(MATCHBOX_TAR)
 
-
 # ACSERVER
 ACSERVER_DIR=$(CWD)/acserver
 ACSERVER=$(ACSERVER_DIR)/acserver
 
 default: setup
-
-ac: $(ACSERVER)
 
 $(ACSERVER):
 	cd $(ACSERVER_DIR) && ln -sfv vendor src
@@ -55,14 +49,12 @@ $(MATCHBOX): $(MATCHBOX_DOWNLOAD_TAR)
 	tar -C $(MATCHBOX_DIR) -xzf $(MATCHBOX_DIR)/$(MATCHBOX_TAR) --strip-components=1
 	$(MATCHBOX) --version
 
-
 $(DGR_DOWNLOAD_TAR):
 	mkdir -pv $(DGR_DIR)
 	curl -fL $(DGR_GITHUB) -o $(DGR_DOWNLOAD_TAR)
 
 $(DGR): $(DGR_DOWNLOAD_TAR)
 	tar -C $(DGR_DIR) -xzf $(DGR_DIR)/$(DGR_TAR) --strip-components=1
-
 
 $(RKT_DOWNLOAD_TAR):
 	mkdir -pv $(RKT_DIR)
@@ -74,7 +66,6 @@ $(RKT): $(RKT_DOWNLOAD_TAR)
 	$(RKT) --local-config=$(CWD) fetch \
     		--insecure-options=all $(RKT_DIR)/stage1-coreos.aci
 	$(RKT) --local-config=$(CWD) image list
-
 
 setup: $(MATCHBOX) $(RKT) $(DGR) $(ACSERVER)
 
@@ -119,6 +110,7 @@ fclean:
 	rm -Rf $(DGR_DIR) || true
 	rm -Rf $(RKT_DIR) || true
 	rm -Rf $(MATCHBOX_DIR) || true
+	rm -Rf $(ACSERVER_DIR)/* || true
 	rm -Rf data || true
 	rm -Rf renders/*.render || true
 	rm -Rf target || true

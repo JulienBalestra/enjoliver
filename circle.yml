@@ -3,13 +3,9 @@
 
 dependencies:
   override:
-    - sudo apt-get update
+    - sudo apt-get update -qq
     - sudo make apt
 
 test:
   override:
-    - make submodules
-    - make runner
-    - make front
-    - make assets
-    - make check
+    - make prod_setup

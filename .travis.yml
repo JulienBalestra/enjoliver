@@ -16,7 +16,7 @@ install:
   - sudo make apt
 
 before_script:
-  - sudo MY_USER=travis make setup
+  - sudo MY_USER=travis make dev_setup
 
 script:
   - make check

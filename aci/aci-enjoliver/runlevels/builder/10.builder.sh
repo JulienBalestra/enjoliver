@@ -44,18 +44,14 @@ go version
 
 
 ### Enjoliver setup ###
-
 cd -P ${ENJOLIVER}
-useradd enjoliver -d ${ENJOLIVER}
-chown -R enjoliver ${ENJOLIVER}
-su - enjoliver -c "make submodules"
-su - enjoliver -c "make runner"
-su - enjoliver -c "make front"
-su - enjoliver -c "make pip"
+export MY_USER=enjoliver
+useradd ${MY_USER} -d ${ENJOLIVER}
+chown -R ${MY_USER} ${ENJOLIVER}
 
-su - enjoliver -c "make assets"
+make prod_setup
+
 make clean_after_assets
-make validate
 
 chown -R root: ${ENJOLIVER}
 
@@ -64,6 +60,6 @@ rm -Rf ${ENJOLIVER}/cni
 rm -Rf ${ENJOLIVER}/discoveryC
 rm -Rf ${ENJOLIVER}/.git
 
-find  ${ENJOLIVER}/runtime -not -name matchbox -delete || true
+find ${ENJOLIVER}/runtime -not -name matchbox -delete || true
 
 mv ${ENJOLIVER} ${ROOTFS}/opt

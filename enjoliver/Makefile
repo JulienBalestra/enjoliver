@@ -8,6 +8,7 @@ ACI=$(PROJECT)/aci
 DEBIAN=debian
 BUILDER_HYPERKUBE=builder-hyperkube
 BUILDER_ENJOLIVER=builder-enjoliver
+ENJOLIVER=enjoliver
 
 default: push
 
@@ -20,31 +21,30 @@ $(BUILDER_HYPERKUBE): $(DEBIAN)
 	IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE) make -C $(RUNTIME) install
 
 $(BUILDER_ENJOLIVER): $(BUILDER_HYPERKUBE)
-	@echo ENV IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE)
+	@echo ENV IMAGE=$(ACI)/aci-$(BUILDER_ENJOLIVER)
 	IMAGE=$(ACI)/aci-$(BUILDER_ENJOLIVER) make -C $(RUNTIME) install
 
 build: $(BUILDER_ENJOLIVER)
-	@echo ENV IMAGE=$(ACI)/aci-enjoliver
-	IMAGE=$(ACI)/aci-enjoliver make -C $(RUNTIME) build
+	@echo ENV IMAGE=$(ACI)/aci-$(ENJOLIVER)
+	IMAGE=$(ACI)/aci-$(ENJOLIVER) make -C $(RUNTIME) build
 
 install: build
-	@echo ENV IMAGE=$(ACI)/aci-enjoliver
-	IMAGE=$(ACI)/aci-enjoliver make -C $(RUNTIME) install
+	@echo ENV IMAGE=$(ACI)/aci-$(ENJOLIVER)
+	IMAGE=$(ACI)/aci-$(ENJOLIVER) make -C $(RUNTIME) install
 
 test: install
-	@echo ENV IMAGE=$(ACI)/aci-enjoliver
-	IMAGE=$(ACI)/aci-enjoliver make -C $(RUNTIME) test
+	@echo ENV IMAGE=$(ACI)/aci-$(ENJOLIVER)
+	IMAGE=$(ACI)/aci-$(ENJOLIVER) make -C $(RUNTIME) test
 
 push: test
-	@echo ENV IMAGE=$(ACI)/aci-enjoliver
-	IMAGE=$(ACI)/aci-enjoliver make -C $(RUNTIME) push
+	@echo ENV IMAGE=$(ACI)/aci-$(ENJOLIVER)
+	IMAGE=$(ACI)/aci-$(ENJOLIVER) make -C $(RUNTIME) push
 
 clean:
-	IMAGE=$(ACI)/aci-enjoliver make -C $(RUNTIME) clean
+	IMAGE=$(ACI)/aci-$(ENJOLIVER) make -C $(RUNTIME) clean
 	$(RKT) --local-config=$(RUNTIME) image gc --grace-period=0s
 
 fclean: clean
-	IMAGE=$(ACI)/aci-$(BASE) make -C $(RUNTIME) clean
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) clean
 	rm -v $(ENJOLIVER) || true
 
