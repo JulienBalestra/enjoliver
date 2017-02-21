@@ -102,7 +102,7 @@ class CommonScheduler(object):
                 return self.__apply_available_budget()
 
             return True
-        except requests.exceptions.ConnectionError:
+        except (requests.exceptions.ConnectionError, ValueError):
             self.log.error("ConnectionError %s" % url)
             return False
 
