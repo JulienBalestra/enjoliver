@@ -1,26 +1,24 @@
 import os
-import time
 
 import yaml
 
 
 class EnjoliverConfig(object):
     def config_override(self, key, default):
+        env = "ENJOLIVER_%s" % key.upper()
+        e = os.getenv(env, None)
+        if e is not None:
+            print "RECOGNIZED ENV %s=%s" % (env, e)
+            self.from_env[key] = e
+            return e
         try:
-            env = "ENJOLIVER_%s" % key.upper()
-            e = os.getenv(env, None)
-            if e is not None:
-                print "RECOGNIZED ENV %s=%s" % (env, e)
-                self.from_env[key] = e
-                return e
-            if not self.from_yaml[key]:
-                raise KeyError
             return self.from_yaml[key]
         except KeyError:
             self.default[key] = default
             return default
 
-    def __init__(self, yaml_full_path="%s/configs.yaml" % os.path.dirname(__file__)):
+    def __init__(self, yaml_full_path=os.getenv("ENJOLIVER_CONFIGS_YAML",
+                                                "%s/configs.yaml" % os.path.dirname(os.path.abspath(__file__)))):
         with open(yaml_full_path) as f:
             self.from_yaml = yaml.load(f)
 
@@ -73,24 +71,24 @@ class EnjoliverConfig(object):
                                            "/assets/coreos/serve/coreos_production_pxe_image.cpio.gz")
 
         # Scheduler
-        self.apply_deps_tries = self.config_override("apply_deps_tries", 15)
-        self.apply_deps_delay = self.config_override("apply_deps_delay", 60)
+        self.apply_deps_tries = int(self.config_override("apply_deps_tries", 15))
+        self.apply_deps_delay = int(self.config_override("apply_deps_delay", 60))
 
-        self.etcd_member_kubernetes_control_plane_expected_nb = self.config_override(
-            "etcd_member_kubernetes_control_plane_expected_nb", 3)
+        self.etcd_member_kubernetes_control_plane_expected_nb = int(self.config_override(
+            "etcd_member_kubernetes_control_plane_expected_nb", 3))
 
         # Sync Matchbox
-        self.sub_ips = self.config_override("sub_ips", 256)
-        self.range_nb_ips = self.config_override("range_nb_ips", 253)
-        self.skip_ips = self.config_override("skip_ips", 1)
+        self.sub_ips = int(self.config_override("sub_ips", 256))
+        self.range_nb_ips = int(self.config_override("range_nb_ips", 253))
+        self.skip_ips = int(self.config_override("skip_ips", 1))
 
         # Application config
-        self.kubernetes_api_server_port = self.config_override("kubernetes_api_server_port", 8080)
+        self.kubernetes_api_server_port = int(self.config_override("kubernetes_api_server_port", 8080))
         self.kubernetes_service_cluster_ip_range = self.config_override("kubernetes_service_cluster_ip_range",
                                                                         "172.30.0.0/24")
 
-        self.etcd_initial_advertise_peer_port = self.config_override("etcd_initial_advertise_peer_port", 2380)
-        self.etcd_advertise_client_port = self.config_override("etcd_advertise_client_port", 2379)
+        self.etcd_initial_advertise_peer_port = int(self.config_override("etcd_initial_advertise_peer_port", 2380))
+        self.etcd_advertise_client_port = int(self.config_override("etcd_advertise_client_port", 2379))
         self.etcd_data_dir = self.config_override("etcd_data_dir", "/var/lib/etcd3")
 
         # Use a real registry in production like:
@@ -130,7 +128,6 @@ class EnjoliverConfig(object):
 
 if __name__ == '__main__':
     ec = EnjoliverConfig("%s/configs.yaml" % os.path.dirname(__file__))
-    time.sleep(0.5)
     for k, v in ec.__dict__.iteritems():
         if type(v) is str:
             print "%s: '%s'" % (k, v)
