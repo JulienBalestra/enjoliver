@@ -114,7 +114,7 @@ class TestAPI(unittest.TestCase):
             u'/',
             u'/assets',
             u'/assets/<path:path>',
-            u'/config',
+            u'/configs',
             u'/ignition',
             u'/metadata',
             u"/scheduler",

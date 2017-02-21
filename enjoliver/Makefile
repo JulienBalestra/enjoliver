@@ -42,10 +42,12 @@ push: test
 
 clean:
 	IMAGE=$(ACI)/aci-$(ENJOLIVER) make -C $(RUNTIME) clean
-	$(RKT) --local-config=$(RUNTIME) image gc --grace-period=0s
 
 fclean: clean
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) clean
+	IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE) make -C $(RUNTIME) clean
+	IMAGE=$(ACI)/aci-$(BUILDER_ENJOLIVER) make -C $(RUNTIME) clean
+	IMAGE=$(ACI)/aci-$(ENJOLIVER) make -C $(RUNTIME) clean
 	rm -v $(ENJOLIVER) || true
 
 re: clean default

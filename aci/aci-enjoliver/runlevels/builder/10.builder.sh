@@ -47,7 +47,7 @@ go version
 cd -P ${ENJOLIVER}
 export MY_USER=enjoliver
 useradd ${MY_USER} -d ${ENJOLIVER}
-chown -R ${MY_USER} ${ENJOLIVER}
+chown -R ${MY_USER}: ${ENJOLIVER}
 
 make prod_setup
 

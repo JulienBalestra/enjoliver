@@ -11,16 +11,21 @@ class EnjoliverConfig(object):
             e = os.getenv(env, None)
             if e is not None:
                 print "RECOGNIZED ENV %s=%s" % (env, e)
+                self.from_env[key] = e
                 return e
-            if not self.c[key]:
+            if not self.from_yaml[key]:
                 raise KeyError
-            return self.c[key]
+            return self.from_yaml[key]
         except KeyError:
+            self.default[key] = default
             return default
 
     def __init__(self, yaml_full_path="%s/configs.yaml" % os.path.dirname(__file__)):
         with open(yaml_full_path) as f:
-            self.c = yaml.load(f)
+            self.from_yaml = yaml.load(f)
+
+        self.from_env = {}
+        self.default = {}
 
         # Flask Public endpoint
         self.api_uri = self.config_override("api_uri", None)
@@ -120,11 +125,7 @@ class EnjoliverConfig(object):
         self.plan_pid_file = self.config_override("plan_pid_file", "%s/plan.pid" % os.path.dirname(__file__))
 
         if self.logging_level.lower() == "debug":
-            s = '-' * 5
-            os.write(2, "%s\nconfigs file: %s\n%s\n" % (s, yaml_full_path, s))
-            for k, v in self.__dict__.iteritems():
-                os.write(2, "DEBUG Configs %s=%s\n" % (k, v))
-            os.write(2, "configs file: %s\n%s\n" % (yaml_full_path, s * 5))
+            os.write(2, "configs file: %s\n" % yaml_full_path)
 
 
 if __name__ == '__main__':

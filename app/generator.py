@@ -136,9 +136,14 @@ class GenerateProfile(GenerateCommon):
         }
 
     def _boot(self):
+        if ec.assets_server_uri:
+            self.log.debug("custom assets_server_uri=%s" % ec.assets_server_uri)
+            uri = ec.assets_server_uri
+        else:
+            uri = self.api_uri
         self._target_data["boot"] = {
-            "kernel": "%s%s" % (ec.assets_server_uri if ec.assets_server_uri else self.api_uri, ec.kernel),
-            "initrd": ["%s%s" % (ec.assets_server_uri if ec.assets_server_uri else self.api_uri, ec.initrd)],
+            "kernel": "%s%s" % (uri, ec.kernel),
+            "initrd": ["%s%s" % (uri, ec.initrd)],
             "cmdline": {
                 "coreos.config.url":
                     "%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}" % self.api_uri,

@@ -97,8 +97,8 @@ def shutdown():
     return jsonify(l)
 
 
-@application.route("/config", methods=["GET"])
-def config():
+@application.route("/configs", methods=["GET"])
+def configs():
     return jsonify(ec.__dict__)
 
 

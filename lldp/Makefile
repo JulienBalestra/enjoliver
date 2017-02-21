@@ -24,13 +24,15 @@ install: $(DEBIAN)
 push: $(DEBIAN)
 	IMAGE=$(ACI)/aci-$(LLDP) make -C $(RUNTIME) push
 
-clean:
-	rm -v $(LLDP) || true
+gc:
+	$(RKT) --local-config=$(RUNTIME) gc --grace-period=0s
+	$(RKT) --local-config=$(RUNTIME) image gc --grace-period=0s
+
+clean: gc
+	IMAGE=$(CWD)/aci-lldp make -C $(RUNTIME) clean
 
 fclean: clean
 	IMAGE=$(ACI)/aci-$(BASE) make -C $(RUNTIME) clean
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) clean
-	IMAGE=$(CWD)/aci-lldp make -C $(RUNTIME) clean
-	$(RKT) --local-config=$(RUNTIME) image gc --grace-period=0s
 
 re: clean default

@@ -203,7 +203,7 @@ class TestAPIGunicorn(unittest.TestCase):
             u'/ipxe',
             u'/assets',
             u'/assets/<path:path>',
-            u'/config',
+            u'/configs',
             u'/ignition',
             u'/metadata',
             u"/scheduler",
