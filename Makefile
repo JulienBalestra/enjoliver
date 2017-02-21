@@ -18,8 +18,11 @@ help:
 	@echo make assets
 	@echo make validate
 	@echo
-	@echo All in one:
-	@echo sudo MY_USER= make setup
+	@echo All in one for local usage:
+	@echo sudo MY_USER= make dev_setup
+	@echo
+	@echo All in one for production usage:
+	@echo sudo MY_USER= make prod_setup
 	@echo ----------------------
 	@echo Testing:
 	@echo make $(CHECK)
@@ -31,7 +34,7 @@ help:
 	@echo sudo make $(CHECK_EUID)
 	@echo ----------------------
 	@echo Release:
-	@echo sudo make release_aci
+	@echo sudo make aci_enjoliver
 	@echo ----------------------
 
 apt:
@@ -51,8 +54,8 @@ acserver:
 	./runtime/runtime.acserver &
 
 acis: acserver
-	make -C lldp || pkill acserver && exit 1
-	make -C hyperkube || pkill acserver && exit 1
+	make -C lldp || pkill acserver || exit 1
+	make -C hyperkube || pkill acserver || exit 1
 	# Find a better way to stop it
 	pkill acserver
 
@@ -109,7 +112,7 @@ setup_runtime: submodules
 	make -C runtime
 
 aci_enjoliver: acserver
-	make -C enjoliver test || pkill acserver && exit 1
+	make -C enjoliver test || pkill acserver || exit 1
 	# Find a better way to stop it
 	pkill acserver
 
