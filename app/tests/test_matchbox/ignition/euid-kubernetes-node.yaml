@@ -192,11 +192,11 @@ systemd:
         After=installs.target
         After=rkt-api.service
         After=etcd3.service
-        Requires=rkt-api.service
 
         [Service]
         EnvironmentFile=/etc/metadata.env
         Environment=MANIFESTS=/etc/kubernetes/manifests
+        ExecStartPre=/opt/rkt/rkt fetch --insecure-options=all {{.hyperkube_image_url}}
         ExecStartPre=/opt/etcd/etcdctl ls
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
         ExecStartPre=/bin/mkdir -pv $MANIFESTS
@@ -216,7 +216,8 @@ systemd:
           --container-runtime=rkt \
           --rkt-path=/opt/bin/rkt \
           --v=2
-        RestartSec=10s
+        RestartSec=30s
+        TimeoutStartSec=infinity
         Restart=on-failure
 
         [Install]
@@ -228,12 +229,14 @@ systemd:
         [Unit]
         After=kubelet-runonce.service
         After=rkt-api.service
+        After=etcd3.service
         Requires=rkt-api.service
 
         [Service]
         EnvironmentFile=/etc/metadata.env
         Environment=MANIFESTS=/etc/kubernetes/manifests
         ExecStartPre=/opt/etcd/etcdctl ls
+        ExecStartPre=/usr/bin/curl http://127.0.0.1:8080/healthz
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
         ExecStartPre=/bin/mkdir -pv $MANIFESTS
         ExecStart=/opt/bin/kubelet \
@@ -254,7 +257,7 @@ systemd:
           --rkt-path=/opt/bin/rkt \
           --v=2
         Restart=always
-        RestartSec=10
+        RestartSec=30s
 
         [Install]
         WantedBy=multi-user.target
@@ -634,6 +637,21 @@ storage:
       mode: 0644
       filesystem: root
 
+    - path: /etc/profile.d/path.sh
+      mode: 0755
+      filesystem: root
+      contents:
+        inline: |
+           export PATH=/opt/bin:$PATH
+
+    - path: /etc/modules-load.d/network.conf
+      mode: 0644
+      filesystem: root
+      contents:
+        inline: |
+          ip_tables
+          iptable_nat
+          nf_nat
 
 networkd:
   units:

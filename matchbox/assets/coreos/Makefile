@@ -18,7 +18,7 @@ ASC=CoreOS_Image_Signing_Key.asc
 KEY=$(addprefix $(VERSION)/, $(ASC))
 GPG=gpg
 
-default: $(KEY) $(KERNEL) $(INITRD) $(TEXT_VERSION) $(IMAGE)
+default: $(KEY) $(KERNEL) $(INITRD) $(TEXT_VERSION)
 
 $(VERSION):
 	test $(VERSION)
@@ -40,11 +40,6 @@ $(INITRD): $(KEY) $(VERSION)
 
 $(TEXT_VERSION): $(VERSION)
 	curl -Lf $(CHANNEL)/$(TEXT_VERSION) -o $(TEXT_VERSION)
-
-$(IMAGE): $(VERSION)
-	curl -Lf $(CHANNEL)/$(INITRD) -o $(INITRD)
-	curl -Lf $(CHANNEL)/$(INITRD).sig -o $(INITRD).sig
-	$(GPG)  --logger-fd 1 --verify $(KERNEL).sig
 
 clean:
 	@rm -rfv $(VERSION) 2>&1 || true
