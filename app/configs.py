@@ -2,12 +2,15 @@ import os
 
 import yaml
 
+app_path = os.path.dirname(os.path.abspath(__file__))
+project_path = os.path.dirname(app_path)
+
 
 class EnjoliverConfig(object):
     def config_override(self, key, default):
         env = "ENJOLIVER_%s" % key.upper()
         try:
-            e = os.environ[key]
+            e = os.environ[env]
             print "RECOGNIZED ENV %s=%s" % (env, e)
             self.from_env[key] = e
             return e
@@ -21,7 +24,7 @@ class EnjoliverConfig(object):
             return default
 
     def __init__(self, yaml_full_path=os.getenv("ENJOLIVER_CONFIGS_YAML",
-                                                "%s/configs.yaml" % os.path.dirname(os.path.abspath(__file__)))):
+                                                "%s/configs.yaml" % app_path)):
         with open(yaml_full_path) as f:
             self.from_yaml = yaml.load(f)
 
@@ -38,7 +41,7 @@ class EnjoliverConfig(object):
 
         # Bootcfg aka CoreOS Baremetal aka Matchbox
         self.matchbox_uri = self.config_override("matchbox_uri", "http://127.0.0.1:8080")
-        self.matchbox_path = self.config_override("matchbox_path", "/var/lib/matchbox")
+        self.matchbox_path = self.config_override("matchbox_path", "%s/matchbox" % project_path)
         self.matchbox_assets = self.config_override("matchbox_assets", "%s/assets" % self.matchbox_path)
         # For Health check
         self.matchbox_urls = self.config_override("matchbox_urls", [

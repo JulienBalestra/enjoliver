@@ -108,8 +108,11 @@ submodules:
 validate:
 	@./validate.py
 
-setup_runtime: submodules
-	make -C runtime
+dev_setup_runtime: submodules
+	make -C runtime dev_setup
+
+prod_setup_runtime:
+	make -C runtime prod_setup
 
 aci_enjoliver: acserver
 	make -C enjoliver test || pkill acserver || exit 1
@@ -129,7 +132,7 @@ dev_setup:
 	test $(MY_USER)
 	test $(shell id -u -r) -eq 0
 	su - $(MY_USER) -c "make -C $(CWD) submodules"
-	su - $(MY_USER) -c "make -C $(CWD) setup_runtime"
+	su - $(MY_USER) -c "make -C $(CWD) dev_setup_runtime"
 	su - $(MY_USER) -c "make -C $(CWD) front"
 	su - $(MY_USER) -c "make -C $(CWD) pip"
 	make -C $(CWD) acis
@@ -142,7 +145,7 @@ prod_setup:
 	test $(MY_USER)
 	test $(shell id -u -r) -eq 0
 	su - $(MY_USER) -c "make -C $(CWD) submodules"
-	su - $(MY_USER) -c "make -C $(CWD) setup_runtime"
+	su - $(MY_USER) -c "make -C $(CWD) prod_setup_runtime"
 	su - $(MY_USER) -c "make -C $(CWD) front"
 	su - $(MY_USER) -c "make -C $(CWD) pip"
 	su - $(MY_USER) -c "make -C $(CWD) assets"

@@ -49,8 +49,7 @@ def gunicorn(ec):
         "-w",
         "%s" % ec.gunicorn_workers,
     ]
-    os.write(1, "PID  -> %s\n"
-                "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
+    os.write(1, "exec[%s] -> %s\n" % (os.getpid(), " ".join(cmd)))
     with open(ec.gunicorn_pid_file, "w") as f:
         f.write("%d" % os.getpid())
     os.execve(cmd[0], cmd, os.environ)
@@ -68,8 +67,7 @@ def matchbox(ec):
         "-log-level",
         ec.logging_level.lower(),
     ]
-    os.write(1, "PID  -> %s\n"
-                "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
+    os.write(1, "exec[%s] -> %s\n" % (os.getpid(), " ".join(cmd)))
     with open(ec.matchbox_pid_file, "w") as f:
         f.write("%d" % os.getpid())
     os.execve(cmd[0], cmd, os.environ)
@@ -80,8 +78,7 @@ def plan(ec):
         python,
         "%s/plans/k8s_2t.py" % app_path,
     ]
-    os.write(1, "PID  -> %s\n"
-                "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
+    os.write(1, "exec[%s] -> %s\n" % (os.getpid(), " ".join(cmd)))
     with open(ec.plan_pid_file, "w") as f:
         f.write("%d" % os.getpid())
     os.execve(cmd[0], cmd, os.environ)
@@ -92,8 +89,7 @@ def validate():
         python,
         "%s/validate.py" % project_path,
     ]
-    os.write(1, "PID  -> %s\n"
-                "exec -> %s\n" % (os.getpid(), " ".join(cmd)))
+    os.write(1, "exec[%s] -> %s\n" % (os.getpid(), " ".join(cmd)))
     os.execve(cmd[0], cmd, os.environ)
 
 

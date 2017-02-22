@@ -31,7 +31,9 @@ MATCHBOX_DOWNLOAD_TAR=$(MATCHBOX_DIR)/$(MATCHBOX_TAR)
 ACSERVER_DIR=$(CWD)/acserver
 ACSERVER=$(ACSERVER_DIR)/acserver
 
-default: setup
+default: dev_setup
+
+prod_setup: $(MATCHBOX)
 
 $(ACSERVER):
 	cd $(ACSERVER_DIR) && ln -sfv vendor src
