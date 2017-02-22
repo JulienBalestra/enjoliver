@@ -13,4 +13,4 @@ go help || apt-get install -y golang
 jq -h || apt-get install -y jq
 
 # Fix for Travis
-(nodejs --version || npm --version) || apt-get install -y npm
+(nodejs --version || npm --version) || apt-get install -y nodejs
