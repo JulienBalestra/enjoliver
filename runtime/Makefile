@@ -69,7 +69,7 @@ $(RKT): $(RKT_DOWNLOAD_TAR)
     		--insecure-options=all $(RKT_DIR)/stage1-coreos.aci
 	$(RKT) --local-config=$(CWD) image list
 
-setup: $(MATCHBOX) $(RKT) $(DGR) $(ACSERVER)
+dev_setup: $(MATCHBOX) $(RKT) $(DGR) $(ACSERVER)
 
 gc:
 	$(RKT) --local-config=$(CWD) gc --grace-period=0s
