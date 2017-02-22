@@ -441,7 +441,7 @@ def user_view_machine():
         all_data = fetch.get_all()
         cache.set(key, all_data, timeout=30)
 
-    res = [["created-date", "updated-date", "cidr-boot", "mac-boot", "shortname", "roles"]]
+    res = [["created-date", "updated-date", "cidr-boot", "mac-boot", "fqdn", "roles"]]
     for i in all_data:
         sub_list = list()
         sub_list.append(i["boot-info"]["created-date"])
