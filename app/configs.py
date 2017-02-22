@@ -24,7 +24,7 @@ class EnjoliverConfig(object):
             return default
 
     def __init__(self, yaml_full_path=os.getenv("ENJOLIVER_CONFIGS_YAML",
-                                                "%s/configs.yaml" % app_path)):
+                                                "%s/configs.yaml" % app_path), importer=""):
         with open(yaml_full_path) as f:
             self.from_yaml = yaml.load(f)
 
@@ -129,7 +129,7 @@ class EnjoliverConfig(object):
         self.plan_pid_file = self.config_override("plan_pid_file", "%s/plan.pid" % os.path.dirname(__file__))
 
         if self.logging_level.lower() == "debug":
-            os.write(2, "configs file: %s\n" % yaml_full_path)
+            os.write(2, "configs file: %s for %s\n" % (yaml_full_path, importer))
 
 
 if __name__ == '__main__':

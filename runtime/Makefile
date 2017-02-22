@@ -17,6 +17,7 @@ RKT_GITHUB=$(RKT_GITHUB_DOWNLOAD)/$(RKT_VERSION)/$(RKT_TAR)
 RKT_DIR=$(CWD)/rkt
 RKT=$(RKT_DIR)/rkt
 RKT_DOWNLOAD_TAR=$(RKT_DIR)/$(RKT_TAR)
+RKT_DATASTORE=/tmp/rkt-data
 
 # MATCHBOX
 MATCHBOX_VERSION=v0.5.0
@@ -65,6 +66,8 @@ $(RKT_DOWNLOAD_TAR):
 $(RKT): $(RKT_DOWNLOAD_TAR)
 	$(RKT) version || tar -C $(RKT_DIR) -xzf $(RKT_DOWNLOAD_TAR) --strip-components=1
 	$(CWD)/config.py
+	mkdir -pv $(RKT_DATASTORE)
+	ln -svf $(RKT_DATASTORE) $(CWD)/data
 	$(RKT) --local-config=$(CWD) fetch \
     		--insecure-options=all $(RKT_DIR)/stage1-coreos.aci
 	$(RKT) --local-config=$(CWD) image list

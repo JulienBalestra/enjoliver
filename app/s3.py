@@ -12,7 +12,7 @@ class S3Operator(object):
     log = logger.get_logger(__file__)
 
     def __init__(self, bucket_name):
-        ec = EnjoliverConfig()
+        ec = EnjoliverConfig(importer=__file__)
         aws_id = ec.aws_id
         aws_secret = ec.aws_secret
 

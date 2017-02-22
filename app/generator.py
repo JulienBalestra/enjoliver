@@ -7,7 +7,7 @@ import re
 import logger
 from configs import EnjoliverConfig
 
-ec = EnjoliverConfig()
+ec = EnjoliverConfig(importer=__file__)
 
 
 class Generator(object):

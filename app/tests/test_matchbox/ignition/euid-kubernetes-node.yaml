@@ -116,7 +116,7 @@ systemd:
         ExecStartPre=/opt/rkt/rkt fetch --insecure-options=all {{.hyperkube_image_url}}
         ExecStartPre=/opt/rkt/rkt image extract --rootfs-only --overwrite {{.hyperkube_image_url}} /tmp/hyperkube
         ExecStartPre=/bin/cp -v /tmp/hyperkube/hyperkube /opt/bin/hyperkube
-        ExecStartPre=/bin/rm -Rfv /tmp/hyperkube
+        ExecStartPre=/bin/rm -Rf /tmp/hyperkube
         ExecStart=/bin/bash -c 'cd /opt/bin && ./hyperkube --make-symlinks'
 
         ExecReload=-/bin/rm -v \
@@ -196,8 +196,8 @@ systemd:
         [Service]
         EnvironmentFile=/etc/metadata.env
         Environment=MANIFESTS=/etc/kubernetes/manifests
-        ExecStartPre=/opt/rkt/rkt fetch --insecure-options=all {{.hyperkube_image_url}}
         ExecStartPre=/opt/etcd/etcdctl ls
+        ExecStartPre=/opt/rkt/rkt fetch --pull-policy=update --insecure-options=all {{.hyperkube_image_url}}
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
         ExecStartPre=/bin/mkdir -pv $MANIFESTS
         ExecStart=/opt/bin/kubelet \
@@ -211,12 +211,13 @@ systemd:
           --register-schedulable=false \
           --allow-privileged=true \
           --runonce=true \
+          --enable-server=false \
           --cloud-provider="" \
           \
           --container-runtime=rkt \
           --rkt-path=/opt/bin/rkt \
           --v=2
-        RestartSec=30s
+        RestartSec=15s
         TimeoutStartSec=infinity
         Restart=on-failure
 
@@ -236,7 +237,7 @@ systemd:
         EnvironmentFile=/etc/metadata.env
         Environment=MANIFESTS=/etc/kubernetes/manifests
         ExecStartPre=/opt/etcd/etcdctl ls
-        ExecStartPre=/usr/bin/curl http://127.0.0.1:8080/healthz
+        ExecStartPre=/usr/bin/curl -f http://127.0.0.1:8080/healthz
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
         ExecStartPre=/bin/mkdir -pv $MANIFESTS
         ExecStart=/opt/bin/kubelet \
@@ -249,6 +250,7 @@ systemd:
           --node-ip=${KUBELET_IP} \
           --register-schedulable=true \
           --allow-privileged=true \
+          --enable-custom-metrics \
           --api-servers=http://127.0.0.1:8080 \
           --node-labels=node=true \
           --cloud-provider="" \
@@ -312,6 +314,7 @@ storage:
             containers:
             - name: kube-apiserver
               image: {{.hyperkube_image_url}}
+              imagePullPolicy: IfNotPresent
               command:
               - /hyperkube
               - apiserver

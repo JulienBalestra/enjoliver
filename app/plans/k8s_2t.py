@@ -37,7 +37,7 @@ class Kubernetes2Tiers(object):
                                                        extra_selectors)
 
     def _init_discovery(self):
-        local_ec = EnjoliverConfig()
+        local_ec = EnjoliverConfig(importer=__file__)
         gen = generator.Generator(
             api_uri=self.api_uri,
             profile_id="discovery",
@@ -74,7 +74,7 @@ class Kubernetes2Tiers(object):
 if __name__ == '__main__':
     wait = 60
 
-    ec = EnjoliverConfig()
+    ec = EnjoliverConfig(importer=__file__)
     Kubernetes2Tiers.wait = wait
 
     k2t = Kubernetes2Tiers(

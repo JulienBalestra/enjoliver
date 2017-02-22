@@ -15,7 +15,7 @@ import model
 import sync_matchbox
 from configs import EnjoliverConfig
 
-ec = EnjoliverConfig()
+ec = EnjoliverConfig(importer=__file__)
 
 if int(ec.gunicorn_workers) == 1:
     from werkzeug.contrib.cache import SimpleCache

@@ -12,7 +12,7 @@ import logger
 import schedulerv2
 from configs import EnjoliverConfig
 
-ec = EnjoliverConfig()
+ec = EnjoliverConfig(importer=__file__)
 
 
 class ConfigSyncSchedules(object):

@@ -106,7 +106,7 @@ if __name__ == '__main__':
                         help="Choose the yaml config file")
     task = parser.parse_args().task
     f = parser.parse_args().configs
-    ec = configs.EnjoliverConfig(f)
+    ec = configs.EnjoliverConfig(yaml_full_path=f, importer=__file__)
     if task == "gunicorn":
         init_db(ec)
         init_journal_dir(ec)

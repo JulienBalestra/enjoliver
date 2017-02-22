@@ -14,7 +14,7 @@ from app import generator
 from app import model
 from common import posts
 
-ec = configs.EnjoliverConfig()
+ec = configs.EnjoliverConfig(importer=__file__)
 
 
 class TestAPI(unittest.TestCase):

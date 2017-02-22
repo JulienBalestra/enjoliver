@@ -10,7 +10,7 @@ from unittest import TestCase
 from app import generator
 from app import configs
 
-# ec = configs.EnjoliverConfig()
+# ec = configs.EnjoliverConfig(importer=__file__)
 
 
 class IOErrorToWarning(object):

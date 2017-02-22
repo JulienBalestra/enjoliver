@@ -8,7 +8,7 @@ import logger
 from configs import EnjoliverConfig
 from model import ScheduleRoles
 
-ec = EnjoliverConfig()
+ec = EnjoliverConfig(importer=__file__)
 
 
 class CommonScheduler(object):

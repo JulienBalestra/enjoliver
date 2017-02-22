@@ -13,7 +13,7 @@ spec:
   template:
     metadata:
       labels:
-        run: nginx-dhcp
+        run: nginx-cni
     spec:
       containers:
       - name: nginx-deploy-rs-pod

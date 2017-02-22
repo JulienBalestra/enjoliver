@@ -4,10 +4,11 @@ import os
 
 
 def rkt_path_d(path):
+    rkt_data = "/tmp/rkt-data"
     data = {
         "rktKind": "paths",
         "rktVersion": "v1",
-        "data": "%s/data" % path,
+        "data": rkt_data,
         "stage1-images": "%s/rkt" % path
     }
     try:
@@ -15,7 +16,7 @@ def rkt_path_d(path):
     except OSError:
         pass
     try:
-        os.makedirs("%s/data/" % path)
+        os.makedirs(rkt_data)
     except OSError:
         pass
 

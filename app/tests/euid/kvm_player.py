@@ -84,7 +84,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     os.environ["ENJOLIVER_API_URI"] = api_uri
     os.environ["ENJOLIVER_MATCHBOX_PATH"] = test_matchbox_path
     os.environ["ENJOLIVER_MATCHBOX_ASSETS"] = assets_path
-    ec = configs.EnjoliverConfig()
+    ec = configs.EnjoliverConfig(importer=__file__)
 
     @staticmethod
     def pause(t=600):
@@ -271,18 +271,21 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     @classmethod
     def set_rack0(cls):
-        ret = subprocess.call([
-            "%s" % KernelVirtualMachinePlayer.rkt_bin,
-            "--local-config=%s" % KernelVirtualMachinePlayer.tests_path,
-            "run",
-            "quay.io/coreos/dnsmasq:v0.3.0",
-            "--insecure-options=all",
-            "--net=rack0",
-            "--interactive",
-            "--set-env=TERM=%s" % os.getenv("TERM", "xterm"),
-            "--exec",
-            "/bin/true"])
-        os.write(1, "\rBridge w/ iptables creation exitcode:%d\n\r" % ret)
+        if subprocess.call(["ip", "link", "show", "rack0"]) != 0:
+            cmd = [
+                "%s" % KernelVirtualMachinePlayer.rkt_bin,
+                "--local-config=%s" % KernelVirtualMachinePlayer.tests_path,
+                "run",
+                "quay.io/coreos/dnsmasq:v0.3.0",
+                "--insecure-options=all",
+                "--net=rack0",
+                "--interactive",
+                "--set-env=TERM=%s" % os.getenv("TERM", "xterm"),
+                "--exec",
+                "/bin/true"]
+            os.write(1, "\rcall %s\n\r" % " ".join(cmd))
+            ret = subprocess.call(cmd)
+            os.write(1, "\rBridge w/ iptables creation exitcode:%d\n\r" % ret)
         assert subprocess.call(["ip", "link", "show", "rack0"]) == 0
 
     @classmethod
@@ -331,7 +334,9 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             if p.is_alive():
                 os.write(1, "\n\rTERM -> %s %s\n\r" % (p.pid, p.name))
                 p.terminate()
-                p.join()
+                p.join(10)
+                if p.is_alive():
+                    os.kill(p.pid, 9)
                 os.write(1, "\rEND -> %s %s\n\r" % (p.exitcode, p.name))
             os.write(1, "\rEXITED -> %s %s\n\r" % (p.exitcode, p.name))
 
@@ -601,7 +606,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     def kubectl_proxy(self, api_server_uri, proxy_port):
         def run():
             cmd = [
-                "%s/hyperkube/serve/hyperkube" % self.assets_path,
+                "%s/hyperkube/hyperkube" % self.project_path,
                 "kubectl",
                 "-s",
                 "%s" % api_server_uri,

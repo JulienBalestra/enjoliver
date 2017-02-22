@@ -103,7 +103,13 @@ class TestKVMK8SFast0(TestKVMK8sFast):
             self.write_ending(marker)
         finally:
             if os.getenv("TEST"):
-                self.iteractive_usage(api_server_uri="http://%s:8080" % sync.kubernetes_control_plane_ip_list[0])
+                self.iteractive_usage(
+                    api_server_uri="http://%s:8080" % sync.kubernetes_control_plane_ip_list[0],
+                    fns=[
+                        sch_cp.apply,
+                        sch_no.apply,
+                        sync.apply
+                    ])
             for i in xrange(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \

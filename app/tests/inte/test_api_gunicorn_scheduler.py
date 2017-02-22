@@ -17,7 +17,7 @@ from app import schedulerv2
 from app import sync_matchbox
 from common import posts
 
-ec = configs.EnjoliverConfig()
+ec = configs.EnjoliverConfig(importer=__file__)
 
 
 class TestAPIGunicornScheduler(unittest.TestCase):

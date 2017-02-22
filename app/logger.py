@@ -2,7 +2,7 @@ import logging
 
 from configs import EnjoliverConfig
 
-ec = EnjoliverConfig()
+ec = EnjoliverConfig(importer=__file__)
 
 formatter = logging.Formatter('%(levelname)-7s %(module)-13s %(funcName)s %(message)s')
 
