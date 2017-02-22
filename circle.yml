@@ -8,4 +8,5 @@ dependencies:
 
 test:
   override:
-    - make prod_setup
+    - sudo useradd enjoliver
+    - MY_USER=enjoliver make prod_setup
