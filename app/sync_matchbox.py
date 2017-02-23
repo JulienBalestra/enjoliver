@@ -1,10 +1,10 @@
+import ipaddr
 import json
 import os
 import random
 import re
 import socket
 
-import ipaddr
 import requests
 
 import generator
@@ -155,23 +155,44 @@ class ConfigSyncSchedules(object):
         return self.sort_the_list(self._query_ip_list(schedulerv2.ScheduleRoles.kubernetes_node))
 
     @property
-    def etcd_initial_cluster(self):
+    def kubernetes_etcd_initial_cluster(self):
         ips = self.etcd_member_ip_list
-        e = ["%s=http://%s:%d" % (k, k, ec.etcd_initial_advertise_peer_port) for k in ips]
+        e = ["%s=http://%s:%d" % (k, k, ec.kubernetes_etcd_peer_port) for k in ips]
         random.shuffle(e)
         return ",".join(e)
 
     @property
-    def etcd_member_client_uri_list(self):
+    def fleet_etcd_initial_cluster(self):
         ips = self.etcd_member_ip_list
-        e = ["http://%s:%d" % (k, ec.etcd_advertise_client_port) for k in ips]
+        e = ["%s=http://%s:%d" % (k, k, ec.fleet_etcd_peer_port) for k in ips]
+        random.shuffle(e)
+        return ",".join(e)
+
+    @property
+    def kubernetes_etcd_member_client_uri_list(self):
+        ips = self.etcd_member_ip_list
+        e = ["http://%s:%d" % (k, ec.kubernetes_etcd_client_port) for k in ips]
         random.shuffle(e)
         return e
 
     @property
-    def etcd_member_peer_uri_list(self):
+    def fleet_etcd_member_client_uri_list(self):
         ips = self.etcd_member_ip_list
-        e = ["http://%s:%d" % (k, ec.etcd_initial_advertise_peer_port) for k in ips]
+        e = ["http://%s:%d" % (k, ec.fleet_etcd_client_port) for k in ips]
+        random.shuffle(e)
+        return e
+
+    @property
+    def kubernetes_etcd_member_peer_uri_list(self):
+        ips = self.etcd_member_ip_list
+        e = ["http://%s:%d" % (k, ec.kubernetes_etcd_peer_port) for k in ips]
+        random.shuffle(e)
+        return e
+
+    @property
+    def fleet_etcd_member_peer_uri_list(self):
+        ips = self.etcd_member_ip_list
+        e = ["http://%s:%d" % (k, ec.fleet_etcd_peer_port) for k in ips]
         random.shuffle(e)
         return e
 
@@ -182,6 +203,9 @@ class ConfigSyncSchedules(object):
         random.shuffle(k8s)
         return ",".join(k8s)
 
+    def common_attributes(self):
+        pass
+
     def etcd_member_kubernetes_control_plane(self):
         marker = self.etcd_member_kubernetes_control_plane.__name__
         roles = schedulerv2.EtcdMemberKubernetesControlPlane.roles
@@ -189,7 +213,7 @@ class ConfigSyncSchedules(object):
         machine_roles = self._query_roles(*roles)
         for i, m in enumerate(machine_roles):
             random.seed(m["mac"].__hash__())
-            automatic_name = "k8s-control-plane-%d" % i
+            automatic_name = "control-plane-%d" % i
             selector = {"mac": m["mac"]}
             fqdn = self.get_dns_name(m["ipv4"], automatic_name)
             dns_attr = self.get_dns_attr(self.log, fqdn)
@@ -206,15 +230,38 @@ class ConfigSyncSchedules(object):
                     "etc_hosts": ec.etc_hosts,
                     # Etcd
                     "etcd_name": m["ipv4"],
-                    "etcd_initial_cluster": self.etcd_initial_cluster,
-                    "etcd_initial_advertise_peer_urls": "http://%s:%d" % (
-                        m["ipv4"], ec.etcd_initial_advertise_peer_port),
-                    "etcd_advertise_client_urls": "http://%s:%d" % (
-                        m["ipv4"], ec.etcd_advertise_client_port),
-                    "etcd_member_client_uri_list": ",".join(self.etcd_member_client_uri_list),
-                    "etcd_member_peer_uri_list": ",".join(self.etcd_member_peer_uri_list),
-                    "etcd_data_dir": ec.etcd_data_dir,
+                    "kubernetes_etcd_initial_cluster": self.kubernetes_etcd_initial_cluster,
+                    "fleet_etcd_initial_cluster": self.fleet_etcd_initial_cluster,
+
+                    "kubernetes_etcd_initial_advertise_peer_urls": "http://%s:%d" % (
+                        m["ipv4"], ec.kubernetes_etcd_peer_port),
+                    "fleet_etcd_initial_advertise_peer_urls": "http://%s:%d" % (
+                        m["ipv4"], ec.fleet_etcd_peer_port),
+
+                    "kubernetes_etcd_member_client_uri_list": ",".join(self.kubernetes_etcd_member_client_uri_list),
+                    "fleet_etcd_member_client_uri_list": ",".join(self.fleet_etcd_member_client_uri_list),
+
+                    "kubernetes_etcd_data_dir": ec.kubernetes_etcd_data_dir,
+                    "fleet_etcd_data_dir": ec.fleet_etcd_data_dir,
+
+                    "kubernetes_etcd_client_port": ec.kubernetes_etcd_client_port,
+                    "fleet_etcd_client_port": ec.fleet_etcd_client_port,
+
+                    # Etcd Members
+                    "kubernetes_etcd_advertise_client_urls": "http://%s:%d" % (
+                        m["ipv4"], ec.kubernetes_etcd_client_port),
+                    "fleet_etcd_advertise_client_urls": "http://%s:%d" % (
+                        m["ipv4"], ec.fleet_etcd_client_port),
+
+                    "kubernetes_etcd_member_peer_uri_list": ",".join(self.kubernetes_etcd_member_peer_uri_list),
+                    "fleet_etcd_member_peer_uri_list": ",".join(self.fleet_etcd_member_peer_uri_list),
+
+                    "kubernetes_etcd_peer_port": ec.kubernetes_etcd_peer_port,
+                    "fleet_etcd_peer_port": ec.fleet_etcd_peer_port,
+
                     # K8s Control Plane
+                    "kubernetes_etcd_servers": ec.kubernetes_etcd_servers,
+                    "kubernetes_api_server_port": ec.kubernetes_api_server_port,
                     "kubelet_ip": "%s" % m["ipv4"],
                     "kubelet_name": "%s" % m["ipv4"] if fqdn == automatic_name else fqdn,
                     "k8s_apiserver_count": len(machine_roles),
@@ -242,11 +289,10 @@ class ConfigSyncSchedules(object):
         machine_roles = self._query_roles(*roles)
         for i, m in enumerate(machine_roles):
             random.seed(m["mac"].__hash__())
-            automatic_name = "k8s-node-%d" % i
+            automatic_name = "node-%d" % i
             selector = {"mac": m["mac"]}
             fqdn = self.get_dns_name(m["ipv4"], automatic_name)
             dns_attr = self.get_dns_attr(self.log, fqdn)
-            selector.update(self.get_extra_selectors(self.extra_selector))
             gen = generator.Generator(
                 api_uri=self.api_uri,
                 group_id="%s-%d" % (marker, i),  # one per machine
@@ -258,14 +304,27 @@ class ConfigSyncSchedules(object):
                 extra_metadata={
                     "etc_hosts": ec.etc_hosts,
                     # Etcd
-                    "etcd_initial_cluster": self.etcd_initial_cluster,
-                    "etcd_advertise_client_urls": "http://%s:%d" % (
-                        m["ipv4"], ec.etcd_advertise_client_port),
-                    "etcd_member_client_uri_list": ",".join(self.etcd_member_client_uri_list),
-                    "etcd_member_peer_uri_list": ",".join(self.etcd_member_peer_uri_list),
-                    "etcd_proxy": "on",
-                    "etcd_data_dir": ec.etcd_data_dir,
+                    "etcd_name": m["ipv4"],
+                    "kubernetes_etcd_initial_cluster": self.kubernetes_etcd_initial_cluster,
+                    "fleet_etcd_initial_cluster": self.fleet_etcd_initial_cluster,
+
+                    "kubernetes_etcd_advertise_client_urls": "http://%s:%d" % (
+                        m["ipv4"], ec.kubernetes_etcd_client_port),
+                    "fleet_etcd_advertise_client_urls": "http://%s:%d" % (
+                        m["ipv4"], ec.fleet_etcd_client_port),
+
+                    "kubernetes_etcd_member_client_uri_list": ",".join(self.kubernetes_etcd_member_client_uri_list),
+                    "fleet_etcd_member_client_uri_list": ",".join(self.fleet_etcd_member_client_uri_list),
+
+                    "kubernetes_etcd_data_dir": ec.kubernetes_etcd_data_dir,
+                    "fleet_etcd_data_dir": ec.fleet_etcd_data_dir,
+
+                    "kubernetes_etcd_client_port": ec.kubernetes_etcd_client_port,
+                    "fleet_etcd_client_port": ec.fleet_etcd_client_port,
+
                     # Kubelet
+                    "kubernetes_etcd_servers": ec.kubernetes_etcd_servers,
+                    "kubernetes_api_server_port": ec.kubernetes_api_server_port,
                     "kubelet_ip": "%s" % m["ipv4"],
                     "kubelet_name": "%s" % m["ipv4"] if fqdn == automatic_name else fqdn,
                     "k8s_endpoint": self.kubernetes_control_plane,
@@ -283,6 +342,7 @@ class ConfigSyncSchedules(object):
                     "dns_attr": dns_attr,
                 }
             )
+            selector.update(self.get_extra_selectors(self.extra_selector))
             gen.dumps()
 
     def apply(self):

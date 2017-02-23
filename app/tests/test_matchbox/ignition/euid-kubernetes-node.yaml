@@ -158,6 +158,13 @@ systemd:
         [Install]
         RequiredBy=multi-user.target
 
+    - name: systemd-timesyncd.service
+      mask: true
+      enable: false
+
+    - name: ntpd.service
+      enable: true
+
     - name: etcd.service
       mask: true
       enable: false
@@ -166,21 +173,41 @@ systemd:
       mask: true
       enable: false
 
-    - name: etcd3.service
+    - name: etcd3@kubernetes.service
       enable: true
       contents: |
         [Unit]
         After=fetch-metadata.service
         After=install-etcd.service
+        After=fetch-metadata.service
         Conflicts=etcd.service etcd2.service
+
         [Service]
         Type=notify
+        EnvironmentFile=/etc/etcd-%i.env
         ExecStart=/opt/etcd/etcd
-        EnvironmentFile=/etc/metadata.env
-        Environment=ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379,http://0.0.0.0:4001
-        Environment=ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380,http://0.0.0.0:7001
-        RestartSec=60s
+        RestartSec=15s
         Restart=on-failure
+        LimitNOFILE=65826
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: etcd3@fleet.service
+      enable: true
+      contents: |
+        [Unit]
+        After=fetch-metadata.service
+        After=install-etcd.service
+        After=fetch-metadata.service
+        Conflicts=etcd.service etcd2.service
+
+        [Service]
+        Type=notify
+        EnvironmentFile=/etc/etcd-%i.env
+        ExecStart=/opt/etcd/etcd
+        RestartSec=15s
+        Restart=on-failure
+        LimitNOFILE=65826
         [Install]
         WantedBy=multi-user.target
 
@@ -191,7 +218,7 @@ systemd:
         After=fetch-metadata.service
         After=installs.target
         After=rkt-api.service
-        After=etcd3.service
+        After=etcd3@kubernetes.service
 
         [Service]
         EnvironmentFile=/etc/metadata.env
@@ -230,7 +257,7 @@ systemd:
         [Unit]
         After=kubelet-runonce.service
         After=rkt-api.service
-        After=etcd3.service
+        After=etcd3@kubernetes.service
         Requires=rkt-api.service
 
         [Service]
@@ -251,7 +278,7 @@ systemd:
           --register-schedulable=true \
           --allow-privileged=true \
           --enable-custom-metrics \
-          --api-servers=http://127.0.0.1:8080 \
+          --api-servers=http://127.0.0.1:{{.kubernetes_api_server_port}} \
           --node-labels=node=true \
           --cloud-provider="" \
           \
@@ -291,7 +318,7 @@ systemd:
             [Unit]
             After=fetch-metadata.service
             After=installs.target
-            After=etcd3.service
+            After=etcd3@fleet.service
             [Service]
             EnvironmentFile=/etc/metadata.env
             ExecStart=
@@ -321,7 +348,7 @@ storage:
               - proxy
               - --bind-address=127.0.0.1
               - --insecure-bind-address=127.0.0.1
-              - --etcd-servers=http://127.0.0.1:2379
+              - --etcd-servers={{.kubernetes_etcd_servers}}
               - --service-cluster-ip-range={{.k8s_service_cluster_ip_range}}
               resources:
                 requests:
@@ -597,7 +624,7 @@ storage:
       filesystem: root
       contents:
         inline: |
-          etcd_servers = [ http://127.0.0.1:2379,{{ .etcd_member_client_uri_list }} ]
+          etcd_servers = [ http://127.0.0.1:{{.fleet_etcd_client_port}},{{ .fleet_etcd_member_client_uri_list }} ]
           metadata = "name={{.dns_attr.shortname}}"
 
     - path: /etc/modprobe.d/bonding.conf
@@ -639,6 +666,32 @@ storage:
     - path: /var/log/journal/.keep
       mode: 0644
       filesystem: root
+
+    - path: /etc/etcd-fleet.env
+      mode: 0644
+      filesystem: root
+      contents:
+        inline: |
+          ETCD_NAME={{.etcd_name}}
+          ETCD_PROXY=on
+          ETCD_INITIAL_CLUSTER={{.fleet_etcd_initial_cluster}}
+          ETCD_ADVERTISE_CLIENT_URLS={{.fleet_etcd_advertise_client_urls}}
+          ETCD_MEMBER_CLIENT_URI_LIST={{.fleet_etcd_member_client_uri_list}}
+          ETCD_DATA_DIR={{.fleet_etcd_data_dir}}
+          ETCD_LISTEN_CLIENT_URLS="http://0.0.0.0:{{.fleet_etcd_client_port}}"
+
+    - path: /etc/etcd-kubernetes.env
+      mode: 0644
+      filesystem: root
+      contents:
+        inline: |
+          ETCD_NAME={{.etcd_name}}
+          ETCD_PROXY=on
+          ETCD_INITIAL_CLUSTER={{.kubernetes_etcd_initial_cluster}}
+          ETCD_ADVERTISE_CLIENT_URLS={{.kubernetes_etcd_advertise_client_urls}}
+          ETCD_MEMBER_CLIENT_URI_LIST={{.kubernetes_etcd_member_client_uri_list}}
+          ETCD_DATA_DIR={{.kubernetes_etcd_data_dir}}
+          ETCD_LISTEN_CLIENT_URLS="http://0.0.0.0:{{.kubernetes_etcd_client_port}}"
 
     - path: /etc/profile.d/path.sh
       mode: 0755

@@ -92,10 +92,22 @@ class EnjoliverConfig(object):
         self.kubernetes_api_server_port = int(self.config_override("kubernetes_api_server_port", 8080))
         self.kubernetes_service_cluster_ip_range = self.config_override("kubernetes_service_cluster_ip_range",
                                                                         "172.30.0.0/24")
+        self.kubernetes_etcd_servers = self.config_override("kubernetes_etcd_servers",
+                                                            "http://127.0.0.1:%d" % self.kubernetes_api_server_port)
 
-        self.etcd_initial_advertise_peer_port = int(self.config_override("etcd_initial_advertise_peer_port", 2380))
-        self.etcd_advertise_client_port = int(self.config_override("etcd_advertise_client_port", 2379))
-        self.etcd_data_dir = self.config_override("etcd_data_dir", "/var/lib/etcd3")
+        # Kubernetes Etcd
+        self.kubernetes_etcd_data_dir = self.config_override("kubernetes_etcd_data_dir", "/var/lib/etcd3/kubernetes")
+        self.kubernetes_etcd_client_port = int(self.config_override("kubernetes_etcd_client_port", 2379))
+        self.kubernetes_etcd_peer_port = int(self.config_override("kubernetes_etcd_peer_port", 2380))
+        self.kubernetes_etcd_listen_client_urls = self.config_override(
+            "kubernetes_etcd_listen_client_urls", "http://0.0.0.0:%s" % self.kubernetes_etcd_client_port)
+
+        # Fleet Etcd
+        self.fleet_etcd_data_dir = self.config_override("fleet_etcd_data_dir", "/var/lib/etcd3/fleet")
+        self.fleet_etcd_client_port = int(self.config_override("fleet_etcd_client_port", 4001))
+        self.fleet_etcd_peer_port = int(self.config_override("fleet_etcd_peer_port", 7001))
+        self.fleet_etcd_listen_client_urls = self.config_override(
+            "fleet_etcd_listen_client_urls", "http://0.0.0.0:%s" % self.fleet_etcd_client_port)
 
         # Use a real registry in production like:
         # enjoliver.local/hyperkube:latest

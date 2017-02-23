@@ -41,10 +41,18 @@ gunicorn_bind: "0.0.0.0:5000"
 
 etcd_member_kubernetes_control_plane_expected_nb: 3
 
-etcd_data_dir: '/var/lib/etcd3'
-etcd_advertise_client_port: 2379
-etcd_initial_advertise_peer_port: 2380
+kubernetes_etcd_data_dir: '/var/lib/etcd3/kubernetes'
+kubernetes_etcd_client_port: 2379
+kubernetes_etcd_peer_port: 2380
+kubernetes_etcd_listen_client_urls: "http://0.0.0.0:2379"
+
+fleet_etcd_data_dir: '/var/lib/etcd3/fleet'
+fleet_etcd_client_port: 4001
+fleet_etcd_peer_port: 7001
+fleet_etcd_listen_client_urls: "http://0.0.0.0:4001"
+
 kubernetes_api_server_port: 8080
+kubernetes_etcd_servers: "http://127.0.0.1:2379"
 
 kubernetes_service_cluster_ip_range: '172.30.0.0/24'
 
