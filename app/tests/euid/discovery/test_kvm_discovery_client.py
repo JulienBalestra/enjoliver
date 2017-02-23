@@ -330,7 +330,6 @@ class TestKVMDiscoveryClient03(TestKVMDiscoveryClient):
                                     ["virsh", "undefine", "%s" % machine_marker]
                 self.virsh(destroy), os.write(1, "\r")
                 self.virsh(undefine), os.write(1, "\r")
-                time.sleep(1)
 
 
 # @unittest.skip("just skip")

@@ -231,14 +231,14 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     @staticmethod
     def acserver_is_running():
         url = "http://enjoliver.local"
-        for t in range(10):
+        for t in range(20):
             try:
                 r = requests.get(url)
                 r.close()
                 return
             except Exception as e:
                 os.write(2, "\r GET -> %s : %s %s \n\r" % (url, e, e.message))
-            time.sleep(1)
+            time.sleep(0.5)
         r = requests.get(url)
         r.close()
 
@@ -429,7 +429,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 try:
                     self.virsh(start, assertion=True), os.write(1, "\r")
                     to_start.pop(i)
-                    time.sleep(4)
+                    time.sleep(self.kvm_sleep_between_node)
 
                 except RuntimeError:
                     # virsh raise this
@@ -647,7 +647,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             while os.path.isfile(stop) is True and os.stat(stop).st_size == 0:
                 if fns:
                     [fn() for fn in fns]
-                if int(time.time()) % 20 == 0:
+                if int(time.time()) % 30 == 0:
                     os.write(1, "\r-> Stop with \"sudo rm -v\" %s or \"echo 1 > %s\"\n\r" % (stop, stop))
                 time.sleep(self.wait_setup_teardown)
             if api_server_uri and kp.is_alive():

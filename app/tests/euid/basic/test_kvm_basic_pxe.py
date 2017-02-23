@@ -124,7 +124,7 @@ class TestKVMBasicPXE(kvm_player.KernelVirtualMachinePlayer):
                     "--boot=network"
                 ]
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
-                time.sleep(3)
+                time.sleep(self.kvm_sleep_between_node)
 
             os.write(2, "\r\n")
             app.run(

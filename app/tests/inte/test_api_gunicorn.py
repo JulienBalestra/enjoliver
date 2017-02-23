@@ -54,7 +54,7 @@ class TestAPIGunicorn(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        time.sleep(0.1)
+        time.sleep(0.2)
         cls.clean_sandbox()
         try:
             os.remove(ec.db_path)
@@ -82,13 +82,13 @@ class TestAPIGunicorn(unittest.TestCase):
         cls.p_matchbox.join(timeout=5)
         cls.p_api.terminate()
         cls.p_api.join(timeout=5)
-        time.sleep(0.1)
+        time.sleep(0.2)
 
     @staticmethod
     def matchbox_running(matchbox_endpoint, p_matchbox):
         response_body = ""
         response_code = 404
-        for i in xrange(100):
+        for i in xrange(10):
             assert p_matchbox.is_alive() is True
             try:
                 request = urllib2.urlopen(matchbox_endpoint)
@@ -97,11 +97,9 @@ class TestAPIGunicorn(unittest.TestCase):
                 request.close()
                 break
 
-            except httplib.BadStatusLine:
-                time.sleep(0.5)
-
-            except urllib2.URLError:
-                time.sleep(0.5)
+            except (httplib.BadStatusLine, urllib2.URLError):
+                pass
+            time.sleep(0.2)
 
         assert "matchbox\n" == response_body
         assert 200 == response_code
@@ -109,7 +107,7 @@ class TestAPIGunicorn(unittest.TestCase):
     @staticmethod
     def api_running(api_endpoint, p_api):
         response_code = 404
-        for i in xrange(100):
+        for i in xrange(10):
             assert p_api.is_alive() is True
             try:
                 request = urllib2.urlopen(api_endpoint)
@@ -117,11 +115,9 @@ class TestAPIGunicorn(unittest.TestCase):
                 request.close()
                 break
 
-            except httplib.BadStatusLine:
-                time.sleep(0.5)
-
-            except urllib2.URLError:
-                time.sleep(0.5)
+            except (httplib.BadStatusLine, urllib2.URLError):
+                pass
+            time.sleep(0.2)
 
         assert 200 == response_code
 

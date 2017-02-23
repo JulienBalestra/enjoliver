@@ -110,7 +110,7 @@ class TestBootConfigCommon(TestCase):
         cls.p_matchbox.terminate()
         cls.p_matchbox.join(timeout=5)
         cls.clean_sandbox()
-        time.sleep(0.1)
+        time.sleep(0.2)
 
     @staticmethod
     def clean_sandbox():
@@ -134,7 +134,7 @@ class TestBootConfigCommon(TestCase):
     def matchbox_running(matchbox_endpoint, p_matchbox):
         response_body = ""
         response_code = 404
-        for i in xrange(100):
+        for i in xrange(10):
             assert p_matchbox.is_alive() is True
             try:
                 request = urllib2.urlopen(matchbox_endpoint)
@@ -143,11 +143,9 @@ class TestBootConfigCommon(TestCase):
                 request.close()
                 break
 
-            except httplib.BadStatusLine:
-                time.sleep(0.5)
-
-            except urllib2.URLError:
-                time.sleep(0.5)
+            except (httplib.BadStatusLine, urllib2.URLError):
+                pass
+            time.sleep(0.2)
 
         assert "matchbox\n" == response_body
         assert 200 == response_code
