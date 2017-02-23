@@ -15,6 +15,7 @@ spec:
       containers:
       - name: nginx-daemonset-pod
         image: quay.io/julienbalestra/nginx:latest
+        imagePullPolicy: IfNotPresent
         command:
         - /usr/sbin/nginx
         - -g

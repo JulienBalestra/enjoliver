@@ -178,8 +178,6 @@ class TestKVMDiscoveryClient02(TestKVMDiscoveryClient):
 
     def test_02(self):
         marker = "euid-%s-%s" % (TestKVMDiscoveryClient.__name__.lower(), self.test_02.__name__)
-        os.environ["MATCHBOX_IP"] = "172.20.0.1"
-        os.environ["API_IP"] = "172.20.0.1"
         gen = generator.Generator(
             api_uri=self.api_uri,
             profile_id="%s" % marker,

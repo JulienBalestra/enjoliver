@@ -271,8 +271,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     @classmethod
     def set_rack0(cls):
-        if subprocess.call(["ip", "link", "show", "rack0"]) != 0:
-            cmd = [
+        cmd = [
                 "%s" % KernelVirtualMachinePlayer.rkt_bin,
                 "--local-config=%s" % KernelVirtualMachinePlayer.tests_path,
                 "run",
@@ -283,9 +282,9 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 "--set-env=TERM=%s" % os.getenv("TERM", "xterm"),
                 "--exec",
                 "/bin/true"]
-            os.write(1, "\rcall %s\n\r" % " ".join(cmd))
-            ret = subprocess.call(cmd)
-            os.write(1, "\rBridge w/ iptables creation exitcode:%d\n\r" % ret)
+        os.write(1, "\rcall %s\n\r" % " ".join(cmd))
+        ret = subprocess.call(cmd)
+        os.write(1, "\rBridge w/ iptables creation exitcode:%d\n\r" % ret)
         assert subprocess.call(["ip", "link", "show", "rack0"]) == 0
 
     @classmethod

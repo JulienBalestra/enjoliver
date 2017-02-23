@@ -9,6 +9,7 @@ spec:
   containers:
     - name: sleep-fly
       image: quay.io/julienbalestra/nginx:latest
+      imagePullPolicy: IfNotPresent
       command:
         - /bin/sleep
         - "60000000000"

@@ -11,6 +11,7 @@ spec:
           containers:
           - name: date-batch-cron
             image: quay.io/julienbalestra/nginx:latest
+            imagePullPolicy: IfNotPresent
             command:
             - /bin/date
           restartPolicy: Never

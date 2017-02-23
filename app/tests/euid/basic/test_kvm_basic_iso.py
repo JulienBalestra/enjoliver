@@ -147,8 +147,6 @@ class TestKVMBasicISO(kvm_player.KernelVirtualMachinePlayer):
     def test_02(self):
         nb_node = 3
         marker = "euid-%s-%s" % (TestKVMBasicISO.__name__.lower(), self.test_02.__name__)
-        os.environ["MATCHBOX_IP"] = "172.20.0.1"
-        os.environ["API_IP"] = "172.20.0.1"
 
         app = Flask(marker)
         resp = []
