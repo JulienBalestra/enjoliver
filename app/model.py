@@ -138,3 +138,15 @@ class Schedule(Base):
         if role_name not in ScheduleRoles.roles:
             raise LookupError("%s not in %s" % (role_name, ScheduleRoles.roles))
         return role_name
+
+
+class Lifecycle(Base):
+    __tablename__ = 'lifecycle'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    created_date = Column(DateTime, default=datetime.datetime.utcnow)
+
+    machine_interface = Column(Integer, ForeignKey('machine-interface.id'), nullable=True)
+
+    updated_date = Column(DateTime, default=None)
+    up_to_date = Column(Boolean, default=None)

@@ -1,6 +1,22 @@
 ---
 systemd:
   units:
+    - name: lifecycle-ignition.service
+      enable: true
+      contents: |
+        [Unit]
+        Requires=network-online.target
+        After=network-online.target
+        [Service]
+        EnvironmentFile=/etc/metadata-endpoints.env
+        Type=oneshot
+        ExecStartPre=-/bin/cp -n /run/ignition.json /etc/ignition.json
+        ExecStart=/usr/bin/curl -XPOST ${API_URI}/lifecycle/ignition/${REQUEST_RAW_QUERY} \
+          -d @/etc/ignition.json \
+          -H "Content-Type: application/json"
+        [Install]
+        WantedBy=multi-user.target
+
     - name: fetch-metadata.service
       enable: true
       contents: |

@@ -207,7 +207,9 @@ class TestAPIGunicorn(unittest.TestCase):
             u'/scheduler/<string:role>',
             u'/scheduler/ip-list/<string:role>',
             u'/scheduler/available',
-            u'/shutdown'
+            u'/shutdown',
+            u'/lifecycle/ignition/<string:request_raw_query>',
+            u'/lifecycle/ignition',
         ]
         request = urllib2.urlopen("%s/" % ec.api_uri)
         response_body = request.read()

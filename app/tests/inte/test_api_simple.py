@@ -175,7 +175,9 @@ class TestAPI(unittest.TestCase):
             u'/scheduler/<string:role>',
             u'/scheduler/ip-list/<string:role>',
             u'/scheduler/available',
-            u'/shutdown'
+            u'/shutdown',
+            u'/lifecycle/ignition/<string:request_raw_query>',
+            u'/lifecycle/ignition',
         ]
         self.maxDiff = None
         result = self.app.get('/')

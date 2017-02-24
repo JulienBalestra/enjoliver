@@ -12,7 +12,6 @@ import backup
 import crud
 import logger
 import model
-import sync_matchbox
 from configs import EnjoliverConfig
 
 ec = EnjoliverConfig(importer=__file__)
@@ -58,7 +57,6 @@ if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "_"):
 @application.route("/shutdown", methods=["POST"])
 def shutdown():
     LOGGER.warning("shutdown asked")
-    # backup.backup_sqlite(cache=cache, application=application)
     pid_files = [ec.plan_pid_file, ec.matchbox_pid_file]
     gunicorn_pid = None
     pid_list = []
@@ -72,7 +70,7 @@ def shutdown():
         except IOError:
             LOGGER.error("IOError -> %s" % pid_file)
         except psutil.NoSuchProcess as e:
-            LOGGER.error("%s already dead: %s" % (e, pid_file))
+            LOGGER.error("%s NoSuchProcess: %s" % (e, pid_file))
 
     try:
         with open(ec.gunicorn_pid_file) as f:
@@ -92,14 +90,38 @@ def shutdown():
         LOGGER.info("%s running: %s " % (pid, pid.is_running()))
 
     pid_list.append(gunicorn_pid)
-    l = ["%s" % k for k in pid_list]
+    r = jsonify(["%s" % k for k in pid_list])
     gunicorn_pid.terminate()
-    return jsonify(l)
+    return r
 
 
 @application.route("/configs", methods=["GET"])
 def configs():
     return jsonify(ec.__dict__)
+
+
+@application.route("/lifecycle/ignition/<string:request_raw_query>", methods=["POST"])
+def lifecycle_ignition(request_raw_query):
+    machine_ignition = json.loads(request.get_data())
+    r = requests.get("%s/ignition?%s" % (ec.matchbox_uri, request_raw_query))
+    matchbox_ignition = json.loads(r.content)
+    r.close()
+    i = crud.InjectLifecycle(engine=engine, request_raw_query=request_raw_query)
+    if json.dumps(machine_ignition, sort_keys=True) == json.dumps(matchbox_ignition, sort_keys=True):
+        i.refresh_lifecycle(True)
+        r = "update", 200
+    else:
+        i.refresh_lifecycle(False)
+        r = "modified", 210
+    return r
+
+
+@application.route("/lifecycle/ignition", methods=["GET"])
+def get_lifecycle_status():
+    q = crud.FetchLifecycle(engine)
+    d = q.get_all_updated_status()
+    q.close()
+    return jsonify(d)
 
 
 @application.route('/', methods=['GET'])
@@ -456,6 +478,7 @@ def user_view_machine():
                 except socket.herror:
                     sub_list.append("unknown")
                 s = crud.FetchSchedule(engine)
+                s.close()
                 roles = s.get_roles_by_mac_selector(j["mac"])
                 sub_list.append(roles if roles else "none")
 

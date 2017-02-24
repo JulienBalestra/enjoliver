@@ -29,6 +29,7 @@ class TestModel(unittest.TestCase):
             pass
         assert os.path.isfile(db) is False
         cls.engine = create_engine('sqlite:///%s' % db)
+        # cls.engine = create_engine('sqlite:///:memory:')
         model.Base.metadata.create_all(cls.engine)
         fetch = crud.FetchDiscovery(cls.engine, cls.ignition_journal_path)
         assert fetch.get_all_interfaces() == []
@@ -521,3 +522,37 @@ class TestModel(unittest.TestCase):
     def test_28(self):
         a = crud.FetchSchedule(self.engine)
         self.assertEqual(16, len(a.get_available_machines()))
+
+    def test_30(self):
+        rq = "uuid=%s&mac=%s&os=installed" % (posts.M01["boot-info"]["uuid"], posts.M01["boot-info"]["mac"])
+        i = crud.InjectLifecycle(self.engine, request_raw_query=rq)
+        self.assertEqual(i.mac, posts.M01["boot-info"]["mac"])
+
+    def test_31(self):
+        rq = "os=installed"
+        with self.assertRaises(AttributeError):
+            crud.InjectLifecycle(self.engine, request_raw_query=rq)
+
+    def test_32(self):
+        rq = "uuid=%s&mac=%s&os=installed" % (posts.M01["boot-info"]["uuid"], posts.M01["boot-info"]["mac"])
+        i = crud.InjectLifecycle(self.engine, request_raw_query=rq)
+        i.refresh_lifecycle(True)
+
+    def test_33(self):
+        rq = "uuid=%s&mac=%s&os=installed" % (posts.M02["boot-info"]["uuid"], posts.M02["boot-info"]["mac"])
+        i = crud.InjectLifecycle(self.engine, request_raw_query=rq)
+        i.refresh_lifecycle(True)
+        j = crud.InjectLifecycle(self.engine, request_raw_query=rq)
+        j.refresh_lifecycle(True)
+        f = crud.FetchLifecycle(self.engine)
+        self.assertTrue(f.get_update_status(posts.M02["boot-info"]["mac"]))
+
+    def test_34(self):
+        rq = "uuid=%s&mac=%s&os=installed" % (posts.M03["boot-info"]["uuid"], posts.M03["boot-info"]["mac"])
+        i = crud.InjectLifecycle(self.engine, request_raw_query=rq)
+        i.refresh_lifecycle(True)
+        j = crud.InjectLifecycle(self.engine, request_raw_query=rq)
+        j.refresh_lifecycle(False)
+        f = crud.FetchLifecycle(self.engine)
+        self.assertFalse(f.get_update_status(posts.M03["boot-info"]["mac"]))
+        self.assertEqual(3, len(f.get_all_updated_status()))
