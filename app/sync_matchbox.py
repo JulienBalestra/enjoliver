@@ -231,7 +231,7 @@ class ConfigSyncSchedules(object):
 
             "hyperkube_image_url": ec.hyperkube_image_url,
             # IPAM
-            "cni": json.dumps(self.cni_ipam(m["cidrv4"], m["gateway"])),
+            "cni": json.dumps(self.cni_ipam(m["cidrv4"], m["gateway"]), sort_keys=True),
             "network": {
                 "cidrv4": m["cidrv4"],
                 "gateway": m["gateway"],

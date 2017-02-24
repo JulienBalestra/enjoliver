@@ -105,8 +105,14 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
             self.kvm_restart_off_machines(to_start)
             time.sleep(self.kvm_sleep_between_node * nb_node)
 
-            self.etcd_member_len(sync.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb)
-            self.etcd_endpoint_health(sync.kubernetes_control_plane_ip_list + sync.kubernetes_nodes_ip_list)
+            self.etcd_member_len(sync.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb,
+                                 self.ec.kubernetes_etcd_client_port)
+            self.etcd_member_len(sync.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb,
+                                 self.ec.fleet_etcd_client_port)
+            self.etcd_endpoint_health(sync.kubernetes_control_plane_ip_list + sync.kubernetes_nodes_ip_list,
+                                      self.ec.kubernetes_etcd_client_port)
+            self.etcd_endpoint_health(sync.kubernetes_control_plane_ip_list + sync.kubernetes_nodes_ip_list,
+                                      self.ec.fleet_etcd_client_port)
             self.k8s_api_health(sync.kubernetes_control_plane_ip_list)
             self.etcd_member_k8s_minions(sync.kubernetes_control_plane_ip_list[0], nb_node)
             self.write_ending(marker)
@@ -200,8 +206,14 @@ class TestKVMK8SBasic1(TestKVMK8sBasic):
             self.kvm_restart_off_machines(to_start)
             time.sleep(self.kvm_sleep_between_node * nb_node)
 
-            self.etcd_member_len(sync.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb)
-            self.etcd_endpoint_health(sync.kubernetes_control_plane_ip_list + sync.kubernetes_nodes_ip_list)
+            self.etcd_member_len(sync.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb,
+                                 self.ec.kubernetes_etcd_client_port)
+            self.etcd_member_len(sync.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb,
+                                 self.ec.fleet_etcd_client_port)
+            self.etcd_endpoint_health(sync.kubernetes_control_plane_ip_list + sync.kubernetes_nodes_ip_list,
+                                      self.ec.kubernetes_etcd_client_port)
+            self.etcd_endpoint_health(sync.kubernetes_control_plane_ip_list + sync.kubernetes_nodes_ip_list,
+                                      self.ec.fleet_etcd_client_port)
             self.k8s_api_health(sync.kubernetes_control_plane_ip_list)
             self.etcd_member_k8s_minions(sync.kubernetes_control_plane_ip_list[0], nb_node)
             self.write_ending(marker)

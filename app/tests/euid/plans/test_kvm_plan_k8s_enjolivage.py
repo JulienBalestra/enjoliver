@@ -77,7 +77,8 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
             self.kvm_restart_off_machines(to_start)
             time.sleep(self.kvm_sleep_between_node * self.kvm_sleep_between_node)
 
-            self.etcd_endpoint_health(plan_k8s_2t.etcd_member_ip_list)
+            self.etcd_endpoint_health(plan_k8s_2t.etcd_member_ip_list, self.ec.kubernetes_etcd_client_port)
+            self.etcd_endpoint_health(plan_k8s_2t.etcd_member_ip_list, self.ec.fleet_etcd_client_port)
             self.k8s_api_health(plan_k8s_2t.kubernetes_control_plane_ip_list)
             self.etcd_member_k8s_minions(plan_k8s_2t.etcd_member_ip_list[0], nb_node)
 

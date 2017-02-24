@@ -215,6 +215,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     @staticmethod
     def dns_masq_running():
+        os.write(1, "DNSMASQ probing...\n\r")
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         result = 1
         for i in xrange(120):
@@ -258,7 +259,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                      "- %s\n" % KernelVirtualMachinePlayer.matchbox_bin +
                      "- %s\n" % KernelVirtualMachinePlayer.acserver_bin)
             exit(2)
-        os.write(1, "PPID -> %s\n" % os.getpid())
+        os.write(1, "PID -> %s\n" % os.getpid())
 
     @classmethod
     def set_matchbox(cls):
@@ -272,16 +273,16 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     @classmethod
     def set_rack0(cls):
         cmd = [
-                "%s" % KernelVirtualMachinePlayer.rkt_bin,
-                "--local-config=%s" % KernelVirtualMachinePlayer.tests_path,
-                "run",
-                "quay.io/coreos/dnsmasq:v0.3.0",
-                "--insecure-options=all",
-                "--net=rack0",
-                "--interactive",
-                "--set-env=TERM=%s" % os.getenv("TERM", "xterm"),
-                "--exec",
-                "/bin/true"]
+            "%s" % KernelVirtualMachinePlayer.rkt_bin,
+            "--local-config=%s" % KernelVirtualMachinePlayer.tests_path,
+            "run",
+            "quay.io/coreos/dnsmasq:v0.3.0",
+            "--insecure-options=all",
+            "--net=rack0",
+            "--interactive",
+            "--set-env=TERM=%s" % os.getenv("TERM", "xterm"),
+            "--exec",
+            "/bin/true"]
         os.write(1, "\rcall %s\n\r" % " ".join(cmd))
         ret = subprocess.call(cmd)
         os.write(1, "\rBridge w/ iptables creation exitcode:%d\n\r" % ret)
@@ -437,7 +438,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             time.sleep(1)
         self.assertEqual(len(to_start), 0)
 
-    def etcd_endpoint_health(self, ips, tries=30):
+    def etcd_endpoint_health(self, ips, port, tries=30):
         assert type(ips) is list
         assert len(ips) > 0
         for t in xrange(tries):
@@ -445,7 +446,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 break
             for i, ip in enumerate(ips):
                 try:
-                    endpoint = "http://%s:2379/health" % ip
+                    endpoint = "http://%s:%d/health" % (ip, port)
                     request = urllib2.urlopen(endpoint)
                     response_body = json.loads(request.read())
                     request.close()
@@ -462,11 +463,11 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
         self.assertEqual(len(ips), 0)
 
-    def etcd_member_len(self, ip, members_nb, tries=30):
+    def etcd_member_len(self, ip, members_nb, port, tries=30):
         result = {}
         for t in xrange(tries):
             try:
-                endpoint = "http://%s:2379/v2/members" % ip
+                endpoint = "http://%s:%d/v2/members" % (ip, port)
                 request = urllib2.urlopen(endpoint)
                 content = request.read()
                 request.close()
