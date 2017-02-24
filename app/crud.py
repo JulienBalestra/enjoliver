@@ -447,7 +447,7 @@ class InjectLifecycle(object):
         self.adds = 0
         self.updates = 0
 
-        self.mac = self.get_mac_from_query(request_raw_query)
+        self.mac = self._get_mac_from_query(request_raw_query)
 
         self.interface = self.session.query(MachineInterface).filter(MachineInterface.mac == self.mac).first()
         if not self.interface:
@@ -458,7 +458,7 @@ class InjectLifecycle(object):
         self.log.info("mac: %s" % self.mac)
 
     @staticmethod
-    def get_mac_from_query(request_raw_query):
+    def _get_mac_from_query(request_raw_query):
         mac = ""
         s = request_raw_query.split("&")
         for param in s:

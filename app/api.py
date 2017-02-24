@@ -463,11 +463,10 @@ def user_view_machine():
         all_data = fetch.get_all()
         cache.set(key, all_data, timeout=30)
 
-    res = [["created-date", "updated-date", "cidr-boot", "mac-boot", "fqdn", "roles"]]
+    res = [["created-date", "cidr-boot", "mac-boot", "fqdn", "roles", "up-to-date"]]
     for i in all_data:
         sub_list = list()
         sub_list.append(i["boot-info"]["created-date"])
-        sub_list.append(i["boot-info"]["updated-date"])
         for j in i["interfaces"]:
             if j["as_boot"]:
                 sub_list.append(j["cidrv4"])
@@ -481,6 +480,9 @@ def user_view_machine():
                 s.close()
                 roles = s.get_roles_by_mac_selector(j["mac"])
                 sub_list.append(roles if roles else "none")
+                u = crud.FetchLifecycle(engine)
+                sub_list.append(u.get_update_status(j["mac"]))
+                u.close()
 
         res.append(sub_list)
 
