@@ -494,7 +494,7 @@ class FetchLifecycle(object):
         if interface:
             l = self.session.query(Lifecycle).filter(
                 Lifecycle.machine_interface == interface.id).first()
-            return l.up_to_date
+            return l.up_to_date if l else None
         return None
 
     def get_all_updated_status(self):
