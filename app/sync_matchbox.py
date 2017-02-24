@@ -191,8 +191,72 @@ class ConfigSyncSchedules(object):
     def kubernetes_control_plane(self):
         return self.shuffler_http_uri(self.kubernetes_control_plane_ip_list, ec.kubernetes_api_server_port)
 
-    def common_attributes(self):
-        pass
+    def produce_matchbox_data(self, marker, i, m, automatic_name, update_extra_metadata=None):
+        random.seed(m["mac"].__hash__())
+        fqdn = self.get_dns_name(m["ipv4"], automatic_name)
+        dns_attr = self.get_dns_attr(self.log, fqdn)
+        extra_metadata = {
+            "etc_hosts": ec.etc_hosts,
+            # Etcd
+            "etcd_name": m["ipv4"],
+
+            "kubernetes_etcd_initial_cluster": self.kubernetes_etcd_initial_cluster,
+            "fleet_etcd_initial_cluster": self.fleet_etcd_initial_cluster,
+
+            "kubernetes_etcd_initial_advertise_peer_urls": "http://%s:%d" % (
+                m["ipv4"], ec.kubernetes_etcd_peer_port),
+            "fleet_etcd_initial_advertise_peer_urls": "http://%s:%d" % (
+                m["ipv4"], ec.fleet_etcd_peer_port),
+
+            "kubernetes_etcd_member_client_uri_list": ",".join(self.kubernetes_etcd_member_client_uri_list),
+            "fleet_etcd_member_client_uri_list": ",".join(self.fleet_etcd_member_client_uri_list),
+
+            "kubernetes_etcd_data_dir": ec.kubernetes_etcd_data_dir,
+            "fleet_etcd_data_dir": ec.fleet_etcd_data_dir,
+
+            "kubernetes_etcd_client_port": ec.kubernetes_etcd_client_port,
+            "fleet_etcd_client_port": ec.fleet_etcd_client_port,
+
+            "kubernetes_etcd_advertise_client_urls": "http://%s:%d" % (
+                m["ipv4"], ec.kubernetes_etcd_client_port),
+            "fleet_etcd_advertise_client_urls": "http://%s:%d" % (
+                m["ipv4"], ec.fleet_etcd_client_port),
+
+            # Kubernetes
+            "kubernetes_etcd_servers": ec.kubernetes_etcd_servers,
+            "kubernetes_api_server_port": ec.kubernetes_api_server_port,
+            "kubelet_ip": "%s" % m["ipv4"],
+            "kubelet_name": "%s" % m["ipv4"] if fqdn == automatic_name else fqdn,
+            "k8s_service_cluster_ip_range": ec.kubernetes_service_cluster_ip_range,
+
+            "hyperkube_image_url": ec.hyperkube_image_url,
+            # IPAM
+            "cni": json.dumps(self.cni_ipam(m["cidrv4"], m["gateway"])),
+            "network": {
+                "cidrv4": m["cidrv4"],
+                "gateway": m["gateway"],
+                "ip": m["ipv4"],
+            },
+            # host
+            "hostname": dns_attr["shortname"],
+            "dns_attr": dns_attr,
+
+        }
+        selector = {"mac": m["mac"]}
+        selector.update(self.get_extra_selectors(self.extra_selector))
+        if update_extra_metadata:
+            extra_metadata.update(update_extra_metadata)
+        gen = generator.Generator(
+            api_uri=self.api_uri,
+            group_id="%s-%d" % (marker, i),  # one per machine
+            profile_id=marker,  # link to ignition
+            name=marker,
+            ignition_id="%s.yaml" % self.ignition_dict[marker],
+            matchbox_path=self.matchbox_path,
+            selector=selector,
+            extra_metadata=extra_metadata,
+        )
+        gen.dumps()
 
     def etcd_member_kubernetes_control_plane(self):
         marker = self.etcd_member_kubernetes_control_plane.__name__
@@ -200,75 +264,25 @@ class ConfigSyncSchedules(object):
 
         machine_roles = self._query_roles(*roles)
         for i, m in enumerate(machine_roles):
-            random.seed(m["mac"].__hash__())
-            automatic_name = "control-plane-%d" % i
-            selector = {"mac": m["mac"]}
-            fqdn = self.get_dns_name(m["ipv4"], automatic_name)
-            dns_attr = self.get_dns_attr(self.log, fqdn)
-            selector.update(self.get_extra_selectors(self.extra_selector))
-            gen = generator.Generator(
-                api_uri=self.api_uri,
-                group_id="%s-%d" % (marker, i),  # one per machine
-                profile_id=marker,  # link to ignition
-                name=marker,
-                ignition_id="%s.yaml" % self.ignition_dict[marker],
-                matchbox_path=self.matchbox_path,
-                selector=selector,
-                extra_metadata={
-                    "etc_hosts": ec.etc_hosts,
-                    # Etcd
-                    "etcd_name": m["ipv4"],
-                    "kubernetes_etcd_initial_cluster": self.kubernetes_etcd_initial_cluster,
-                    "fleet_etcd_initial_cluster": self.fleet_etcd_initial_cluster,
+            update_md = {
+                # Etcd Members
+                "kubernetes_etcd_member_peer_uri_list": ",".join(self.kubernetes_etcd_member_peer_uri_list),
+                "fleet_etcd_member_peer_uri_list": ",".join(self.fleet_etcd_member_peer_uri_list),
 
-                    "kubernetes_etcd_initial_advertise_peer_urls": "http://%s:%d" % (
-                        m["ipv4"], ec.kubernetes_etcd_peer_port),
-                    "fleet_etcd_initial_advertise_peer_urls": "http://%s:%d" % (
-                        m["ipv4"], ec.fleet_etcd_peer_port),
+                "kubernetes_etcd_peer_port": ec.kubernetes_etcd_peer_port,
+                "fleet_etcd_peer_port": ec.fleet_etcd_peer_port,
 
-                    "kubernetes_etcd_member_client_uri_list": ",".join(self.kubernetes_etcd_member_client_uri_list),
-                    "fleet_etcd_member_client_uri_list": ",".join(self.fleet_etcd_member_client_uri_list),
-
-                    "kubernetes_etcd_data_dir": ec.kubernetes_etcd_data_dir,
-                    "fleet_etcd_data_dir": ec.fleet_etcd_data_dir,
-
-                    "kubernetes_etcd_client_port": ec.kubernetes_etcd_client_port,
-                    "fleet_etcd_client_port": ec.fleet_etcd_client_port,
-
-                    # Etcd Members
-                    "kubernetes_etcd_advertise_client_urls": "http://%s:%d" % (
-                        m["ipv4"], ec.kubernetes_etcd_client_port),
-                    "fleet_etcd_advertise_client_urls": "http://%s:%d" % (
-                        m["ipv4"], ec.fleet_etcd_client_port),
-
-                    "kubernetes_etcd_member_peer_uri_list": ",".join(self.kubernetes_etcd_member_peer_uri_list),
-                    "fleet_etcd_member_peer_uri_list": ",".join(self.fleet_etcd_member_peer_uri_list),
-
-                    "kubernetes_etcd_peer_port": ec.kubernetes_etcd_peer_port,
-                    "fleet_etcd_peer_port": ec.fleet_etcd_peer_port,
-
-                    # K8s Control Plane
-                    "kubernetes_etcd_servers": ec.kubernetes_etcd_servers,
-                    "kubernetes_api_server_port": ec.kubernetes_api_server_port,
-                    "kubelet_ip": "%s" % m["ipv4"],
-                    "kubelet_name": "%s" % m["ipv4"] if fqdn == automatic_name else fqdn,
-                    "k8s_apiserver_count": len(machine_roles),
-                    "k8s_advertise_ip": "%s" % m["ipv4"],
-                    "hyperkube_image_url": ec.hyperkube_image_url,
-                    "k8s_service_cluster_ip_range": ec.kubernetes_service_cluster_ip_range,
-                    # IPAM
-                    "cni": json.dumps(self.cni_ipam(m["cidrv4"], m["gateway"])),
-                    "network": {
-                        "cidrv4": m["cidrv4"],
-                        "gateway": m["gateway"],
-                        "ip": m["ipv4"],
-                    },
-                    # host
-                    "hostname": dns_attr["shortname"],
-                    "dns_attr": dns_attr,
-                }
+                # K8s Control Plane
+                "k8s_apiserver_count": len(machine_roles),
+                "k8s_advertise_ip": "%s" % m["ipv4"],  # TODO still usable ?
+            }
+            self.produce_matchbox_data(
+                marker=marker,
+                i=i,
+                m=m,
+                automatic_name="control-plane-%d" % i,
+                update_extra_metadata=update_md,
             )
-            gen.dumps()
 
     def kubernetes_nodes(self):
         marker = self.kubernetes_nodes.__name__
@@ -276,62 +290,13 @@ class ConfigSyncSchedules(object):
 
         machine_roles = self._query_roles(*roles)
         for i, m in enumerate(machine_roles):
-            random.seed(m["mac"].__hash__())
-            automatic_name = "node-%d" % i
-            selector = {"mac": m["mac"]}
-            fqdn = self.get_dns_name(m["ipv4"], automatic_name)
-            dns_attr = self.get_dns_attr(self.log, fqdn)
-            gen = generator.Generator(
-                api_uri=self.api_uri,
-                group_id="%s-%d" % (marker, i),  # one per machine
-                profile_id=marker,  # link to ignition
-                name=marker,
-                ignition_id="%s.yaml" % self.ignition_dict[marker],
-                matchbox_path=self.matchbox_path,
-                selector=selector,
-                extra_metadata={
-                    "etc_hosts": ec.etc_hosts,
-                    # Etcd
-                    "etcd_name": m["ipv4"],
-                    "kubernetes_etcd_initial_cluster": self.kubernetes_etcd_initial_cluster,
-                    "fleet_etcd_initial_cluster": self.fleet_etcd_initial_cluster,
-
-                    "kubernetes_etcd_advertise_client_urls": "http://%s:%d" % (
-                        m["ipv4"], ec.kubernetes_etcd_client_port),
-                    "fleet_etcd_advertise_client_urls": "http://%s:%d" % (
-                        m["ipv4"], ec.fleet_etcd_client_port),
-
-                    "kubernetes_etcd_member_client_uri_list": ",".join(self.kubernetes_etcd_member_client_uri_list),
-                    "fleet_etcd_member_client_uri_list": ",".join(self.fleet_etcd_member_client_uri_list),
-
-                    "kubernetes_etcd_data_dir": ec.kubernetes_etcd_data_dir,
-                    "fleet_etcd_data_dir": ec.fleet_etcd_data_dir,
-
-                    "kubernetes_etcd_client_port": ec.kubernetes_etcd_client_port,
-                    "fleet_etcd_client_port": ec.fleet_etcd_client_port,
-
-                    # Kubelet
-                    "kubernetes_etcd_servers": ec.kubernetes_etcd_servers,
-                    "kubernetes_api_server_port": ec.kubernetes_api_server_port,
-                    "kubelet_ip": "%s" % m["ipv4"],
-                    "kubelet_name": "%s" % m["ipv4"] if fqdn == automatic_name else fqdn,
-                    "k8s_endpoint": self.kubernetes_control_plane,
-                    "hyperkube_image_url": ec.hyperkube_image_url,
-                    "k8s_service_cluster_ip_range": ec.kubernetes_service_cluster_ip_range,
-                    # IPAM
-                    "cni": json.dumps(self.cni_ipam(m["cidrv4"], m["gateway"])),
-                    "network": {
-                        "cidrv4": m["cidrv4"],
-                        "gateway": m["gateway"],
-                        "ip": m["ipv4"],
-                    },
-                    # host
-                    "hostname": dns_attr["shortname"],
-                    "dns_attr": dns_attr,
-                }
+            self.produce_matchbox_data(
+                marker=marker,
+                i=i,
+                m=m,
+                automatic_name="node-%d" % i,
+                update_extra_metadata=None,
             )
-            selector.update(self.get_extra_selectors(self.extra_selector))
-            gen.dumps()
 
     def apply(self):
         self.etcd_member_kubernetes_control_plane()
