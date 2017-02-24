@@ -137,71 +137,59 @@ class ConfigSyncSchedules(object):
         self.log.debug("no extra selectors")
         return {}
 
-    @staticmethod
-    def sort_the_list(l):
-        l.sort()
-        return l
-
     @property
     def etcd_member_ip_list(self):
-        return self.sort_the_list(self._query_ip_list(schedulerv2.ScheduleRoles.etcd_member))
+        return self._query_ip_list(schedulerv2.ScheduleRoles.etcd_member)
 
     @property
     def kubernetes_control_plane_ip_list(self):
-        return self.sort_the_list(self._query_ip_list(schedulerv2.ScheduleRoles.kubernetes_control_plane))
+        return self._query_ip_list(schedulerv2.ScheduleRoles.kubernetes_control_plane)
 
     @property
     def kubernetes_nodes_ip_list(self):
-        return self.sort_the_list(self._query_ip_list(schedulerv2.ScheduleRoles.kubernetes_node))
+        return self._query_ip_list(schedulerv2.ScheduleRoles.kubernetes_node)
+
+    @staticmethod
+    def shuffler_http_uri(ips, ec_value):
+        ips.sort()
+        e = ["http://%s:%d" % (k, ec_value) for k in ips]
+        random.shuffle(e)
+        return e
+
+    @staticmethod
+    def shuffler_etcd_named(ips, ec_value):
+        ips.sort()
+        e = ["%s=http://%s:%d" % (k, k, ec_value) for k in ips]
+        random.shuffle(e)
+        return ",".join(e)
 
     @property
     def kubernetes_etcd_initial_cluster(self):
-        ips = self.etcd_member_ip_list
-        e = ["%s=http://%s:%d" % (k, k, ec.kubernetes_etcd_peer_port) for k in ips]
-        random.shuffle(e)
-        return ",".join(e)
+        return self.shuffler_etcd_named(self.etcd_member_ip_list, ec.kubernetes_etcd_peer_port)
 
     @property
     def fleet_etcd_initial_cluster(self):
-        ips = self.etcd_member_ip_list
-        e = ["%s=http://%s:%d" % (k, k, ec.fleet_etcd_peer_port) for k in ips]
-        random.shuffle(e)
-        return ",".join(e)
+        return self.shuffler_etcd_named(self.etcd_member_ip_list, ec.fleet_etcd_peer_port)
 
     @property
     def kubernetes_etcd_member_client_uri_list(self):
-        ips = self.etcd_member_ip_list
-        e = ["http://%s:%d" % (k, ec.kubernetes_etcd_client_port) for k in ips]
-        random.shuffle(e)
-        return e
+        return self.shuffler_http_uri(self.etcd_member_ip_list, ec.kubernetes_etcd_client_port)
 
     @property
     def fleet_etcd_member_client_uri_list(self):
-        ips = self.etcd_member_ip_list
-        e = ["http://%s:%d" % (k, ec.fleet_etcd_client_port) for k in ips]
-        random.shuffle(e)
-        return e
+        return self.shuffler_http_uri(self.etcd_member_ip_list, ec.fleet_etcd_client_port)
 
     @property
     def kubernetes_etcd_member_peer_uri_list(self):
-        ips = self.etcd_member_ip_list
-        e = ["http://%s:%d" % (k, ec.kubernetes_etcd_peer_port) for k in ips]
-        random.shuffle(e)
-        return e
+        return self.shuffler_http_uri(self.etcd_member_ip_list, ec.kubernetes_etcd_peer_port)
 
     @property
     def fleet_etcd_member_peer_uri_list(self):
-        ips = self.etcd_member_ip_list
-        e = ["http://%s:%d" % (k, ec.fleet_etcd_peer_port) for k in ips]
-        random.shuffle(e)
-        return e
+        return self.shuffler_http_uri(self.etcd_member_ip_list, ec.fleet_etcd_peer_port)
 
     @property
     def kubernetes_control_plane(self):
-        ips = self.kubernetes_control_plane_ip_list
-        k8s = ["http://%s:%d" % (k8s, ec.kubernetes_api_server_port) for k8s in ips]
-        random.shuffle(k8s)
-        return ",".join(k8s)
+        return self.shuffler_http_uri(self.kubernetes_control_plane_ip_list, ec.kubernetes_api_server_port)
 
     def common_attributes(self):
         pass
