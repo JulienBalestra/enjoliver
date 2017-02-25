@@ -178,10 +178,6 @@ def discovery():
     else:
         r = request.get_json()
 
-    while cache.get(application.config["BACKUP_LOCK_KEY"]) is not None:
-        app.logger.warning("Cache backup is not None")
-        time.sleep(0.1)
-
     try:
         i = crud.InjectDiscovery(engine=engine,
                                  ignition_journal=ignition_journal,
