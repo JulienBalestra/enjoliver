@@ -16,14 +16,9 @@ from configs import EnjoliverConfig
 
 ec = EnjoliverConfig(importer=__file__)
 
-if int(ec.gunicorn_workers) == 1:
-    from werkzeug.contrib.cache import SimpleCache
+from werkzeug.contrib.cache import FileSystemCache
 
-    cache = SimpleCache()
-else:
-    from werkzeug.contrib.cache import FileSystemCache
-
-    cache = FileSystemCache("/tmp/werkzeug-cache")
+cache = FileSystemCache(ec.werkzeug_fs_cache_dir)
 
 LOGGER = logger.get_logger(__file__)
 
@@ -50,8 +45,6 @@ if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "_"):
     LOGGER.info("Create engine %s" % application.config["DB_URI"])
     engine = create_engine(application.config["DB_URI"])
     LOGGER.info("Engine with <driver: %s> " % engine.driver)
-    LOGGER.info("Clear the cache")
-    cache.clear()
 
 
 @application.route("/shutdown", methods=["POST"])

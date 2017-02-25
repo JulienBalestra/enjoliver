@@ -4,13 +4,8 @@
 backup_bucket_directory: 'enjoliver'
 backup_lock_key: 'backup_lock'
 
-ignition_dict:
-  kubernetes_nodes: 'k8s-node'
-  etcd_member_kubernetes_control_plane: 'etcd-member-control-plane'
-  discovery': 'discovery'
-
-extra_selectors:
-  os: 'installed'
+ignition_dict: {'kubernetes_nodes': 'k8s-node', 'etcd_member_kubernetes_control_plane': 'etcd-member-control-plane', "discovery'": 'discovery'}
+extra_selectors: {'os': 'installed'}
 
 api_uri: 'http://127.0.0.1:5000'
 #assets_server_uri: 'http://172.20.0.1'
@@ -36,8 +31,12 @@ gunicorn_workers: 1
 gunicorn_bind: "0.0.0.0:5000"
 
 #db_path: '/var/lib/enjoliver/enjoliver.sqlite'
+
+#db_uri: 'cockroachdb://root@localhost:26257'
 #db_uri: 'sqlite:////var/lib/enjoliver/enjoliver.sqlite'
+
 #ignition_journal_dir: '/var/lib/enjoliver/ignition_journal'
+#werkzeug_fs_cache_dir: '/var/lib/enjoliver/werkzeug_cache'
 
 etcd_member_kubernetes_control_plane_expected_nb: 3
 

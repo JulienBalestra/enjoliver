@@ -4,6 +4,8 @@ import os
 
 import sys
 
+import time
+
 project_path = os.path.dirname(os.path.abspath(__file__))
 app_path = os.path.join(project_path, "app")
 python = os.path.join(project_path, "env/bin/python")
@@ -20,17 +22,25 @@ from app import (
 
 def init_db(ec):
     if "sqlite://" in ec.db_uri:
-        directory = os.path.exists(os.path.dirname(ec.db_path))
-        if not directory:
+        directory = os.path.dirname(ec.db_path)
+        if not os.path.exists(directory):
             os.makedirs(directory)
 
     import sqlalchemy
     engine = sqlalchemy.create_engine(ec.db_uri)
+
+    for i in xrange(60):
+        try:
+            engine.connect()
+            break
+        except sqlalchemy.exc.OperationalError as e:
+            os.write(2, "%s\n" % e)
+            time.sleep(1)
     model.Base.metadata.create_all(engine)
 
 
 def init_journal_dir(ec):
-    if not ec.ignition_journal_dir:
+    if not os.path.exists(ec.ignition_journal_dir):
         os.makedirs(ec.ignition_journal_dir)
 
 

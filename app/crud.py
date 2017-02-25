@@ -295,11 +295,9 @@ class FetchSchedule(object):
         self.session = sm()
 
     def get_schedules(self):
-        s = self.session.query(Schedule, MachineInterface).join(
-            MachineInterface).all()
-
         r = {}
-        for i in s:
+        for i in self.session.query(Schedule, MachineInterface).join(
+                MachineInterface):
             try:
                 r[i[1].mac] += [i[0].role]
             except KeyError:
@@ -313,10 +311,10 @@ class FetchSchedule(object):
         return r
 
     def get_available_machines(self):
-        s = self.session.query(MachineInterface).filter(
-            MachineInterface.schedule == None, MachineInterface.as_boot == True).all()
         l = []
-        for i in s:
+        for i in self.session.query(MachineInterface).outerjoin(
+                Schedule, MachineInterface.id == Schedule.machine_interface).filter(
+                    MachineInterface.as_boot == True).filter(Schedule.machine_interface == None):
             l.append(
                 {
                     "mac": i.mac,
@@ -352,7 +350,7 @@ class FetchSchedule(object):
     def get_roles(self, *args):
         s = self.session.query(MachineInterface).join(Schedule).filter(
             Schedule.role.in_(args)
-        ).group_by(MachineInterface.id).having(func.count(MachineInterface.id) == len(args)).all()
+        ).group_by(MachineInterface).having(func.count(MachineInterface.id) == len(args)).all()
         l = []
         for i in s:
             l.append(
@@ -469,19 +467,22 @@ class InjectLifecycle(object):
         return mac.replace("-", ":")
 
     def refresh_lifecycle(self, up_to_date):
-        l = self.session.query(Lifecycle).filter(
-            Lifecycle.machine_interface == self.interface.id).first()
-        if not l:
-            l = Lifecycle(
-                machine_interface=self.interface.id,
-                up_to_date=up_to_date
-            )
-        else:
-            l.up_to_date = up_to_date
-            l.updated_date = datetime.datetime.utcnow()
-        self.session.add(l)
-        self.session.commit()
-        self.session.close()
+        try:
+            l = self.session.query(Lifecycle).filter(
+                Lifecycle.machine_interface == self.interface.id).first()
+            if not l:
+                l = Lifecycle(
+                    machine_interface=self.interface.id,
+                    up_to_date=up_to_date
+                )
+                self.session.add(l)
+            else:
+                l.up_to_date = up_to_date
+                l.updated_date = datetime.datetime.utcnow()
+
+            self.session.commit()
+        finally:
+            self.session.close()
 
 
 class FetchLifecycle(object):
@@ -499,7 +500,7 @@ class FetchLifecycle(object):
 
     def get_all_updated_status(self):
         l = []
-        for s in self.session.query(Lifecycle).all():
+        for s in self.session.query(Lifecycle):
             l.append(
                 {
                     "up-to-date": s.up_to_date,

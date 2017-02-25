@@ -98,3 +98,4 @@ matchbox/assets/setup-network-environment/1.0.1/
 /runtime/acserver/acserver
 /runtime/acserver.d/
 *.pid
+/app/werkzeug_cache/

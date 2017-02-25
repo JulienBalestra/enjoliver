@@ -7,29 +7,41 @@ from sqlalchemy import create_engine
 
 from app import crud
 from app import model
+from app import configs
 from common import posts
+
+ec = configs.EnjoliverConfig()
 
 
 class TestModel(unittest.TestCase):
     unit_path = os.path.dirname(os.path.abspath(__file__))
     dbs_path = "%s/dbs" % unit_path
     ignition_journal_path = "%s/ignition_journal" % unit_path
-    engine = None
+
+    # engine = None
 
     @classmethod
     def setUpClass(cls):
-        db = "%s/%s.sqlite" % (cls.dbs_path, TestModel.__name__.lower())
-        try:
-            os.remove(db)
-        except OSError:
-            pass
         try:
             shutil.rmtree(cls.ignition_journal_path)
         except OSError:
             pass
-        assert os.path.isfile(db) is False
-        cls.engine = create_engine('sqlite:///%s' % db)
-        # cls.engine = create_engine('sqlite:///:memory:')
+
+        if "sqlite:///" not in ec.db_uri:
+            cls.engine = create_engine(ec.db_uri)
+        else:
+            db = "%s/%s.sqlite" % (cls.dbs_path, TestModel.__name__.lower())
+            if False:
+                try:
+                    os.remove(db)
+                except OSError:
+                    pass
+                assert os.path.isfile(db) is False
+                cls.engine = create_engine('sqlite:///%s' % db)
+            else:
+                cls.engine = create_engine('sqlite:///:memory:')
+
+        model.Base.metadata.drop_all(cls.engine)
         model.Base.metadata.create_all(cls.engine)
         fetch = crud.FetchDiscovery(cls.engine, cls.ignition_journal_path)
         assert fetch.get_all_interfaces() == []
@@ -447,7 +459,7 @@ class TestModel(unittest.TestCase):
             self.assertEqual(unicode, type(i["cidrv4"]))
             self.assertEqual(unicode, type(i["gateway"]))
             self.assertEqual(unicode, type(i["name"]))
-            self.assertEqual(int, type(i["netmask"]))
+            self.assertEqual(21, int(i["netmask"]))
             self.assertEqual(unicode, type(i["role"]))
             self.assertEqual(datetime.datetime, type(i["created_date"]))
 
@@ -462,7 +474,7 @@ class TestModel(unittest.TestCase):
             self.assertEqual(unicode, type(i["cidrv4"]))
             self.assertEqual(unicode, type(i["gateway"]))
             self.assertEqual(unicode, type(i["name"]))
-            self.assertEqual(int, type(i["netmask"]))
+            self.assertEqual(21, int(i["netmask"]))
             self.assertEqual(unicode, type(i["role"]))
             self.assertEqual(datetime.datetime, type(i["created_date"]))
 
@@ -477,7 +489,7 @@ class TestModel(unittest.TestCase):
             self.assertEqual(unicode, type(i["cidrv4"]))
             self.assertEqual(unicode, type(i["gateway"]))
             self.assertEqual(unicode, type(i["name"]))
-            self.assertEqual(int, type(i["netmask"]))
+            self.assertEqual(21, int(i["netmask"]))
             self.assertEqual(unicode, type(i["role"]))
             self.assertEqual(datetime.datetime, type(i["created_date"]))
 

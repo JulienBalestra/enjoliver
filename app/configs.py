@@ -60,6 +60,10 @@ class EnjoliverConfig(object):
             "ignition_journal_dir", '%s/ignition_journal' % os.path.dirname(
                 os.path.abspath(
                     __file__)))
+        self.werkzeug_fs_cache_dir = self.config_override(
+            "werkzeug_fs_cache_dir", '%s/werkzeug_cache' % os.path.dirname(
+                os.path.abspath(
+                    __file__)))
 
         # S3
         self.aws_id = self.config_override("aws_id", os.getenv("AWS_ACCESS_KEY_ID", None))
@@ -148,6 +152,6 @@ if __name__ == '__main__':
     ec = EnjoliverConfig("%s/configs.yaml" % os.path.dirname(__file__))
     for k, v in ec.__dict__.iteritems():
         if type(v) is str:
-            print "%s: '%s'" % (k, v)
+            print "%s: '%s'\n" % (k, v)
         else:
-            print "%s: %s" % (k, v)
+            print "%s: %s\n" % (k, v)
