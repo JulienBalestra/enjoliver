@@ -464,11 +464,15 @@ def user_view_machine():
             if j["as_boot"]:
                 sub_list.append(j["cidrv4"])
                 sub_list.append(j["mac"])
-                try:
-                    fqdn = socket.gethostbyaddr(j["cidrv4"].split("/")[0])[0]
-                    sub_list.append(fqdn)
-                except socket.herror:
-                    sub_list.append("unknown")
+                ip = j["cidrv4"].split("/")[0]
+                fqdn = cache.get("fqdn-%s" % ip)
+                if not fqdn:
+                    try:
+                        fqdn = socket.gethostbyaddr(ip)[0]
+                        cache.set("fqdn:%s" % ip, fqdn, timeout=60 * 10)
+                    except socket.herror:
+                        fqdn = "unknown"
+                sub_list.append(fqdn)
                 s = crud.FetchSchedule(engine)
                 s.close()
                 roles = s.get_roles_by_mac_selector(j["mac"])
