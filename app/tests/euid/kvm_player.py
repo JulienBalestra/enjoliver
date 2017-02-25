@@ -600,7 +600,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     def get_optimized_memory(nb_nodes):
         mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
         mem_gib = mem_bytes / (1024. ** 3)
-        usable_mem_gib = mem_gib * (1.2 if mem_gib > 10 else 1)
+        usable_mem_gib = mem_gib * (1.4 if mem_gib > 10 else 1.2)
         return (usable_mem_gib // nb_nodes) * 1024
 
     def kubectl_proxy(self, api_server_uri, proxy_port):

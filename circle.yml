@@ -1,6 +1,3 @@
-# Circle CI use containers who doesn't easily allow fs overlay with DGR
-# TODO Use rktception
-
 dependencies:
   override:
     - sudo apt-get update -qq
@@ -8,5 +5,4 @@ dependencies:
 
 test:
   override:
-    - sudo useradd enjoliver
-    - MY_USER=enjoliver make prod_setup
+    - make prod_setup

@@ -141,12 +141,9 @@ dev_setup:
 	su - $(MY_USER) -c "make -C $(CWD) config"
 
 prod_setup:
-	echo "Need MY_USER for non root operations"
-	test $(MY_USER)
-	test $(shell id -u -r) -eq 0
-	su - $(MY_USER) -c "make -C $(CWD) submodules"
-	su - $(MY_USER) -c "make -C $(CWD) prod_setup_runtime"
-	su - $(MY_USER) -c "make -C $(CWD) front"
-	su - $(MY_USER) -c "make -C $(CWD) pip"
-	su - $(MY_USER) -c "make -C $(CWD) assets"
-	su - $(MY_USER) -c "make -C $(CWD) validate"
+	make -C $(CWD) submodules
+	make -C $(CWD) prod_setup_runtime
+	make -C $(CWD) front
+	make -C $(CWD) pip
+	make -C $(CWD) assets
+	make -C $(CWD) validate
