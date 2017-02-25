@@ -16,6 +16,7 @@ from app import generator
 from common import posts
 
 ec = configs.EnjoliverConfig(importer=__file__)
+ec.api_uri = "http://127.0.0.1:5000"
 
 
 class TestAPIGunicorn(unittest.TestCase):
@@ -45,7 +46,7 @@ class TestAPIGunicorn(unittest.TestCase):
 
     @staticmethod
     def process_target_api():
-        os.environ["ENJOLIVER_API_URI"] = "http://127.0.0.1:5000"
+        os.environ["ENJOLIVER_API_URI"] = ec.api_uri
         cmd = [
             "%s/manage.py" % TestAPIGunicorn.project_path,
             "gunicorn",
