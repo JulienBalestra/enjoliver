@@ -38,6 +38,10 @@ class Kubernetes2Tiers(object):
 
     def _init_discovery(self):
         local_ec = EnjoliverConfig(importer=__file__)
+        if local_ec.extra_selectors:
+            extra_selectors = "&".join(["%s=%s" % (k, v) for k, v in local_ec.extra_selectors.iteritems()])
+        else:
+            extra_selectors = ""
         gen = generator.Generator(
             api_uri=self.api_uri,
             profile_id="discovery",
@@ -47,6 +51,7 @@ class Kubernetes2Tiers(object):
             extra_metadata={
                 "lldp_image_url": local_ec.lldp_image_url,
                 "etc_hosts": local_ec.etc_hosts,
+                "extra_selectors": extra_selectors
             }
         )
         gen.dumps()

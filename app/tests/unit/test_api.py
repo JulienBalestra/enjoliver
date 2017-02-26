@@ -97,35 +97,6 @@ class TestAPI(unittest.TestCase):
     def test_root(self):
         result = self.app.get('/')
         self.assertEqual(result.status_code, 200)
-        content = json.loads(result.data)
-        self.assertItemsEqual(content, [
-            u'/boot.ipxe.0',
-            u'/discovery',
-            u'/discovery/interfaces',
-            u'/discovery/ignition-journal/<string:uuid>',
-            u'/discovery/ignition-journal/<string:uuid>/<string:boot_id>',
-            u'/discovery/ignition-journal',
-            u'/boot.ipxe',
-            u'/healthz',
-            u'/ipxe',
-            u'/backup/db',
-            u'/ui',
-            u'/ui/view/machine',
-            u'/',
-            u'/assets',
-            u'/assets/<path:path>',
-            u'/configs',
-            u'/ignition',
-            u'/metadata',
-            u"/scheduler",
-            u'/static/<path:filename>',
-            u'/scheduler/<string:role>',
-            u'/scheduler/ip-list/<string:role>',
-            u'/scheduler/available',
-            u'/shutdown',
-            u'/lifecycle/ignition/<string:request_raw_query>',
-            u'/lifecycle/ignition',
-        ])
 
     def test_discovery_00(self):
         result = self.app.post('/discovery', data=json.dumps(posts.M01),
@@ -209,7 +180,7 @@ class TestAPI(unittest.TestCase):
 
     def test_scheduler_01(self):
         r = self.app.post("/scheduler")
-        self.assertEqual(400, r.status_code)
+        self.assertEqual(406, r.status_code)
         self.assertEqual({
             u'roles': [
                 u'etcd-member',

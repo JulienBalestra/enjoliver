@@ -1,17 +1,15 @@
 import os
 import socket
-import time
 import urllib2
 
-import psutil
 import requests
 from flask import Flask, request, json, jsonify, render_template, Response
 from sqlalchemy import create_engine
 
-import backup
 import crud
 import logger
 import model
+import ops
 from configs import EnjoliverConfig
 
 ec = EnjoliverConfig(importer=__file__)
@@ -49,43 +47,7 @@ if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "_"):
 
 @application.route("/shutdown", methods=["POST"])
 def shutdown():
-    LOGGER.warning("shutdown asked")
-    pid_files = [ec.plan_pid_file, ec.matchbox_pid_file]
-    gunicorn_pid = None
-    pid_list = []
-
-    for pid_file in pid_files:
-        try:
-            with open(pid_file) as f:
-                pid_number = int(f.read())
-            os.remove(pid_file)
-            pid_list.append(psutil.Process(pid_number))
-        except IOError:
-            LOGGER.error("IOError -> %s" % pid_file)
-        except psutil.NoSuchProcess as e:
-            LOGGER.error("%s NoSuchProcess: %s" % (e, pid_file))
-
-    try:
-        with open(ec.gunicorn_pid_file) as f:
-            pid_number = int(f.read())
-        os.remove(ec.gunicorn_pid_file)
-        gunicorn_pid = psutil.Process(pid_number)
-    except IOError:
-        LOGGER.error("IOError -> %s" % ec.gunicorn_pid_file)
-    except psutil.NoSuchProcess as e:
-        LOGGER.error("%s already dead: %s" % (e, ec.gunicorn_pid_file))
-
-    for pid in pid_list:
-        LOGGER.info("SIGTERM -> %s" % pid)
-        pid.terminate()
-        LOGGER.info("wait -> %s" % pid)
-        pid.wait()
-        LOGGER.info("%s running: %s " % (pid, pid.is_running()))
-
-    pid_list.append(gunicorn_pid)
-    r = jsonify(["%s" % k for k in pid_list])
-    gunicorn_pid.terminate()
-    return r
+    return ops.shutdown(ec)
 
 
 @application.route("/configs", methods=["GET"])
@@ -94,27 +56,49 @@ def configs():
 
 
 @application.route("/lifecycle/ignition/<string:request_raw_query>", methods=["POST"])
-def lifecycle_ignition(request_raw_query):
+def lifecycle_post_ignition(request_raw_query):
     machine_ignition = json.loads(request.get_data())
     r = requests.get("%s/ignition?%s" % (ec.matchbox_uri, request_raw_query))
     matchbox_ignition = json.loads(r.content)
     r.close()
     i = crud.InjectLifecycle(engine=engine, request_raw_query=request_raw_query)
     if json.dumps(machine_ignition, sort_keys=True) == json.dumps(matchbox_ignition, sort_keys=True):
-        i.refresh_lifecycle(True)
-        r = "update", 200
+        i.refresh_lifecycle_ignition(True)
+        r = "Up-to-date", 200
     else:
-        i.refresh_lifecycle(False)
-        r = "modified", 210
+        i.refresh_lifecycle_ignition(False)
+        r = "Outdated", 210
     return r
 
 
 @application.route("/lifecycle/ignition", methods=["GET"])
-def get_lifecycle_status():
+def lifecycle_get_ignition_status():
     q = crud.FetchLifecycle(engine)
     d = q.get_all_updated_status()
     q.close()
     return jsonify(d)
+
+
+@application.route("/lifecycle/coreos-install", methods=["GET"])
+def lifecycle_get_coreos_install_status():
+    q = crud.FetchLifecycle(engine)
+    d = q.get_all_coreos_install_status()
+    q.close()
+    return jsonify(d)
+
+
+@application.route("/lifecycle/coreos-install/<string:request_raw_query>/success", methods=["POST"])
+def lifecycle_post_coreos_install_success(request_raw_query):
+    i = crud.InjectLifecycle(engine=engine, request_raw_query=request_raw_query)
+    i.refresh_lifecycle_coreos_install(True)
+    return "", 200
+
+
+@application.route("/lifecycle/coreos-install/<string:request_raw_query>/fail", methods=["POST"])
+def lifecycle_post_coreos_install_fail(request_raw_query):
+    i = crud.InjectLifecycle(engine=engine, request_raw_query=request_raw_query)
+    i.refresh_lifecycle_coreos_install(False)
+    return "", 200
 
 
 @application.route('/', methods=['GET'])
@@ -125,68 +109,26 @@ def root():
     """
     r = [k.rule for k in application.url_map.iter_rules()]
     r = list(set(r))
-    r.sort()
     return jsonify(r)
 
 
 @application.route('/healthz', methods=['GET'])
 def healthz():
-    """
-    Query all services and return the status
-    :return: json
-    """
-    status = {
-        "global": True,
-        "flask": True,
-        "db": False,
-        "matchbox": {k: False for k in application.config["MATCHBOX_URLS"]}
-    }
-    if app.config["MATCHBOX_URI"] is None:
-        application.logger.error("MATCHBOX_URI is None")
-    for k in status["matchbox"]:
-        try:
-            r = requests.get("%s%s" % (app.config["MATCHBOX_URI"], k))
-            r.close()
-            status["matchbox"][k] = True
-        except Exception as e:
-            status["matchbox"][k] = False
-            status["global"] = False
-            LOGGER.error(e)
-    try:
-        status["db"] = crud.health_check(engine=engine, ts=time.time(), who=request.remote_addr)
-    except Exception as e:
-        status["global"] = False
-        LOGGER.error(e)
-
-    app.logger.debug("%s" % status)
-    return json.jsonify(status)
+    return jsonify(ops.healthz(application, engine, request))
 
 
 @application.route('/discovery', methods=['POST'])
 def discovery():
-    if request.content_type != "application/json":
-        try:
-            r = json.loads(request.data)
-        except ValueError:
-            app.logger.error("ValueError for %s" % request.data)
-            return jsonify(
-                {
-                    u'boot-info': {},
-                    u'lldp': {},
-                    u'interfaces': []
-                }), 400
-    else:
-        r = request.get_json()
-
     try:
+        r = json.loads(request.get_data())
         i = crud.InjectDiscovery(engine=engine,
                                  ignition_journal=ignition_journal,
                                  discovery=r)
         new = i.commit_and_close()
-        cache.delete("discovery")
+        cache.delete(request.path)
         return jsonify({"total_elt": new[0], "new": new[1]})
 
-    except (KeyError, TypeError):
+    except (KeyError, TypeError, ValueError):
         return jsonify(
             {
                 u'boot-info': {},
@@ -197,28 +139,36 @@ def discovery():
 
 @application.route('/discovery', methods=['GET'])
 def discovery_get():
-    key = "discovery"
-    all_data = cache.get(key)
+    all_data = cache.get(request.path)
     if all_data is None:
         fetch = crud.FetchDiscovery(
             engine=engine,
             ignition_journal=ignition_journal
         )
-        all_data = fetch.get_all()
-        cache.set(key, all_data, timeout=30)
+        try:
+            all_data = fetch.get_all()
+            cache.set(request.path, all_data, timeout=30)
+        finally:
+            fetch.close()
 
     return jsonify(all_data)
 
 
 @application.route('/scheduler', methods=['GET'])
-def get_all_schedules():
-    fetch = crud.FetchSchedule(
-        engine=engine,
-    )
-    all_sch = fetch.get_schedules()
-    fetch.close()
+def scheduler_get():
+    all_data = cache.get(request.path)
+    if all_data is None:
+        fetch = crud.FetchSchedule(
+            engine=engine,
+        )
+        try:
+            all_data = fetch.get_schedules()
+            fetch.close()
+            cache.set(request.path, all_data, timeout=30)
+        finally:
+            fetch.close()
 
-    return jsonify(all_sch)
+    return jsonify(all_data)
 
 
 @application.route('/scheduler/<string:role>', methods=['GET'])
@@ -256,37 +206,32 @@ def get_schedule_role_ip_list(role):
 
 
 @application.route('/scheduler', methods=['POST'])
-def schedule_role():
-    if request.content_type != "application/json":
-        try:
-            r = json.loads(request.get_data())
-        except ValueError:
-            app.logger.error("ValueError for %s" % request.data)
-            return jsonify(
-                {
-                    u"roles": model.ScheduleRoles.roles,
-                    u'selector': {
-                        "mac": ""
-                    }
-                }), 400
-    else:
-        r = request.get_json()
-
-    inject = crud.InjectSchedule(
-        engine=engine,
-        data=r)
+def scheduler_post():
     try:
-        inject.apply_roles()
-        cache.delete("schedules")
-    finally:
-        inject.commit_and_close()
+        r = json.loads(request.get_data())
+        inject = crud.InjectSchedule(
+            engine=engine,
+            data=r)
+        try:
+            inject.apply_roles()
+        finally:
+            inject.commit_and_close()
+    except ValueError:
+        return jsonify(
+            {
+                u"roles": model.ScheduleRoles.roles,
+                u'selector': {
+                    u"mac": ""
+                }
+            }), 406
 
+    cache.delete(request.path)
     return jsonify(r)
 
 
 @application.route('/backup/db', methods=['POST'])
 def backup_database():
-    return backup.backup_sqlite(cache=cache, application=application)
+    return ops.backup_sqlite(cache=cache, application=application)
 
 
 @application.route('/discovery/interfaces', methods=['GET'])
@@ -452,7 +397,7 @@ def user_view_machine():
         all_data = fetch.get_all()
         cache.set(key, all_data, timeout=30)
 
-    res = [["created-date", "cidr-boot", "mac-boot", "fqdn", "roles", "up-to-date"]]
+    res = [["Created", "cidr-boot", "mac-boot", "fqdn", "Roles", "Installed", "Up-to-date"]]
     for i in all_data:
         sub_list = list()
         sub_list.append(i["boot-info"]["created-date"])
@@ -461,21 +406,25 @@ def user_view_machine():
                 sub_list.append(j["cidrv4"])
                 sub_list.append(j["mac"])
                 ip = j["cidrv4"].split("/")[0]
-                fqdn = cache.get("fqdn-%s" % ip)
+                cache_key = "/ui/view/machine?fqdn-%s" % ip
+                fqdn = cache.get(cache_key)
                 if not fqdn:
                     try:
                         fqdn = socket.gethostbyaddr(ip)[0]
-                        cache.set("fqdn:%s" % ip, fqdn, timeout=60 * 10)
+                        cache.set(cache_key, fqdn, timeout=60 * 10)
                     except socket.herror:
                         fqdn = "unknown"
                 sub_list.append(fqdn)
-                s = crud.FetchSchedule(engine)
-                s.close()
-                roles = s.get_roles_by_mac_selector(j["mac"])
+                try:
+                    s = crud.FetchSchedule(engine)
+                    roles = s.get_roles_by_mac_selector(j["mac"])
+                finally:
+                    s.close()
                 sub_list.append(roles if roles else "none")
-                u = crud.FetchLifecycle(engine)
-                sub_list.append(u.get_update_status(j["mac"]))
-                u.close()
+                lf = crud.FetchLifecycle(engine)
+                sub_list.append(lf.get_coreos_install_status(j["mac"]))
+                sub_list.append(lf.get_ignition_uptodate_status(j["mac"]))
+                lf.close()
 
         res.append(sub_list)
 

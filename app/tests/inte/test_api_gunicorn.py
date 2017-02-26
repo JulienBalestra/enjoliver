@@ -184,41 +184,10 @@ class TestAPIGunicorn(unittest.TestCase):
         self.assertEqual(response_body, expect)
 
     def test_02_root(self):
-        expect = [
-            u'/discovery',
-            u'/discovery/interfaces',
-            u'/discovery/ignition-journal/<string:uuid>',
-            u'/discovery/ignition-journal/<string:uuid>/<string:boot_id>',
-            u'/discovery/ignition-journal',
-            u'/boot.ipxe',
-            u'/boot.ipxe.0',
-            u'/healthz',
-            u'/backup/db',
-            u'/',
-            u'/ui',
-            u'/ui/view/machine',
-            u'/ipxe',
-            u'/assets',
-            u'/assets/<path:path>',
-            u'/configs',
-            u'/ignition',
-            u'/metadata',
-            u"/scheduler",
-            u'/static/<path:filename>',
-            u'/scheduler/<string:role>',
-            u'/scheduler/ip-list/<string:role>',
-            u'/scheduler/available',
-            u'/shutdown',
-            u'/lifecycle/ignition/<string:request_raw_query>',
-            u'/lifecycle/ignition',
-        ]
         request = urllib2.urlopen("%s/" % ec.api_uri)
-        response_body = request.read()
         response_code = request.code
         request.close()
-        content = json.loads(response_body)
         self.assertEqual(response_code, 200)
-        self.assertItemsEqual(content, expect)
 
     def test_03_ipxe_404(self):
         with self.assertRaises(urllib2.HTTPError):
@@ -423,3 +392,6 @@ class TestAPIGunicorn(unittest.TestCase):
         self.assertTrue(os.path.isfile(s["dest_fs"]))
         os.remove(s["dest_fs"])
         self.assertTrue(n < s["ts"])
+
+    def test_09(self):
+        pass

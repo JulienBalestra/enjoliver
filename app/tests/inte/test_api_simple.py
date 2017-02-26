@@ -151,39 +151,10 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(result.data, expect)
 
     def test_02_root(self):
-        expect = [
-            u'/discovery',
-            u'/discovery/interfaces',
-            u'/discovery/ignition-journal/<string:uuid>',
-            u'/discovery/ignition-journal/<string:uuid>/<string:boot_id>',
-            u'/discovery/ignition-journal',
-            u'/boot.ipxe',
-            u'/boot.ipxe.0',
-            u'/healthz',
-            u'/backup/db',
-            u'/',
-            u'/ui',
-            u'/ui/view/machine',
-            u'/ipxe',
-            u'/assets',
-            u'/assets/<path:path>',
-            u'/configs',
-            u'/ignition',
-            u'/metadata',
-            u"/scheduler",
-            u'/static/<path:filename>',
-            u'/scheduler/<string:role>',
-            u'/scheduler/ip-list/<string:role>',
-            u'/scheduler/available',
-            u'/shutdown',
-            u'/lifecycle/ignition/<string:request_raw_query>',
-            u'/lifecycle/ignition',
-        ]
         self.maxDiff = None
         result = self.app.get('/')
         content = json.loads(result.data)
         self.assertEqual(result.status_code, 200)
-        self.assertItemsEqual(content, expect)
 
     def test_03_ipxe_404(self):
         result = self.app.get('/ipxe')
@@ -244,7 +215,7 @@ class TestAPI(unittest.TestCase):
 
     def test_06_discovery_400(self):
         result = self.app.post('/discovery', data="ok")
-        self.assertEqual(result.status_code, 400)
+        self.assertEqual(result.status_code, 406)
 
     def test_06_discovery(self):
         result = self.app.get("/discovery/interfaces")

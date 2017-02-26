@@ -9,3 +9,4 @@ gevent==1.2.1
 prometheus-client==0.0.19
 psutil==5.1.3
 PyYAML==3.12
+cockroachdb==0.1.0

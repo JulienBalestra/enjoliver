@@ -5,7 +5,8 @@ from sqlalchemy import func
 from sqlalchemy.orm import sessionmaker, subqueryload
 
 import logger
-from model import ChassisPort, Chassis, MachineInterface, Machine, Healthz, Schedule, ScheduleRoles, Lifecycle
+from model import ChassisPort, Chassis, MachineInterface, Machine, \
+    Healthz, Schedule, ScheduleRoles, LifecycleIgnition, LifecycleCoreosInstall
 
 
 class FetchDiscovery(object):
@@ -466,12 +467,12 @@ class InjectLifecycle(object):
             raise AttributeError("%s is not parsable" % request_raw_query)
         return mac.replace("-", ":")
 
-    def refresh_lifecycle(self, up_to_date):
+    def refresh_lifecycle_ignition(self, up_to_date):
         try:
-            l = self.session.query(Lifecycle).filter(
-                Lifecycle.machine_interface == self.interface.id).first()
+            l = self.session.query(LifecycleIgnition).filter(
+                LifecycleIgnition.machine_interface == self.interface.id).first()
             if not l:
-                l = Lifecycle(
+                l = LifecycleIgnition(
                     machine_interface=self.interface.id,
                     up_to_date=up_to_date
                 )
@@ -484,26 +485,64 @@ class InjectLifecycle(object):
         finally:
             self.session.close()
 
+    def refresh_lifecycle_coreos_install(self, success):
+        try:
+            l = self.session.query(LifecycleCoreosInstall).filter(
+                LifecycleIgnition.machine_interface == self.interface.id).first()
+            if not l:
+                l = LifecycleCoreosInstall(
+                    machine_interface=self.interface.id,
+                    success=success
+                )
+                self.session.add(l)
+            else:
+                l.up_to_date = success
+                l.updated_date = datetime.datetime.utcnow()
+
+            self.session.commit()
+        finally:
+            self.session.close()
+
 
 class FetchLifecycle(object):
     def __init__(self, engine):
         sm = sessionmaker(bind=engine)
         self.session = sm()
 
-    def get_update_status(self, mac):
+    def get_ignition_uptodate_status(self, mac):
         interface = self.session.query(MachineInterface).filter(MachineInterface.mac == mac).first()
         if interface:
-            l = self.session.query(Lifecycle).filter(
-                Lifecycle.machine_interface == interface.id).first()
+            l = self.session.query(LifecycleIgnition).filter(
+                LifecycleIgnition.machine_interface == interface.id).first()
             return l.up_to_date if l else None
         return None
 
     def get_all_updated_status(self):
         l = []
-        for s in self.session.query(Lifecycle):
+        for s in self.session.query(LifecycleIgnition):
             l.append(
                 {
                     "up-to-date": s.up_to_date,
+                    "created_date": s.created_date,
+                    "updated_date": s.updated_date
+                }
+            )
+        return l
+
+    def get_coreos_install_status(self, mac):
+        interface = self.session.query(MachineInterface).filter(MachineInterface.mac == mac).first()
+        if interface:
+            l = self.session.query(LifecycleCoreosInstall).filter(
+                LifecycleIgnition.machine_interface == interface.id).first()
+            return l.success if l else None
+        return None
+
+    def get_all_coreos_install_status(self):
+        l = []
+        for s in self.session.query(LifecycleCoreosInstall):
+            l.append(
+                {
+                    "success": s.success,
                     "created_date": s.created_date,
                     "updated_date": s.updated_date
                 }

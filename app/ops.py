@@ -4,8 +4,11 @@ import os
 import shutil
 import time
 
+import psutil
+import requests
 from flask import jsonify
 
+import crud
 import logger
 import s3
 
@@ -82,3 +85,75 @@ def backup_sqlite(cache, application):
     b["backup_duration"] = time.time() - start
     LOGGER.info("backup duration: %ss" % b["backup_duration"])
     return jsonify(b)
+
+
+def healthz(application, engine, request):
+    """
+    Query all services and return the status
+    :return: json
+    """
+    status = {
+        "global": True,
+        "flask": True,
+        "db": False,
+        "matchbox": {k: False for k in application.config["MATCHBOX_URLS"]}
+    }
+    if application.config["MATCHBOX_URI"] is None:
+        application.logger.error("MATCHBOX_URI is None")
+    for k in status["matchbox"]:
+        try:
+            r = requests.get("%s%s" % (application.config["MATCHBOX_URI"], k))
+            r.close()
+            status["matchbox"][k] = True
+        except Exception as e:
+            status["matchbox"][k] = False
+            status["global"] = False
+            LOGGER.error(e)
+    try:
+        status["db"] = crud.health_check(engine=engine, ts=time.time(), who=request.remote_addr)
+    except Exception as e:
+        status["global"] = False
+        LOGGER.error(e)
+
+    application.logger.debug("%s" % status)
+    return status
+
+
+def shutdown(ec):
+    LOGGER.warning("shutdown asked")
+    pid_files = [ec.plan_pid_file, ec.matchbox_pid_file]
+    gunicorn_pid = None
+    pid_list = []
+
+    for pid_file in pid_files:
+        try:
+            with open(pid_file) as f:
+                pid_number = int(f.read())
+            os.remove(pid_file)
+            pid_list.append(psutil.Process(pid_number))
+        except IOError:
+            LOGGER.error("IOError -> %s" % pid_file)
+        except psutil.NoSuchProcess as e:
+            LOGGER.error("%s NoSuchProcess: %s" % (e, pid_file))
+
+    try:
+        with open(ec.gunicorn_pid_file) as f:
+            pid_number = int(f.read())
+        os.remove(ec.gunicorn_pid_file)
+        gunicorn_pid = psutil.Process(pid_number)
+    except IOError:
+        LOGGER.error("IOError -> %s" % ec.gunicorn_pid_file)
+    except psutil.NoSuchProcess as e:
+        LOGGER.error("%s already dead: %s" % (e, ec.gunicorn_pid_file))
+
+    for pid in pid_list:
+        LOGGER.info("SIGTERM -> %s" % pid)
+        pid.terminate()
+        LOGGER.info("wait -> %s" % pid)
+        pid.wait()
+        LOGGER.info("%s running: %s " % (pid, pid.is_running()))
+
+    pid_list.append(gunicorn_pid)
+    r = jsonify(["%s" % k for k in pid_list])
+    gunicorn_pid.terminate()
+    return r

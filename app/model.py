@@ -1,7 +1,7 @@
 import datetime
 import re
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, SmallInteger
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float
 from sqlalchemy import ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, validates
@@ -140,8 +140,8 @@ class Schedule(Base):
         return role_name
 
 
-class Lifecycle(Base):
-    __tablename__ = 'lifecycle'
+class LifecycleIgnition(Base):
+    __tablename__ = 'lifecycle-ignition'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     created_date = Column(DateTime, default=datetime.datetime.utcnow)
@@ -149,4 +149,16 @@ class Lifecycle(Base):
     machine_interface = Column(Integer, ForeignKey('machine-interface.id'), nullable=True)
 
     updated_date = Column(DateTime, default=None)
-    up_to_date = Column(Boolean, default=None)
+    up_to_date = Column(Boolean)
+
+
+class LifecycleCoreosInstall(Base):
+    __tablename__ = 'lifecycle-coreos-install'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    created_date = Column(DateTime, default=datetime.datetime.utcnow)
+
+    machine_interface = Column(Integer, ForeignKey('machine-interface.id'), nullable=True)
+
+    updated_date = Column(DateTime, default=None)
+    success = Column(Boolean)

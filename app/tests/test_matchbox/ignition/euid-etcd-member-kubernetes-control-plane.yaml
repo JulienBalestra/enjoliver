@@ -10,12 +10,52 @@ systemd:
         [Service]
         EnvironmentFile=/etc/metadata-endpoints.env
         Type=oneshot
-        ExecStartPre=-/bin/cp -n /run/ignition.json /etc/ignition.json
-        ExecStart=/usr/bin/curl -XPOST ${API_URI}/lifecycle/ignition/${REQUEST_RAW_QUERY} \
-          -d @/etc/ignition.json \
+        ExecStart=/usr/bin/curl -f -XPOST ${API_URI}/lifecycle/ignition/${REQUEST_RAW_QUERY} \
+          -d @/usr/share/oem/coreos-install.json \
           -H "Content-Type: application/json"
         [Install]
         WantedBy=multi-user.target
+
+    - name: lifecycle-ignition.timer
+      enable: true
+      contents: |
+        [Timer]
+        OnActiveSec=0s
+        OnUnitActiveSec=1m
+        [Install]
+        WantedBy=default.target
+
+    - name: lifecycle-new-ignition.service
+      contents: |
+        [Service]
+        EnvironmentFile=/etc/metadata-endpoints.env
+        Type=oneshot
+        ExecStartPre=/usr/bin/test ${REQUEST_RAW_QUERY}
+        ExecStartPre=/usr/bin/curl -f ${API_URI}/healthz
+        ExecStart=/usr/bin/curl -f ${API_URI}/ignition?${REQUEST_RAW_QUERY} -o /usr/share/oem/coreos-install.json
+        RemainAfterExit=yes
+
+    - name: lifecycle-kexec.service
+      contents: |
+        [Unit]
+        Description=kexec
+        Requires=lifecycle-new-ignition.service
+        After=lifecycle-new-ignition.service
+        OnFailure=lifecycle-kexec-force.service
+        [Service]
+        Type=oneshot
+        ExecStartPre=-/bin/rm -v /etc/metadata.env
+        ExecStart=/usr/sbin/kexec --reuse-cmdline \
+          --append="coreos.config.url=oem:///coreos-install.json coreos.first_boot=1" /usr/boot/vmlinuz
+
+    - name: lifecycle-kexec-force.service
+      contents: |
+        [Unit]
+        Description=kexec force
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/sbin/kexec --reuse-cmdline \
+          --append="coreos.config.url=oem:///coreos-install.json coreos.first_boot=1" /usr/boot/vmlinuz -f
 
     - name: fetch-metadata.service
       enable: true

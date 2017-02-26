@@ -31,7 +31,7 @@ class TestModel(unittest.TestCase):
             cls.engine = create_engine(ec.db_uri)
         else:
             db = "%s/%s.sqlite" % (cls.dbs_path, TestModel.__name__.lower())
-            if False:
+            if True:
                 try:
                     os.remove(db)
                 except OSError:
@@ -548,23 +548,31 @@ class TestModel(unittest.TestCase):
     def test_32(self):
         rq = "uuid=%s&mac=%s&os=installed" % (posts.M01["boot-info"]["uuid"], posts.M01["boot-info"]["mac"])
         i = crud.InjectLifecycle(self.engine, request_raw_query=rq)
-        i.refresh_lifecycle(True)
+        i.refresh_lifecycle_ignition(True)
 
     def test_33(self):
         rq = "uuid=%s&mac=%s&os=installed" % (posts.M02["boot-info"]["uuid"], posts.M02["boot-info"]["mac"])
         i = crud.InjectLifecycle(self.engine, request_raw_query=rq)
-        i.refresh_lifecycle(True)
+        i.refresh_lifecycle_ignition(True)
         j = crud.InjectLifecycle(self.engine, request_raw_query=rq)
-        j.refresh_lifecycle(True)
+        j.refresh_lifecycle_ignition(True)
         f = crud.FetchLifecycle(self.engine)
-        self.assertTrue(f.get_update_status(posts.M02["boot-info"]["mac"]))
+        self.assertTrue(f.get_ignition_uptodate_status(posts.M02["boot-info"]["mac"]))
 
     def test_34(self):
         rq = "uuid=%s&mac=%s&os=installed" % (posts.M03["boot-info"]["uuid"], posts.M03["boot-info"]["mac"])
         i = crud.InjectLifecycle(self.engine, request_raw_query=rq)
-        i.refresh_lifecycle(True)
+        i.refresh_lifecycle_ignition(True)
         j = crud.InjectLifecycle(self.engine, request_raw_query=rq)
-        j.refresh_lifecycle(False)
+        j.refresh_lifecycle_ignition(False)
         f = crud.FetchLifecycle(self.engine)
-        self.assertFalse(f.get_update_status(posts.M03["boot-info"]["mac"]))
+        self.assertFalse(f.get_ignition_uptodate_status(posts.M03["boot-info"]["mac"]))
         self.assertEqual(3, len(f.get_all_updated_status()))
+
+    def test_35(self):
+        rq = "uuid=%s&mac=%s&os=installed" % (posts.M03["boot-info"]["uuid"], posts.M03["boot-info"]["mac"])
+        i = crud.InjectLifecycle(self.engine, request_raw_query=rq)
+        i.refresh_lifecycle_coreos_install(True)
+        f = crud.FetchLifecycle(self.engine)
+        self.assertTrue(f.get_coreos_install_status(posts.M03["boot-info"]["mac"]))
+        self.assertEqual(1, len(f.get_all_coreos_install_status()))
