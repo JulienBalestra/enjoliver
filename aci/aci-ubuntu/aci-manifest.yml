@@ -1,0 +1,5 @@
+name: enjoliver.local/ubuntu:latest
+
+builder:
+  dependencies:
+    - enjoliver.local/debian:latest
