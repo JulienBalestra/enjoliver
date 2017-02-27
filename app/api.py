@@ -57,10 +57,18 @@ def configs():
 
 @application.route("/lifecycle/ignition/<string:request_raw_query>", methods=["POST"])
 def lifecycle_post_ignition(request_raw_query):
-    machine_ignition = json.loads(request.get_data())
-    r = requests.get("%s/ignition?%s" % (ec.matchbox_uri, request_raw_query))
-    matchbox_ignition = json.loads(r.content)
-    r.close()
+    try:
+        machine_ignition = json.loads(request.get_data())
+    except ValueError:
+        LOGGER.error("%s have incorrect content" % request.path)
+        return "FlaskValueError", 406
+    req = requests.get("%s/ignition?%s" % (ec.matchbox_uri, request_raw_query))
+    try:
+        matchbox_ignition = json.loads(req.content)
+        req.close()
+    except ValueError:
+        LOGGER.error("%s have incorrect matchbox return" % request.path)
+        return "MatchboxValueError", 406
     i = crud.InjectLifecycle(engine=engine, request_raw_query=request_raw_query)
     if json.dumps(machine_ignition, sort_keys=True) == json.dumps(matchbox_ignition, sort_keys=True):
         i.refresh_lifecycle_ignition(True)

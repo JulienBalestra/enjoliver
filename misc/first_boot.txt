@@ -1,0 +1,15 @@
+rootflags=rw
+mount.usrflags=ro
+BOOT_IMAGE=/coreos/vmlinuz-a
+mount.usr=/dev/mapper/usr
+verity.usr=PARTUUID=7130c94a-213a-4e5a-8e26-6cce9662f132
+rootflags=rw
+mount.usrflags=ro
+consoleblank=0
+root=LABEL=ROOT
+console=ttyS0,115200n8
+console=tty0
+coreos.first_boot=1
+coreos.randomize_disk_guid=00000000-0000-0000-0000-000000000001
+coreos.config.url=oem:///coreos-install.json
+verity.usrhash=786d546775394eb9213e5d10c122acba0f55208c84adbd34c1133ddbca870b98

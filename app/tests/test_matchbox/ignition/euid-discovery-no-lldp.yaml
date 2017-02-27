@@ -98,7 +98,7 @@ storage:
               TIMER=60
           fi
 
-          QUERY=${REQUEST_RAW_QUERY}{{if index . "extra_selectors"}}&{{.extra_selectors}}{{end}}
+          QUERY="${REQUEST_RAW_QUERY}{{if index . "extra_selectors"}}&{{.extra_selectors}}{{end}}"
 
           while true
           do
