@@ -1,62 +1,6 @@
 ---
 systemd:
   units:
-    - name: lifecycle-ignition.service
-      enable: true
-      contents: |
-        [Unit]
-        Requires=network-online.target
-        After=network-online.target
-        [Service]
-        EnvironmentFile=/etc/metadata-endpoints.env
-        Type=oneshot
-        ExecStart=/usr/bin/curl -f -XPOST ${API_URI}/lifecycle/ignition/${REQUEST_RAW_QUERY} \
-          -d @/usr/share/oem/coreos-install.json \
-          -H "Content-Type: application/json"
-        [Install]
-        WantedBy=multi-user.target
-
-    - name: lifecycle-ignition.timer
-      enable: true
-      contents: |
-        [Timer]
-        OnActiveSec=0s
-        OnUnitActiveSec=1m
-        [Install]
-        WantedBy=default.target
-
-    - name: lifecycle-new-ignition.service
-      contents: |
-        [Service]
-        EnvironmentFile=/etc/metadata-endpoints.env
-        Type=oneshot
-        ExecStartPre=/usr/bin/test ${REQUEST_RAW_QUERY}
-        ExecStartPre=/usr/bin/curl -f ${API_URI}/healthz
-        ExecStart=/usr/bin/curl -f ${API_URI}/ignition?${REQUEST_RAW_QUERY} -o /usr/share/oem/coreos-install.json
-        RemainAfterExit=yes
-
-    - name: lifecycle-kexec.service
-      contents: |
-        [Unit]
-        Description=kexec
-        Requires=lifecycle-new-ignition.service
-        After=lifecycle-new-ignition.service
-        OnFailure=lifecycle-kexec-force.service
-        [Service]
-        Type=oneshot
-        ExecStartPre=-/bin/rm -v /etc/metadata.env
-        ExecStart=/usr/sbin/kexec --reuse-cmdline \
-          --append="coreos.config.url=oem:///coreos-install.json coreos.first_boot=1" /usr/boot/vmlinuz
-
-    - name: lifecycle-kexec-force.service
-      contents: |
-        [Unit]
-        Description=kexec force
-        [Service]
-        Type=oneshot
-        ExecStart=/usr/sbin/kexec --reuse-cmdline \
-          --append="coreos.config.url=oem:///coreos-install.json coreos.first_boot=1" /usr/boot/vmlinuz -f
-
     - name: fetch-metadata.service
       enable: true
       contents: |
@@ -67,8 +11,7 @@ systemd:
         [Service]
         Type=oneshot
         EnvironmentFile=/etc/metadata-endpoints.env
-        Environment=METADATA=/etc/metadata.env
-        ExecStart=/usr/bin/curl ${API_URI}/metadata?${REQUEST_RAW_QUERY} -o $METADATA
+        ExecStart=/usr/bin/curl ${API_URI}/metadata?${REQUEST_RAW_QUERY} -o /etc/metadata.env
         RemainAfterExit=yes
         [Install]
         WantedBy=multi-user.target
@@ -372,7 +315,7 @@ systemd:
           --register-schedulable=false \
           --allow-privileged=true \
           --enable-custom-metrics \
-          --api-servers=http://127.0.0.1:8080 \
+          --api-servers=http://127.0.0.1:{{.kubernetes_api_server_port}} \
           --node-labels=control-plane=true \
           --cloud-provider="" \
           \
@@ -417,6 +360,47 @@ systemd:
             EnvironmentFile=/etc/metadata.env
             ExecStart=
             ExecStart=/opt/fleet/fleetd
+
+    - name: lifecycle-ready.service
+      enable: true
+      contents: |
+        [Unit]
+        After=fetch-metadata.service
+        After=etcd3@kubernetes.service
+        After=kubelet.service
+        [Service]
+        EnvironmentFile=/etc/metadata.env
+        Type=oneshot
+        ExecStart=/opt/bin/lifecycle-ready
+        RemainAfterExit=yes
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: lifecycle-update.service
+      contents: |
+        [Unit]
+        After=fetch-metadata.service
+        After=etcd3@kubernetes.service
+        After=kubelet.service
+        After=lifecycle-ready.service
+        [Service]
+        EnvironmentFile=/etc/metadata.env
+        Type=oneshot
+        ExecStart=/opt/bin/lifecycle-update
+
+    - name: lifecycle-update.timer
+      enable: true
+      contents: |
+        [Unit]
+        After=fetch-metadata.service
+        After=etcd3@kubernetes.service
+        After=kubelet.service
+        After=lifecycle-ready.service
+        [Timer]
+        OnActiveSec=0s
+        OnUnitActiveSec=1m
+        [Install]
+        WantedBy=default.target
 
 
 storage:
@@ -948,6 +932,81 @@ storage:
           ip_tables
           iptable_nat
           nf_nat
+
+    - path: /opt/bin/lifecycle-update
+      mode: 0544
+      filesystem: root
+      contents:
+        inline: |
+          #!/usr/bin/env bash
+
+          set -ex
+
+          curl -f ${API_URI}/healthz
+
+          test ${REQUEST_RAW_QUERY}
+
+          STATUS=$(curl -f -XPOST ${API_URI}/lifecycle/ignition/${REQUEST_RAW_QUERY} \
+                -d @/usr/share/oem/coreos-install.json \
+                -H "Content-Type: application/json" \
+                -w "%{http_code}" -o /dev/null)
+
+          if [ ${STATUS} -ne 210 ]
+          then
+              echo "Nothing to do: ${STATUS}"
+              exit 0
+          fi
+
+          curl -f ${API_URI}/ignition?${REQUEST_RAW_QUERY} -o /tmp/coreos-install.json
+          cat /tmp/coreos-install.json | jq -e . > /dev/null
+
+          locksmithctl -endpoint {{.kubernetes_etcd_servers}} status
+          locksmithctl -endpoint {{.kubernetes_etcd_servers}} unlock "${REQUEST_RAW_QUERY}" || true
+          locksmithctl -endpoint {{.kubernetes_etcd_servers}} lock "${REQUEST_RAW_QUERY}"
+
+          /opt/bin/kubectl drain ${KUBELET_NAME} --force --ignore-daemonsets
+          systemctl stop fleet.service
+
+          DISK_GUID="00000000-0000-0000-0000-000000000001"
+          sgdisk --disk-guid=${DISK_GUID} /dev/sda
+          cgpt show -v /dev/sda | grep -c ${DISK_GUID}
+
+          rm -v /etc/metadata.env || true
+
+          kexec --reuse-cmdline \
+            --append="coreos.first_boot=1 coreos.randomize_disk_guid=${DISK_GUID}" \
+            -l /usr/boot/vmlinuz
+
+          cp -v /tmp/coreos-install.json /usr/share/oem/coreos-install.json
+
+          systemctl kexec
+
+
+    - path: /opt/bin/lifecycle-ready
+      mode: 0544
+      filesystem: root
+      contents:
+        inline: |
+          #!/usr/bin/env bash
+
+          test "${REQUEST_RAW_QUERY}" || exit 2
+          test "${KUBELET_NAME}" || exit 2
+
+          for i in {0..60}
+          do
+              etcdctl --endpoint {{.kubernetes_etcd_servers}} cluster-health && break
+              sleep 2
+          done
+
+          for i in {0..60}
+          do
+              curl -f 127.0.0.1:8080/healthz && break
+              sleep 2
+          done
+
+          locksmithctl -endpoint {{.kubernetes_etcd_servers}} unlock "${REQUEST_RAW_QUERY}" || exit 0
+
+          /opt/bin/kubectl cordon ${KUBELET_NAME}
 
 networkd:
   units:

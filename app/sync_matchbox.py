@@ -280,7 +280,7 @@ class ConfigSyncSchedules(object):
                 marker=marker,
                 i=i,
                 m=m,
-                automatic_name="control-plane-%d" % i,
+                automatic_name="cp-%d-%s" % (i, m["ipv4"].replace(".", "-")),
                 update_extra_metadata=update_md,
             )
 
@@ -294,7 +294,7 @@ class ConfigSyncSchedules(object):
                 marker=marker,
                 i=i,
                 m=m,
-                automatic_name="node-%d" % i,
+                automatic_name="no-%d-%s" % (i, m["ipv4"].replace(".", "-")),
                 update_extra_metadata=None,
             )
 

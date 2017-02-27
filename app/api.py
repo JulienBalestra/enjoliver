@@ -117,6 +117,7 @@ def root():
     """
     r = [k.rule for k in application.url_map.iter_rules()]
     r = list(set(r))
+    r.sort()
     return jsonify(r)
 
 

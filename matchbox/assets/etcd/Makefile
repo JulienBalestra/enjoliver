@@ -1,7 +1,7 @@
 CWD=$(shell pwd)
 SERVE=serve
 
-VERSION=v3.1.0
+VERSION=v3.1.2
 ETCD_GITHUB=https://github.com/coreos/etcd/releases/download/$(VERSION)/etcd-$(VERSION)-linux-amd64.tar.gz
 
 TARGET=$(VERSION)/etcd.tar.gz

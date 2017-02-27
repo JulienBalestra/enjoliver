@@ -417,7 +417,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         disco_data = json.loads(response_body)
         return disco_data
 
-    def kvm_restart_off_machines(self, to_start, tries=90):
+    def kvm_restart_off_machines(self, to_start, tries=120):
         assert type(to_start) is list
         assert len(to_start) > 0
         for j in xrange(tries):

@@ -79,7 +79,11 @@ class TestKVMK8sEnjolivageDisk0(TestKVMK8sEnjolivageDisk):
                     break
                 time.sleep(self.kvm_sleep_between_node)
 
-            time.sleep(self.kvm_sleep_between_node * self.kvm_sleep_between_node * (nb_node * 10))
+            time.sleep(self.kvm_sleep_between_node * self.kvm_sleep_between_node + (nb_node * 10))
+
+            to_start = copy.deepcopy(nodes)
+            self.kvm_restart_off_machines(to_start)
+            time.sleep(self.kvm_sleep_between_node * self.kvm_sleep_between_node)
 
             self.etcd_endpoint_health(plan_k8s_2t.etcd_member_ip_list, self.ec.kubernetes_etcd_client_port)
             self.etcd_endpoint_health(plan_k8s_2t.etcd_member_ip_list, self.ec.fleet_etcd_client_port)
@@ -165,7 +169,7 @@ class TestKVMK8sEnjolivageDisk1(TestKVMK8sEnjolivageDisk):
                     break
                 time.sleep(self.kvm_sleep_between_node)
 
-            time.sleep(self.kvm_sleep_between_node * self.kvm_sleep_between_node * (nb_node * 20))
+            time.sleep(self.kvm_sleep_between_node * self.kvm_sleep_between_node + (nb_node * 10))
 
             to_start = copy.deepcopy(nodes)
             self.kvm_restart_off_machines(to_start)
