@@ -6,7 +6,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 apt-get update -qq
 
-apt-get install -y curl python python-dev python-virtualenv qemu-kvm libvirt-bin virtinst jq file build-essential
+apt-get install -y curl python python-dev python-virtualenv qemu-kvm libvirt-bin virtinst jq file build-essential libpq-dev
 
 # PostgreSQL libpq-dev
 
