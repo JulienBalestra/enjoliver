@@ -1,22 +1,22 @@
 package main
 
 import (
-	"testing"
-	"net/http"
-	"time"
-	"io/ioutil"
 	"encoding/json"
+	"io/ioutil"
+	"net/http"
+	"testing"
+	"time"
 )
 
 func TestPostToDiscovery(t *testing.T) {
 	var data DiscoveryData
 
 	i := Iface{
-		IPv4:"192.168.1.1",
-		CIDRv4:"192.168.1.1/24",
-		Netmask:24,
-		Name:"eth0",
-		MAC:"00:00:00:00:00",
+		IPv4:    "192.168.1.1",
+		CIDRv4:  "192.168.1.1/24",
+		Netmask: 24,
+		Name:    "eth0",
+		MAC:     "00:00:00:00:00",
 	}
 	data.Interfaces = append(data.Interfaces, i)
 
@@ -59,4 +59,3 @@ func TestPostToDiscovery(t *testing.T) {
 		t.Fail()
 	}
 }
-

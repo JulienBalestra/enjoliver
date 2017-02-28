@@ -1,8 +1,8 @@
 package main
 
 import (
-	"testing"
 	"os"
+	"testing"
 )
 
 func Test0GetIgnitionJournal(t *testing.T) {
@@ -22,5 +22,3 @@ func Test0GetIgnitionJournal(t *testing.T) {
 		t.Error("")
 	}
 }
-
-

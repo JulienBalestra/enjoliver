@@ -1,13 +1,13 @@
 package main
 
 import (
+	"encoding/xml"
 	"io/ioutil"
 	"log"
-	"encoding/xml"
 )
 
 type LLDPData struct {
-	IsFile bool `json:"is_file"`
+	IsFile bool  `json:"is_file"`
 	Data   XLLDP `json:"data"`
 }
 
@@ -16,9 +16,9 @@ type XLLDP struct {
 }
 
 type XInterface struct {
-	Port    XPort `xml:"port" json:"port"`
+	Port    XPort    `xml:"port" json:"port"`
 	Chassis XChassis `xml:"chassis" json:"chassis"`
-	Name    string `xml:"name,attr" json:"name"`
+	Name    string   `xml:"name,attr" json:"name"`
 }
 
 type XPort struct {

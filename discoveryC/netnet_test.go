@@ -35,4 +35,3 @@ func TestLocalIfaces(t *testing.T) {
 		t.Fail()
 	}
 }
-

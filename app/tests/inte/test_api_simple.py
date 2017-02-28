@@ -248,6 +248,7 @@ class TestAPI(unittest.TestCase):
              u'machine': u'b7f5f93a-b029-475f-b3a4-479ba198cb8a',
              'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
              u'cidrv4': u'172.20.0.65/21',
+             u'fqdn': None,
              "gateway": "172.20.0.1"},
 
             {u'name': u'eth0',
@@ -258,6 +259,7 @@ class TestAPI(unittest.TestCase):
              u'mac': u'52:54:00:a5:24:f5',
              u'ipv4': u'172.20.0.51',
              u'cidrv4': u'172.20.0.51/21',
+             u'fqdn': None,
              "gateway": "172.20.0.1"}
         ]
         result_data = json.loads(result.data)

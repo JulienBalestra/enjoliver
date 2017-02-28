@@ -42,7 +42,10 @@ M01 = {
             u'ipv4': u'172.20.0.65',
             u'cidrv4': u'172.20.0.65/21',
             u'name': u'eth0',
-            "gateway": "172.20.0.1"
+            "gateway": "172.20.0.1",
+            "fqdn": [
+                "1.host.enjoliver.local"
+            ]
         }
     ],
     u'ignition-journal': [

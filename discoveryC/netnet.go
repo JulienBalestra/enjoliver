@@ -1,19 +1,21 @@
 package main
 
 import (
-	"net"
-	"strings"
-	"strconv"
 	"github.com/vishvananda/netlink"
+	"log"
+	"net"
+	"strconv"
+	"strings"
 )
 
 type Iface struct {
-	IPv4    string        `json:"ipv4"`
-	CIDRv4  string        `json:"cidrv4"`
-	Netmask int           `json:"netmask"`
-	MAC     string        `json:"mac"`
-	Name    string        `json:"name"`
-	Gateway string        `json:"gateway"`
+	IPv4    string   `json:"ipv4"`
+	CIDRv4  string   `json:"cidrv4"`
+	Netmask int      `json:"netmask"`
+	MAC     string   `json:"mac"`
+	Name    string   `json:"name"`
+	Gateway string   `json:"gateway"`
+	Fqdn    []string `json:"fqdn"`
 }
 
 func IsCIDRv4(cidr string) bool {
@@ -59,6 +61,10 @@ func LocalIfaces() []Iface {
 				// TODO Fix this later
 				route, _ := netlink.RouteGet(net.ParseIP("8.8.8.8"))
 				iface.Gateway = route[0].Gw.String()
+				iface.Fqdn, err = net.LookupAddr(iface.IPv4)
+				if err != nil {
+					log.Printf("fail to get DNS for %s", iface.IPv4)
+				}
 			}
 		}
 		ifaces = append(ifaces, iface)

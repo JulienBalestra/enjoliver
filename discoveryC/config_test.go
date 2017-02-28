@@ -1,8 +1,8 @@
 package main
 
 import (
-	"testing"
 	"os"
+	"testing"
 )
 
 func TestConfig(t *testing.T) {
@@ -15,4 +15,3 @@ func TestConfig(t *testing.T) {
 		t.Fail()
 	}
 }
-

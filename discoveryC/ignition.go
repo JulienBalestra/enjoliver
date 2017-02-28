@@ -1,11 +1,10 @@
 package main
 
 import (
-	"log"
 	"io/ioutil"
+	"log"
 	"strings"
 )
-
 
 func GetIgnitionJournal() []string {
 	content, e := ioutil.ReadFile(CONF.IgnitionFile)

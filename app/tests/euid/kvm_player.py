@@ -14,7 +14,7 @@ import requests
 import yaml
 from kubernetes import client as kc
 
-from app import generator, api, configs
+from app import generator, configs
 
 
 def is_virtinstall():
@@ -602,6 +602,12 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         mem_gib = mem_bytes / (1024. ** 3)
         usable_mem_gib = mem_gib * (1.4 if mem_gib > 10 else 1.2)
         return (usable_mem_gib // nb_nodes) * 1024
+
+    @staticmethod
+    def get_optimized_cpu(nb_nodes):
+        cpu = float(multiprocessing.cpu_count())
+        cores = cpu / nb_nodes
+        return int(round(cores))
 
     def kubectl_proxy(self, api_server_uri, proxy_port):
         def run():

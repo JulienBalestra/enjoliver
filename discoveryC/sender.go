@@ -1,10 +1,10 @@
 package main
 
 import (
-	"encoding/json"
-	"net/http"
 	"bytes"
+	"encoding/json"
 	"log"
+	"net/http"
 )
 
 func PostToDiscovery(i interface{}) (err error) {

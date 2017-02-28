@@ -96,8 +96,6 @@ class EnjoliverConfig(object):
         self.kubernetes_api_server_port = int(self.config_override("kubernetes_api_server_port", 8080))
         self.kubernetes_service_cluster_ip_range = self.config_override("kubernetes_service_cluster_ip_range",
                                                                         "172.30.0.0/24")
-        self.kubernetes_etcd_servers = self.config_override("kubernetes_etcd_servers",
-                                                            "http://127.0.0.1:%d" % self.kubernetes_api_server_port)
 
         # Kubernetes Etcd
         self.kubernetes_etcd_data_dir = self.config_override("kubernetes_etcd_data_dir", "/var/lib/etcd3/kubernetes")
@@ -106,12 +104,18 @@ class EnjoliverConfig(object):
         self.kubernetes_etcd_listen_client_urls = self.config_override(
             "kubernetes_etcd_listen_client_urls", "http://0.0.0.0:%s" % self.kubernetes_etcd_client_port)
 
+        self.kubernetes_etcd_servers = self.config_override("kubernetes_etcd_servers",
+                                                            "http://127.0.0.1:%d" % self.kubernetes_etcd_client_port)
+
         # Fleet Etcd
         self.fleet_etcd_data_dir = self.config_override("fleet_etcd_data_dir", "/var/lib/etcd3/fleet")
         self.fleet_etcd_client_port = int(self.config_override("fleet_etcd_client_port", 4001))
         self.fleet_etcd_peer_port = int(self.config_override("fleet_etcd_peer_port", 7001))
         self.fleet_etcd_listen_client_urls = self.config_override(
             "fleet_etcd_listen_client_urls", "http://0.0.0.0:%s" % self.fleet_etcd_client_port)
+
+        self.fleet_etcd_servers = self.config_override("fleet_etcd_servers",
+                                                       "http://127.0.0.1:%d" % self.fleet_etcd_client_port)
 
         # Use a real registry in production like:
         # enjoliver.local/hyperkube:latest
@@ -143,6 +147,8 @@ class EnjoliverConfig(object):
         self.gunicorn_pid_file = self.config_override("gunicorn_pid_file",
                                                       "%s/gunicorn.pid" % os.path.dirname(__file__))
         self.plan_pid_file = self.config_override("plan_pid_file", "%s/plan.pid" % os.path.dirname(__file__))
+
+        self.coreos_install_base_url = self.config_override("coreos_install_base_url", None)
 
         if self.logging_level.lower() == "debug":
             os.write(2, "configs file: %s for %s\n" % (yaml_full_path, importer))

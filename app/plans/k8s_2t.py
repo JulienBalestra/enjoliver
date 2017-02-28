@@ -51,7 +51,8 @@ class Kubernetes2Tiers(object):
             extra_metadata={
                 "lldp_image_url": local_ec.lldp_image_url,
                 "etc_hosts": local_ec.etc_hosts,
-                "extra_selectors": extra_selectors
+                "extra_selectors": extra_selectors,
+                "coreos_install_base_url": local_ec.coreos_install_base_url,
             }
         )
         gen.dumps()

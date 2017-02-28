@@ -95,14 +95,14 @@ def lifecycle_get_coreos_install_status():
     return jsonify(d)
 
 
-@application.route("/lifecycle/coreos-install/<string:request_raw_query>/success", methods=["POST"])
+@application.route("/lifecycle/coreos-install/success/<string:request_raw_query>", methods=["POST"])
 def lifecycle_post_coreos_install_success(request_raw_query):
     i = crud.InjectLifecycle(engine=engine, request_raw_query=request_raw_query)
     i.refresh_lifecycle_coreos_install(True)
     return "", 200
 
 
-@application.route("/lifecycle/coreos-install/<string:request_raw_query>/fail", methods=["POST"])
+@application.route("/lifecycle/coreos-install/fail/<string:request_raw_query>", methods=["POST"])
 def lifecycle_post_coreos_install_fail(request_raw_query):
     i = crud.InjectLifecycle(engine=engine, request_raw_query=request_raw_query)
     i.refresh_lifecycle_coreos_install(False)
@@ -414,26 +414,18 @@ def user_view_machine():
             if j["as_boot"]:
                 sub_list.append(j["cidrv4"])
                 sub_list.append(j["mac"])
-                ip = j["cidrv4"].split("/")[0]
-                cache_key = "/ui/view/machine?fqdn-%s" % ip
-                fqdn = cache.get(cache_key)
-                if not fqdn:
-                    try:
-                        fqdn = socket.gethostbyaddr(ip)[0]
-                        cache.set(cache_key, fqdn, timeout=60 * 10)
-                    except socket.herror:
-                        fqdn = "unknown"
-                sub_list.append(fqdn)
+                sub_list.append(j["fqdn"])
+                roles = "none"
                 try:
                     s = crud.FetchSchedule(engine)
                     roles = s.get_roles_by_mac_selector(j["mac"])
                 finally:
                     s.close()
-                sub_list.append(roles if roles else "none")
-                lf = crud.FetchLifecycle(engine)
-                sub_list.append(lf.get_coreos_install_status(j["mac"]))
-                sub_list.append(lf.get_ignition_uptodate_status(j["mac"]))
-                lf.close()
+                sub_list.append(roles)
+                life = crud.FetchLifecycle(engine)
+                sub_list.append(life.get_coreos_install_status(j["mac"]))
+                sub_list.append(life.get_ignition_uptodate_status(j["mac"]))
+                life.close()
 
         res.append(sub_list)
 

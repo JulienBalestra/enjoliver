@@ -270,7 +270,7 @@ systemd:
           --cni-conf-dir=/etc/rkt/net.d \
           \
           --pod-manifest-path=${MANIFESTS} \
-          --hostname-override=${KUBELET_NAME} \
+          --hostname-override={{.kubernetes_node_name}} \
           --node-ip=${KUBELET_IP} \
           --register-schedulable=false \
           --allow-privileged=true \
@@ -310,8 +310,8 @@ systemd:
           --cni-conf-dir=/etc/rkt/net.d \
           \
           --pod-manifest-path=${MANIFESTS} \
-          --hostname-override=${KUBELET_NAME} \
-          --node-ip=${KUBELET_IP} \
+          --hostname-override=${KUBERNETES_NODE_NAME} \
+          --node-ip=${KUBERNETES_NODE_IP} \
           --register-schedulable=false \
           --allow-privileged=true \
           --enable-custom-metrics \
@@ -338,7 +338,7 @@ systemd:
         EnvironmentFile=/etc/metadata.env
         ExecStart=/opt/bin/proxy \
           --proxy-mode=iptables \
-          --hostname-override=${KUBELET_NAME} \
+          --hostname-override=${KUBERNETES_NODE_NAME} \
           --master=http://127.0.0.1:8080 \
           --v=2
         Restart=always
@@ -427,9 +427,10 @@ storage:
               - --insecure-bind-address=0.0.0.0
               - --etcd-servers={{.kubernetes_etcd_servers}}
               - --allow-privileged=true
-              - --service-cluster-ip-range={{.k8s_service_cluster_ip_range}}
+              - --service-cluster-ip-range={{.kubernetes_service_cluster_ip_range}}
               - --admission-control=NamespaceLifecycle,LimitRanger,DefaultStorageClass,ResourceQuota
               - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1
+              - --apiserver-count={{.kubernetes_apiserver_count}}
               - --enable-swagger-ui=true
               resources:
                 requests:
@@ -964,7 +965,7 @@ storage:
           locksmithctl -endpoint {{.kubernetes_etcd_servers}} unlock "${REQUEST_RAW_QUERY}" || true
           locksmithctl -endpoint {{.kubernetes_etcd_servers}} lock "${REQUEST_RAW_QUERY}"
 
-          /opt/bin/kubectl drain ${KUBELET_NAME} --force --ignore-daemonsets
+          /opt/bin/kubectl drain {{.kubernetes_node_name}} --force --ignore-daemonsets
           systemctl stop fleet.service
 
           DISK_GUID="00000000-0000-0000-0000-000000000001"
@@ -990,7 +991,6 @@ storage:
           #!/usr/bin/env bash
 
           test "${REQUEST_RAW_QUERY}" || exit 2
-          test "${KUBELET_NAME}" || exit 2
 
           for i in {0..60}
           do
@@ -1000,13 +1000,37 @@ storage:
 
           for i in {0..60}
           do
-              curl -f 127.0.0.1:8080/healthz && break
+              etcdctl --endpoint {{.fleet_etcd_servers}} cluster-health && break
               sleep 2
           done
 
-          locksmithctl -endpoint {{.kubernetes_etcd_servers}} unlock "${REQUEST_RAW_QUERY}" || exit 0
+          for i in {0..60}
+          do
+              curl -f 127.0.0.1:{{.kubernetes_api_server_port}}/healthz && break
+              sleep 2
+          done
 
-          /opt/bin/kubectl cordon ${KUBELET_NAME}
+          set -e
+
+          etcdctl --endpoint {{.kubernetes_etcd_servers}} cluster-health
+          etcdctl --endpoint {{.fleet_etcd_servers}} cluster-health
+          curl -f 127.0.0.1:{{.kubernetes_api_server_port}}/healthz
+
+          set +e
+
+          for i in {0..30}
+          do
+            /opt/bin/kubectl uncordon {{.kubernetes_node_name}} && break
+            sleep 2
+          done
+
+          set -e
+
+          /opt/bin/kubectl uncordon {{.kubernetes_node_name}}
+
+          # Remove the lock
+          locksmithctl -endpoint {{.kubernetes_etcd_servers}} unlock "${REQUEST_RAW_QUERY}" || true
+
 
 networkd:
   units:

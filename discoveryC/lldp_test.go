@@ -1,8 +1,8 @@
 package main
 
 import (
-	"testing"
 	"os"
+	"testing"
 )
 
 func Test2LLDPParse(t *testing.T) {
@@ -65,4 +65,3 @@ func TestNoLLDPParse(t *testing.T) {
 		t.Error("len(result.IsFile) != false")
 	}
 }
-

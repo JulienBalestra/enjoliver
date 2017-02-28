@@ -46,24 +46,6 @@ class ConfigSyncSchedules(object):
 
             self.log.info("%s:%s -> %s is here" % (k, v, f))
 
-    def get_dns_name(self, host_ipv4, default=""):
-        """
-        Get the DNS name by IPv4 address, fail to a default name
-        :param host_ipv4:
-        :param default: param returned if socket exception
-        :return:
-        """
-        try:
-            t = socket.gethostbyaddr(host_ipv4)
-            return t[0]
-        except socket.herror:
-            self.log.warning("fail to get host by addr %s returning %s" % (host_ipv4, default))
-            return default
-
-        except Exception as e:
-            self.log.error("fail to get host by addr: %s %s" % (e, e.message))
-            raise
-
     @staticmethod
     def get_dns_attr(log, fqdn):
         """
@@ -193,7 +175,14 @@ class ConfigSyncSchedules(object):
 
     def produce_matchbox_data(self, marker, i, m, automatic_name, update_extra_metadata=None):
         random.seed(m["mac"].__hash__())
-        fqdn = self.get_dns_name(m["ipv4"], automatic_name)
+        fqdn = None
+        try:
+            fqdn = m["fqdn"]
+        except KeyError as e:
+            self.log.warning("%s for %s" % (e, m["mac"]))
+
+        fqdn = automatic_name if not fqdn else fqdn
+
         dns_attr = self.get_dns_attr(self.log, fqdn)
         extra_metadata = {
             "etc_hosts": ec.etc_hosts,
@@ -222,12 +211,14 @@ class ConfigSyncSchedules(object):
             "fleet_etcd_advertise_client_urls": "http://%s:%d" % (
                 m["ipv4"], ec.fleet_etcd_client_port),
 
+            "fleet_etcd_servers": ec.fleet_etcd_servers,
+
             # Kubernetes
             "kubernetes_etcd_servers": ec.kubernetes_etcd_servers,
             "kubernetes_api_server_port": ec.kubernetes_api_server_port,
-            "kubelet_ip": "%s" % m["ipv4"],
-            "kubelet_name": "%s" % m["ipv4"] if fqdn == automatic_name else fqdn,
-            "k8s_service_cluster_ip_range": ec.kubernetes_service_cluster_ip_range,
+            "kubernetes_node_ip": "%s" % m["ipv4"],
+            "kubernetes_node_name": "%s" % m["ipv4"] if fqdn == automatic_name else fqdn,
+            "kubernetes_service_cluster_ip_range": ec.kubernetes_service_cluster_ip_range,
 
             "hyperkube_image_url": ec.hyperkube_image_url,
             # IPAM
@@ -273,8 +264,8 @@ class ConfigSyncSchedules(object):
                 "fleet_etcd_peer_port": ec.fleet_etcd_peer_port,
 
                 # K8s Control Plane
-                "k8s_apiserver_count": len(machine_roles),
-                "k8s_advertise_ip": "%s" % m["ipv4"],  # TODO still usable ?
+                "kubernetes_apiserver_count": len(machine_roles),
+                "kubernetes_advertise_ip": "%s" % m["ipv4"],  # TODO still usable ?
             }
             self.produce_matchbox_data(
                 marker=marker,

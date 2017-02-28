@@ -1,7 +1,7 @@
 package main
 
 type DiscoveryData struct {
-	Interfaces      []Iface `json:"interfaces"`
+	Interfaces      []Iface  `json:"interfaces"`
 	BootInfo        BootInfo `json:"boot-info"`
 	LLDPInfo        LLDPData `json:"lldp"`
 	IgnitionJournal []string `json:"ignition-journal"`

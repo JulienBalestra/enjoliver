@@ -1,8 +1,8 @@
 package main
 
 import (
-	"testing"
 	"os"
+	"testing"
 )
 
 func Test0ParseCommandLine(t *testing.T) {
@@ -80,4 +80,3 @@ func Test2ParseCommandLine(t *testing.T) {
 		t.Error(bi.Mac)
 	}
 }
-

@@ -1,10 +1,10 @@
 package main
 
 import (
+	"errors"
 	"io/ioutil"
 	"log"
 	"strings"
-	"errors"
 )
 
 type BootInfo struct {

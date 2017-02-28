@@ -1,7 +1,7 @@
 import datetime
 import re
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ARRAY
 from sqlalchemy import ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, validates
@@ -58,13 +58,14 @@ class MachineInterface(Base):
     __tablename__ = 'machine-interface'
     id = Column(Integer, primary_key=True, autoincrement=True)
 
-    mac = Column(String(17), nullable=False)
+    mac = Column(String(17), nullable=False, index=True)
     name = Column(String, nullable=False)
     netmask = Column(Integer, nullable=False)
     ipv4 = Column(String(15), nullable=False)
     cidrv4 = Column(String(15 + 3), nullable=False)
     as_boot = Column(Boolean, default=False)
     gateway = Column(String(15), nullable=False)
+    fqdn = Column(String, nullable=True)
 
     machine_id = Column(Integer, ForeignKey('machine.id'))
     chassis_port = relationship("ChassisPort")

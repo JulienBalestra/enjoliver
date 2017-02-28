@@ -1,5 +1,6 @@
 import datetime
 import os
+import socket
 
 from sqlalchemy import func
 from sqlalchemy.orm import sessionmaker, subqueryload
@@ -41,7 +42,8 @@ class FetchDiscovery(object):
                 "as_boot": i.as_boot,
                 "machine": self.session.query(Machine).filter(Machine.id == i.machine_id).first().uuid,
                 "gateway": i.gateway,
-                "chassis_name": self._get_chassis_name(i)
+                "chassis_name": self._get_chassis_name(i),
+                "fqdn": i.fqdn,
             } for i in self.session.query(MachineInterface)]
 
     def get_ignition_journal(self, uuid, boot_id=None):
@@ -107,7 +109,8 @@ class FetchDiscovery(object):
                     "ipv4": k.ipv4,
                     "cidrv4": k.cidrv4,
                     "as_boot": k.as_boot,
-                    "gateway": k.gateway
+                    "gateway": k.gateway,
+                    "fqdn": k.fqdn,
                 } for k in machine.interfaces]
             interface_boot = self.session.query(MachineInterface).filter(
                 MachineInterface.machine_id == machine.id and
@@ -188,6 +191,32 @@ class InjectDiscovery(object):
         self.adds += 1
         return machine
 
+    def _get_verifed_dns_query(self, i):
+        fqdn = []
+        try:
+            for name in i["fqdn"]:
+                try:
+                    r = socket.gethostbyaddr(i["ipv4"])[0]
+                    self.log.debug("succeed to make dns request for %s:%s" % (i["ipv4"], r))
+                    if name[-1] == ".":
+                        name = name[:-1]
+
+                    if name == r[0]:
+                        fqdn.append(name)
+                    else:
+                        self.log.warning(
+                            "fail to verify domain name discoveryC %s != %s socket.gethostbyaddr for %s %s" % (
+                                name, r, i["ipv4"], i["mac"]))
+                except socket.herror:
+                    self.log.error("Verify FAILED '%s':%s socket.herror returning None" % (name, i["ipv4"]))
+
+        except (KeyError, TypeError):
+            self.log.warning("No fqdn for %s returning None" % i["ipv4"])
+
+        if fqdn and len(fqdn) > 1:
+            raise AttributeError("Should be only one: %s" % fqdn)
+        return fqdn[0] if fqdn else None
+
     def _machine_interfaces(self):
         m_interfaces = self.machine.interfaces
 
@@ -195,6 +224,9 @@ class InjectDiscovery(object):
             # TODO make only one query instead of many
             if i["mac"] and self.session.query(MachineInterface).filter(MachineInterface.mac == i["mac"]).count() == 0:
                 self.log.debug("mac not in db: %s adding" % i["mac"])
+
+                fqdn = self._get_verifed_dns_query(i)
+
                 m_interfaces.append(
                     MachineInterface(
                         name=i["name"],
@@ -204,6 +236,7 @@ class InjectDiscovery(object):
                         cidrv4=i["cidrv4"],
                         as_boot=True if i["mac"] == self.discovery["boot-info"]["mac"] else False,
                         gateway=i["gateway"],
+                        fqdn=fqdn,
                         machine_id=self.machine.id)
                 )
                 self.adds += 1
@@ -325,7 +358,8 @@ class FetchSchedule(object):
                     "as_boot": i.as_boot,
                     "name": i.name,
                     "netmask": i.netmask,
-                    "roles": [k.role for k in i.schedule]
+                    "roles": [k.role for k in i.schedule],
+                    "fqdn": i.fqdn
                 }
             )
         return l
@@ -343,7 +377,8 @@ class FetchSchedule(object):
                 "name": i.interface.name,
                 "netmask": i.interface.netmask,
                 "role": i.role,
-                "created_date": i.created_date
+                "created_date": i.created_date,
+                "fqdn": i.interface.fqdn
             })
 
         return l
@@ -363,6 +398,7 @@ class FetchSchedule(object):
                     "as_boot": i.as_boot,
                     "name": i.name,
                     "netmask": i.netmask,
+                    "fqdn": i.fqdn,
                     "roles": [k.role for k in i.schedule]
                 }
             )
