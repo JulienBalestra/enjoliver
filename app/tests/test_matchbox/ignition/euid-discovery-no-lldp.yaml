@@ -112,10 +112,10 @@ storage:
                   udevadm settle
                   #coreos-install -d /dev/sda -V current -C stable -i ${NEW_IGNITION} || {
                   #  curl -f -XPOST \
-                  #    "${API_URI}/lifecycle/coreos-install/${QUERY}/fail"
+                  #    "${API_URI}/lifecycle/coreos-install/fail/${QUERY}"
                   #  exit 2
                   #}
-                  curl -f -XPOST "${API_URI}/lifecycle/coreos-install/${QUERY}/success"
+                  curl -f -XPOST "${API_URI}/lifecycle/coreos-install/success/${QUERY}"
                   systemctl reboot
               fi
               sleep ${TIMER}

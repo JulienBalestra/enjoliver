@@ -1,7 +1,7 @@
 import datetime
 import re
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ARRAY
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float
 from sqlalchemy import ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, validates
@@ -71,6 +71,9 @@ class MachineInterface(Base):
     chassis_port = relationship("ChassisPort")
 
     schedule = relationship("Schedule", backref="interface")
+    lifecycle_rolling = relationship("LifecycleRolling", backref="interface")
+    lifecycle_coreos_install = relationship("LifecycleCoreosInstall", backref="interface")
+    lifecycle_ignition = relationship("LifecycleIgnition", backref="interface")
 
     @validates('mac')
     def validate_mac(self, key, mac):
@@ -130,7 +133,7 @@ class Schedule(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     created_date = Column(DateTime, default=datetime.datetime.utcnow)
 
-    machine_interface = Column(Integer, ForeignKey('machine-interface.id'), nullable=True)
+    machine_interface = Column(Integer, ForeignKey('machine-interface.id'), nullable=False)
 
     role = Column(String(len(max(ScheduleRoles.roles, key=len))), nullable=False)
 
@@ -147,7 +150,7 @@ class LifecycleIgnition(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     created_date = Column(DateTime, default=datetime.datetime.utcnow)
 
-    machine_interface = Column(Integer, ForeignKey('machine-interface.id'), nullable=True)
+    machine_interface = Column(Integer, ForeignKey('machine-interface.id'), nullable=False)
 
     updated_date = Column(DateTime, default=None)
     up_to_date = Column(Boolean)
@@ -159,7 +162,18 @@ class LifecycleCoreosInstall(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     created_date = Column(DateTime, default=datetime.datetime.utcnow)
 
-    machine_interface = Column(Integer, ForeignKey('machine-interface.id'), nullable=True)
+    machine_interface = Column(Integer, ForeignKey('machine-interface.id'), nullable=False)
 
     updated_date = Column(DateTime, default=None)
     success = Column(Boolean)
+
+
+class LifecycleRolling(Base):
+    __tablename__ = 'lifecycle-rolling'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    created_date = Column(DateTime, default=datetime.datetime.utcnow)
+
+    machine_interface = Column(Integer, ForeignKey('machine-interface.id'), nullable=False)
+    updated_date = Column(DateTime, default=None)
+    enable = Column(Boolean, default=False)

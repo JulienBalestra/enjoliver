@@ -1,5 +1,4 @@
 import os
-import socket
 import urllib2
 
 import requests
@@ -77,6 +76,44 @@ def lifecycle_post_ignition(request_raw_query):
         i.refresh_lifecycle_ignition(False)
         r = "Outdated", 210
     return r
+
+
+@application.route("/lifecycle/rolling/<string:request_raw_query>", methods=["GET"])
+def lifecycle_rolling_get(request_raw_query):
+    life = crud.FetchLifecycle(engine)
+    mac = crud.InjectLifecycle.get_mac_from_raw_query(request_raw_query)
+    d = life.get_rolling_status(mac)
+    life.close()
+    if d is True:
+        return "Enabled %s" % mac, 200
+    elif d is False:
+        return "Disable %s" % mac, 403
+    return "ForeignDisabled %s" % mac, 401
+
+
+@application.route("/lifecycle/rolling/<string:request_raw_query>", methods=["POST"])
+def lifecycle_rolling_post(request_raw_query):
+    try:
+        life = crud.InjectLifecycle(engine, request_raw_query)
+        life.apply_lifecycle_rolling(True)
+        return "Enabled %s" % life.mac, 200
+    except AttributeError:
+        return "Unknown in db %s" % request_raw_query, 401
+
+
+@application.route("/lifecycle/rolling/<string:request_raw_query>", methods=["DELETE"])
+def lifecycle_rolling_delete(request_raw_query):
+    life = crud.InjectLifecycle(engine, request_raw_query)
+    life.apply_lifecycle_rolling(False)
+    return "Disabled %s" % life.mac, 200
+
+
+@application.route("/lifecycle/rolling", methods=["GET"])
+def lifecycle_rolling_all():
+    life = crud.FetchLifecycle(engine)
+    d = life.get_all_rolling_status()
+    life.close()
+    return jsonify(d)
 
 
 @application.route("/lifecycle/ignition", methods=["GET"])
@@ -406,7 +443,7 @@ def user_view_machine():
         all_data = fetch.get_all()
         cache.set(key, all_data, timeout=30)
 
-    res = [["Created", "cidr-boot", "mac-boot", "fqdn", "Roles", "Installed", "Up-to-date"]]
+    res = [["Created", "cidr-boot", "mac-boot", "fqdn", "Roles", "Installed", "Up-to-date", "Rolling"]]
     for i in all_data:
         sub_list = list()
         sub_list.append(i["boot-info"]["created-date"])
@@ -415,17 +452,33 @@ def user_view_machine():
                 sub_list.append(j["cidrv4"])
                 sub_list.append(j["mac"])
                 sub_list.append(j["fqdn"])
-                roles = "none"
                 try:
                     s = crud.FetchSchedule(engine)
                     roles = s.get_roles_by_mac_selector(j["mac"])
+                    if not roles:
+                        raise NotImplementedError
+                    sub_list.append(roles)
+                except Exception as e:
+                    sub_list.append("NoRole")
                 finally:
                     s.close()
-                sub_list.append(roles)
-                life = crud.FetchLifecycle(engine)
-                sub_list.append(life.get_coreos_install_status(j["mac"]))
-                sub_list.append(life.get_ignition_uptodate_status(j["mac"]))
-                life.close()
+                try:
+                    life = crud.FetchLifecycle(engine)
+                    installed = life.get_coreos_install_status(j["mac"])
+                    if not installed:
+                        installed, ignition, rolling = "PendingInstall", "PendingBoot", "ForeignDisabled"
+                    else:
+                        ignition = life.get_ignition_uptodate_status(j["mac"])
+                        if not ignition:
+                            ignition = "PendingBoot"
+                        rolling = life.get_ignition_uptodate_status(j["mac"])
+                        if not rolling:
+                            "ForeignDisabled"
+                finally:
+                    life.close()
+
+                for i in [installed, ignition, rolling]:
+                    sub_list.append(i)
 
         res.append(sub_list)
 

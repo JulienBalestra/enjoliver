@@ -232,8 +232,8 @@ systemd:
           --cni-conf-dir=/etc/rkt/net.d \
           \
           --pod-manifest-path=${MANIFESTS} \
-          --hostname-override={{.kubernetes_node_name}} \
-          --node-ip=${KUBELET_IP} \
+          --hostname-override=${KUBERNETES_NODE_NAME} \
+          --node-ip=${KUBERNETES_NODE_IP} \
           --register-schedulable=false \
           --allow-privileged=true \
           --runonce=true \
@@ -776,6 +776,10 @@ storage:
           curl -f ${API_URI}/ignition?${REQUEST_RAW_QUERY} -o /tmp/coreos-install.json
           cat /tmp/coreos-install.json | jq -e . > /dev/null
 
+          curl -f ${API_URI}/lifecycle/rolling/${REQUEST_RAW_QUERY} || {
+            exit 0
+          }
+
           locksmithctl -endpoint {{.kubernetes_etcd_servers}} status
           locksmithctl -endpoint {{.kubernetes_etcd_servers}} unlock "${REQUEST_RAW_QUERY}" || true
           locksmithctl -endpoint {{.kubernetes_etcd_servers}} lock "${REQUEST_RAW_QUERY}"
@@ -844,7 +848,6 @@ storage:
           /opt/bin/kubectl uncordon {{.kubernetes_node_name}}
 
           # Remove the lock
-
           locksmithctl -endpoint {{.kubernetes_etcd_servers}} unlock "${REQUEST_RAW_QUERY}" || true
 
 

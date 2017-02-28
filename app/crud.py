@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker, subqueryload
 
 import logger
 from model import ChassisPort, Chassis, MachineInterface, Machine, \
-    Healthz, Schedule, ScheduleRoles, LifecycleIgnition, LifecycleCoreosInstall
+    Healthz, Schedule, ScheduleRoles, LifecycleIgnition, LifecycleCoreosInstall, LifecycleRolling
 
 
 class FetchDiscovery(object):
@@ -482,7 +482,7 @@ class InjectLifecycle(object):
         self.adds = 0
         self.updates = 0
 
-        self.mac = self._get_mac_from_query(request_raw_query)
+        self.mac = self.get_mac_from_raw_query(request_raw_query)
 
         self.interface = self.session.query(MachineInterface).filter(MachineInterface.mac == self.mac).first()
         if not self.interface:
@@ -493,7 +493,7 @@ class InjectLifecycle(object):
         self.log.info("mac: %s" % self.mac)
 
     @staticmethod
-    def _get_mac_from_query(request_raw_query):
+    def get_mac_from_raw_query(request_raw_query):
         mac = ""
         s = request_raw_query.split("&")
         for param in s:
@@ -539,6 +539,24 @@ class InjectLifecycle(object):
         finally:
             self.session.close()
 
+    def apply_lifecycle_rolling(self, enable):
+        try:
+            l = self.session.query(LifecycleRolling).filter(
+                LifecycleRolling.machine_interface == self.interface.id).first()
+            if not l:
+                l = LifecycleRolling(
+                    machine_interface=self.interface.id,
+                    enable=enable
+                )
+                self.session.add(l)
+            else:
+                l.enable = enable
+                l.updated_date = datetime.datetime.utcnow()
+
+            self.session.commit()
+        finally:
+            self.session.close()
+
 
 class FetchLifecycle(object):
     def __init__(self, engine):
@@ -578,7 +596,29 @@ class FetchLifecycle(object):
         for s in self.session.query(LifecycleCoreosInstall):
             l.append(
                 {
+                    "mac": s.interface.mac,
                     "success": s.success,
+                    "created_date": s.created_date,
+                    "updated_date": s.updated_date
+                }
+            )
+        return l
+
+    def get_rolling_status(self, mac):
+        interface = self.session.query(MachineInterface).filter(MachineInterface.mac == mac).first()
+        if interface:
+            l = self.session.query(LifecycleRolling).filter(
+                LifecycleRolling.machine_interface == interface.id).first()
+            return l.enable if l else None
+        return None
+
+    def get_all_rolling_status(self):
+        l = []
+        for s in self.session.query(LifecycleRolling):
+            l.append(
+                {
+                    "mac": s.interface.mac,
+                    "enable": s.enable,
                     "created_date": s.created_date,
                     "updated_date": s.updated_date
                 }

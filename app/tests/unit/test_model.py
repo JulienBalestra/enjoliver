@@ -581,3 +581,18 @@ class TestModel(unittest.TestCase):
         f = crud.FetchLifecycle(self.engine)
         self.assertTrue(f.get_coreos_install_status(posts.M03["boot-info"]["mac"]))
         self.assertEqual(1, len(f.get_all_coreos_install_status()))
+
+    def test_36(self):
+        rq = "uuid=%s&mac=%s&os=installed" % (posts.M03["boot-info"]["uuid"], posts.M03["boot-info"]["mac"])
+        i = crud.InjectLifecycle(self.engine, request_raw_query=rq)
+        i.apply_lifecycle_rolling(True)
+        f = crud.FetchLifecycle(self.engine)
+        self.assertTrue(f.get_rolling_status(posts.M03["boot-info"]["mac"]))
+        n = crud.InjectLifecycle(self.engine, rq)
+        n.apply_lifecycle_rolling(False)
+        self.assertFalse(f.get_rolling_status(posts.M03["boot-info"]["mac"]))
+
+    def test_37(self):
+        f = crud.FetchLifecycle(self.engine)
+        self.assertIsNone(f.get_rolling_status(posts.M04["boot-info"]["mac"]))
+

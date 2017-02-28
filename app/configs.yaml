@@ -18,6 +18,7 @@ matchbox_assets: '/var/lib/matchbox/assets'
 matchbox_urls: ['/', '/boot.ipxe', '/boot.ipxe.0', '/assets', '/metadata']
 
 logging_level: 'DEBUG'
+matchbox_logging_level: "warning"
 
 apply_deps_tries: 15
 apply_deps_delay: 60

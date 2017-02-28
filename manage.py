@@ -75,7 +75,7 @@ def matchbox(ec):
         "-data-path",
         "%s" % ec.matchbox_path,
         "-log-level",
-        ec.logging_level.lower(),
+        ec.matchbox_logging_level.lower(),
     ]
     os.write(1, "exec[%s] -> %s\n" % (os.getpid(), " ".join(cmd)))
     with open(ec.matchbox_pid_file, "w") as f:

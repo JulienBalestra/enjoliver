@@ -137,6 +137,11 @@ class EnjoliverConfig(object):
         # DEBUG or INFO
         self.logging_level = self.config_override("logging_level", "DEBUG")
 
+        self.matchbox_logging_level = self.config_override("matchbox_logging_level", "debug")
+        allowed = ["debug", "info", "warning", "error"]
+        if self.matchbox_logging_level not in allowed:
+            raise AttributeError("%s not in [%s]" % (self.matchbox_logging_level, " ".join(allowed)))
+
         self.etc_hosts = self.config_override("etc_hosts", [
             "172.20.0.1 enjoliver.local",
         ])
