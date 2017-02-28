@@ -28,6 +28,20 @@ def is_virtinstall():
     return virtinstall
 
 
+def get_kvm_sleep():
+    d = 3
+    with open("/tmp/virt-host-validate", 'w') as w, open("/tmp/virt-host-validate", 'r') as r:
+        subprocess.call(["virt-host-validate", "qemu"], stdout=w)
+        for l in r.readlines():
+            if "QEMU: Checking for hardware virtualization" in l:
+                if "PASS" not in l:
+                    d = 15
+                break
+        r.seek(0)
+        os.write(1, r.read())
+    return d
+
+
 @unittest.skipIf(os.geteuid() != 0, "TestKVMDiscovery need privilege")
 @unittest.skipIf(is_virtinstall() != 0, "TestKVMDiscovery need virt-install")
 class KernelVirtualMachinePlayer(unittest.TestCase):
@@ -78,7 +92,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     dev_null = open("/dev/null", "w")
 
-    kvm_sleep_between_node = 3
+    testing_sleep_seconds = get_kvm_sleep()
     wait_setup_teardown = 3
 
     os.environ["ENJOLIVER_API_URI"] = api_uri
@@ -429,13 +443,13 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 try:
                     self.virsh(start, assertion=True), os.write(1, "\r")
                     to_start.pop(i)
-                    time.sleep(self.kvm_sleep_between_node)
+                    time.sleep(self.testing_sleep_seconds)
 
                 except RuntimeError:
                     # virsh raise this
                     pass
 
-            time.sleep(1)
+            time.sleep(self.testing_sleep_seconds)
         self.assertEqual(len(to_start), 0)
 
     def etcd_endpoint_health(self, ips, port, tries=30):
@@ -459,7 +473,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 except urllib2.URLError:
                     os.write(2,
                              "\r-> %d/%d NOT READY %s for %s\n\r" % (t, tries, ip, self.etcd_endpoint_health.__name__))
-                    time.sleep(10)
+                    time.sleep(self.testing_sleep_seconds * 2)
 
         self.assertEqual(len(ips), 0)
 
@@ -479,7 +493,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
             except urllib2.URLError:
                 os.write(2, "\r-> %d/%d NOT READY %s for %s \n\r" % (t, tries, ip, self.etcd_member_len.__name__))
-                time.sleep(10)
+                time.sleep(self.testing_sleep_seconds * 2)
 
         self.assertEqual(len(result["members"]), members_nb)
 
@@ -499,7 +513,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             except urllib2.URLError:
                 pass
             os.write(2, "\r-> NOT READY %s %s\n\r" % (ip, self.etcd_member_k8s_minions.__name__))
-            time.sleep(self.kvm_sleep_between_node)
+            time.sleep(self.testing_sleep_seconds)
 
         self.assertEqual(len(result["node"]["nodes"]), nodes_nb)
 
@@ -524,7 +538,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
                 except urllib2.URLError:
                     os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (t + 1, tries, ip, self.k8s_api_health.__name__))
-                    time.sleep(self.kvm_sleep_between_node)
+                    time.sleep(self.testing_sleep_seconds)
         self.assertEqual(len(ips), 0)
 
     def create_nginx_deploy(self, api_server_ip):
@@ -567,7 +581,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (
                     t + 1, tries, "ValueError", self.pod_nginx_is_running.__name__))
 
-            time.sleep(self.kvm_sleep_between_node)
+            time.sleep(self.testing_sleep_seconds)
 
         self.assertEqual(404, code)
 
@@ -592,7 +606,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 except requests.exceptions.ConnectionError:
                     os.write(2, "\r-> %d/%d NOT READY %s for %s\n\r" % (
                         t + 1, tries, ip, self.daemon_set_nginx_are_running.__name__))
-                    time.sleep(self.kvm_sleep_between_node)
+                    time.sleep(self.testing_sleep_seconds)
 
         self.assertEqual(len(ips), 0)
 

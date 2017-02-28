@@ -67,7 +67,7 @@ class TestKVMDiscoveryClient00(TestKVMDiscoveryClient):
                 interfaces = self.fetch_discovery_interfaces()
                 if len(interfaces) > 0:
                     break
-                time.sleep(self.kvm_sleep_between_node)
+                time.sleep(self.testing_sleep_seconds)
 
             # Just one machine
             self.assertEqual(len(interfaces), 1)
@@ -127,13 +127,13 @@ class TestKVMDiscoveryClient01(TestKVMDiscoveryClient):
                     "--boot=network"
                 ]
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
-                time.sleep(self.kvm_sleep_between_node)  # KVM fail to associate nic
+                time.sleep(self.testing_sleep_seconds)  # KVM fail to associate nic
 
             for i in xrange(60):
                 interfaces = self.fetch_discovery_interfaces()
                 if len(interfaces) == nb_node:
                     break
-                time.sleep(self.kvm_sleep_between_node)
+                time.sleep(self.testing_sleep_seconds)
 
             # Several machines
             self.assertEqual(len(interfaces), nb_node)
@@ -218,7 +218,7 @@ class TestKVMDiscoveryClient02(TestKVMDiscoveryClient):
                 interfaces = self.fetch_discovery_interfaces()
                 if len(interfaces) > 0:
                     break
-                time.sleep(self.kvm_sleep_between_node)
+                time.sleep(self.testing_sleep_seconds)
 
             self.assertEqual(len(interfaces), 1)
             for interface in interfaces:
@@ -297,13 +297,13 @@ class TestKVMDiscoveryClient03(TestKVMDiscoveryClient):
                     "--boot=network"
                 ]
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
-                time.sleep(self.kvm_sleep_between_node)  # KVM fail to associate nic
+                time.sleep(self.testing_sleep_seconds)  # KVM fail to associate nic
 
             for i in xrange(60):
                 interfaces = self.fetch_discovery_interfaces()
                 if len(interfaces) == nb_node:
                     break
-                time.sleep(self.kvm_sleep_between_node)
+                time.sleep(self.testing_sleep_seconds)
 
             # Checks
             self.assertEqual(len(interfaces), 3)
@@ -376,7 +376,7 @@ class TestKVMDiscoveryClient04(TestKVMDiscoveryClient):
                 disco_data = self.fetch_discovery()
                 if disco_data and len(disco_data) == 1:
                     break
-                time.sleep(self.kvm_sleep_between_node)
+                time.sleep(self.testing_sleep_seconds)
 
             self.assertEqual(1, len(disco_data))
             lines = self.fetch_discovery_ignition_journal(disco_data[0]["boot-info"]["uuid"])
@@ -438,7 +438,7 @@ class TestKVMDiscoveryClient05(TestKVMDiscoveryClient):
                 interfaces = self.fetch_discovery_interfaces()
                 if len(interfaces) > 0:
                     break
-                time.sleep(self.kvm_sleep_between_node)
+                time.sleep(self.testing_sleep_seconds)
 
             # Just one machine but with 2 interfaces
             self.assertEqual(len(interfaces), 2)
@@ -512,13 +512,13 @@ class TestKVMDiscoveryClient06(TestKVMDiscoveryClient):
                     "--boot=network"
                 ]
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
-                time.sleep(self.kvm_sleep_between_node)  # KVM fail to associate nic
+                time.sleep(self.testing_sleep_seconds)  # KVM fail to associate nic
 
             for i in xrange(60):
                 interfaces = self.fetch_discovery_interfaces()
                 if len(interfaces) == nb_node * 4:
                     break
-                time.sleep(self.kvm_sleep_between_node)
+                time.sleep(self.testing_sleep_seconds)
 
             # Just one machine but with 4 interfaces
             self.assertEqual(len(interfaces), 4 * nb_node)

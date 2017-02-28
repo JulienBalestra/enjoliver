@@ -76,9 +76,9 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
                     "--boot=network"
                 ]
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
-                time.sleep(self.kvm_sleep_between_node)  # KVM fail to associate nic
+                time.sleep(self.testing_sleep_seconds)  # KVM fail to associate nic
 
-            time.sleep(self.kvm_sleep_between_node * self.kvm_sleep_between_node)
+            time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds)
 
             sch_cp = schedulerv2.EtcdMemberKubernetesControlPlane(self.api_uri)
             sch_cp.expected_nb = 1
@@ -86,7 +86,7 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
                 if sch_cp.apply() is True:
                     sync.apply()
                     break
-                time.sleep(self.kvm_sleep_between_node)
+                time.sleep(self.testing_sleep_seconds)
 
             self.assertTrue(sch_cp.apply())
             sch_no = schedulerv2.KubernetesNode(self.api_uri, apply_dep=False)
@@ -94,16 +94,16 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
                 sync.apply()
                 if sch_no.apply() == nb_node - 1:
                     break
-                time.sleep(self.kvm_sleep_between_node)
+                time.sleep(self.testing_sleep_seconds)
 
             self.assertEqual(nb_node - 1, sch_no.apply())
             sync.apply()
 
-            time.sleep(self.kvm_sleep_between_node)
+            time.sleep(self.testing_sleep_seconds)
 
             to_start = copy.deepcopy(nodes)
             self.kvm_restart_off_machines(to_start)
-            time.sleep(self.kvm_sleep_between_node * nb_node)
+            time.sleep(self.testing_sleep_seconds * nb_node)
 
             self.etcd_member_len(sync.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb,
                                  self.ec.kubernetes_etcd_client_port)
@@ -177,9 +177,9 @@ class TestKVMK8SBasic1(TestKVMK8sBasic):
                     "--boot=network"
                 ]
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
-                time.sleep(self.kvm_sleep_between_node)
+                time.sleep(self.testing_sleep_seconds)
 
-            time.sleep(self.kvm_sleep_between_node * self.kvm_sleep_between_node)
+            time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds)
 
             sch_cp = schedulerv2.EtcdMemberKubernetesControlPlane(self.api_uri)
             sch_cp.expected_nb = 1
@@ -187,7 +187,7 @@ class TestKVMK8SBasic1(TestKVMK8sBasic):
                 if sch_cp.apply() is True:
                     sync.apply()
                     break
-                time.sleep(self.kvm_sleep_between_node)
+                time.sleep(self.testing_sleep_seconds)
 
             self.assertTrue(sch_cp.apply())
             sch_no = schedulerv2.KubernetesNode(self.api_uri, apply_dep=False)
@@ -195,16 +195,16 @@ class TestKVMK8SBasic1(TestKVMK8sBasic):
                 sync.apply()
                 if sch_no.apply() == nb_node - 1:
                     break
-                time.sleep(self.kvm_sleep_between_node)
+                time.sleep(self.testing_sleep_seconds)
 
             self.assertEqual(nb_node - 1, sch_no.apply())
             sync.apply()
 
-            time.sleep(self.kvm_sleep_between_node)
+            time.sleep(self.testing_sleep_seconds)
 
             to_start = copy.deepcopy(nodes)
             self.kvm_restart_off_machines(to_start)
-            time.sleep(self.kvm_sleep_between_node * nb_node)
+            time.sleep(self.testing_sleep_seconds * nb_node)
 
             self.etcd_member_len(sync.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb,
                                  self.ec.kubernetes_etcd_client_port)

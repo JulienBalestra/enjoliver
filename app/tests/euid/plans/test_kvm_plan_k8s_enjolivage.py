@@ -64,18 +64,18 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
                     "--boot=network"
                 ]
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
-                time.sleep(self.kvm_sleep_between_node)
+                time.sleep(self.testing_sleep_seconds)
 
-            time.sleep(self.kvm_sleep_between_node * self.kvm_sleep_between_node)
+            time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds)
 
             for i in range(60):
                 if plan_k8s_2t.apply() == 1:
                     break
-                time.sleep(self.kvm_sleep_between_node)
+                time.sleep(self.testing_sleep_seconds)
 
             to_start = copy.deepcopy(nodes)
             self.kvm_restart_off_machines(to_start)
-            time.sleep(self.kvm_sleep_between_node * self.kvm_sleep_between_node)
+            time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds)
 
             self.etcd_endpoint_health(plan_k8s_2t.etcd_member_ip_list, self.ec.kubernetes_etcd_client_port)
             self.etcd_endpoint_health(plan_k8s_2t.etcd_member_ip_list, self.ec.fleet_etcd_client_port)
