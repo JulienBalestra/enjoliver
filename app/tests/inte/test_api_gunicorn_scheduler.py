@@ -1,11 +1,9 @@
-import httplib
 import json
 import os
 import shutil
 import sys
 import time
 import unittest
-import urllib2
 from multiprocessing import Process
 
 import requests
@@ -14,7 +12,7 @@ from app import api
 from app import configs
 from app import model
 from app import schedulerv2
-from app import sync_matchbox
+from app import sync
 from common import posts
 
 ec = configs.EnjoliverConfig(importer=__file__)
@@ -45,9 +43,9 @@ class TestAPIGunicornScheduler(unittest.TestCase):
             "%s/manage.py" % TestAPIGunicornScheduler.project_path,
             "matchbox"
         ]
-        os.write(1, "PID  -> %s\n"
-                    "exec -> %s\n" % (
-                     os.getpid(), " ".join(cmd)))
+        print("PID  -> %s\n"
+              "exec -> %s\n" % (
+                  os.getpid(), " ".join(cmd)))
         sys.stdout.flush()
         os.execve(cmd[0], cmd, os.environ)
 
@@ -58,7 +56,7 @@ class TestAPIGunicornScheduler(unittest.TestCase):
         for d in dirs:
             for f in os.listdir(d):
                 if ".json" in f:
-                    os.write(1, "\r-> remove %s\n\r" % f)
+                    print("\r-> remove %s\n\r" % f)
                     os.remove("%s/%s" % (d, f))
 
     @staticmethod
@@ -87,7 +85,7 @@ class TestAPIGunicornScheduler(unittest.TestCase):
 
         cls.p_matchbox = Process(target=TestAPIGunicornScheduler.process_target_matchbox)
         cls.p_api = Process(target=TestAPIGunicornScheduler.process_target_api)
-        os.write(1, "PPID -> %s\n" % os.getpid())
+        print("PPID -> %s\n" % os.getpid())
         cls.p_matchbox.start()
         assert cls.p_matchbox.is_alive() is True
         cls.p_api.start()
@@ -98,7 +96,7 @@ class TestAPIGunicornScheduler(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        os.write(1, "TERM -> %d\n" % cls.p_matchbox.pid)
+        print("TERM -> %d\n" % cls.p_matchbox.pid)
         sys.stdout.flush()
         cls.p_matchbox.terminate()
         cls.p_matchbox.join(timeout=5)
@@ -110,34 +108,35 @@ class TestAPIGunicornScheduler(unittest.TestCase):
     def matchbox_running(matchbox_endpoint, p_matchbox):
         response_body = ""
         response_code = 404
-        for i in xrange(10):
+        for i in range(10):
             assert p_matchbox.is_alive() is True
             try:
-                request = urllib2.urlopen(matchbox_endpoint)
-                response_body = request.read()
-                response_code = request.code
+                request = requests.get(matchbox_endpoint)
+                response_body = request.content
+                response_code = request.status_code
                 request.close()
                 break
 
-            except (httplib.BadStatusLine, urllib2.URLError):
+            except requests.exceptions.ConnectionError:
                 pass
             time.sleep(0.2)
 
-        assert "matchbox\n" == response_body
+        print(response_body)
+        assert b"matchbox\n" == response_body
         assert 200 == response_code
 
     @staticmethod
     def api_running(api_endpoint, p_api):
         response_code = 404
-        for i in xrange(10):
+        for i in range(10):
             assert p_api.is_alive() is True
             try:
-                request = urllib2.urlopen(api_endpoint)
-                response_code = request.code
+                request = requests.get(api_endpoint)
+                response_code = request.status_code
                 request.close()
                 break
 
-            except (httplib.BadStatusLine, urllib2.URLError):
+            except requests.exceptions.ConnectionError:
                 pass
             time.sleep(0.2)
 
@@ -160,11 +159,11 @@ class TestAPIGunicornScheduler(unittest.TestCase):
                 u'/assets': True,
                 u"/metadata": True
             }}
-        request = urllib2.urlopen("%s/healthz" % ec.api_uri)
-        response_body = request.read()
-        response_code = request.code
+        request = requests.get("%s/healthz" % ec.api_uri)
+        response_body = request.content
+        response_code = request.status_code
         request.close()
-        self.assertEqual(json.loads(response_body), expect)
+        self.assertEqual(json.loads(response_body.decode()), expect)
         self.assertEqual(200, response_code)
 
 
@@ -194,7 +193,7 @@ class TestEtcdMemberKubernetesControlPlane2(TestAPIGunicornScheduler):
         r.close()
         self.assertTrue(sch.apply())
 
-        s = sync_matchbox.ConfigSyncSchedules(
+        s = sync.ConfigSyncSchedules(
             ec.api_uri,
             self.test_matchbox_path,
             ignition_dict={
@@ -226,7 +225,7 @@ class TestEtcdMemberKubernetesControlPlane3(TestAPIGunicornScheduler):
         r.close()
         self.assertEqual(1, sch_no.apply())
 
-        s = sync_matchbox.ConfigSyncSchedules(
+        s = sync.ConfigSyncSchedules(
             ec.api_uri,
             self.test_matchbox_path,
             ignition_dict={
@@ -248,7 +247,7 @@ class TestEtcdMemberKubernetesControlPlane4(TestAPIGunicornScheduler):
 
         self.assertEqual(len(posts.ALL) - schedulerv2.EtcdMemberKubernetesControlPlane.expected_nb, sch_no.apply())
 
-        s = sync_matchbox.ConfigSyncSchedules(
+        s = sync.ConfigSyncSchedules(
             ec.api_uri,
             self.test_matchbox_path,
             ignition_dict={

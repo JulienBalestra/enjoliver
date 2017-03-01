@@ -171,7 +171,7 @@ class InjectDiscovery(object):
 
             self._ignition_journal()
         except Exception as e:
-            self.log.error("raise: %s %s %s %s -> %s" % (step, type(e), e, e.message, self.discovery))
+            self.log.error("raise: %s %s %s -> %s" % (step, type(e), e, self.discovery))
             self.session.close()
             raise
 

@@ -9,7 +9,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 
 apt-get update -qq
-apt-get install -y python
+apt-get install -y python3.5
 
 apt-get autoclean
 apt-get autoremove

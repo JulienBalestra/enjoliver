@@ -4,7 +4,7 @@ from configs import EnjoliverConfig
 
 ec = EnjoliverConfig(importer=__file__)
 
-formatter = logging.Formatter('%(levelname)-7s %(module)-13s %(funcName)s %(message)s')
+formatter = logging.Formatter('%(levelname)-7s %(module)-8s %(funcName)s %(message)s')
 
 consoleHandler = logging.StreamHandler()
 

@@ -1,10 +1,9 @@
-import ipaddr
 import json
 import os
 import random
 import re
-import socket
 
+import ipaddr
 import requests
 
 import generator
@@ -38,7 +37,7 @@ class ConfigSyncSchedules(object):
         self.extra_selector = extra_selector_dict if extra_selector_dict else {}
 
     def _ensure_ignition_are_here(self):
-        for k, v in self.ignition_dict.iteritems():
+        for k, v in self.ignition_dict.items():
             f = "%s/ignition/%s.yaml" % (self.matchbox_path, v)
             if os.path.isfile(f) is False:
                 self.log.error("%s:%s -> %s is not here" % (k, v, f))
@@ -297,15 +296,15 @@ class ConfigSyncSchedules(object):
         roles = "&".join(roles)
         self.log.debug("roles='%s'" % roles)
         r = requests.get("%s/scheduler/%s" % (self.api_uri, roles))
-        d = json.loads(r.content)
+        d = json.loads(r.content.decode())
         r.close()
-        d.sort()
+        d.sort(key=lambda k: k["mac"])
         return d
 
     def _query_ip_list(self, role):
         self.log.debug("role='%s'" % role)
         r = requests.get("%s/scheduler/ip-list/%s" % (self.api_uri, role))
-        d = json.loads(r.content)
+        d = json.loads(r.content.decode())
         r.close()
         d.sort()
         return d

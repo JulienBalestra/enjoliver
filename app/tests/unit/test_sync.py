@@ -2,7 +2,7 @@ import json
 import os
 from unittest import TestCase
 
-from app import sync_matchbox
+from app import sync
 
 
 class TestConfigSyncSchedules(TestCase):
@@ -12,7 +12,7 @@ class TestConfigSyncSchedules(TestCase):
     api_uri = "http://127.0.0.1:5000"
 
     def test_00(self):
-        s = sync_matchbox.ConfigSyncSchedules(
+        s = sync.ConfigSyncSchedules(
             api_uri=self.api_uri,
             matchbox_path=self.test_matchbox_path,
             ignition_dict={},
@@ -28,7 +28,7 @@ class TestConfigSyncSchedules(TestCase):
         }, d)
 
     def test_01(self):
-        s = sync_matchbox.ConfigSyncSchedules(
+        s = sync.ConfigSyncSchedules(
             api_uri=self.api_uri,
             matchbox_path=self.test_matchbox_path,
             ignition_dict={},
@@ -44,7 +44,7 @@ class TestConfigSyncSchedules(TestCase):
         }, d)
 
     def test_02(self):
-        s = sync_matchbox.ConfigSyncSchedules(
+        s = sync.ConfigSyncSchedules(
             api_uri=self.api_uri,
             matchbox_path=self.test_matchbox_path,
             ignition_dict={},
@@ -60,7 +60,7 @@ class TestConfigSyncSchedules(TestCase):
             d)
 
     def test_03(self):
-        s = sync_matchbox.ConfigSyncSchedules(
+        s = sync.ConfigSyncSchedules(
             api_uri=self.api_uri,
             matchbox_path=self.test_matchbox_path,
             ignition_dict={},
@@ -73,20 +73,20 @@ class TestConfigSyncSchedules(TestCase):
             'rangeEnd': '172.20.10.254',
             'routes': [{'dst': '0.0.0.0/0'}],
             'subnet': '172.20.0.0/19',
-            'type': 'host-local'}, indent=2),
-            json.dumps(d, indent=2))
+            'type': 'host-local'}, indent=2, sort_keys=True),
+            json.dumps(d, indent=2, sort_keys=True))
 
     def test_04(self):
-        s = sync_matchbox.ConfigSyncSchedules(
+        s = sync.ConfigSyncSchedules(
             api_uri=self.api_uri,
             matchbox_path=self.test_matchbox_path,
             ignition_dict={},
             extra_selector_dict=None,
         )
 
-        sync_matchbox.ConfigSyncSchedules.range_nb_ips = 60
-        sync_matchbox.ConfigSyncSchedules.skip_ips = 1
-        sync_matchbox.ConfigSyncSchedules.sub_ips = 0
+        sync.ConfigSyncSchedules.range_nb_ips = 60
+        sync.ConfigSyncSchedules.skip_ips = 1
+        sync.ConfigSyncSchedules.sub_ips = 0
 
         d = s.cni_ipam("10.99.33.1/19", "10.99.64.254")
         self.assertEqual(json.dumps({
@@ -99,16 +99,16 @@ class TestConfigSyncSchedules(TestCase):
         }, indent=2), json.dumps(d, indent=2))
 
     def test_04_1(self):
-        s = sync_matchbox.ConfigSyncSchedules(
+        s = sync.ConfigSyncSchedules(
             api_uri=self.api_uri,
             matchbox_path=self.test_matchbox_path,
             ignition_dict={},
             extra_selector_dict=None,
         )
 
-        sync_matchbox.ConfigSyncSchedules.range_nb_ips = 60
-        sync_matchbox.ConfigSyncSchedules.skip_ips = 1
-        sync_matchbox.ConfigSyncSchedules.sub_ips = 0
+        sync.ConfigSyncSchedules.range_nb_ips = 60
+        sync.ConfigSyncSchedules.skip_ips = 1
+        sync.ConfigSyncSchedules.sub_ips = 0
 
         d = s.cni_ipam("10.99.39.129/19", "10.99.64.254")
         self.assertEqual(json.dumps({
@@ -122,7 +122,7 @@ class TestConfigSyncSchedules(TestCase):
 
     def test_05(self):
         with self.assertRaises(IOError):
-            sync_matchbox.ConfigSyncSchedules(
+            sync.ConfigSyncSchedules(
                 api_uri=self.api_uri,
                 matchbox_path=self.test_matchbox_path,
                 ignition_dict={"etcd-member": "no-here"},

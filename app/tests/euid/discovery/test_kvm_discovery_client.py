@@ -63,7 +63,7 @@ class TestKVMDiscoveryClient00(TestKVMDiscoveryClient):
             ]
             self.virsh(virt_install, assertion=True, v=self.dev_null)
 
-            for i in xrange(60):
+            for i in range(60):
                 interfaces = self.fetch_discovery_interfaces()
                 if len(interfaces) > 0:
                     break
@@ -80,8 +80,8 @@ class TestKVMDiscoveryClient00(TestKVMDiscoveryClient):
 
             self.write_ending(marker)
         finally:
-            self.virsh(destroy), os.write(1, "\r")
-            self.virsh(undefine), os.write(1, "\r")
+            self.virsh(destroy)
+            self.virsh(undefine)
 
 
 # @unittest.skip("just skip")
@@ -106,7 +106,7 @@ class TestKVMDiscoveryClient01(TestKVMDiscoveryClient):
 
         interfaces = {}
         try:
-            for i in xrange(nb_node):
+            for i in range(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
                                     ["virsh", "undefine", "%s" % machine_marker]
@@ -129,7 +129,7 @@ class TestKVMDiscoveryClient01(TestKVMDiscoveryClient):
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
                 time.sleep(self.testing_sleep_seconds)  # KVM fail to associate nic
 
-            for i in xrange(60):
+            for i in range(60):
                 interfaces = self.fetch_discovery_interfaces()
                 if len(interfaces) == nb_node:
                     break
@@ -148,12 +148,12 @@ class TestKVMDiscoveryClient01(TestKVMDiscoveryClient):
             self.write_ending(marker)
 
         finally:
-            for i in xrange(nb_node):
+            for i in range(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
                                     ["virsh", "undefine", "%s" % machine_marker]
-                self.virsh(destroy), os.write(1, "\r")
-                self.virsh(undefine), os.write(1, "\r")
+                self.virsh(destroy)
+                self.virsh(undefine)
 
 
 # @unittest.skip("just skip")
@@ -214,7 +214,7 @@ class TestKVMDiscoveryClient02(TestKVMDiscoveryClient):
             ]
             self.virsh(virt_install, assertion=True, v=self.dev_null)
 
-            for i in xrange(60):
+            for i in range(60):
                 interfaces = self.fetch_discovery_interfaces()
                 if len(interfaces) > 0:
                     break
@@ -231,8 +231,8 @@ class TestKVMDiscoveryClient02(TestKVMDiscoveryClient):
 
             self.write_ending(marker)
         finally:
-            self.virsh(destroy), os.write(1, "\r")
-            self.virsh(undefine), os.write(1, "\r")
+            self.virsh(destroy)
+            self.virsh(undefine)
 
 
 # @unittest.skip("just skip")
@@ -276,7 +276,7 @@ class TestKVMDiscoveryClient03(TestKVMDiscoveryClient):
 
         interfaces = []
         try:
-            for i in xrange(nb_node):
+            for i in range(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
                                     ["virsh", "undefine", "%s" % machine_marker]
@@ -299,7 +299,7 @@ class TestKVMDiscoveryClient03(TestKVMDiscoveryClient):
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
                 time.sleep(self.testing_sleep_seconds)  # KVM fail to associate nic
 
-            for i in xrange(60):
+            for i in range(60):
                 interfaces = self.fetch_discovery_interfaces()
                 if len(interfaces) == nb_node:
                     break
@@ -322,12 +322,12 @@ class TestKVMDiscoveryClient03(TestKVMDiscoveryClient):
         finally:
             if os.getenv("TEST"):
                 self.iteractive_usage()
-            for i in xrange(nb_node):
+            for i in range(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
                                     ["virsh", "undefine", "%s" % machine_marker]
-                self.virsh(destroy), os.write(1, "\r")
-                self.virsh(undefine), os.write(1, "\r")
+                self.virsh(destroy)
+                self.virsh(undefine)
 
 
 # @unittest.skip("just skip")
@@ -372,7 +372,7 @@ class TestKVMDiscoveryClient04(TestKVMDiscoveryClient):
             self.virsh(virt_install, assertion=True, v=self.dev_null)
 
             disco_data = dict()
-            for i in xrange(60):
+            for i in range(60):
                 disco_data = self.fetch_discovery()
                 if disco_data and len(disco_data) == 1:
                     break
@@ -385,8 +385,8 @@ class TestKVMDiscoveryClient04(TestKVMDiscoveryClient):
             self.write_ending(marker)
 
         finally:
-            self.virsh(destroy), os.write(1, "\r")
-            self.virsh(undefine), os.write(1, "\r")
+            self.virsh(destroy)
+            self.virsh(undefine)
 
 
 # @unittest.skip("just skip")
@@ -434,7 +434,7 @@ class TestKVMDiscoveryClient05(TestKVMDiscoveryClient):
             ]
             self.virsh(virt_install, assertion=True, v=self.dev_null)
 
-            for i in xrange(60):
+            for i in range(60):
                 interfaces = self.fetch_discovery_interfaces()
                 if len(interfaces) > 0:
                     break
@@ -458,8 +458,8 @@ class TestKVMDiscoveryClient05(TestKVMDiscoveryClient):
 
             self.write_ending(marker)
         finally:
-            self.virsh(destroy), os.write(1, "\r")
-            self.virsh(undefine), os.write(1, "\r")
+            self.virsh(destroy)
+            self.virsh(undefine)
 
 
 # @unittest.skip("just skip")
@@ -488,7 +488,7 @@ class TestKVMDiscoveryClient06(TestKVMDiscoveryClient):
 
         interfaces = {}
         try:
-            for i in xrange(nb_node):
+            for i in range(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
                                     ["virsh", "undefine", "%s" % machine_marker]
@@ -514,7 +514,7 @@ class TestKVMDiscoveryClient06(TestKVMDiscoveryClient):
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
                 time.sleep(self.testing_sleep_seconds)  # KVM fail to associate nic
 
-            for i in xrange(60):
+            for i in range(60):
                 interfaces = self.fetch_discovery_interfaces()
                 if len(interfaces) == nb_node * 4:
                     break
@@ -540,12 +540,12 @@ class TestKVMDiscoveryClient06(TestKVMDiscoveryClient):
             self.write_ending(marker)
 
         finally:
-            for i in xrange(nb_node):
+            for i in range(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
                                     ["virsh", "undefine", "%s" % machine_marker]
-                self.virsh(destroy), os.write(1, "\r")
-                self.virsh(undefine), os.write(1, "\r")
+                self.virsh(destroy)
+                self.virsh(undefine)
 
 
 if __name__ == "__main__":

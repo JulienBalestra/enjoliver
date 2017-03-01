@@ -33,7 +33,7 @@ class TestKVMK8sEnjolivageDisk0(TestKVMK8sEnjolivageDisk):
         self.assertEqual(self.fetch_discovery_interfaces(), [])
         nb_node = 4
         marker = "plans-%s-%s" % (TestKVMK8sEnjolivageDisk.__name__.lower(), self.test_00.__name__)
-        nodes = ["%s-%d" % (marker, i) for i in xrange(nb_node)]
+        nodes = ["%s-%d" % (marker, i) for i in range(nb_node)]
         plan_k8s_2t = k8s_2t.Kubernetes2Tiers(
             {
                 "discovery": marker,
@@ -43,15 +43,15 @@ class TestKVMK8sEnjolivageDisk0(TestKVMK8sEnjolivageDisk):
             matchbox_path=self.test_matchbox_path,
             api_uri=self.api_uri)
 
-        for i in xrange(nb_node):
+        for i in range(nb_node):
             machine_marker = "%s-%d" % (marker, i)
             destroy, undefine, vol_del = ["virsh", "destroy", "%s" % machine_marker], \
                                          ["virsh", "undefine", "%s" % machine_marker], \
                                          ["virsh", "vol-delete", "%s.qcow2" % machine_marker, "--pool",
                                           "default"]
-            self.virsh(destroy), os.write(1, "\r")
-            self.virsh(undefine), os.write(1, "\r")
-            self.virsh(vol_del), os.write(1, "\r")
+            self.virsh(destroy)
+            self.virsh(undefine)
+            self.virsh(vol_del)
         try:
             for i, m in enumerate(nodes):
                 virt_install = [
@@ -103,15 +103,15 @@ class TestKVMK8sEnjolivageDisk0(TestKVMK8sEnjolivageDisk):
                     self.iteractive_usage(
                         api_server_uri="http://%s:8080" % plan_k8s_2t.kubernetes_control_plane_ip_list[0])
             finally:
-                for i in xrange(nb_node):
+                for i in range(nb_node):
                     machine_marker = "%s-%d" % (marker, i)
                     destroy, undefine, vol_del = ["virsh", "destroy", "%s" % machine_marker], \
                                                  ["virsh", "undefine", "%s" % machine_marker], \
                                                  ["virsh", "vol-delete", "%s.qcow2" % machine_marker, "--pool",
                                                   "default"]
-                    self.virsh(destroy), os.write(1, "\r")
-                    self.virsh(undefine), os.write(1, "\r")
-                    self.virsh(vol_del), os.write(1, "\r")
+                    self.virsh(destroy)
+                    self.virsh(undefine)
+                    self.virsh(vol_del)
 
 
 # @unittest.skip("")
@@ -121,7 +121,7 @@ class TestKVMK8sEnjolivageDisk1(TestKVMK8sEnjolivageDisk):
         self.assertEqual(self.fetch_discovery_interfaces(), [])
         nb_node = 2
         marker = "plans-%s-%s" % (TestKVMK8sEnjolivageDisk.__name__.lower(), self.test_01.__name__)
-        nodes = ["%s-%d" % (marker, i) for i in xrange(nb_node)]
+        nodes = ["%s-%d" % (marker, i) for i in range(nb_node)]
 
         plan_k8s_2t = k8s_2t.Kubernetes2Tiers(
             {
@@ -133,15 +133,15 @@ class TestKVMK8sEnjolivageDisk1(TestKVMK8sEnjolivageDisk):
             api_uri=self.api_uri)
         plan_k8s_2t._sch_k8s_control_plane.expected_nb = 1
 
-        for i in xrange(nb_node):
+        for i in range(nb_node):
             machine_marker = "%s-%d" % (marker, i)
             destroy, undefine, vol_del = ["virsh", "destroy", "%s" % machine_marker], \
                                          ["virsh", "undefine", "%s" % machine_marker], \
                                          ["virsh", "vol-delete", "%s.qcow2" % machine_marker, "--pool",
                                           "default"]
-            self.virsh(destroy), os.write(1, "\r")
-            self.virsh(undefine), os.write(1, "\r")
-            self.virsh(vol_del), os.write(1, "\r")
+            self.virsh(destroy)
+            self.virsh(undefine)
+            self.virsh(vol_del)
         try:
             for i, m in enumerate(nodes):
                 virt_install = [
@@ -193,15 +193,15 @@ class TestKVMK8sEnjolivageDisk1(TestKVMK8sEnjolivageDisk):
                     self.iteractive_usage(
                         api_server_uri="http://%s:8080" % plan_k8s_2t.kubernetes_control_plane_ip_list[0])
             finally:
-                for i in xrange(nb_node):
+                for i in range(nb_node):
                     machine_marker = "%s-%d" % (marker, i)
                     destroy, undefine, vol_del = ["virsh", "destroy", "%s" % machine_marker], \
                                                  ["virsh", "undefine", "%s" % machine_marker], \
                                                  ["virsh", "vol-delete", "%s.qcow2" % machine_marker, "--pool",
                                                   "default"]
-                    self.virsh(destroy), os.write(1, "\r")
-                    self.virsh(undefine), os.write(1, "\r")
-                    self.virsh(vol_del), os.write(1, "\r")
+                    self.virsh(destroy)
+                    self.virsh(undefine)
+                    self.virsh(vol_del)
 
 
 if __name__ == "__main__":

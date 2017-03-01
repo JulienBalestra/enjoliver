@@ -11,7 +11,7 @@ except ImportError:
     import generator
 
 import schedulerv2
-import sync_matchbox
+import sync
 
 from configs import EnjoliverConfig
 
@@ -33,13 +33,13 @@ class Kubernetes2Tiers(object):
         self._sch_k8s_control_plane = schedulerv2.EtcdMemberKubernetesControlPlane(self.api_uri)
         self._sch_k8s_node = schedulerv2.KubernetesNode(self.api_uri, apply_dep=False)
 
-        self._sync = sync_matchbox.ConfigSyncSchedules(self.api_uri, self.matchbox_path, self.ignition_dict,
-                                                       extra_selectors)
+        self._sync = sync.ConfigSyncSchedules(self.api_uri, self.matchbox_path, self.ignition_dict,
+                                              extra_selectors)
 
     def _init_discovery(self):
         local_ec = EnjoliverConfig(importer=__file__)
         if local_ec.extra_selectors:
-            extra_selectors = "&".join(["%s=%s" % (k, v) for k, v in local_ec.extra_selectors.iteritems()])
+            extra_selectors = "&".join(["%s=%s" % (k, v) for k, v in local_ec.extra_selectors])
         else:
             extra_selectors = ""
         gen = generator.Generator(

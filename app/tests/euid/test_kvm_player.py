@@ -43,8 +43,8 @@ class TestKernelVirtualMachinePlayer(kvm_player.KernelVirtualMachinePlayer):
             self.virsh(virt_install, assertion=True)
             self.pause(5)
         finally:
-            self.virsh(destroy), os.write(1, "\r")
-            self.virsh(undefine), os.write(1, "\r")
+            self.virsh(destroy)
+            self.virsh(undefine)
 
 
 # This have to raise

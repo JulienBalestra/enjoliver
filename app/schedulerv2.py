@@ -33,7 +33,7 @@ class CommonScheduler(object):
         CommonScheduler.log.debug("fetch %s" % query)
         try:
             r = requests.get(query)
-            interfaces = json.loads(r.content)
+            interfaces = json.loads(r.content.decode())
             r.close()
             CommonScheduler.log.debug("fetch done with len(%d)" % len(interfaces))
             return interfaces
@@ -53,7 +53,7 @@ class CommonScheduler(object):
 
     def apply_dep(self, dep_instance):
         self.log.info("tries:%d delay:%d" % (self.apply_deps_tries, self.apply_deps_delay))
-        for t in xrange(self.apply_deps_tries):
+        for t in range(self.apply_deps_tries):
             if dep_instance.apply() is True:
                 return True
             time.sleep(self.apply_deps_delay)
@@ -80,7 +80,7 @@ class CommonScheduler(object):
         available_list = self.fetch_available(self.api_uri)
         if len(available_list) >= self.expected_nb:
             self.log.info("starting...")
-            available_list.sort()
+            available_list.sort(key=lambda k: k["mac"])
             for i in range(self.expected_nb):
                 self._affect(available_list[i])
             return True
@@ -93,7 +93,7 @@ class CommonScheduler(object):
         url = "%s/scheduler/%s" % (self.api_uri, "&".join(self.roles))
         try:
             r = requests.get(url)
-            done = json.loads(r.content)
+            done = json.loads(r.content.decode())
             r.close()
             if len(done) != self.expected_nb:
                 self.log.info("%s -> done:%d expected:%d" % ("&".join(self.roles), len(done), self.expected_nb))
@@ -110,10 +110,10 @@ class CommonScheduler(object):
         url = "%s/scheduler/%s" % (self.api_uri, "&".join(self.roles))
         try:
             r = requests.get(url)
-            done = len(json.loads(r.content))
+            done = len(json.loads(r.content.decode()))
             r.close()
             available_list = self.fetch_available(self.api_uri)
-            available_list.sort()
+            available_list.sort(key=lambda k: k["mac"])
             if available_list:
                 self.log.info("%s -> done:%d available:%d" % ("&".join(self.roles), done, len(available_list)))
             for available in available_list:

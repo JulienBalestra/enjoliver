@@ -7,3 +7,6 @@
 [submodule "runtime/acserver"]
 	path = runtime/acserver
 	url = https://github.com/JulienBalestra/acserver.git
+[submodule "py-vendor/ipaddr-py"]
+	path = py-vendor/ipaddr-py
+	url = https://github.com/google/ipaddr-py.git

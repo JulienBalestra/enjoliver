@@ -17,7 +17,7 @@ class TestKubernetes2tiers(TestCase):
         for d in dirs:
             for f in os.listdir(d):
                 if ".json" in f:
-                    os.write(1, "\r-> remove %s/%s\n\r" % (d, f))
+                    print("\r-> remove %s/%s\n\r" % (d, f))
                     os.remove("%s/%s" % (d, f))
 
     def setUp(self):

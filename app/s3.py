@@ -44,9 +44,9 @@ class S3Operator(object):
             "modified": stats.st_mtime,
             "size": stats.st_size
         }
-        for k, v in metadata.iteritems():
+        for k, v in metadata.items():
             self.log.debug("setting metadata %s = %s" % (k, v))
-            key.set_metadata(k, v)
+            key.set_metadata(str(k), str(v))
         key.set_contents_from_filename(source)
         self.log.info("upload done source: %s dest: %s metadata: %s" % (source, dest, metadata))
 

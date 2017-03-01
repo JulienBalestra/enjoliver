@@ -1,14 +1,14 @@
-import httplib
 import json
 import os
 import sys
 import time
-import urllib2
 from multiprocessing import Process
 from unittest import TestCase
 
+import requests
+
 from app import generator
-from app import configs
+
 
 # ec = configs.EnjoliverConfig(importer=__file__)
 
@@ -53,9 +53,9 @@ class TestBootConfigCommon(TestCase):
             "%s/manage.py" % TestBootConfigCommon.project_path,
             "matchbox"
         ]
-        os.write(1, "PID  -> %s\n"
-                    "exec -> %s\n" % (
-                     os.getpid(), " ".join(cmd)))
+        print("PID  -> %s\n"
+              "exec -> %s\n" % (
+                  os.getpid(), " ".join(cmd)))
         sys.stdout.flush()
         os.execve(cmd[0], cmd, os.environ)
 
@@ -72,11 +72,11 @@ class TestBootConfigCommon(TestCase):
                 matchbox_path=cls.test_matchbox_path
             )
         except IOError:
-            os.write(2,
-                     "\nWARNING %s override %s in %s\n" %
-                     (cls.__name__,
-                      generator.GenerateCommon._raise_enof,
-                      Warning))
+            print(
+                "\nWARNING %s override %s in %s\n" %
+                (cls.__name__,
+                 generator.GenerateCommon._raise_enof,
+                 Warning))
             sys.stderr.flush()
             with IOErrorToWarning():
                 cls.gen = generator.Generator(
@@ -96,7 +96,7 @@ class TestBootConfigCommon(TestCase):
         if os.path.isfile("%s" % TestBootConfigCommon.matchbox_bin) is False:
             raise IOError("%s" % TestBootConfigCommon.matchbox_bin)
         cls.p_matchbox = Process(target=TestBootConfigCommon.process_target)
-        os.write(1, "PPID -> %s\n" % os.getpid())
+        print("PPID -> %s\n" % os.getpid())
         cls.p_matchbox.start()
         assert cls.p_matchbox.is_alive() is True
 
@@ -105,7 +105,7 @@ class TestBootConfigCommon(TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        os.write(1, "TERM -> %d\n" % cls.p_matchbox.pid)
+        print("TERM -> %d\n" % cls.p_matchbox.pid)
         sys.stdout.flush()
         cls.p_matchbox.terminate()
         cls.p_matchbox.join(timeout=5)
@@ -134,34 +134,34 @@ class TestBootConfigCommon(TestCase):
     def matchbox_running(matchbox_endpoint, p_matchbox):
         response_body = ""
         response_code = 404
-        for i in xrange(10):
+        for i in range(10):
             assert p_matchbox.is_alive() is True
             try:
-                request = urllib2.urlopen(matchbox_endpoint)
-                response_body = request.read()
-                response_code = request.code
+                request = requests.get(matchbox_endpoint)
+                response_body = request.content
+                response_code = request.status_code
                 request.close()
                 break
 
-            except (httplib.BadStatusLine, urllib2.URLError):
+            except requests.exceptions.ConnectionError:
                 pass
             time.sleep(0.2)
 
-        assert "matchbox\n" == response_body
+        assert b"matchbox\n" == response_body
         assert 200 == response_code
 
     def test_01_boot_dot_ipxe(self):
-        request = urllib2.urlopen("%s/boot.ipxe" % self.matchbox_endpoint)
-        response = request.read()
+        request = requests.get("%s/boot.ipxe" % self.matchbox_endpoint)
+        response = request.content
         request.close()
         self.assertEqual(
             response,
-            "#!ipxe\n"
-            "chain ipxe?uuid=${uuid}&mac=${mac:hexhyp}&domain=${domain}&hostname=${hostname}&serial=${serial}\n")
+            b"#!ipxe\n"
+            b"chain ipxe?uuid=${uuid}&mac=${mac:hexhyp}&domain=${domain}&hostname=${hostname}&serial=${serial}\n")
 
     def test_02_ipxe(self):
-        request = urllib2.urlopen("%s/ipxe" % self.matchbox_endpoint)
-        response = request.read()
+        request = requests.get("%s/ipxe" % self.matchbox_endpoint)
+        response = request.content.decode()
         request.close()
 
         response = response.replace(" \n", "\n")
@@ -191,42 +191,42 @@ class TestBootConfigCommon(TestCase):
         self.assertEqual(len(lines), 4)
 
     def test_03_assets(self):
-        request = urllib2.urlopen("%s/assets" % self.matchbox_endpoint)
+        request = requests.get("%s/assets" % self.matchbox_endpoint)
         request.close()
-        self.assertEqual(200, request.code)
+        self.assertEqual(200, request.status_code)
 
     def test_03_assets_coreos(self):
-        request = urllib2.urlopen("%s/assets/coreos" % self.matchbox_endpoint)
+        request = requests.get("%s/assets/coreos" % self.matchbox_endpoint)
         request.close()
-        self.assertEqual(200, request.code)
+        self.assertEqual(200, request.status_code)
 
     def test_03_assets_coreos_serve(self):
-        request = urllib2.urlopen("%s/assets/coreos/serve" % self.matchbox_endpoint)
+        request = requests.get("%s/assets/coreos/serve" % self.matchbox_endpoint)
         request.close()
-        self.assertEqual(200, request.code)
+        self.assertEqual(200, request.status_code)
 
     def test_03_assets_coreos_serve_kernel(self):
-        request = urllib2.urlopen("%s/assets/coreos/serve/coreos_production_pxe.vmlinuz" % self.matchbox_endpoint)
+        request = requests.get("%s/assets/coreos/serve/coreos_production_pxe.vmlinuz" % self.matchbox_endpoint)
         request.close()
-        self.assertEqual(200, request.code)
+        self.assertEqual(200, request.status_code)
 
     def test_03_assets_coreos_serve_initrd(self):
-        request = urllib2.urlopen("%s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz" % self.matchbox_endpoint)
+        request = requests.get("%s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz" % self.matchbox_endpoint)
         request.close()
-        self.assertEqual(200, request.code)
+        self.assertEqual(200, request.status_code)
 
     def test_03_assets_coreos_serve_404(self):
-        with self.assertRaises(urllib2.HTTPError):
-            urllib2.urlopen("%s/assets/coreos/serve/404_request.not-here" % self.matchbox_endpoint)
+        r = requests.get("%s/assets/coreos/serve/404_request.not-here" % self.matchbox_endpoint)
+        self.assertEqual(404, r.status_code)
 
 
 class TestBootConfigHelloWorld(TestBootConfigCommon):
     def test_a0_ignition(self):
-        request = urllib2.urlopen("%s/ignition" % self.matchbox_endpoint)
-        response = request.read()
+        request = requests.get("%s/ignition" % self.matchbox_endpoint)
+        response = request.content
         request.close()
 
-        ign_resp = json.loads(response)
+        ign_resp = json.loads(response.decode())
         expect = {
             u'networkd': {},
             u'passwd': {},
@@ -267,8 +267,8 @@ class TestBootConfigSelector(TestBootConfigCommon):
         cls.gen.dumps()
 
     def test_02_ipxe(self):
-        request = urllib2.urlopen("%s/ipxe?mac=%s" % (self.matchbox_endpoint, self.mac))
-        response = request.read()
+        request = requests.get("%s/ipxe?mac=%s" % (self.matchbox_endpoint, self.mac))
+        response = request.content.decode()
         request.close()
 
         response = response.replace(" \n", "\n")
@@ -298,19 +298,19 @@ class TestBootConfigSelector(TestBootConfigCommon):
         self.assertEqual(len(lines), 4)
 
     def test_a1_ipxe_raise(self):
-        with self.assertRaises(urllib2.HTTPError):
-            urllib2.urlopen("%s/ipxe" % self.matchbox_endpoint)
+        r = requests.get("%s/ipxe" % self.matchbox_endpoint)
+        self.assertEqual(404, r.status_code)
 
     def test_a2_ipxe_raise(self):
-        with self.assertRaises(urllib2.HTTPError):
-            urllib2.urlopen("%s/ignition?mac=%s" % (self.matchbox_endpoint, "01:01:01:01:01:01"))
+        r = requests.get("%s/ignition?mac=%s" % (self.matchbox_endpoint, "01:01:01:01:01:01"))
+        self.assertEqual(404, r.status_code)
 
     def test_a0_ignition(self):
-        request = urllib2.urlopen("%s/ignition?mac=%s" % (self.matchbox_endpoint, self.mac))
-        response = request.read()
+        request = requests.get("%s/ignition?mac=%s" % (self.matchbox_endpoint, self.mac))
+        response = request.content
         request.close()
 
-        ign_resp = json.loads(response)
+        ign_resp = json.loads(response.decode())
         expect = {
             u'networkd': {},
             u'passwd': {},
@@ -379,11 +379,11 @@ class TestBootConfigSelectors(TestBootConfigCommon):
         gen_one.dumps()
 
     def test_ignition_1(self):
-        request = urllib2.urlopen("%s/ignition?mac=%s" % (self.matchbox_endpoint, self.mac_one))
-        response = request.read()
+        request = requests.get("%s/ignition?mac=%s" % (self.matchbox_endpoint, self.mac_one))
+        response = request.content
         request.close()
 
-        ign_resp = json.loads(response)
+        ign_resp = json.loads(response.decode())
         expect = {
             u'networkd': {},
             u'passwd': {},
@@ -404,11 +404,11 @@ class TestBootConfigSelectors(TestBootConfigCommon):
         self.assertEqual(ign_resp, expect)
 
     def test_ignition_2(self):
-        request = urllib2.urlopen("%s/ignition?mac=%s" % (self.matchbox_endpoint, self.mac_two))
-        response = request.read()
+        request = requests.get("%s/ignition?mac=%s" % (self.matchbox_endpoint, self.mac_two))
+        response = request.content
         request.close()
 
-        ign_resp = json.loads(response)
+        ign_resp = json.loads(response.decode())
         expect = {
             u'networkd': {},
             u'passwd': {},
@@ -429,11 +429,11 @@ class TestBootConfigSelectors(TestBootConfigCommon):
         self.assertEqual(ign_resp, expect)
 
     def test_ignition_3(self):
-        request = urllib2.urlopen("%s/ignition?mac=%s" % (self.matchbox_endpoint, self.mac_three))
-        response = request.read()
+        request = requests.get("%s/ignition?mac=%s" % (self.matchbox_endpoint, self.mac_three))
+        response = request.content
         request.close()
 
-        ign_resp = json.loads(response)
+        ign_resp = json.loads(response.decode())
         expect = {
             u'networkd': {},
             u'passwd': {},

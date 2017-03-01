@@ -459,13 +459,13 @@ class TestModel(unittest.TestCase):
         self.assertEqual(4, len(r))
         for i in r:
             self.assertTrue(i["as_boot"])
-            self.assertEqual(unicode, type(i["mac"]))
-            self.assertEqual(unicode, type(i["ipv4"]))
-            self.assertEqual(unicode, type(i["cidrv4"]))
-            self.assertEqual(unicode, type(i["gateway"]))
-            self.assertEqual(unicode, type(i["name"]))
+            self.assertEqual(str, type(i["mac"]))
+            self.assertEqual(str, type(i["ipv4"]))
+            self.assertEqual(str, type(i["cidrv4"]))
+            self.assertEqual(str, type(i["gateway"]))
+            self.assertEqual(str, type(i["name"]))
             self.assertEqual(21, int(i["netmask"]))
-            self.assertEqual(unicode, type(i["role"]))
+            self.assertEqual(str, type(i["role"]))
             self.assertEqual(datetime.datetime, type(i["created_date"]))
 
     def test_22(self):
@@ -474,13 +474,13 @@ class TestModel(unittest.TestCase):
         self.assertEqual(3, len(r))
         for i in r:
             self.assertTrue(i["as_boot"])
-            self.assertEqual(unicode, type(i["mac"]))
-            self.assertEqual(unicode, type(i["ipv4"]))
-            self.assertEqual(unicode, type(i["cidrv4"]))
-            self.assertEqual(unicode, type(i["gateway"]))
-            self.assertEqual(unicode, type(i["name"]))
+            self.assertEqual(str, type(i["mac"]))
+            self.assertEqual(str, type(i["ipv4"]))
+            self.assertEqual(str, type(i["cidrv4"]))
+            self.assertEqual(str, type(i["gateway"]))
+            self.assertEqual(str, type(i["name"]))
             self.assertEqual(21, int(i["netmask"]))
-            self.assertEqual(unicode, type(i["role"]))
+            self.assertEqual(str, type(i["role"]))
             self.assertEqual(datetime.datetime, type(i["created_date"]))
 
     def test_23(self):
@@ -489,13 +489,13 @@ class TestModel(unittest.TestCase):
         self.assertEqual(1, len(r))
         for i in r:
             self.assertTrue(i["as_boot"])
-            self.assertEqual(unicode, type(i["mac"]))
-            self.assertEqual(unicode, type(i["ipv4"]))
-            self.assertEqual(unicode, type(i["cidrv4"]))
-            self.assertEqual(unicode, type(i["gateway"]))
-            self.assertEqual(unicode, type(i["name"]))
+            self.assertEqual(str, type(i["mac"]))
+            self.assertEqual(str, type(i["ipv4"]))
+            self.assertEqual(str, type(i["cidrv4"]))
+            self.assertEqual(str, type(i["gateway"]))
+            self.assertEqual(str, type(i["name"]))
             self.assertEqual(21, int(i["netmask"]))
-            self.assertEqual(unicode, type(i["role"]))
+            self.assertEqual(str, type(i["role"]))
             self.assertEqual(datetime.datetime, type(i["created_date"]))
 
     def test_24(self):

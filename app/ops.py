@@ -65,7 +65,7 @@ def backup_sqlite(cache, application):
         b["size"], b["copy"] = dest_st.st_size, True
         LOGGER.info("backup copy done %s size:%s" % (b["dest_fs"], dest_st.st_size))
     except Exception as e:
-        LOGGER.error("<%s %s>: %s" % (e, type(e), e.message))
+        LOGGER.error("<%s %s>" % (e, type(e)))
     finally:
         cache.delete(application.config["BACKUP_LOCK_KEY"])
         b["lock_duration"] = time.time() - start
@@ -80,7 +80,7 @@ def backup_sqlite(cache, application):
         so.upload(b["dest_fs"], b["dest_s3"])
         b["upload"] = True
     except Exception as e:
-        LOGGER.error("<%s %s>: %s" % (e, type(e), e.message))
+        LOGGER.error("<%s %s>" % (e, type(e)))
 
     b["backup_duration"] = time.time() - start
     LOGGER.info("backup duration: %ss" % b["backup_duration"])

@@ -4,7 +4,7 @@ import sys
 import time
 import unittest
 
-from app import generator, schedulerv2, sync_matchbox
+from app import generator, schedulerv2, sync
 
 try:
     import kvm_player
@@ -32,7 +32,7 @@ class TestKVMK8SEtcdOperator0(TestKVMK8sEtcdOperator):
         self.assertEqual(self.fetch_discovery_interfaces(), [])
         nb_node = 3
         marker = "euid-%s-%s" % (TestKVMK8sEtcdOperator.__name__.lower(), self.test_00.__name__)
-        nodes = ["%s-%d" % (marker, i) for i in xrange(nb_node)]
+        nodes = ["%s-%d" % (marker, i) for i in range(nb_node)]
         gen = generator.Generator(
             api_uri=self.api_uri,
             profile_id="%s" % marker,
@@ -41,7 +41,7 @@ class TestKVMK8SEtcdOperator0(TestKVMK8sEtcdOperator):
             matchbox_path=self.test_matchbox_path
         )
         gen.dumps()
-        sync = sync_matchbox.ConfigSyncSchedules(
+        sy = sync.ConfigSyncSchedules(
             api_uri=self.api_uri,
             matchbox_path=self.test_matchbox_path,
             ignition_dict={
@@ -76,14 +76,14 @@ class TestKVMK8SEtcdOperator0(TestKVMK8sEtcdOperator):
 
             sch_cp = schedulerv2.EtcdMemberKubernetesControlPlane(self.api_uri)
             sch_cp.expected_nb = 3
-            for i in xrange(60):
+            for i in range(60):
                 if sch_cp.apply() is True:
-                    sync.apply()
+                    sy.apply()
                     break
                 time.sleep(self.testing_sleep_seconds)
 
             self.assertTrue(sch_cp.apply())
-            sync.apply()
+            sy.apply()
 
             time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds)
 
@@ -92,32 +92,31 @@ class TestKVMK8SEtcdOperator0(TestKVMK8sEtcdOperator):
             time.sleep(self.testing_sleep_seconds * nb_node)
 
             for t in range(nb_node + 1):
-                self.etcd_member_len(sync.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb,
+                self.etcd_member_len(sy.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb,
                                      self.ec.kubernetes_etcd_client_port)
-                self.etcd_member_len(sync.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb,
+                self.etcd_member_len(sy.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb,
                                      self.ec.fleet_etcd_client_port)
-                self.etcd_endpoint_health(sync.kubernetes_control_plane_ip_list + sync.kubernetes_nodes_ip_list,
+                self.etcd_endpoint_health(sy.kubernetes_control_plane_ip_list + sy.kubernetes_nodes_ip_list,
                                           self.ec.kubernetes_etcd_client_port)
-                self.etcd_endpoint_health(sync.kubernetes_control_plane_ip_list + sync.kubernetes_nodes_ip_list,
+                self.etcd_endpoint_health(sy.kubernetes_control_plane_ip_list + sy.kubernetes_nodes_ip_list,
                                           self.ec.fleet_etcd_client_port)
-                self.k8s_api_health(sync.kubernetes_control_plane_ip_list)
-                self.etcd_member_k8s_minions(sync.kubernetes_control_plane_ip_list[0], nb_node)
+                self.k8s_api_health(sy.kubernetes_control_plane_ip_list)
+                self.etcd_member_k8s_minions(sy.kubernetes_control_plane_ip_list[0], nb_node)
                 m = "%s-%d" % (marker, t)
-                os.write(1, "\rreset %s\n\r" % m)
-                self.virsh(["virsh", "reset", m]), os.write(1, "\r")
+                self.virsh(["virsh", "reset", m])
 
                 time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds)
 
             self.write_ending(marker)
         finally:
             if os.getenv("TEST"):
-                self.iteractive_usage(api_server_uri="http://%s:8080" % sync.kubernetes_control_plane_ip_list[0])
-            for i in xrange(nb_node):
+                self.iteractive_usage(api_server_uri="http://%s:8080" % sy.kubernetes_control_plane_ip_list[0])
+            for i in range(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
                                     ["virsh", "undefine", "%s" % machine_marker]
-                self.virsh(destroy), os.write(1, "\r")
-                self.virsh(undefine), os.write(1, "\r")
+                self.virsh(destroy)
+                self.virsh(undefine)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,14 @@
 import os
 
+import sys
+
+app_path = os.path.dirname(os.path.abspath(__file__))
+project_path = os.path.dirname(app_path)
+python = os.path.join(project_path, "env/bin/python")
+site_packages_path = os.path.join(project_path, "env/lib/python3.5/site-packages/")
+
+sys.path.append(site_packages_path)
+
 import yaml
 
 app_path = os.path.dirname(os.path.abspath(__file__))
@@ -11,7 +20,7 @@ class EnjoliverConfig(object):
         env = "ENJOLIVER_%s" % key.upper()
         try:
             e = os.environ[env]
-            print "RECOGNIZED ENV %s=%s" % (env, e)
+            print("RECOGNIZED ENV %s=%s" % (env, e))
             self.from_env[key] = e
             return e
         except KeyError:
@@ -156,13 +165,13 @@ class EnjoliverConfig(object):
         self.coreos_install_base_url = self.config_override("coreos_install_base_url", None)
 
         if self.logging_level.lower() == "debug":
-            os.write(2, "configs file: %s for %s\n" % (yaml_full_path, importer))
+            print("configs file: %s for %s\n" % (yaml_full_path, importer))
 
 
 if __name__ == '__main__':
     ec = EnjoliverConfig("%s/configs.yaml" % os.path.dirname(__file__))
-    for k, v in ec.__dict__.iteritems():
+    for k, v in ec.__dict__.items():
         if type(v) is str:
-            print "%s: '%s'\n" % (k, v)
+            print("%s: '%s'\n" % (k, v))
         else:
-            print "%s: %s\n" % (k, v)
+            print("%s: %s\n" % (k, v))

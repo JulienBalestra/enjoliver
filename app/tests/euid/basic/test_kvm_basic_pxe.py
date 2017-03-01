@@ -69,14 +69,12 @@ class TestKVMBasicPXE(kvm_player.KernelVirtualMachinePlayer):
             ]
             self.virsh(virt_install, assertion=True, v=self.dev_null)
 
-            os.write(2, "\r\n")
             app.run(
                 host="172.20.0.1", port=self.flask_ok_port, debug=False, use_reloader=False)
-            os.write(2, "\r -> Flask stop\n\r")
 
         finally:
-            self.virsh(destroy), os.write(1, "\r")
-            self.virsh(undefine), os.write(1, "\r")
+            self.virsh(destroy)
+            self.virsh(undefine)
         self.assertItemsEqual(resp, [['euid-testkvmbasicpxe-test_00']])
 
     # @unittest.skip("just skip")
@@ -103,7 +101,7 @@ class TestKVMBasicPXE(kvm_player.KernelVirtualMachinePlayer):
             return "roger\n"
 
         try:
-            for i in xrange(nb_node):
+            for i in range(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
                                     ["virsh", "undefine", "%s" % machine_marker]
@@ -126,18 +124,16 @@ class TestKVMBasicPXE(kvm_player.KernelVirtualMachinePlayer):
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
                 time.sleep(self.testing_sleep_seconds)
 
-            os.write(2, "\r\n")
             app.run(
                 host="172.20.0.1", port=self.flask_ok_port, debug=False, use_reloader=False)
-            os.write(2, "\r -> Flask stop\n\r")
 
         finally:
-            for i in xrange(nb_node):
+            for i in range(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
                                     ["virsh", "undefine", "%s" % machine_marker]
-                self.virsh(destroy), os.write(1, "\r")
-                self.virsh(undefine), os.write(1, "\r")
+                self.virsh(destroy)
+                self.virsh(undefine)
         self.assertEqual(nb_node, len(resp))
         self.assertItemsEqual(resp, [
             ['euid-testkvmbasicpxe-test_01'],

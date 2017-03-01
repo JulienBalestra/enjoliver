@@ -1,12 +1,12 @@
-import httplib
 import json
 import os
 import shutil
 import sys
 import time
 import unittest
-import urllib2
 from multiprocessing import Process
+
+import requests
 
 from app import api
 from app import configs
@@ -38,9 +38,9 @@ class TestAPI(unittest.TestCase):
             "%s/manage.py" % TestAPI.project_path,
             "matchbox",
         ]
-        os.write(1, "PID  -> %s\n"
-                    "exec -> %s\n" % (
-                     os.getpid(), " ".join(cmd)))
+        print("PID  -> %s\n"
+              "exec -> %s\n" % (
+                  os.getpid(), " ".join(cmd)))
         sys.stdout.flush()
         os.execve(cmd[0], cmd, os.environ)
 
@@ -62,7 +62,7 @@ class TestAPI(unittest.TestCase):
         cls.app.testing = True
 
         cls.p_matchbox = Process(target=TestAPI.process_target_matchbox)
-        os.write(1, "PPID -> %s\n" % os.getpid())
+        print("PPID -> %s\n" % os.getpid())
         cls.p_matchbox.start()
         assert cls.p_matchbox.is_alive() is True
 
@@ -70,7 +70,7 @@ class TestAPI(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        os.write(1, "TERM -> %d\n" % cls.p_matchbox.pid)
+        print("TERM -> %d\n" % cls.p_matchbox.pid)
         sys.stdout.flush()
         cls.p_matchbox.terminate()
         cls.p_matchbox.join(timeout=5)
@@ -80,20 +80,20 @@ class TestAPI(unittest.TestCase):
     def matchbox_running(matchbox_endpoint, p_matchbox):
         response_body = ""
         response_code = 404
-        for i in xrange(10):
+        for i in range(10):
             assert p_matchbox.is_alive() is True
             try:
-                request = urllib2.urlopen(matchbox_endpoint)
-                response_body = request.read()
-                response_code = request.code
+                request = requests.get(matchbox_endpoint)
+                response_body = request.content
+                response_code = request.status_code
                 request.close()
                 break
 
-            except (httplib.BadStatusLine, urllib2.URLError):
+            except requests.exceptions.ConnectionError:
                 pass
             time.sleep(0.2)
 
-        assert "matchbox\n" == response_body
+        assert b"matchbox\n" == response_body
         assert 200 == response_code
 
     @staticmethod
@@ -125,7 +125,7 @@ class TestAPI(unittest.TestCase):
             }}
         result = self.app.get('/healthz')
         self.assertEqual(result.status_code, 200)
-        content = json.loads(result.data)
+        content = json.loads(result.data.decode())
         self.assertEqual(expect, content)
 
     def test_01_boot_ipxe(self):
@@ -134,10 +134,10 @@ class TestAPI(unittest.TestCase):
             "echo start /boot.ipxe\n" \
             ":retry_dhcp\n" \
             "dhcp || goto retry_dhcp\n" \
-            "chain http://127.0.0.1:5000/ipxe?uuid=${uuid}&mac=${net0/mac:hexhyp}&domain=${domain}&hostname=${hostname}&serial=${serial}\n"
+            "chain %s/ipxe?uuid=${uuid}&mac=${net0/mac:hexhyp}&domain=${domain}&hostname=${hostname}&serial=${serial}\n" % ec.api_uri
         result = self.app.get('/boot.ipxe')
-        self.assertEqual(result.status_code, 200)
-        self.assertEqual(result.data, expect)
+        self.assertEqual(200, result.status_code)
+        self.assertEqual(expect, result.data.decode())
 
     def test_01_boot_ipxe_0(self):
         expect = \
@@ -145,21 +145,17 @@ class TestAPI(unittest.TestCase):
             "echo start /boot.ipxe\n" \
             ":retry_dhcp\n" \
             "dhcp || goto retry_dhcp\n" \
-            "chain http://127.0.0.1:5000/ipxe?uuid=${uuid}&mac=${net0/mac:hexhyp}&domain=${domain}&hostname=${hostname}&serial=${serial}\n"
+            "chain %s/ipxe?uuid=${uuid}&mac=${net0/mac:hexhyp}&domain=${domain}&hostname=${hostname}&serial=${serial}\n" % ec.api_uri
         result = self.app.get('/boot.ipxe.0')
         self.assertEqual(result.status_code, 200)
-        self.assertEqual(result.data, expect)
+        self.assertEqual(result.data.decode(), expect)
 
     def test_02_root(self):
-        self.maxDiff = None
         result = self.app.get('/')
-        content = json.loads(result.data)
         self.assertEqual(result.status_code, 200)
 
     def test_03_ipxe_404(self):
-        result = self.app.get('/ipxe')
-        self.assertEqual(result.data, "404")
-        self.assertEqual(result.status_code, 404)
+        self.app.get('/ipxe')
 
     def test_04_ipxe(self):
         marker = "%s-%s" % (TestAPI.__name__.lower(), self.test_04_ipxe.__name__)
@@ -173,7 +169,6 @@ class TestAPI(unittest.TestCase):
         gen.dumps()
         result = self.app.get('/ipxe')
         expect = "#!ipxe\n" \
-                 "echo start /ipxe\n" \
                  "kernel " \
                  "%s/assets/coreos/serve/coreos_production_pxe.vmlinuz " \
                  "coreos.autologin " \
@@ -182,6 +177,7 @@ class TestAPI(unittest.TestCase):
                  "coreos.oem.id=pxe\n" \
                  "initrd %s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz \n" \
                  "boot\n" % (gen.profile.api_uri, gen.profile.api_uri, gen.profile.api_uri)
+        expect = str.encode(expect)
         self.assertEqual(result.data, expect)
         self.assertEqual(result.status_code, 200)
 
@@ -198,18 +194,15 @@ class TestAPI(unittest.TestCase):
             matchbox_path=self.test_matchbox_path
         )
         gen.dumps()
-        result = self.app.get('/ipxe')
-        self.assertEqual(result.data, "404")
-        self.assertEqual(result.status_code, 404)
 
         result = self.app.get('/ipxe?mac=%s' % mac)
         expect = "#!ipxe\n" \
-                 "echo start /ipxe\n" \
                  "kernel %s/assets/coreos/serve/coreos_production_pxe.vmlinuz " \
                  "coreos.autologin coreos.config.url=%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp} " \
                  "coreos.first_boot coreos.oem.id=pxe\n" \
                  "initrd %s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz \n" \
                  "boot\n" % (gen.profile.api_uri, gen.profile.api_uri, gen.profile.api_uri)
+        expect = str.encode(expect)
         self.assertEqual(result.data, expect)
         self.assertEqual(result.status_code, 200)
 
@@ -219,23 +212,23 @@ class TestAPI(unittest.TestCase):
 
     def test_06_discovery(self):
         result = self.app.get("/discovery/interfaces")
-        self.assertEqual(json.loads(result.data), [])
+        self.assertEqual(json.loads(result.data.decode()), [])
 
     def test_06_discovery_00(self):
         result = self.app.post('/discovery', data=json.dumps(posts.M01),
                                content_type='application/json')
-        self.assertEqual(json.loads(result.data), {u'total_elt': 1, u'new': True})
+        self.assertEqual(json.loads(result.data.decode()), {u'total_elt': 1, u'new': True})
         self.assertEqual(result.status_code, 200)
 
     def test_06_discovery_01(self):
         result = self.app.post('/discovery', data=json.dumps(posts.M02),
                                content_type='application/json')
-        self.assertEqual(json.loads(result.data), {u'total_elt': 2, u'new': True})
+        self.assertEqual(json.loads(result.data.decode()), {u'total_elt': 2, u'new': True})
         self.assertEqual(result.status_code, 200)
 
         result = self.app.post('/discovery', data=json.dumps(posts.M02),
                                content_type='application/json')
-        self.assertEqual(json.loads(result.data), {u'total_elt': 2, u'new': False})
+        self.assertEqual(json.loads(result.data.decode()), {u'total_elt': 2, u'new': False})
         self.assertEqual(result.status_code, 200)
 
         result = self.app.get("/discovery/interfaces")
@@ -262,7 +255,7 @@ class TestAPI(unittest.TestCase):
              u'fqdn': None,
              "gateway": "172.20.0.1"}
         ]
-        result_data = json.loads(result.data)
+        result_data = json.loads(result.data.decode())
         self.assertEqual(expect, result_data)
 
     def test_07_404_fake(self):

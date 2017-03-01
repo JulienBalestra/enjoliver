@@ -1,5 +1,4 @@
 import os
-import urllib2
 
 import requests
 from flask import Flask, request, json, jsonify, render_template, Response
@@ -331,7 +330,7 @@ def boot_ipxe():
 
     except Exception as e:
         flask_uri = application.config["MATCHBOX_URI"]
-        app.logger.error("<%s %s>: %s" % (e, type(e), e.message))
+        app.logger.error("<%s %s>" % (e, type(e)))
         app.logger.warning("Fall back to MATCHBOX_URI: %s" % flask_uri)
         if flask_uri is None:
             raise AttributeError("BOTH API_URI and MATCHBOX_URI are None")
@@ -396,24 +395,17 @@ def ipxe():
     :return: str
     """
     try:
-        matchbox_resp = urllib2.urlopen(
+        matchbox_resp = requests.get(
             "%s%s" % (
                 app.config["MATCHBOX_URI"],
                 request.full_path))
-        resp_list = matchbox_resp.readlines()
         matchbox_resp.close()
-        if len(resp_list) == 4:
-            resp_list.insert(1, "echo start /ipxe\n")
-        else:
-            app.logger.warning("iPXE response is not coherent")
-
-        response = "".join(resp_list)
-        app.logger.debug("%s" % response)
+        response = matchbox_resp.content.decode()
         return Response(response, status=200, mimetype="text/plain")
 
-    except urllib2.URLError:
-        app.logger.warning("404")
-        return Response("404", status=404, mimetype="text/plain")
+    except requests.exceptions.ConnectionError as e:
+        app.logger.warning("404 for /ipxe")
+        return "404", 404
 
 
 @app.errorhandler(404)

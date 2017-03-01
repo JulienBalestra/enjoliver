@@ -84,11 +84,11 @@ class GenerateCommon(object):
                 on_disk = f.read()
             on_disk_hash = hashlib.sha256(on_disk).hexdigest()
         except Exception as e:
-            self.log.warning("get hash of %s raise: %s %s" % (file_path, e, e.message))
+            self.log.warning("get hash of %s raise: %s" % (file_path, e))
             on_disk_hash = ""
 
         render = self.render()
-        render_hash = hashlib.sha256(render).hexdigest()
+        render_hash = hashlib.sha256(render.encode()).hexdigest()
         if render_hash != on_disk_hash:
             with open(file_path, "w") as fd:
                 fd.write(render)
@@ -210,7 +210,7 @@ class GenerateGroup(GenerateCommon):
         self._target_data["metadata"]["etcd_initial_cluster"] = ""  # default WET
         self._target_data["metadata"]["ssh_authorized_keys"] = self._get_ssh_authorized_keys()
 
-        for k, v in self.extra_metadata.iteritems():
+        for k, v in self.extra_metadata.items():
             self.log.debug("add %s: %s in metadata" % (k, v))
             self._target_data["metadata"][k] = v
 

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3.5
 import argparse
 import os
 
@@ -9,7 +9,7 @@ import time
 project_path = os.path.dirname(os.path.abspath(__file__))
 app_path = os.path.join(project_path, "app")
 python = os.path.join(project_path, "env/bin/python")
-site_packages_path = os.path.join(project_path, "env/local/lib/python2.7/site-packages")
+site_packages_path = os.path.join(project_path, "env/local/lib/python3.5/site-packages")
 
 sys.path.append(app_path)
 sys.path.append(site_packages_path)
@@ -29,12 +29,12 @@ def init_db(ec):
     import sqlalchemy
     engine = sqlalchemy.create_engine(ec.db_uri)
 
-    for i in xrange(60):
+    for i in range(60):
         try:
             engine.connect()
             break
         except sqlalchemy.exc.OperationalError as e:
-            os.write(2, "%s\n" % e)
+            print("%s\n" % e)
             time.sleep(1)
     model.Base.metadata.create_all(engine)
 
@@ -59,7 +59,7 @@ def gunicorn(ec):
         "-w",
         "%s" % ec.gunicorn_workers,
     ]
-    os.write(1, "exec[%s] -> %s\n" % (os.getpid(), " ".join(cmd)))
+    print("exec[%s] -> %s\n" % (os.getpid(), " ".join(cmd)))
     with open(ec.gunicorn_pid_file, "w") as f:
         f.write("%d" % os.getpid())
     os.execve(cmd[0], cmd, os.environ)
@@ -77,7 +77,7 @@ def matchbox(ec):
         "-log-level",
         ec.matchbox_logging_level.lower(),
     ]
-    os.write(1, "exec[%s] -> %s\n" % (os.getpid(), " ".join(cmd)))
+    print("exec[%s] -> %s\n" % (os.getpid(), " ".join(cmd)))
     with open(ec.matchbox_pid_file, "w") as f:
         f.write("%d" % os.getpid())
     os.execve(cmd[0], cmd, os.environ)
@@ -88,7 +88,7 @@ def plan(ec):
         python,
         "%s/plans/k8s_2t.py" % app_path,
     ]
-    os.write(1, "exec[%s] -> %s\n" % (os.getpid(), " ".join(cmd)))
+    print("exec[%s] -> %s\n" % (os.getpid(), " ".join(cmd)))
     with open(ec.plan_pid_file, "w") as f:
         f.write("%d" % os.getpid())
     os.execve(cmd[0], cmd, os.environ)
@@ -99,13 +99,13 @@ def validate():
         python,
         "%s/validate.py" % project_path,
     ]
-    os.write(1, "exec[%s] -> %s\n" % (os.getpid(), " ".join(cmd)))
+    print("exec[%s] -> %s\n" % (os.getpid(), " ".join(cmd)))
     os.execve(cmd[0], cmd, os.environ)
 
 
 def show_configs(ec):
     for k, v in ec.__dict__.iteritems():
-        print "%s=%s" % (k, v)
+        print("%s=%s" % (k, v))
 
 
 if __name__ == '__main__':

@@ -38,7 +38,7 @@ class TestS3Operator(unittest.TestCase):
         pass
 
     def test_00(self):
-        test_file = os.path.join(self.s3_resource_dir, "%s" % self.test_00.__name__)
+        test_file = os.path.join(self.s3_resource_dir, self.test_00.__name__)
         with open(test_file, "w") as f:
             f.write("data from %s" % self.test_00.__name__)
         key = "%s/%s" % (

@@ -32,7 +32,7 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
         self.assertEqual(self.fetch_discovery_interfaces(), [])
         nb_node = 4
         marker = "plans-%s-%s" % (TestKVMK8sEnjolivage.__name__.lower(), self.test_00.__name__)
-        nodes = ["%s-%d" % (marker, i) for i in xrange(nb_node)]
+        nodes = ["%s-%d" % (marker, i) for i in range(nb_node)]
         plan_k8s_2t = k8s_2t.Kubernetes2Tiers(
             {
                 "discovery": marker,
@@ -93,12 +93,12 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
             if os.getenv("TEST"):
                 self.iteractive_usage(
                     api_server_uri="http://%s:8080" % plan_k8s_2t.kubernetes_control_plane_ip_list[0])
-            for i in xrange(nb_node):
+            for i in range(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
                                     ["virsh", "undefine", "%s" % machine_marker]
-                self.virsh(destroy), os.write(1, "\r")
-                self.virsh(undefine), os.write(1, "\r")
+                self.virsh(destroy)
+                self.virsh(undefine)
 
 
 if __name__ == "__main__":

@@ -42,10 +42,11 @@ apt:
 	DEBIAN_FRONTEND=noninteractive INSTALL="-y" ./apt.sh
 
 $(ENV):
-	virtualenv $(ENV) --system-site-packages
+	virtualenv $(ENV) --system-site-packages -p /usr/bin/python3.5
 
 pip: $(ENV)
-	$(ENV)/bin/pip install -r requirements.txt
+	$(ENV)/bin/pip3.5 install -r requirements.txt
+	$(ENV)/bin/pip3.5 install py-vendor/ipaddr-py/
 
 acserver:
 	test $(shell id -u -r) -eq 0
