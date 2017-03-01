@@ -45,7 +45,6 @@ $(ENV):
 	virtualenv $(ENV) --system-site-packages -p $(shell which python3.5)
 
 pip: $(ENV)
-	$(ENV)/bin/pip3.5 install -U pip3.5
 	$(ENV)/bin/pip3.5 install -U setuptools
 	$(ENV)/bin/pip3.5 install -r requirements.txt
 	$(ENV)/bin/pip3.5 install py-vendor/ipaddr-py/

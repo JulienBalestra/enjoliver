@@ -13,7 +13,8 @@ ln -vs /usr/lib/python2.7/dist-packages/virtualenv.py /usr/local/bin/virtualenv
 chmod +x /usr/local/bin/virtualenv
 
 mkdir -pv /opt/python
-curl -Lf https://www.python.org/ftp/python/3.5.0/Python-3.5.0.tgz -o /opt/python/python.tar.gz
+VERSION=3.5.3
+curl -Lf https://www.python.org/ftp/python/${VERSION}/Python-${VERSION}.tgz -o /opt/python/python.tar.gz
 cd /opt/python
 tar -xzf /opt/python/python.tar.gz --strip-components=1
 ./configure
