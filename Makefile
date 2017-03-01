@@ -42,7 +42,7 @@ apt:
 	DEBIAN_FRONTEND=noninteractive INSTALL="-y" ./apt.sh
 
 $(ENV):
-	virtualenv $(ENV) --system-site-packages -p /usr/bin/python3.5
+	virtualenv $(ENV) --system-site-packages -p $(shell which python3.5)
 
 pip: $(ENV)
 	$(ENV)/bin/pip3.5 install -r requirements.txt
