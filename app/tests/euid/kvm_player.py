@@ -30,17 +30,20 @@ def is_virtinstall():
 
 def get_kvm_sleep(f="/tmp/virt-host-validate"):
     d = 3
-    with open(f, 'w') as w:
-        subprocess.call(["virt-host-validate", "qemu"], stdout=w)
-        with open(f, 'r') as r:
-            for l in r.readlines():
-                if "QEMU: Checking for hardware virtualization" in l:
-                    if "PASS" not in l:
-                        d = 15
-                    break
-            r.seek(0)
-            os.write(1, r.read())
-    os.remove(f)
+    try:
+        with open(f, 'w') as w:
+            subprocess.call(["virt-host-validate", "qemu"], stdout=w)
+            with open(f, 'r') as r:
+                for l in r.readlines():
+                    if "QEMU: Checking for hardware virtualization" in l:
+                        if "PASS" not in l:
+                            d = 15
+                        break
+                r.seek(0)
+                os.write(1, r.read())
+        os.remove(f)
+    except OSError:
+        pass
     return d
 
 
