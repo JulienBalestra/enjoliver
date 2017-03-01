@@ -1,7 +1,7 @@
 CWD=$(shell pwd)
 SERVE=serve
 
-VERSION=v0.11.8
+VERSION=v1.0.0
 FLEET_GITHUB=https://github.com/coreos/fleet/releases/download/$(VERSION)/fleet-$(VERSION)-linux-amd64.tar.gz
 
 TARGET=$(VERSION)/fleet.tar.gz

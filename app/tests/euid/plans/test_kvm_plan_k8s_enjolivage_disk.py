@@ -72,7 +72,7 @@ class TestKVMK8sEnjolivageDisk0(TestKVMK8sEnjolivageDisk):
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
                 time.sleep(self.testing_sleep_seconds)
 
-            time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds)
+            time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds * 10)
 
             for i in range(60):
                 if plan_k8s_2t.apply() == 1:
@@ -162,7 +162,7 @@ class TestKVMK8sEnjolivageDisk1(TestKVMK8sEnjolivageDisk):
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
                 time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds)
 
-            time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds)
+            time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds * 10)
 
             for i in range(60):
                 if plan_k8s_2t.apply() == 1:
