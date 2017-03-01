@@ -41,6 +41,14 @@ $(INITRD): $(KEY) $(VERSION)
 $(TEXT_VERSION): $(VERSION)
 	curl -Lf $(CHANNEL)/$(TEXT_VERSION) -o $(TEXT_VERSION)
 
+image: $(IMAGE)
+	ln -sfv $(SERVE) current
+
+$(IMAGE):
+	curl -Lf $(CHANNEL)/$(IMAGE) -o $(IMAGE)
+	curl -Lf $(CHANNEL)/$(IMAGE).sig -o $(IMAGE).sig
+	$(GPG) --logger-fd 1 --verify $(IMAGE).sig
+
 clean:
 	@rm -rfv $(VERSION) 2>&1 || true
 

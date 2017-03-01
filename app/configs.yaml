@@ -66,4 +66,4 @@ hyperkube_image_url: 'enjoliver.local/hyperkube:latest'
 
 etc_hosts: ['172.20.0.1 enjoliver.local']
 
-#coreos_install_base_url: "https://stable.release.core-os.net/amd64-usr/"
+coreos_install_base_url: "http://enjoliver.local:5000/assets/coreos"

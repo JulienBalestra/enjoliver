@@ -137,6 +137,7 @@ dev_setup:
 	su - $(MY_USER) -c "make -C $(CWD) pip"
 	make -C $(CWD) acis
 	su - $(MY_USER) -c "make -C $(CWD) assets"
+	su - $(MY_USER) -c "make -C $(CWD)/matchbox/assets/coreos image"
 	su - $(MY_USER) -c "make -C $(CWD) validate"
 	su - $(MY_USER) -c "make -C $(CWD) config"
 

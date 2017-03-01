@@ -436,11 +436,11 @@ def user_view_machine():
     key = "discovery"
     all_data = cache.get(key)
     if all_data is None:
-        fetch = crud.FetchDiscovery(
+        disco = crud.FetchDiscovery(
             engine=engine,
             ignition_journal=ignition_journal
         )
-        all_data = fetch.get_all()
+        all_data = disco.get_all()
         cache.set(key, all_data, timeout=30)
 
     res = [["Created", "cidr-boot", "mac-boot", "fqdn", "Roles", "Installed", "Up-to-date", "Rolling"]]
@@ -453,32 +453,35 @@ def user_view_machine():
                 sub_list.append(j["mac"])
                 sub_list.append(j["fqdn"])
                 try:
-                    s = crud.FetchSchedule(engine)
-                    roles = s.get_roles_by_mac_selector(j["mac"])
+                    schedule = crud.FetchSchedule(engine)
+                    roles = schedule.get_roles_by_mac_selector(j["mac"])
                     if not roles:
                         raise NotImplementedError
                     sub_list.append(roles)
                 except Exception as e:
                     sub_list.append("NoRole")
                 finally:
-                    s.close()
+                    schedule.close()
                 try:
                     life = crud.FetchLifecycle(engine)
                     installed = life.get_coreos_install_status(j["mac"])
-                    if not installed:
-                        installed, ignition, rolling = "PendingInstall", "PendingBoot", "ForeignDisabled"
+                    if installed is None:
+                        for i in ["PendingInstall", "PendingBoot", "ForeignDisabled"]:
+                            sub_list.append(i)
                     else:
+                        sub_list.append(installed)
                         ignition = life.get_ignition_uptodate_status(j["mac"])
-                        if not ignition:
+                        if ignition is None:
                             ignition = "PendingBoot"
-                        rolling = life.get_ignition_uptodate_status(j["mac"])
-                        if not rolling:
-                            "ForeignDisabled"
+                        sub_list.append(ignition)
+
+                        rolling = life.get_rolling_status(j["mac"])
+                        if rolling is None:
+                            rolling = "ForeignDisabled"
+                        sub_list.append(rolling)
+
                 finally:
                     life.close()
-
-                for i in [installed, ignition, rolling]:
-                    sub_list.append(i)
 
         res.append(sub_list)
 

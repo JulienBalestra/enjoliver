@@ -248,3 +248,74 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(1, len(l))
         for m in l:
             self.assertEqual([], m["roles"])
+
+    def test_lifecycle_01(self):
+        r = self.app.get("/lifecycle/coreos-install")
+        self.assertEqual([], json.loads(r.data))
+
+    def test_lifecycle_02(self):
+        r = self.app.get("/lifecycle/ignition")
+        self.assertEqual([], json.loads(r.data))
+
+    def test_lifecycle_03(self):
+        r = self.app.get("/lifecycle/rolling")
+        self.assertEqual([], json.loads(r.data))
+
+    def test_lifecycle_04(self):
+        rawq = "mac=%s&uuid=%s&os=installed" % (
+            posts.M01["boot-info"]["mac"].replace(":", "-"), posts.M01["boot-info"]["uuid"])
+        r = self.app.post("/lifecycle/coreos-install/success/%s" % rawq)
+        self.assertEqual(200, r.status_code)
+        r = self.app.get("/lifecycle/coreos-install")
+        d = json.loads(r.data)
+        self.assertEqual(1, len(d))
+        self.assertTrue(d[0]["success"])
+
+    def test_lifecycle_04a(self):
+        rawq = "mac=%s&uuid=%s&os=installed" % (
+            posts.M02["boot-info"]["mac"].replace(":", "-"), posts.M02["boot-info"]["uuid"])
+        r = self.app.post("/lifecycle/coreos-install/fail/%s" % rawq)
+        self.assertEqual(200, r.status_code)
+        r = self.app.get("/lifecycle/coreos-install")
+        d = json.loads(r.data)
+        self.assertEqual(2, len(d))
+        self.assertTrue(d[0]["success"])
+        self.assertFalse(d[1]["success"])
+
+    def test_lifecycle_05(self):
+        rawq = "mac=%s&uuid=%s&os=installed" % (
+            posts.M01["boot-info"]["mac"].replace(":", "-"), posts.M01["boot-info"]["uuid"])
+        r = self.app.post("/lifecycle/rolling/%s" % rawq)
+        self.assertEqual(200, r.status_code)
+        r = self.app.get("/lifecycle/rolling/%s" % rawq)
+        self.assertEqual(200, r.status_code)
+        self.assertEqual('Enabled 52:54:00:e8:32:5b', r.data)
+        r = self.app.post("/lifecycle/rolling/%s" % rawq)
+        self.assertEqual(200, r.status_code)
+
+    def test_lifecycle_06(self):
+        r = self.app.get("/lifecycle/rolling")
+        d = json.loads(r.data)
+        self.assertEqual(1, len(d))
+        self.assertTrue(d[0]["enable"])
+
+    def test_lifecycle_07(self):
+        rawq = "mac=%s&uuid=%s&os=installed" % (
+            posts.M02["boot-info"]["mac"].replace(":", "-"), posts.M02["boot-info"]["uuid"])
+        r = self.app.get("/lifecycle/rolling/%s" % rawq)
+        self.assertEqual(401, r.status_code)
+        self.assertEqual('ForeignDisabled 52:54:00:a5:24:f5', r.data)
+
+    def test_vue_machine(self):
+        r = self.app.get("/ui/view/machine")
+        d = json.loads(r.data)
+        self.assertEqual([
+            "Created",
+            "cidr-boot",
+            "mac-boot",
+            "fqdn",
+            "Roles",
+            "Installed",
+            "Up-to-date",
+            "Rolling"
+        ], d[0])

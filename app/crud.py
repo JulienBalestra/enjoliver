@@ -559,6 +559,8 @@ class InjectLifecycle(object):
 
 
 class FetchLifecycle(object):
+    log = logger.get_logger(__file__)
+
     def __init__(self, engine):
         sm = sessionmaker(bind=engine)
         self.session = sm()
@@ -577,6 +579,9 @@ class FetchLifecycle(object):
             l.append(
                 {
                     "up-to-date": s.up_to_date,
+                    "fqdn": s.interface.fqdn,
+                    "mac": s.interface.mac,
+                    "cidrv4": s.interface.cidrv4,
                     "created_date": s.created_date,
                     "updated_date": s.updated_date
                 }
@@ -587,8 +592,9 @@ class FetchLifecycle(object):
         interface = self.session.query(MachineInterface).filter(MachineInterface.mac == mac).first()
         if interface:
             l = self.session.query(LifecycleCoreosInstall).filter(
-                LifecycleIgnition.machine_interface == interface.id).first()
+                LifecycleCoreosInstall.machine_interface == interface.id).first()
             return l.success if l else None
+        self.log.debug("mac: %s return None" % mac)
         return None
 
     def get_all_coreos_install_status(self):
@@ -597,6 +603,8 @@ class FetchLifecycle(object):
             l.append(
                 {
                     "mac": s.interface.mac,
+                    "fqdn": s.interface.fqdn,
+                    "cidrv4": s.interface.cidrv4,
                     "success": s.success,
                     "created_date": s.created_date,
                     "updated_date": s.updated_date
@@ -610,6 +618,7 @@ class FetchLifecycle(object):
             l = self.session.query(LifecycleRolling).filter(
                 LifecycleRolling.machine_interface == interface.id).first()
             return l.enable if l else None
+        self.log.debug("mac: %s return None" % mac)
         return None
 
     def get_all_rolling_status(self):
@@ -618,6 +627,8 @@ class FetchLifecycle(object):
             l.append(
                 {
                     "mac": s.interface.mac,
+                    "fqdn": s.interface.fqdn,
+                    "cidrv4": s.interface.cidrv4,
                     "enable": s.enable,
                     "created_date": s.created_date,
                     "updated_date": s.updated_date
