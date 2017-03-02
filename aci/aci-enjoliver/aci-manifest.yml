@@ -14,7 +14,7 @@ tester:
 
 aci:
   dependencies:
-    - enjoliver.local/debian:latest
+    - enjoliver.local/python:3.5.3
 
   app:
     mountPoints:

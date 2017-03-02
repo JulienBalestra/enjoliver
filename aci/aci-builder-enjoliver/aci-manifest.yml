@@ -2,3 +2,4 @@ name: enjoliver.local/builder-enjoliver:latest
 aci:
   dependencies:
     - enjoliver.local/builder-hyperkube:latest
+    - enjoliver.local/python:3.5.3

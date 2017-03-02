@@ -6,6 +6,7 @@ RKT=$(RUNTIME)/rkt/rkt
 ACI=$(PROJECT)/aci
 
 DEBIAN=debian
+PYTHON=python
 BUILDER_HYPERKUBE=builder-hyperkube
 BUILDER_ENJOLIVER=builder-enjoliver
 ENJOLIVER=enjoliver
@@ -20,7 +21,13 @@ $(BUILDER_HYPERKUBE): $(DEBIAN)
 	@echo ENV IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE)
 	IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE) make -C $(RUNTIME) install
 
-$(BUILDER_ENJOLIVER): $(BUILDER_HYPERKUBE)
+$(PYTHON): $(DEBIAN)
+	@echo ENV IMAGE=$(ACI)/aci-$(PYTHON)
+	IMAGE=$(ACI)/aci-$(PYTHON) make -C $(RUNTIME) install
+	IMAGE=$(ACI)/aci-$(PYTHON) make -C $(RUNTIME) test
+	IMAGE=$(ACI)/aci-$(PYTHON) make -C $(RUNTIME) push
+
+$(BUILDER_ENJOLIVER): $(BUILDER_HYPERKUBE) $(PYTHON)
 	@echo ENV IMAGE=$(ACI)/aci-$(BUILDER_ENJOLIVER)
 	IMAGE=$(ACI)/aci-$(BUILDER_ENJOLIVER) make -C $(RUNTIME) install
 
