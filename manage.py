@@ -104,7 +104,7 @@ def validate():
 
 
 def show_configs(ec):
-    for k, v in ec.__dict__.iteritems():
+    for k, v in ec.__dict__.items():
         print("%s=%s" % (k, v))
 
 
