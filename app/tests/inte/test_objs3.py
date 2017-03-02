@@ -4,7 +4,7 @@ import unittest
 import shutil
 import json
 
-from app import s3
+from app import objs3
 
 try:
     with open("%s/.config/enjoliver/config.json" % os.getenv("HOME")) as f:
@@ -26,7 +26,7 @@ class TestS3Operator(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.so = s3.S3Operator(cls.testing_bucket)
+        cls.so = objs3.S3Operator(cls.testing_bucket)
         try:
             shutil.rmtree(cls.s3_resource_dir)
         except OSError:
@@ -48,8 +48,6 @@ class TestS3Operator(unittest.TestCase):
         self.so.download(key, downloaded)
         with open(downloaded, 'r') as d, open(test_file, 'r') as s:
             self.assertEqual(d.read(), s.read())
-        with self.assertRaises(IOError):
-            self.so.upload(test_file, key, override=False)
 
     def test_01(self):
         test_file = os.path.join(self.s3_resource_dir, "%s" % self.test_01.__name__)

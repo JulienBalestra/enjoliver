@@ -10,7 +10,7 @@ from flask import jsonify
 
 import crud
 import logger
-import s3
+import objs3
 
 libc = ctypes.CDLL("libc.so.6")  # TODO deep inside the SQLITE sync
 LOGGER = logger.get_logger(__file__)
@@ -76,7 +76,7 @@ def backup_sqlite(cache, application):
             LOGGER.error("copy is False: %s" % b["dest_fs"])
             raise IOError(b["dest_fs"])
 
-        so = s3.S3Operator(b["bucket_name"])
+        so = objs3.S3Operator(b["bucket_name"])
         so.upload(b["dest_fs"], b["dest_s3"])
         b["upload"] = True
     except Exception as e:

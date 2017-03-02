@@ -1,13 +1,13 @@
-Flask
-gunicorn
-SQLAlchemy
-requests
-boto
+Flask==0.12
+gunicorn==19.6.0
+SQLAlchemy==1.1.6
+requests==2.9.1
+boto3==1.4.4
 kubernetes==1.0.0b3
-#gevent
-aiohttp
-prometheus-client
-psutil
-PyYAML
-cockroachdb
-#ipaddr==2.1.11 -> py-vendor/
+aiohttp==1.3.3
+prometheus-client==0.0.19
+psutil==5.1.3
+PyYAML==3.12
+cockroachdb==0.1.0
+
+#ipaddr==2.1.11 # Inside py-vendor/
