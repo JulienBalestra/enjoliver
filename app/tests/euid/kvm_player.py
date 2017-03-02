@@ -36,7 +36,7 @@ def get_kvm_sleep(f="/tmp/virt-host-validate"):
                 for l in r.readlines():
                     if "QEMU: Checking for hardware virtualization" in l:
                         if "PASS" not in l:
-                            d = 15
+                            d *= 2
                         break
                 r.seek(0)
                 print(r.read())
