@@ -43,21 +43,21 @@ $(ACSERVER):
 	cd $(ACSERVER_DIR) &&  GOPATH=$(ACSERVER_DIR) go get golang.org/x/tools/cmd/goimports
 	cd $(ACSERVER_DIR) &&  GOPATH=$(ACSERVER_DIR) PATH=$(ACSERVER_DIR)/bin/:$(PATH) ./gomake || echo nevermind we continue
 	cd $(ACSERVER_DIR) && GOPATH=$(ACSERVER_DIR) go build
+	$(ACSERVER) -V
 
 $(MATCHBOX_DOWNLOAD_TAR):
 	mkdir -pv $(MATCHBOX_DIR)
 	curl -fL $(MATCHBOX_GITHUB) -o $(MATCHBOX_DOWNLOAD_TAR)
 
 $(MATCHBOX): $(MATCHBOX_DOWNLOAD_TAR)
-	tar -C $(MATCHBOX_DIR) -xzf $(MATCHBOX_DIR)/$(MATCHBOX_TAR) --strip-components=1
-	$(MATCHBOX) --version
+	@$(MATCHBOX) --version || tar -C $(MATCHBOX_DIR) -xzvf $(MATCHBOX_DIR)/$(MATCHBOX_TAR) --strip-components=1
 
 $(DGR_DOWNLOAD_TAR):
 	mkdir -pv $(DGR_DIR)
 	curl -fL $(DGR_GITHUB) -o $(DGR_DOWNLOAD_TAR)
 
 $(DGR): $(DGR_DOWNLOAD_TAR)
-	tar -C $(DGR_DIR) -xzf $(DGR_DIR)/$(DGR_TAR) --strip-components=1
+	test -f $(DGR) || tar -C $(DGR_DIR) -xzf $(DGR_DIR)/$(DGR_TAR) --strip-components=1
 
 $(RKT_DOWNLOAD_TAR):
 	mkdir -pv $(RKT_DIR)
