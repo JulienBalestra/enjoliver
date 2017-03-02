@@ -1,0 +1,14 @@
+name: enjoliver.local/python:3.5.3
+aci:
+  dependencies:
+    - enjoliver.local/debian:latest
+
+
+builder:
+  dependencies:
+    - enjoliver.local/debian:latest
+
+tester:
+  aci:
+    dependencies:
+      - enjoliver.local/python:3.5.3
