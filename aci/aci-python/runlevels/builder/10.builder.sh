@@ -8,7 +8,11 @@ export LC_ALL=C
 export DEBIAN_FRONTEND=noninteractive
 
 apt-get update -qq
-apt-get install -y -q curl build-essential libssl-dev openssl libsqlite3-dev libreadline-dev libssl-dev
+
+apt-get install -y curl \
+    build-essential zlib1g-dev libbz2-dev liblzma-dev libncurses5-dev \
+    libreadline6-dev libsqlite3-dev libssl-dev libgdbm-dev liblzma-dev \
+    tk8.5-dev lzma lzma-dev libgdbm-dev
 
 
 mkdir -pv /opt/python
@@ -21,7 +25,8 @@ cd /opt/python
 tar -xzf /opt/python/python.tar.gz --strip-components=1
 
 ./configure --prefix ${ROOTFS}/usr \
-    --enable-loadable-sqlite-extensions # --enable-optimizations 1min to 30min
+    --enable-loadable-sqlite-extensions # --enable-optimizations # 1min to > 30min
 
+make clean
 make -j
 make altinstall
