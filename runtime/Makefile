@@ -64,12 +64,10 @@ $(RKT_DOWNLOAD_TAR):
 	curl -fL $(RKT_GITHUB) -o $(RKT_DOWNLOAD_TAR)
 
 $(RKT): $(RKT_DOWNLOAD_TAR)
-	@$(RKT) version || tar -C $(RKT_DIR) -xzf $(RKT_DOWNLOAD_TAR) --strip-components=1
+	@test -x $(RKT) || tar -C $(RKT_DIR) -xzf $(RKT_DOWNLOAD_TAR) --strip-components=1
 	$(CWD)/config.py
 	mkdir -pv $(RKT_DATASTORE)
-	@test -d $(CWD)/data || ln -svf $(RKT_DATASTORE) $(CWD)/data
-	$(RKT) --local-config=$(CWD) fetch \
-    		--insecure-options=all $(RKT_DIR)/stage1-coreos.aci
+	@ln -svf $(RKT_DATASTORE) $(CWD)/data || true
 
 dev_setup: $(MATCHBOX) $(RKT) $(DGR) $(ACSERVER)
 

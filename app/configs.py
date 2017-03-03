@@ -165,13 +165,13 @@ class EnjoliverConfig(object):
         self.coreos_install_base_url = self.config_override("coreos_install_base_url", None)
 
         if self.logging_level.lower() == "debug":
-            print("configs file: %s for %s\n" % (yaml_full_path, importer))
+            print("configs file: %s for %s" % (yaml_full_path, importer))
 
 
 if __name__ == '__main__':
     ec = EnjoliverConfig("%s/configs.yaml" % os.path.dirname(__file__))
     for k, v in ec.__dict__.items():
         if type(v) is str:
-            print("%s: '%s'\n" % (k, v))
+            print("%s: '%s'" % (k, v))
         else:
-            print("%s: %s\n" % (k, v))
+            print("%s: %s" % (k, v))
