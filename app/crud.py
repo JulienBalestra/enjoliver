@@ -27,7 +27,6 @@ class FetchDiscovery(object):
 
         return None
 
-
     def get_all_interfaces(self):
         return [
             {
@@ -191,7 +190,7 @@ class InjectDiscovery(object):
                     if name[-1] == ".":
                         name = name[:-1]
 
-                    if name == r[0]:
+                    if name == r:
                         fqdn.append(name)
                     else:
                         self.log.warning(
@@ -414,7 +413,7 @@ class InjectSchedule(object):
             m = "mac: '%s' unknown in db" % self.mac
             self.log.error(m)
             raise AttributeError(m)
-        self.log.info("mac: %s" % self.mac)
+        self.log.info("InjectSchedule mac: %s" % self.mac)
 
     def apply_roles(self):
         for role in self.data["roles"]:
@@ -442,7 +441,7 @@ class InjectSchedule(object):
                     self.session.commit()
 
                 except Exception as e:
-                    self.log.error("%s %s %s adds=%s updates=%s" % (type(e), e, self.adds, self.updates))
+                    self.log.error("%s %s adds=%s updates=%s" % (type(e), e, self.adds, self.updates))
                     self.adds, self.updates = 0, 0
                     self.log.warning("rollback the sessions")
                     self.session.rollback()
@@ -467,10 +466,10 @@ class InjectLifecycle(object):
 
         self.interface = self.session.query(MachineInterface).filter(MachineInterface.mac == self.mac).first()
         if not self.interface:
-            m = "mac: '%s' unknown in db" % self.mac
+            m = "InjectLifecycle mac: '%s' unknown in db" % self.mac
             self.log.error(m)
             raise AttributeError(m)
-        self.log.info("mac: %s" % self.mac)
+        self.log.info("InjectLifecycle mac: %s" % self.mac)
 
     @staticmethod
     def get_mac_from_raw_query(request_raw_query):
