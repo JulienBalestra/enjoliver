@@ -3,7 +3,7 @@ import os
 import socket
 
 from sqlalchemy import func
-from sqlalchemy.orm import sessionmaker, subqueryload
+from sqlalchemy.orm import subqueryload
 
 import logger
 from model import ChassisPort, Chassis, MachineInterface, Machine, \
@@ -11,9 +11,8 @@ from model import ChassisPort, Chassis, MachineInterface, Machine, \
 
 
 class FetchDiscovery(object):
-    def __init__(self, engine, ignition_journal):
-        sm = sessionmaker(bind=engine)
-        self.session = sm()
+    def __init__(self, session, ignition_journal):
+        self.session = session
         self.ignition_journal = ignition_journal
 
     def _get_chassis_name(self, machine_interface):
@@ -128,10 +127,8 @@ class FetchDiscovery(object):
         return all_data
 
 
-def health_check(engine, ts, who):
+def health_check(session, ts, who):
     health = False
-    sm = sessionmaker(bind=engine)
-    session = sm()
     try:
         h = Healthz()
         h.ts = ts
@@ -152,9 +149,8 @@ def health_check(engine, ts, who):
 class InjectDiscovery(object):
     log = logger.get_logger(__file__)
 
-    def __init__(self, engine, ignition_journal, discovery):
-        sm = sessionmaker(bind=engine)
-        self.session = sm()
+    def __init__(self, session, ignition_journal, discovery):
+        self.session = session
         self.ignition_journal = ignition_journal
         self.adds = 0
         self.updates = 0
@@ -324,9 +320,8 @@ class InjectDiscovery(object):
 
 
 class FetchSchedule(object):
-    def __init__(self, engine):
-        sm = sessionmaker(bind=engine)
-        self.session = sm()
+    def __init__(self, session):
+        self.session = session
 
     def get_schedules(self):
         r = {}
@@ -416,9 +411,8 @@ class FetchSchedule(object):
 class InjectSchedule(object):
     log = logger.get_logger(__file__)
 
-    def __init__(self, engine, data):
-        sm = sessionmaker(bind=engine)
-        self.session = sm()
+    def __init__(self, session, data):
+        self.session = session
         self.adds = 0
         self.updates = 0
 
@@ -476,9 +470,8 @@ class InjectSchedule(object):
 class InjectLifecycle(object):
     log = logger.get_logger(__file__)
 
-    def __init__(self, engine, request_raw_query):
-        sm = sessionmaker(bind=engine)
-        self.session = sm()
+    def __init__(self, session, request_raw_query):
+        self.session = session
         self.adds = 0
         self.updates = 0
 
@@ -561,9 +554,8 @@ class InjectLifecycle(object):
 class FetchLifecycle(object):
     log = logger.get_logger(__file__)
 
-    def __init__(self, engine):
-        sm = sessionmaker(bind=engine)
-        self.session = sm()
+    def __init__(self, session):
+        self.session = session
 
     def get_ignition_uptodate_status(self, mac):
         interface = self.session.query(MachineInterface).filter(MachineInterface.mac == mac).first()

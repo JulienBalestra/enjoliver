@@ -87,7 +87,7 @@ def backup_sqlite(cache, application):
     return jsonify(b)
 
 
-def healthz(application, engine, request):
+def healthz(application, session, request):
     """
     Query all services and return the status
     :return: json
@@ -110,7 +110,7 @@ def healthz(application, engine, request):
             status["global"] = False
             LOGGER.error(e)
     try:
-        status["db"] = crud.health_check(engine=engine, ts=time.time(), who=request.remote_addr)
+        status["db"] = crud.health_check(session, ts=time.time(), who=request.remote_addr)
     except Exception as e:
         status["global"] = False
         LOGGER.error(e)

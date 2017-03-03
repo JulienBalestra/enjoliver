@@ -1,14 +1,12 @@
-import os
-
 import requests
 from flask import Flask, request, json, jsonify, render_template, Response
-from sqlalchemy import create_engine
 
 import crud
 import logger
 import model
 import ops
 from configs import EnjoliverConfig
+from smartdb import SmartClient
 
 ec = EnjoliverConfig(importer=__file__)
 
@@ -34,13 +32,8 @@ application.config["BACKUP_BUCKET_NAME"] = ec.backup_bucket_name
 application.config["BACKUP_BUCKET_DIRECTORY"] = ec.backup_bucket_directory
 application.config["BACKUP_LOCK_KEY"] = ec.backup_lock_key
 
-engine = None
-
-if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "_"):
-    # Start the db engine
-    LOGGER.info("Create engine %s" % application.config["DB_URI"])
-    engine = create_engine(application.config["DB_URI"])
-    LOGGER.info("Engine with <driver: %s> " % engine.driver)
+application.config["SMART_CLIENT"] = SmartClient(application.config["DB_URI"])
+smart = application.config["SMART_CLIENT"]
 
 
 @application.route("/shutdown", methods=["POST"])
@@ -67,7 +60,7 @@ def lifecycle_post_ignition(request_raw_query):
     except ValueError:
         LOGGER.error("%s have incorrect matchbox return" % request.path)
         return "MatchboxValueError", 406
-    i = crud.InjectLifecycle(engine=engine, request_raw_query=request_raw_query)
+    i = crud.InjectLifecycle(smart.create_session(), request_raw_query=request_raw_query)
     if json.dumps(machine_ignition, sort_keys=True) == json.dumps(matchbox_ignition, sort_keys=True):
         i.refresh_lifecycle_ignition(True)
         r = "Up-to-date", 200
@@ -79,7 +72,7 @@ def lifecycle_post_ignition(request_raw_query):
 
 @application.route("/lifecycle/rolling/<string:request_raw_query>", methods=["GET"])
 def lifecycle_rolling_get(request_raw_query):
-    life = crud.FetchLifecycle(engine)
+    life = crud.FetchLifecycle(smart.create_session())
     mac = crud.InjectLifecycle.get_mac_from_raw_query(request_raw_query)
     d = life.get_rolling_status(mac)
     life.close()
@@ -93,7 +86,7 @@ def lifecycle_rolling_get(request_raw_query):
 @application.route("/lifecycle/rolling/<string:request_raw_query>", methods=["POST"])
 def lifecycle_rolling_post(request_raw_query):
     try:
-        life = crud.InjectLifecycle(engine, request_raw_query)
+        life = crud.InjectLifecycle(smart.create_session(), request_raw_query)
         life.apply_lifecycle_rolling(True)
         return "Enabled %s" % life.mac, 200
     except AttributeError:
@@ -102,14 +95,14 @@ def lifecycle_rolling_post(request_raw_query):
 
 @application.route("/lifecycle/rolling/<string:request_raw_query>", methods=["DELETE"])
 def lifecycle_rolling_delete(request_raw_query):
-    life = crud.InjectLifecycle(engine, request_raw_query)
+    life = crud.InjectLifecycle(smart.create_session(), request_raw_query)
     life.apply_lifecycle_rolling(False)
     return "Disabled %s" % life.mac, 200
 
 
 @application.route("/lifecycle/rolling", methods=["GET"])
 def lifecycle_rolling_all():
-    life = crud.FetchLifecycle(engine)
+    life = crud.FetchLifecycle(smart.create_session())
     d = life.get_all_rolling_status()
     life.close()
     return jsonify(d)
@@ -117,7 +110,7 @@ def lifecycle_rolling_all():
 
 @application.route("/lifecycle/ignition", methods=["GET"])
 def lifecycle_get_ignition_status():
-    q = crud.FetchLifecycle(engine)
+    q = crud.FetchLifecycle(smart.create_session())
     d = q.get_all_updated_status()
     q.close()
     return jsonify(d)
@@ -125,7 +118,7 @@ def lifecycle_get_ignition_status():
 
 @application.route("/lifecycle/coreos-install", methods=["GET"])
 def lifecycle_get_coreos_install_status():
-    q = crud.FetchLifecycle(engine)
+    q = crud.FetchLifecycle(smart.create_session())
     d = q.get_all_coreos_install_status()
     q.close()
     return jsonify(d)
@@ -133,14 +126,14 @@ def lifecycle_get_coreos_install_status():
 
 @application.route("/lifecycle/coreos-install/success/<string:request_raw_query>", methods=["POST"])
 def lifecycle_post_coreos_install_success(request_raw_query):
-    i = crud.InjectLifecycle(engine=engine, request_raw_query=request_raw_query)
+    i = crud.InjectLifecycle(smart.create_session(), request_raw_query=request_raw_query)
     i.refresh_lifecycle_coreos_install(True)
     return "", 200
 
 
 @application.route("/lifecycle/coreos-install/fail/<string:request_raw_query>", methods=["POST"])
 def lifecycle_post_coreos_install_fail(request_raw_query):
-    i = crud.InjectLifecycle(engine=engine, request_raw_query=request_raw_query)
+    i = crud.InjectLifecycle(smart.create_session(), request_raw_query=request_raw_query)
     i.refresh_lifecycle_coreos_install(False)
     return "", 200
 
@@ -159,14 +152,14 @@ def root():
 
 @application.route('/healthz', methods=['GET'])
 def healthz():
-    return jsonify(ops.healthz(application, engine, request))
+    return jsonify(ops.healthz(application, smart.create_session(), request))
 
 
 @application.route('/discovery', methods=['POST'])
 def discovery():
     try:
         r = json.loads(request.get_data())
-        i = crud.InjectDiscovery(engine=engine,
+        i = crud.InjectDiscovery(smart.create_session(),
                                  ignition_journal=ignition_journal,
                                  discovery=r)
         new = i.commit_and_close()
@@ -187,7 +180,7 @@ def discovery_get():
     all_data = cache.get(request.path)
     if all_data is None:
         fetch = crud.FetchDiscovery(
-            engine=engine,
+            smart.create_session(),
             ignition_journal=ignition_journal
         )
         try:
@@ -204,7 +197,7 @@ def scheduler_get():
     all_data = cache.get(request.path)
     if all_data is None:
         fetch = crud.FetchSchedule(
-            engine=engine,
+            smart.create_session(),
         )
         try:
             all_data = fetch.get_schedules()
@@ -219,7 +212,7 @@ def scheduler_get():
 @application.route('/scheduler/<string:role>', methods=['GET'])
 def get_schedule_by_role(role):
     fetch = crud.FetchSchedule(
-        engine=engine,
+        smart.create_session(),
     )
     multi = role.split("&")
     data = fetch.get_roles(*multi)
@@ -231,7 +224,7 @@ def get_schedule_by_role(role):
 @application.route('/scheduler/available', methods=['GET'])
 def get_available_machine():
     fetch = crud.FetchSchedule(
-        engine=engine,
+        smart.create_session(),
     )
     data = fetch.get_available_machines()
     fetch.close()
@@ -242,7 +235,7 @@ def get_available_machine():
 @application.route('/scheduler/ip-list/<string:role>', methods=['GET'])
 def get_schedule_role_ip_list(role):
     fetch = crud.FetchSchedule(
-        engine=engine,
+        smart.create_session(),
     )
     ip_list_role = fetch.get_role_ip_list(role)
     fetch.close()
@@ -255,7 +248,7 @@ def scheduler_post():
     try:
         r = json.loads(request.get_data())
         inject = crud.InjectSchedule(
-            engine=engine,
+            smart.create_session(),
             data=r)
         try:
             inject.apply_roles()
@@ -281,7 +274,7 @@ def backup_database():
 
 @application.route('/discovery/interfaces', methods=['GET'])
 def discovery_interfaces():
-    fetch = crud.FetchDiscovery(engine=engine,
+    fetch = crud.FetchDiscovery(smart.create_session(),
                                 ignition_journal=ignition_journal)
     interfaces = fetch.get_all_interfaces()
 
@@ -290,7 +283,7 @@ def discovery_interfaces():
 
 @application.route('/discovery/ignition-journal/<string:uuid>/<string:boot_id>', methods=['GET'])
 def discovery_ignition_journal_by_boot_id(uuid, boot_id):
-    fetch = crud.FetchDiscovery(engine=engine,
+    fetch = crud.FetchDiscovery(smart.create_session(),
                                 ignition_journal=ignition_journal)
     lines = fetch.get_ignition_journal(uuid, boot_id=boot_id)
 
@@ -299,7 +292,7 @@ def discovery_ignition_journal_by_boot_id(uuid, boot_id):
 
 @application.route('/discovery/ignition-journal/<string:uuid>', methods=['GET'])
 def discovery_ignition_journal_by_uuid(uuid):
-    fetch = crud.FetchDiscovery(engine=engine,
+    fetch = crud.FetchDiscovery(smart.create_session(),
                                 ignition_journal=ignition_journal)
     lines = fetch.get_ignition_journal(uuid)
 
@@ -308,7 +301,7 @@ def discovery_ignition_journal_by_uuid(uuid):
 
 @application.route('/discovery/ignition-journal', methods=['GET'])
 def discovery_ignition_journal_summary():
-    fetch = crud.FetchDiscovery(engine=engine,
+    fetch = crud.FetchDiscovery(smart.create_session(),
                                 ignition_journal=ignition_journal)
     lines = fetch.get_ignition_journal_summary()
 
@@ -429,7 +422,7 @@ def user_view_machine():
     all_data = cache.get(key)
     if all_data is None:
         disco = crud.FetchDiscovery(
-            engine=engine,
+            smart.create_session(),
             ignition_journal=ignition_journal
         )
         all_data = disco.get_all()
@@ -445,7 +438,7 @@ def user_view_machine():
                 sub_list.append(j["mac"])
                 sub_list.append(j["fqdn"])
                 try:
-                    schedule = crud.FetchSchedule(engine)
+                    schedule = crud.FetchSchedule(smart.create_session())
                     roles = schedule.get_roles_by_mac_selector(j["mac"])
                     if not roles:
                         raise NotImplementedError
@@ -455,7 +448,7 @@ def user_view_machine():
                 finally:
                     schedule.close()
                 try:
-                    life = crud.FetchLifecycle(engine)
+                    life = crud.FetchLifecycle(smart.create_session())
                     installed = life.get_coreos_install_status(j["mac"])
                     if installed is None:
                         for i in ["PendingInstall", "PendingBoot", "ForeignDisabled"]:

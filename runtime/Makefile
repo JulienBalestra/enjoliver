@@ -57,7 +57,7 @@ $(DGR_DOWNLOAD_TAR):
 	curl -fL $(DGR_GITHUB) -o $(DGR_DOWNLOAD_TAR)
 
 $(DGR): $(DGR_DOWNLOAD_TAR)
-	test -f $(DGR) || tar -C $(DGR_DIR) -xzf $(DGR_DIR)/$(DGR_TAR) --strip-components=1
+	@test -x $(DGR) || tar -C $(DGR_DIR) -xzf $(DGR_DIR)/$(DGR_TAR) --strip-components=1
 
 $(RKT_DOWNLOAD_TAR):
 	mkdir -pv $(RKT_DIR)

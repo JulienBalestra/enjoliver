@@ -51,9 +51,7 @@ class TestAPI(unittest.TestCase):
             os.remove(ec.db_path)
         except OSError:
             pass
-        engine = api.create_engine(ec.db_uri)
-        model.Base.metadata.create_all(engine)
-        api.engine = engine
+        api.smart.create_base()
         api.cache.clear()
 
         shutil.rmtree(ec.ignition_journal_dir, ignore_errors=True)

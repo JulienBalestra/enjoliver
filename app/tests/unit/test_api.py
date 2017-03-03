@@ -25,10 +25,9 @@ class TestAPI(unittest.TestCase):
 
         shutil.rmtree(api.ignition_journal, ignore_errors=True)
 
-        engine = api.create_engine(ec.db_uri)
-        model.Base.metadata.create_all(engine)
-        api.engine = engine
         cls.app = api.app.test_client()
+        smart = api.SmartClient(ec.db_uri)
+        smart.create_base()
 
         cls.app.testing = True
 

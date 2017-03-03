@@ -79,9 +79,7 @@ class TestAPIGunicornScheduler(unittest.TestCase):
 
         cls.clean_sandbox()
 
-        engine = api.create_engine(ec.db_uri)
-        model.Base.metadata.create_all(engine)
-        api.engine = engine
+        api.smart.create_base()
 
         cls.p_matchbox = Process(target=TestAPIGunicornScheduler.process_target_matchbox)
         cls.p_api = Process(target=TestAPIGunicornScheduler.process_target_api)

@@ -16,7 +16,7 @@ sys.path.append(site_packages_path)
 
 from app import (
     configs,
-    model
+    smartdb
 )
 
 
@@ -26,17 +26,17 @@ def init_db(ec):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-    import sqlalchemy
-    engine = sqlalchemy.create_engine(ec.db_uri)
-
-    for i in range(60):
+    smart = smartdb.SmartClient(ec.db_uri)
+    tries = 60
+    for i in range(tries):
         try:
-            engine.connect()
-            break
-        except sqlalchemy.exc.OperationalError as e:
-            print("%s\n" % e)
+            smart.create_base()
+            return
+        except ConnectionError as e:
+            print("%d/%d %s" % (i + 1, tries, e))
             time.sleep(1)
-    model.Base.metadata.create_all(engine)
+
+            raise ConnectionError(ec.db_uri)
 
 
 def init_journal_dir(ec):
