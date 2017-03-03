@@ -97,6 +97,7 @@ def lifecycle_rolling_get(request_raw_query):
 
 @application.route("/lifecycle/rolling/<string:request_raw_query>", methods=["POST"])
 def lifecycle_rolling_post(request_raw_query):
+    LOGGER.info("%s %s" % (request.remote_addr, request.url))
     conn, session = smart.create_conn_with_session()
     try:
         life = crud.InjectLifecycle(session, request_raw_query)
@@ -112,6 +113,7 @@ def lifecycle_rolling_post(request_raw_query):
 
 @application.route("/lifecycle/rolling/<string:request_raw_query>", methods=["DELETE"])
 def lifecycle_rolling_delete(request_raw_query):
+    LOGGER.info("%s %s" % (request.remote_addr, request.url))
     conn, session = smart.create_conn_with_session()
     try:
         life = crud.InjectLifecycle(session, request_raw_query)
@@ -159,29 +161,24 @@ def lifecycle_get_coreos_install_status():
     return jsonify(d)
 
 
-@application.route("/lifecycle/coreos-install/success/<string:request_raw_query>", methods=["POST"])
-def lifecycle_post_coreos_install_success(request_raw_query):
+@application.route("/lifecycle/coreos-install/<string:status>/<string:request_raw_query>", methods=["POST"])
+def lifecycle_post_coreos_install(status, request_raw_query):
+    LOGGER.info("%s %s" % (request.remote_addr, request.url))
+    if status.lower() == "success":
+        success = True
+    elif status.lower() == "fail":
+        success = False
+    else:
+        LOGGER.error("%s %s" % (request.remote_addr, request.url))
+        return "success or fail != %s" % status.lower(), 403
     conn, session = smart.create_conn_with_session()
     try:
         i = crud.InjectLifecycle(session, request_raw_query=request_raw_query)
-        i.refresh_lifecycle_coreos_install(True)
+        i.refresh_lifecycle_coreos_install(success)
     finally:
         session.close()
         conn.close()
-
-    return "", 200
-
-
-@application.route("/lifecycle/coreos-install/fail/<string:request_raw_query>", methods=["POST"])
-def lifecycle_post_coreos_install_fail(request_raw_query):
-    conn, session = smart.create_conn_with_session()
-    try:
-        i = crud.InjectLifecycle(session, request_raw_query=request_raw_query)
-        i.refresh_lifecycle_coreos_install(False)
-    finally:
-        session.close()
-        conn.close()
-    return "", 200
+    return "%s" % status, 200
 
 
 @application.route('/', methods=['GET'])
@@ -209,6 +206,7 @@ def healthz():
 
 @application.route('/discovery', methods=['POST'])
 def discovery():
+    LOGGER.info("%s %s" % (request.remote_addr, request.url))
     err = jsonify({u'boot-info': {}, u'lldp': {}, u'interfaces': []}), 406
     try:
         r = json.loads(request.get_data())
@@ -397,6 +395,7 @@ def boot_ipxe():
     Replace the matchbox/boot.ipxe by insert retry for dhcp and full URL for the chain
     :return: str
     """
+    LOGGER.info("%s %s" % (request.remote_addr, request.url))
     try:
         flask_uri = application.config["API_URI"]
         if flask_uri is None:
@@ -421,7 +420,6 @@ def boot_ipxe():
         "domain=${domain}&" \
         "hostname=${hostname}&" \
         "serial=${serial}\n" % flask_uri
-    app.logger.debug("%s" % response)
     return Response(response, status=200, mimetype="text/plain")
 
 
@@ -452,6 +450,7 @@ def metadata():
 @app.route('/assets', defaults={'path': ''})
 @app.route('/assets/<path:path>')
 def assets(path):
+    LOGGER.info("%s %s" % (request.remote_addr, request.url))
     matchbox_uri = application.config.get("MATCHBOX_URI")
     if matchbox_uri:
         url = "%s/assets/%s" % (matchbox_uri, path)
@@ -469,6 +468,7 @@ def ipxe():
     Fetch the matchbox/ipxe?<key>=<value> and insert retry for dhcp
     :return: str
     """
+    LOGGER.info("%s %s" % (request.remote_addr, request.url))
     try:
         matchbox_resp = requests.get(
             "%s%s" % (

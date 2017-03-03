@@ -306,6 +306,12 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(401, r.status_code)
         self.assertEqual('ForeignDisabled 52:54:00:a5:24:f5', r.data.decode())
 
+    def test_lifecycle_08(self):
+        rawq = "mac=%s&uuid=%s&os=installed" % (
+            posts.M02["boot-info"]["mac"].replace(":", "-"), posts.M02["boot-info"]["uuid"])
+        r = self.app.post("/lifecycle/coreos-install/success/%s" % rawq)
+        self.assertEqual(200, r.status_code)
+
     def test_vue_machine(self):
         r = self.app.get("/ui/view/machine")
         d = json.loads(r.data.decode())
