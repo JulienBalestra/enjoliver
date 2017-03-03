@@ -4,7 +4,7 @@
 backup_bucket_directory: 'enjoliver'
 backup_lock_key: 'backup_lock'
 
-ignition_dict: {'kubernetes_nodes': 'k8s-node', 'etcd_member_kubernetes_control_plane': 'etcd-member-control-plane', "discovery'": 'discovery'}
+ignition_dict: {'kubernetes_nodes': 'kubernetes-node', 'etcd_member_kubernetes_control_plane': 'etcd-member-kubernetes-control-plane', "discovery": 'discovery'}
 extra_selectors: {'os': 'installed'}
 
 api_uri: 'http://127.0.0.1:5000'
