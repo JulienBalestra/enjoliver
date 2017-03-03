@@ -97,7 +97,7 @@ def lifecycle_rolling_get(request_raw_query):
 
 @application.route("/lifecycle/rolling/<string:request_raw_query>", methods=["POST"])
 def lifecycle_rolling_post(request_raw_query):
-    LOGGER.info("%s %s" % (request.remote_addr, request.url))
+    LOGGER.info("%s %s" % (request.method, request.url))
     conn, session = smart.create_conn_with_session()
     try:
         life = crud.InjectLifecycle(session, request_raw_query)
@@ -113,7 +113,7 @@ def lifecycle_rolling_post(request_raw_query):
 
 @application.route("/lifecycle/rolling/<string:request_raw_query>", methods=["DELETE"])
 def lifecycle_rolling_delete(request_raw_query):
-    LOGGER.info("%s %s" % (request.remote_addr, request.url))
+    LOGGER.info("%s %s" % (request.method, request.url))
     conn, session = smart.create_conn_with_session()
     try:
         life = crud.InjectLifecycle(session, request_raw_query)
@@ -163,13 +163,13 @@ def lifecycle_get_coreos_install_status():
 
 @application.route("/lifecycle/coreos-install/<string:status>/<string:request_raw_query>", methods=["POST"])
 def lifecycle_post_coreos_install(status, request_raw_query):
-    LOGGER.info("%s %s" % (request.remote_addr, request.url))
+    LOGGER.info("%s %s" % (request.method, request.url))
     if status.lower() == "success":
         success = True
     elif status.lower() == "fail":
         success = False
     else:
-        LOGGER.error("%s %s" % (request.remote_addr, request.url))
+        LOGGER.error("%s %s" % (request.method, request.url))
         return "success or fail != %s" % status.lower(), 403
     conn, session = smart.create_conn_with_session()
     try:
@@ -206,7 +206,7 @@ def healthz():
 
 @application.route('/discovery', methods=['POST'])
 def discovery():
-    LOGGER.info("%s %s" % (request.remote_addr, request.url))
+    LOGGER.info("%s %s" % (request.method, request.url))
     err = jsonify({u'boot-info': {}, u'lldp': {}, u'interfaces': []}), 406
     try:
         r = json.loads(request.get_data())
@@ -395,7 +395,7 @@ def boot_ipxe():
     Replace the matchbox/boot.ipxe by insert retry for dhcp and full URL for the chain
     :return: str
     """
-    LOGGER.info("%s %s" % (request.remote_addr, request.url))
+    LOGGER.info("%s %s" % (request.method, request.url))
     try:
         flask_uri = application.config["API_URI"]
         if flask_uri is None:
@@ -450,7 +450,7 @@ def metadata():
 @app.route('/assets', defaults={'path': ''})
 @app.route('/assets/<path:path>')
 def assets(path):
-    LOGGER.info("%s %s" % (request.remote_addr, request.url))
+    LOGGER.info("%s %s" % (request.method, request.url))
     matchbox_uri = application.config.get("MATCHBOX_URI")
     if matchbox_uri:
         url = "%s/assets/%s" % (matchbox_uri, path)
@@ -468,7 +468,7 @@ def ipxe():
     Fetch the matchbox/ipxe?<key>=<value> and insert retry for dhcp
     :return: str
     """
-    LOGGER.info("%s %s" % (request.remote_addr, request.url))
+    LOGGER.info("%s %s" % (request.method, request.url))
     try:
         matchbox_resp = requests.get(
             "%s%s" % (

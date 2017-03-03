@@ -39,7 +39,7 @@ class Kubernetes2Tiers(object):
     def _init_discovery(self):
         local_ec = EnjoliverConfig(importer=__file__)
         if local_ec.extra_selectors:
-            extra_selectors = "&".join(["%s=%s" % (k, v) for k, v in local_ec.extra_selectors])
+            extra_selectors = "&".join(["%s=%s" % (k, v) for k, v in local_ec.extra_selectors.items()])
         else:
             extra_selectors = ""
         gen = generator.Generator(
