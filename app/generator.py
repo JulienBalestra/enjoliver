@@ -82,7 +82,7 @@ class GenerateCommon(object):
         try:
             with open(file_path, 'r') as f:
                 on_disk = f.read()
-            on_disk_hash = hashlib.sha256(on_disk).hexdigest()
+            on_disk_hash = hashlib.sha256(on_disk.encode()).hexdigest()
         except Exception as e:
             self.log.warning("get hash of %s raise: %s" % (file_path, e))
             on_disk_hash = ""
