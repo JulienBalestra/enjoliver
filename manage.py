@@ -36,7 +36,7 @@ def init_db(ec):
             print("%d/%d %s" % (i + 1, tries, e))
             time.sleep(1)
 
-            raise ConnectionError(ec.db_uri)
+    raise ConnectionError(ec.db_uri)
 
 
 def init_journal_dir(ec):

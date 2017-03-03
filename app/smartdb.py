@@ -31,11 +31,11 @@ class SmartClient(object):
                 self.engines.append(e)
         self.log.info("total: %d" % len(self.engines))
 
-    def create_session(self):
+    def create_conn_with_session(self):
         conn = self.get_engine_connection()
         Session = sessionmaker(bind=conn)
         session = Session(bind=conn)
-        return session
+        return conn, session
 
     def get_engine_connection(self):
         for engine in self.engines:

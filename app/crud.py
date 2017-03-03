@@ -27,8 +27,6 @@ class FetchDiscovery(object):
 
         return None
 
-    def close(self):
-        self.session.close()
 
     def get_all_interfaces(self):
         return [
@@ -129,20 +127,17 @@ class FetchDiscovery(object):
 
 def health_check(session, ts, who):
     health = False
-    try:
-        h = Healthz()
-        h.ts = ts
-        h.host = who
-        session.add(h)
-        session.commit()
-        query_ts = session.query(Healthz).filter(Healthz.ts == ts).all()
-        if query_ts[0].ts != ts:
-            raise AssertionError("%s not in %s" % (ts, query_ts))
-        session.query(Healthz).filter(Healthz.ts < ts).delete()
-        session.commit()
-        health = True
-    finally:
-        session.close()
+    h = Healthz()
+    h.ts = ts
+    h.host = who
+    session.add(h)
+    session.commit()
+    query_ts = session.query(Healthz).filter(Healthz.ts == ts).all()
+    if query_ts[0].ts != ts:
+        raise AssertionError("%s not in %s" % (ts, query_ts))
+    session.query(Healthz).filter(Healthz.ts < ts).delete()
+    session.commit()
+    health = True
     return health
 
 
@@ -168,7 +163,6 @@ class InjectDiscovery(object):
             self._ignition_journal()
         except Exception as e:
             self.log.error("raise: %s %s %s -> %s" % (step, type(e), e, self.discovery))
-            self.session.close()
             raise
 
     def _machine(self):
@@ -299,7 +293,7 @@ class InjectDiscovery(object):
         with open("%s/%s/%s" % (self.ignition_journal, uuid, boot_id), "w") as f:
             f.write("\n".join(self.discovery["ignition-journal"]))
 
-    def commit_and_close(self):
+    def commit(self):
         try:
             if self.adds != 0 or self.updates != 0:
                 try:
@@ -307,7 +301,7 @@ class InjectDiscovery(object):
                     self.session.commit()
 
                 except Exception as e:
-                    self.log.error("%s %s %s adds=%s updates=%s" % (type(e), e, e.message, self.adds, self.updates))
+                    self.log.error("%s %s adds=%s updates=%s" % (type(e), e, self.adds, self.updates))
                     self.adds, self.updates = 0, 0
                     self.log.warning("rollback the sessions")
                     self.session.rollback()
@@ -315,7 +309,6 @@ class InjectDiscovery(object):
         finally:
             machine_nb = self.session.query(Machine).count()
             self.log.debug("closing")
-            self.session.close()
             return machine_nb, True if self.adds else False
 
 
@@ -404,9 +397,6 @@ class FetchSchedule(object):
 
         return [k.interface.ipv4 for k in s]
 
-    def close(self):
-        self.session.close()
-
 
 class InjectSchedule(object):
     log = logger.get_logger(__file__)
@@ -423,7 +413,6 @@ class InjectSchedule(object):
         if not self.interface:
             m = "mac: '%s' unknown in db" % self.mac
             self.log.error(m)
-            self.session.close()
             raise AttributeError(m)
         self.log.info("mac: %s" % self.mac)
 
@@ -445,7 +434,7 @@ class InjectSchedule(object):
 
         return
 
-    def commit_and_close(self):
+    def commit(self):
         try:
             if self.adds != 0 or self.updates != 0:
                 try:
@@ -453,7 +442,7 @@ class InjectSchedule(object):
                     self.session.commit()
 
                 except Exception as e:
-                    self.log.error("%s %s %s adds=%s updates=%s" % (type(e), e, e.message, self.adds, self.updates))
+                    self.log.error("%s %s %s adds=%s updates=%s" % (type(e), e, self.adds, self.updates))
                     self.adds, self.updates = 0, 0
                     self.log.warning("rollback the sessions")
                     self.session.rollback()
@@ -463,7 +452,6 @@ class InjectSchedule(object):
             for r in ScheduleRoles.roles:
                 roles_rapport[r] = self.session.query(Schedule).filter(Schedule.role == r).count()
             self.log.debug("closing")
-            self.session.close()
             return roles_rapport, True if self.adds else False
 
 
@@ -481,7 +469,6 @@ class InjectLifecycle(object):
         if not self.interface:
             m = "mac: '%s' unknown in db" % self.mac
             self.log.error(m)
-            self.session.close()
             raise AttributeError(m)
         self.log.info("mac: %s" % self.mac)
 
@@ -497,58 +484,49 @@ class InjectLifecycle(object):
         return mac.replace("-", ":")
 
     def refresh_lifecycle_ignition(self, up_to_date):
-        try:
-            l = self.session.query(LifecycleIgnition).filter(
-                LifecycleIgnition.machine_interface == self.interface.id).first()
-            if not l:
-                l = LifecycleIgnition(
-                    machine_interface=self.interface.id,
-                    up_to_date=up_to_date
-                )
-                self.session.add(l)
-            else:
-                l.up_to_date = up_to_date
-                l.updated_date = datetime.datetime.utcnow()
+        l = self.session.query(LifecycleIgnition).filter(
+            LifecycleIgnition.machine_interface == self.interface.id).first()
+        if not l:
+            l = LifecycleIgnition(
+                machine_interface=self.interface.id,
+                up_to_date=up_to_date
+            )
+            self.session.add(l)
+        else:
+            l.up_to_date = up_to_date
+            l.updated_date = datetime.datetime.utcnow()
 
-            self.session.commit()
-        finally:
-            self.session.close()
+        self.session.commit()
 
     def refresh_lifecycle_coreos_install(self, success):
-        try:
-            l = self.session.query(LifecycleCoreosInstall).filter(
-                LifecycleIgnition.machine_interface == self.interface.id).first()
-            if not l:
-                l = LifecycleCoreosInstall(
-                    machine_interface=self.interface.id,
-                    success=success
-                )
-                self.session.add(l)
-            else:
-                l.up_to_date = success
-                l.updated_date = datetime.datetime.utcnow()
+        l = self.session.query(LifecycleCoreosInstall).filter(
+            LifecycleIgnition.machine_interface == self.interface.id).first()
+        if not l:
+            l = LifecycleCoreosInstall(
+                machine_interface=self.interface.id,
+                success=success
+            )
+            self.session.add(l)
+        else:
+            l.up_to_date = success
+            l.updated_date = datetime.datetime.utcnow()
 
-            self.session.commit()
-        finally:
-            self.session.close()
+        self.session.commit()
 
     def apply_lifecycle_rolling(self, enable):
-        try:
-            l = self.session.query(LifecycleRolling).filter(
-                LifecycleRolling.machine_interface == self.interface.id).first()
-            if not l:
-                l = LifecycleRolling(
-                    machine_interface=self.interface.id,
-                    enable=enable
-                )
-                self.session.add(l)
-            else:
-                l.enable = enable
-                l.updated_date = datetime.datetime.utcnow()
+        l = self.session.query(LifecycleRolling).filter(
+            LifecycleRolling.machine_interface == self.interface.id).first()
+        if not l:
+            l = LifecycleRolling(
+                machine_interface=self.interface.id,
+                enable=enable
+            )
+            self.session.add(l)
+        else:
+            l.enable = enable
+            l.updated_date = datetime.datetime.utcnow()
 
-            self.session.commit()
-        finally:
-            self.session.close()
+        self.session.commit()
 
 
 class FetchLifecycle(object):
@@ -627,6 +605,3 @@ class FetchLifecycle(object):
                 }
             )
         return l
-
-    def close(self):
-        self.session.close()

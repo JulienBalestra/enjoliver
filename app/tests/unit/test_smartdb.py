@@ -44,18 +44,18 @@ class TestModel(unittest.TestCase):
         self.assertEqual(smartdb._SingleEndpoint, type(ss))
         self.assertEqual(1, len(ss.engines))
         ss.create_base()
-        ss.create_session()
+        ss.create_conn_with_session()
 
     def test_04(self):
         ss = smartdb.SmartClient("cockroachdb://root@127.0.0.1:26257")
         self.assertEqual(smartdb._SingleEndpoint, type(ss))
         self.assertEqual(1, len(ss.engines))
         with self.assertRaises(ConnectionError):
-            ss.create_session()
+            ss.create_conn_with_session()
 
     def test_05(self):
         ss = smartdb.SmartClient("cockroachdb://root@127.0.0.1:26257,cockroachdb://root@127.0.1.1:26257")
         self.assertEqual(smartdb._SingleEndpoint, type(ss))
         self.assertEqual(2, len(ss.engines))
         with self.assertRaises(ConnectionError):
-            ss.create_session()
+            ss.create_conn_with_session()

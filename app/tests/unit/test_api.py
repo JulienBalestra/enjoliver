@@ -175,6 +175,7 @@ class TestAPI(unittest.TestCase):
     def test_scheduler_00(self):
         r = self.app.get("/scheduler")
         self.assertEqual(200, r.status_code)
+        # This one is flaky
         self.assertEqual({}, json.loads(r.data.decode()))
 
     def test_scheduler_01(self):
