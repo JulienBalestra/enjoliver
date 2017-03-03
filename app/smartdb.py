@@ -1,3 +1,6 @@
+import random
+import time
+
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker
@@ -38,6 +41,8 @@ class SmartClient(object):
         return conn, session
 
     def get_engine_connection(self):
+        if time.time() % 60 == 0:
+            random.shuffle(self.engines)
         for engine in self.engines:
             try:
                 conn = engine.connect()
