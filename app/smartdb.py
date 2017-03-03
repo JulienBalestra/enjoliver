@@ -12,6 +12,7 @@ import model
 class SmartClient(object):
     engines = []
     log = logger.get_logger(__file__)
+    last_shuffle = 0
 
     @staticmethod
     def parse_db_uri(db_uri):
@@ -41,8 +42,10 @@ class SmartClient(object):
         return conn, session
 
     def get_engine_connection(self):
-        if time.time() % 60 == 0:
+        ts = time.time()
+        if time.time() - self.last_shuffle > 60:
             random.shuffle(self.engines)
+            self.last_shuffle = ts
         for engine in self.engines:
             try:
                 conn = engine.connect()
