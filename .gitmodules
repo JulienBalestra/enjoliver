@@ -1,6 +1,3 @@
-[submodule "chain/ipxe"]
-	path = chain/ipxe
-	url = git://git.ipxe.org/ipxe.git
 [submodule "cni"]
 	path = cni
 	url = https://github.com/containernetworking/cni.git
