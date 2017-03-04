@@ -4,9 +4,9 @@
 [submodule "runtime/acserver"]
 	path = runtime/acserver
 	url = https://github.com/JulienBalestra/acserver.git
-[submodule "py-vendor/ipaddr-py"]
-	path = py-vendor/ipaddr-py
-	url = https://github.com/google/ipaddr-py.git
 [submodule "chain/ipxe"]
 	path = chain/ipxe
 	url = https://github.com/JulienBalestra/ipxe.git
+[submodule "py-vendor/ipaddr-py"]
+	path = py-vendor/ipaddr-py
+	url = https://github.com/JulienBalestra/ipaddr-py.git
