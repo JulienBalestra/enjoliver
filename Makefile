@@ -11,13 +11,6 @@ help:
 	@echo Prepare:
 	@echo sudo make apt
 	@echo ----------------------
-	@echo Setup:
-	@echo make submodules
-	@echo make runner
-	@echo sudo make acis
-	@echo make assets
-	@echo make validate
-	@echo
 	@echo All in one for local usage:
 	@echo sudo MY_USER= make dev_setup
 	@echo
@@ -56,22 +49,18 @@ acserver:
 	./runtime/runtime.acserver &
 
 acis: acserver
-	make -C lldp || pkill acserver || exit 1
+	make -C cni || pkill acserver || exit 1
+	make -C etcd || pkill acserver || exit 1
+	make -C fleet || pkill acserver || exit 1
 	make -C hyperkube || pkill acserver || exit 1
+	make -C lldp || pkill acserver || exit 1
+	make -C rkt || pkill acserver || exit 1
 	# Find a better way to stop it
 	pkill acserver
 
 assets:
 	make -C matchbox/assets/coreos
 	make -C matchbox/assets/coreos serve
-	make -C matchbox/assets/rkt
-	make -C matchbox/assets/rkt serve
-	make -C matchbox/assets/etcd
-	make -C matchbox/assets/etcd serve
-	make -C matchbox/assets/cni
-	make -C matchbox/assets/cni serve
-	make -C matchbox/assets/fleet
-	make -C matchbox/assets/fleet serve
 	# Self
 	make -C matchbox/assets/discoveryC
 

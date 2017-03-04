@@ -8,10 +8,6 @@ class TestValidateMatchboxAssets(unittest.TestCase):
     matchbox = os.getenv("CHECK_MATCHBOX_PATH", "%s/matchbox" % cwd)
     assets = "%s/assets" % matchbox
 
-    def test_cni(self):
-        rule = "%s/%s/serve" % (self.assets, self.test_cni.__name__.replace("test_", ""))
-        self.assertIn("cni.tar.gz", os.listdir(rule))
-
     def test_coreos(self):
         rule = "%s/%s/serve" % (self.assets, self.test_coreos.__name__.replace("test_", ""))
         list_dir = os.listdir(rule)
@@ -22,21 +18,6 @@ class TestValidateMatchboxAssets(unittest.TestCase):
         rule = "%s/%s/serve" % (self.assets, self.test_discoveryC.__name__.replace("test_", ""))
         list_dir = os.listdir(rule)
         self.assertIn("discoveryC", list_dir)
-
-    def test_rkt(self):
-        rule = "%s/%s/serve" % (self.assets, self.test_rkt.__name__.replace("test_", ""))
-        list_dir = os.listdir(rule)
-        self.assertIn("rkt.tar.gz", list_dir)
-
-    def test_fleet(self):
-        rule = "%s/%s/serve" % (self.assets, self.test_fleet.__name__.replace("test_", ""))
-        list_dir = os.listdir(rule)
-        self.assertIn("fleet.tar.gz", list_dir)
-
-    def test_etcd(self):
-        rule = "%s/%s/serve" % (self.assets, self.test_etcd.__name__.replace("test_", ""))
-        list_dir = os.listdir(rule)
-        self.assertIn("etcd.tar.gz", list_dir)
 
 
 if __name__ == '__main__':

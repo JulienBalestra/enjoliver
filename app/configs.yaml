@@ -63,6 +63,10 @@ sub_ips: 256
 
 lldp_image_url: 'enjoliver.local/lldp:latest'
 hyperkube_image_url: 'enjoliver.local/hyperkube:latest'
+rkt_image_url: 'enjoliver.local/rkt:1.25.0'
+etcd_image_url: 'enjoliver.local/etcd:3.1.2'
+fleet_image_url: 'enjoliver.local/fleet:1.0.0'
+cni_image_url: 'enjoliver.local/cni:0.4.0'
 
 etc_hosts: ['172.20.0.1 enjoliver.local']
 

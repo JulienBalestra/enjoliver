@@ -220,6 +220,10 @@ class ConfigSyncSchedules(object):
             "kubernetes_service_cluster_ip_range": ec.kubernetes_service_cluster_ip_range,
 
             "hyperkube_image_url": ec.hyperkube_image_url,
+            "rkt_image_url": ec.rkt_image_url,
+            "etcd_image_url": ec.etcd_image_url,
+            "fleet_image_url": ec.fleet_image_url,
+            "cni_image_url": ec.cni_image_url,
             # IPAM
             "cni": json.dumps(self.cni_ipam(m["cidrv4"], m["gateway"]), sort_keys=True),
             "network": {

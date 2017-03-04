@@ -22,19 +22,18 @@ systemd:
         [Unit]
         Requires=network-online.target
         After=network-online.target
-        AssertFileIsExecutable=!/opt/etcd/etcd
+        AssertFileIsExecutable=!/opt/rootfs/usr/bin/etcd
         [Service]
         Type=oneshot
-        EnvironmentFile=/etc/metadata-endpoints.env
-        Environment=OPT_ETCD=/opt/etcd
-        Environment=DOWNLOAD_ETCD_DIR=/tmp/etcd_install
-        Environment=FULL_PATH_ETCD=/opt/etcd/etcd
-        Environment=FULL_PATH_ETCDCTL=/opt/etcd/etcdctl
-        Environment=FULL_PATH_DIR_ETCD=/opt/bin
-        Environment=ETCD_ARCHIVE=etcd.tar.gz
-        ExecStartPre=/bin/mkdir -pv /var/lib/etcd3
-        ExecStart=/opt/bin/install-etcd
-        ExecReload=-/bin/rm -Rfv $OPT_ETCD $DOWNLOAD_ETCD_DIR $FULL_PATH_ETCD
+        Environment=IMAGE={{.etcd_image_url}}
+        ExecStartPre=/usr/bin/rkt fetch --insecure-options=all $IMAGE
+        ExecStartPre=/usr/bin/rkt image export $IMAGE /tmp/%p.aci
+        ExecStartPre=/usr/bin/rkt image rm $IMAGE
+        ExecStartPre=/usr/bin/tar -C /opt/rootfs -xvf /tmp/%p.aci --strip-components=1
+        ExecStartPre=/bin/rm -v /tmp/%p.aci
+
+        ExecStart=/usr/bin/ln -sfv /opt/rootfs/usr/bin/etcdctl /opt/bin/etcdctl
+        ExecReload=-/bin/rm -v /opt/rootfs/usr/bin/etcd
         RemainAfterExit=yes
         [Install]
         WantedBy=multi-user.target
@@ -45,18 +44,18 @@ systemd:
         [Unit]
         Requires=network-online.target
         After=network-online.target
-        AssertFileIsExecutable=!/opt/fleet/fleetd
+        AssertFileIsExecutable=!/opt/rootfs/usr/bin/fleetd
         [Service]
         Type=oneshot
-        EnvironmentFile=/etc/metadata-endpoints.env
-        Environment=OPT_FLEET=/opt/fleet
-        Environment=DOWNLOAD_FLEET_DIR=/tmp/fleet_install
-        Environment=FULL_PATH_FLEET=/opt/fleet/fleetd
-        Environment=FULL_PATH_FLEETCTL=/opt/fleet/fleetctl
-        Environment=FULL_PATH_DIR_FLEET=/opt/bin
-        Environment=FLEET_ARCHIVE=fleet.tar.gz
-        ExecStart=/opt/bin/install-fleet
-        ExecReload=-/bin/rm -Rfv $OPT_FLEET $DOWNLOAD_FLEET_DIR $FULL_PATH_FLEET
+        Environment=IMAGE={{.fleet_image_url}}
+        ExecStartPre=/usr/bin/rkt fetch --insecure-options=all $IMAGE
+        ExecStartPre=/usr/bin/rkt image export $IMAGE /tmp/%p.aci
+        ExecStartPre=/usr/bin/rkt image rm $IMAGE
+        ExecStartPre=/usr/bin/tar -C /opt/rootfs -xvf /tmp/%p.aci --strip-components=1
+        ExecStartPre=/bin/rm -v /tmp/%p.aci
+
+        ExecStart=/usr/bin/ln -sfv /opt/rootfs/usr/bin/fleetctl /opt/bin/fleetctl
+        ExecReload=-/bin/rm -v /opt/rootfs/usr/bin/fleetd
         RemainAfterExit=yes
         [Install]
         WantedBy=multi-user.target
@@ -67,16 +66,18 @@ systemd:
         [Unit]
         Requires=network-online.target
         After=network-online.target
-        AssertFileIsExecutable=!/opt/bin/rkt
+        AssertFileIsExecutable=!/opt/rootfs/usr/bin/rkt
         [Service]
         Type=oneshot
-        EnvironmentFile=/etc/metadata-endpoints.env
-        Environment=OPT_RKT=/opt/rkt
-        Environment=DOWNLOAD_RKT_DIR=/tmp/rkt_install
-        Environment=FULL_PATH_RKT=/opt/bin/rkt
-        Environment=RKT_ARCHIVE=rkt.tar.gz
-        ExecStart=/opt/bin/install-rkt
-        ExecReload=-/bin/rm -Rfv $RKT $OPT_RKT $DOWNLOAD_RKT_DIR $FULL_PATH_RKT
+        Environment=IMAGE={{.rkt_image_url}}
+        ExecStartPre=/usr/bin/rkt fetch --insecure-options=all $IMAGE
+        ExecStartPre=/usr/bin/rkt image export $IMAGE /tmp/%p.aci
+        ExecStartPre=/usr/bin/rkt image rm $IMAGE
+        ExecStartPre=/usr/bin/tar -C /opt/rootfs -xvf /tmp/%p.aci --strip-components=1
+        ExecStartPre=/bin/rm -v /tmp/%p.aci
+
+        ExecStart=/usr/bin/ln -sfv /opt/rootfs/usr/bin/rkt /opt/bin/rkt
+        ExecReload=-/bin/rm -v /opt/rootfs/usr/bin/rkt
         RemainAfterExit=yes
         [Install]
         WantedBy=multi-user.target
@@ -87,16 +88,18 @@ systemd:
         [Unit]
         Requires=network-online.target
         After=network-online.target
-        AssertFileIsExecutable=!/opt/bin/cnitool
+        AssertFileIsExecutable=!/opt/rootfs/usr/bin/host-local
         [Service]
         Type=oneshot
-        EnvironmentFile=/etc/metadata-endpoints.env
-        Environment=OPT_CNI=/opt/cni
-        Environment=FULL_PATH_DIR_CNI=/opt/bin
-        Environment=FULL_PATH_CNI=/opt/bin/cnitool
-        Environment=CNI_ARCHIVE=cni.tar.gz
-        ExecStart=/opt/bin/install-cni
-        ExecReload=-/bin/rm -Rfv $FULL_PATH_CNI $OPT_CNI
+        Environment=IMAGE={{.cni_image_url}}
+        ExecStartPre=/usr/bin/rkt fetch --insecure-options=all $IMAGE
+        ExecStartPre=/usr/bin/rkt image export $IMAGE /tmp/%p.aci
+        ExecStartPre=/usr/bin/rkt image rm $IMAGE
+        ExecStartPre=/usr/bin/tar -C /opt/rootfs -xvf /tmp/%p.aci --strip-components=1
+        ExecStartPre=/bin/rm -v /tmp/%p.aci
+
+        ExecStart=/usr/bin/ln -sfv /opt/rootfs/usr/bin/cnitool /opt/bin/cnitool
+        ExecReload=-/bin/rm -v /opt/rootfs/usr/bin/host-local
         RemainAfterExit=yes
         [Install]
         WantedBy=multi-user.target
@@ -107,28 +110,17 @@ systemd:
         [Unit]
         Requires=network-online.target
         After=network-online.target
-        After=install-rkt.service
-        AssertFileIsExecutable=!/opt/bin/hyperkube
+        AssertFileIsExecutable=!/opt/rootfs/hyperkube
         [Service]
         Type=oneshot
-        EnvironmentFile=/etc/metadata-endpoints.env
-        ExecStartPre=/opt/rkt/rkt fetch --insecure-options=all {{.hyperkube_image_url}}
-        ExecStartPre=/opt/rkt/rkt image extract --rootfs-only --overwrite {{.hyperkube_image_url}} /tmp/hyperkube
-        ExecStartPre=/bin/cp -v /tmp/hyperkube/hyperkube /opt/bin/hyperkube
-        ExecStartPre=/bin/rm -Rf /tmp/hyperkube
-        ExecStart=/bin/bash -c 'cd /opt/bin && ./hyperkube --make-symlinks'
+        Environment=IMAGE={{.hyperkube_image_url}}
+        ExecStartPre=/usr/bin/rkt fetch --insecure-options=all $IMAGE
+        ExecStartPre=/usr/bin/rkt image export $IMAGE /tmp/%p.aci
+        ExecStartPre=/usr/bin/tar -C /opt/rootfs -xvf /tmp/%p.aci --strip-components=1
+        ExecStartPre=/bin/rm -v /tmp/%p.aci
 
-        ExecReload=-/bin/rm -v \
-          /opt/bin/hyperkube \
-          /opt/bin/apiserver \
-          /opt/bin/controller-manager \
-          /opt/bin/federation-apiserver \
-          /opt/bin/federation-controller-manager \
-          /opt/bin/kubectl \
-          /opt/bin/kubelet \
-          /opt/bin/proxy \
-          /opt/bin/scheduler
-
+        ExecStart=/usr/bin/ln -sfv /opt/rootfs/hyperkube /opt/bin/kubectl
+        ExecReload=-/bin/rm -v /opt/rootfs/hyperkube
         RemainAfterExit=yes
         [Install]
         WantedBy=multi-user.target
@@ -150,7 +142,7 @@ systemd:
         After=install-rkt.service
 
         [Service]
-        ExecStart=/opt/bin/rkt api-service
+        ExecStart=/opt/rootfs/usr/bin/rkt api-service
         Restart=always
         RestartSec=10
 
@@ -220,7 +212,7 @@ systemd:
         [Service]
         Type=notify
         EnvironmentFile=/etc/etcd-%i.env
-        ExecStart=/opt/etcd/etcd
+        ExecStart=/opt/rootfs/usr/bin/etcd
         RestartSec=15s
         Restart=on-failure
         LimitNOFILE=65826
@@ -241,7 +233,7 @@ systemd:
         [Service]
         Type=notify
         EnvironmentFile=/etc/etcd-%i.env
-        ExecStart=/opt/etcd/etcd
+        ExecStart=/opt/rootfs/usr/bin/etcd
         RestartSec=15s
         Restart=on-failure
         LimitNOFILE=65826
@@ -260,13 +252,14 @@ systemd:
         [Service]
         EnvironmentFile=/etc/metadata.env
         Environment=MANIFESTS=/etc/kubernetes/manifests
-        ExecStartPre=/opt/etcd/etcdctl ls
-        ExecStartPre=/opt/rkt/rkt fetch --pull-policy=update --insecure-options=all {{.hyperkube_image_url}}
+        ExecStartPre=/opt/bin/etcdctl ls
+        ExecStartPre=/opt/rootfs/usr/bin/rkt fetch --pull-policy=update --insecure-options=all {{.hyperkube_image_url}}
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
         ExecStartPre=/bin/mkdir -pv $MANIFESTS
-        ExecStart=/opt/bin/kubelet \
+        ExecStart=/opt/rootfs/hyperkube kubelet \
           \
           --network-plugin=cni \
+          --cni-bin-dir=/opt/rootfs/usr/bin \
           --cni-conf-dir=/etc/rkt/net.d \
           \
           --pod-manifest-path=${MANIFESTS} \
@@ -279,7 +272,7 @@ systemd:
           --cloud-provider="" \
           \
           --container-runtime=rkt \
-          --rkt-path=/opt/bin/rkt \
+          --rkt-path=/opt/rootfs/usr/bin/rkt \
           --v=2
         RestartSec=15s
         TimeoutStartSec=infinity
@@ -300,13 +293,14 @@ systemd:
         [Service]
         EnvironmentFile=/etc/metadata.env
         Environment=MANIFESTS=/etc/kubernetes/manifests
-        ExecStartPre=/opt/etcd/etcdctl ls
+        ExecStartPre=/opt/bin/etcdctl ls
         ExecStartPre=/usr/bin/curl -f http://127.0.0.1:8080/healthz
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
         ExecStartPre=/bin/mkdir -pv $MANIFESTS
-        ExecStart=/opt/bin/kubelet \
+        ExecStart=/opt/rootfs/hyperkube kubelet \
           \
           --network-plugin=cni \
+          --cni-bin-dir=/opt/rootfs/usr/bin \
           --cni-conf-dir=/etc/rkt/net.d \
           \
           --pod-manifest-path=${MANIFESTS} \
@@ -320,7 +314,7 @@ systemd:
           --cloud-provider="" \
           \
           --container-runtime=rkt \
-          --rkt-path=/opt/bin/rkt \
+          --rkt-path=/opt/rootfs/usr/bin/rkt \
           --v=2
         Restart=always
         RestartSec=30s
@@ -336,7 +330,7 @@ systemd:
 
         [Service]
         EnvironmentFile=/etc/metadata.env
-        ExecStart=/opt/bin/proxy \
+        ExecStart=/opt/rootfs/hyperkube proxy \
           --proxy-mode=iptables \
           --hostname-override=${KUBERNETES_NODE_NAME} \
           --master=http://127.0.0.1:8080 \
@@ -359,7 +353,7 @@ systemd:
             [Service]
             EnvironmentFile=/etc/metadata.env
             ExecStart=
-            ExecStart=/opt/fleet/fleetd
+            ExecStart=/opt/rootfs/usr/bin/fleetd
 
     - name: lifecycle-ready.service
       enable: true
@@ -405,6 +399,10 @@ systemd:
 
 storage:
   files:
+    - path: /opt/rootfs/.keep
+      filesystem: root
+      mode: 0644
+
     - path: /etc/kubernetes/manifests/kube-apiserver.yaml
       filesystem: root
       contents:
@@ -532,7 +530,7 @@ storage:
           {
             "rktKind": "paths",
             "rktVersion": "v1",
-            "stage1-images": "/opt/rkt/"
+            "stage1-images": "/opt/rootfs/usr/lib/rkt/stage1-images"
           }
 
     - path: /etc/rkt/stage1.d/coreos.json
@@ -544,8 +542,8 @@ storage:
               "rktKind": "stage1",
               "rktVersion": "v1",
               "name": "coreos.com/rkt/stage1-coreos",
-              "version": "v1.23.0",
-              "location": "/opt/rkt/stage1-coreos.aci"
+              "version": "v1.25.0",
+              "location": "/opt/rootfs/usr/lib/rkt/stage1-images/stage1-coreos.aci"
           }
 
     - path: /etc/rkt/net.d/10-k8s.conf
@@ -559,209 +557,6 @@ storage:
             "master": "bond0",
             "ipam": {{ .cni }}
           }
-
-    - path: /opt/bin/install-cni
-      filesystem: root
-      mode: 0544
-      contents:
-        inline: |
-          #!/bin/bash
-          set -xv
-
-          function is_var {
-              if [ -z $1 ]
-              then
-                  echo 'Variable name have to be in $1' >&2
-                  exit 1
-              fi
-              if [ -z $2 ]
-              then
-                  echo "Variable $1 have to be set" >&2
-                  exit 1
-              fi
-
-          }
-
-          is_var OPT_CNI ${OPT_CNI}
-          is_var FULL_PATH_CNI ${FULL_PATH_CNI}
-          is_var FULL_PATH_DIR_CNI ${FULL_PATH_DIR_CNI}
-          is_var CNI_ARCHIVE ${CNI_ARCHIVE}
-
-          ${FULL_PATH_CNI}
-          if [ $? -eq 1 ]
-          then
-              exit 0
-          fi
-
-          set -e +v
-
-          mkdir -pv ${OPT_CNI}
-          curl ${API_URI}/assets/cni/serve/${CNI_ARCHIVE} -o /tmp/${CNI_ARCHIVE}
-          tar -C ${OPT_CNI} -xzvf /tmp/${CNI_ARCHIVE}
-          ln -sv ${OPT_CNI}/bin/cnitool ${FULL_PATH_DIR_CNI}
-
-          rm -Rfv ${CNI_ARCHIVE}
-
-          set +e
-
-          ${FULL_PATH_CNI}
-          if [ $? -ne 1 ]
-          then
-              exit 2
-          else
-              exit 0
-          fi
-
-    - path: /opt/bin/install-rkt
-      filesystem: root
-      mode: 0544
-      contents:
-        inline: |
-          #!/bin/bash
-          set -xv
-
-          function is_var {
-              if [ -z $1 ]
-              then
-                  echo 'Variable name have to be in $1' >&2
-                  exit 1
-              fi
-              if [ -z $2 ]
-              then
-                  echo "Variable $1 have to be set" >&2
-                  exit 1
-              fi
-          }
-
-          is_var FULL_PATH_RKT ${FULL_PATH_RKT}
-          is_var OPT_RKT ${OPT_RKT}
-          is_var DOWNLOAD_RKT_DIR ${DOWNLOAD_RKT_DIR}
-          is_var RKT_ARCHIVE ${RKT_ARCHIVE}
-
-          FULL_PATH_RKT version && exit 0
-
-          set -e +v
-
-          mkdir -pv ${DOWNLOAD_RKT_DIR} ${OPT_RKT}
-          curl ${API_URI}/assets/rkt/serve/${RKT_ARCHIVE} -o ${DOWNLOAD_RKT_DIR}/${RKT_ARCHIVE}
-          tar -C ${DOWNLOAD_RKT_DIR} -xzvf ${DOWNLOAD_RKT_DIR}/${RKT_ARCHIVE} --strip-component=1
-          for b in rkt stage1-coreos.aci stage1-fly.aci stage1-kvm.aci
-          do
-            mv -v ${DOWNLOAD_RKT_DIR}/${b} ${OPT_RKT}
-          done
-          ln -sv ${OPT_RKT}/rkt /opt/bin
-          ${FULL_PATH_RKT} version
-          rm -Rfv ${DOWNLOAD_RKT_DIR}
-
-    - path: /opt/bin/install-etcd
-      filesystem: root
-      mode: 0544
-      contents:
-        inline: |
-          #!/bin/bash
-          set -xv
-
-          function is_var {
-              if [ -z $1 ]
-              then
-                  echo 'Variable name have to be in $1' >&2
-                  exit 1
-              fi
-              if [ -z $2 ]
-              then
-                  echo "Variable $1 have to be set" >&2
-                  exit 1
-              fi
-          }
-
-          is_var OPT_ETCD ${OPT_ETCD}
-          is_var FULL_PATH_ETCD ${FULL_PATH_ETCD}
-          is_var FULL_PATH_ETCDCTL ${FULL_PATH_ETCDCTL}
-          is_var FULL_PATH_DIR_ETCD ${FULL_PATH_DIR_ETCD}
-          is_var ETCD_ARCHIVE ${ETCD_ARCHIVE}
-
-          ${FULL_PATH_ETCD} --version
-          ${FULL_PATH_ETCDCTL} --version
-          if [ $? -eq 1 ]
-          then
-              exit 0
-          fi
-
-          set -e +v
-
-          mkdir -pv ${OPT_ETCD} ${DOWNLOAD_ETCD_DIR}
-          curl ${API_URI}/assets/etcd/serve/${ETCD_ARCHIVE} -o /tmp/${ETCD_ARCHIVE}
-          tar -C ${DOWNLOAD_ETCD_DIR} -xzvf /tmp/${ETCD_ARCHIVE} --strip-component=1
-          mv -v ${DOWNLOAD_ETCD_DIR}/etcd ${FULL_PATH_ETCD}
-          mv -v ${DOWNLOAD_ETCD_DIR}/etcdctl ${FULL_PATH_ETCDCTL}
-          ln -s ${FULL_PATH_ETCDCTL} /opt/bin
-
-          rm -Rfv ${DOWNLOAD_ETCD_DIR}
-
-          set +e
-
-          ${FULL_PATH_ETCD} --version
-          if [ $? -ne 0 ]
-          then
-              exit 2
-          else
-              exit 0
-          fi
-
-    - path: /opt/bin/install-fleet
-      filesystem: root
-      mode: 0544
-      contents:
-        inline: |
-          #!/bin/bash
-          set -xv
-
-          function is_var {
-              if [ -z $1 ]
-              then
-                  echo 'Variable name have to be in $1' >&2
-                  exit 1
-              fi
-              if [ -z $2 ]
-              then
-                  echo "Variable $1 have to be set" >&2
-                  exit 1
-              fi
-          }
-
-          is_var OPT_FLEET ${OPT_FLEET}
-          is_var FULL_PATH_FLEET ${FULL_PATH_FLEET}
-          is_var FULL_PATH_FLEETCTL ${FULL_PATH_FLEETCTL}
-          is_var FULL_PATH_DIR_FLEET ${FULL_PATH_DIR_FLEET}
-          is_var FLEET_ARCHIVE ${FLEET_ARCHIVE}
-
-          ${FULL_PATH_FLEET} --version
-          ${FULL_PATH_FLEETCTL} --version
-          if [ $? -eq 1 ]
-          then
-              exit 0
-          fi
-
-          set -e +v
-
-          mkdir -pv ${OPT_FLEET} ${DOWNLOAD_FLEET_DIR}
-          curl ${API_URI}/assets/fleet/serve/${FLEET_ARCHIVE} -o /tmp/${FLEET_ARCHIVE}
-          tar -C ${DOWNLOAD_FLEET_DIR} -xzvf /tmp/${FLEET_ARCHIVE} --strip-component=1
-          mv -v ${DOWNLOAD_FLEET_DIR}/fleetd ${FULL_PATH_FLEET}
-          mv -v ${DOWNLOAD_FLEET_DIR}/fleetctl ${FULL_PATH_FLEETCTL}
-          ln -s ${FULL_PATH_FLEETCTL} /opt/bin
-
-          rm -Rfv ${DOWNLOAD_FLEET_DIR}
-
-          set +e
-
-          ${FULL_PATH_FLEET} --version
-          if [ $? -ne 0 ]
-          then
-              exit 2
-          else
-              exit 0
-          fi
 
     - path: /etc/fleet/fleet.conf
       mode: 0644

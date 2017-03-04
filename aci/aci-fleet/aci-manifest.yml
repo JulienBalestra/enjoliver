@@ -1,0 +1,9 @@
+name: enjoliver.local/fleet:1.0.0
+
+builder:
+  dependencies:
+    - enjoliver.local/debian:latest
+
+aci:
+  dependencies:
+    - enjoliver.local/debian:latest

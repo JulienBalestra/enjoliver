@@ -1,0 +1,10 @@
+name: enjoliver.local/rkt:1.25.0
+
+builder:
+  dependencies:
+    - enjoliver.local/debian:latest
+
+
+aci:
+  dependencies:
+    - enjoliver.local/debian:latest

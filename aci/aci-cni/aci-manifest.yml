@@ -1,0 +1,9 @@
+name: enjoliver.local/cni:0.4.0
+
+builder:
+  dependencies:
+    - enjoliver.local/debian:latest
+
+aci:
+  dependencies:
+    - enjoliver.local/debian:latest
