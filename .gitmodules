@@ -7,3 +7,6 @@
 [submodule "py-vendor/ipaddr-py"]
 	path = py-vendor/ipaddr-py
 	url = https://github.com/google/ipaddr-py.git
+[submodule "chain/ipxe"]
+	path = chain/ipxe
+	url = https://github.com/JulienBalestra/ipxe.git
