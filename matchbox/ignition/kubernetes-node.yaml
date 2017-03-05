@@ -1,6 +1,18 @@
 ---
 systemd:
   units:
+    - name: docker.service
+      enable: false
+      mask: true
+
+    - name: containerd.service
+      enable: false
+      mask: true
+
+    - name: update-engine.service
+      enable: false
+      mask: true
+
     - name: fetch-metadata.service
       enable: true
       contents: |

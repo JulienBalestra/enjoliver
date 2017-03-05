@@ -1,6 +1,19 @@
 ---
 systemd:
   units:
+
+    - name: docker.service
+      enable: false
+      mask: true
+
+    - name: containerd.service
+      enable: false
+      mask: true
+
+    - name: update-engine.service
+      enable: false
+      mask: true
+
     - name: download-discoveryC.service
       enable: true
       contents: |
@@ -34,6 +47,17 @@ systemd:
 
 storage:
   files:
+    - path: /etc/hosts
+      mode: 0644
+      filesystem: root
+      contents:
+        inline: |
+          127.0.0.1	localhost
+          {{ if index . "etc_hosts" }}
+          {{ range $element := .etc_hosts }}
+          {{$element}}
+          {{end}}
+          {{end}}
 
     - path: /etc/hostname
       filesystem: root
@@ -53,6 +77,7 @@ storage:
 
           # Standards
           REQUEST_RAW_QUERY="{{.request.raw_query}}"
+          NORMALIZED_MAC='"{{.request.query.mac}}"'
 
 
 {{ if index . "ssh_authorized_keys" }}

@@ -2,6 +2,18 @@
 systemd:
   units:
 
+    - name: docker.service
+      enable: false
+      mask: true
+
+    - name: containerd.service
+      enable: false
+      mask: true
+
+    - name: update-engine.service
+      enable: false
+      mask: true
+
     - name: lldpd.service
       enable: true
       contents: |
@@ -56,6 +68,8 @@ systemd:
            {{.lldp_image_url}} \
            --volume socket,kind=host,source=${LLDP_VOLUME} \
            --exec opt/bin/lldp-export
+        ExecStartPre=-/usr/bin/rkt image gc --grace-period=0s
+        ExecStartPre=-/usr/bin/rkt gc --grace-period=0s
         ExecStart=/opt/bin/discoveryC
         Restart=on-failure
         RestartSec=5s
@@ -136,6 +150,13 @@ storage:
                     ${API_URI}/ignition?${QUERY} || continue
                   ls -l /run/ignition.json ${NEW_IGNITION}
                   udevadm settle
+
+                  until curl -f "${API_URI}/install-authorization/${QUERY}"
+                  do
+                    echo "install-authorization not aquired"
+                    sleep 10
+                  done
+
                   coreos-install -d /dev/sda -V current -C stable -i ${NEW_IGNITION} \
                     {{if index . "coreos_install_base_url"}} -b {{.coreos_install_base_url}}{{end}} || {
                     curl -f -XPOST \

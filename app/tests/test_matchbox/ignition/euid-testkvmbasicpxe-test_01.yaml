@@ -1,6 +1,19 @@
 ---
 systemd:
   units:
+
+    - name: docker.service
+      enable: false
+      mask: true
+
+    - name: containerd.service
+      enable: false
+      mask: true
+
+    - name: update-engine.service
+      enable: false
+      mask: true
+
     - name: probe.service
       enable: true
       contents: |
@@ -12,7 +25,6 @@ systemd:
         ExecStart=/usr/bin/curl -f -XPOST http://172.20.0.1:5050/ok -d "euid-testkvmbasicpxe-test_01"
         [Install]
         WantedBy=multi-user.target
-
 
 
 {{ if index . "ssh_authorized_keys" }}

@@ -1,6 +1,19 @@
 ---
 systemd:
   units:
+
+    - name: docker.service
+      enable: false
+      mask: true
+
+    - name: containerd.service
+      enable: false
+      mask: true
+
+    - name: update-engine.service
+      enable: false
+      mask: true
+
     - name: download-discoveryC.service
       enable: true
       contents: |
@@ -110,6 +123,13 @@ storage:
                     ${API_URI}/ignition?${QUERY} || continue
                   ls -l /run/ignition.json ${NEW_IGNITION}
                   udevadm settle
+
+                  until curl -f "${API_URI}/install-authorization/${QUERY}"
+                  do
+                    echo "install-authorization not aquired"
+                    sleep 10
+                  done
+
                   coreos-install -d /dev/sda -V current -C stable -i ${NEW_IGNITION} \
                     {{if index . "coreos_install_base_url"}} -b {{.coreos_install_base_url}}{{end}} || {
                     curl -f -XPOST \
