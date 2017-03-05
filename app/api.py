@@ -447,6 +447,23 @@ def metadata():
     return Response("matchbox=%s" % matchbox_uri, status=403, mimetype="text/plain")
 
 
+@app.route('/install-authorization/<string:request_raw_query>')
+def require_install_authorization(request_raw_query):
+    """
+    Used to avoid burst of
+    :param request_raw_query:
+    :return:
+    """
+    LOGGER.info("%s %s %s" % (request.method, request.remote_addr, request.url))
+    lock = cache.get("lock-install")
+    if lock is not None:
+        LOGGER.warning("Locked by %s" % lock)
+        return Response(response="Locked by %s" % lock, status=403)
+    cache.set("lock-install", request_raw_query, timeout=ec.coreos_install_lock_seconds)
+    LOGGER.info("Granted to %s" % request_raw_query)
+    return Response(response="Granted", status=200)
+
+
 @app.route('/assets', defaults={'path': ''})
 @app.route('/assets/<path:path>')
 def assets(path):
@@ -459,7 +476,7 @@ def assets(path):
         matchbox_resp.close()
         return Response(response=d, mimetype="application/octet-stream")
 
-    return Response("matchbox=%s" % matchbox_uri, status=403, mimetype="text/plain")
+    return Response("matchbox=%s" % matchbox_uri, status=404, mimetype="text/plain")
 
 
 @application.route('/ipxe', methods=['GET'])

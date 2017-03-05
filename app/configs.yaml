@@ -71,3 +71,4 @@ cni_image_url: 'enjoliver.local/cni:0.4.0'
 etc_hosts: ['172.20.0.1 enjoliver.local']
 
 coreos_install_base_url: "http://enjoliver.local:5000/assets/coreos"
+coreos_install_lock_seconds: 45
