@@ -1,7 +1,7 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: nginx-deploy
+  name: httpd-daemonset
   namespace: default
 spec:
   replicas: 1
@@ -13,13 +13,13 @@ spec:
   template:
     metadata:
       labels:
-        run: nginx-cni
+        run: httpd-cni
     spec:
       containers:
-      - name: nginx-deploy-rs-pod
-        image: quay.io/julienbalestra/nginx:latest
+      - name: httpd-daemonset-pod
+        image: enjoliver.local/debian:latest
         imagePullPolicy: IfNotPresent
         command:
-        - /usr/sbin/nginx
-        - -g
-        - daemon off;
+        - /dgr/bin/busybox
+        - httpd
+        - -fv

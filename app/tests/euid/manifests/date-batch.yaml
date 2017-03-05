@@ -10,7 +10,7 @@ spec:
         spec:
           containers:
           - name: date-batch-cron
-            image: quay.io/julienbalestra/nginx:latest
+            image: enjoliver.local/debian:latest
             imagePullPolicy: IfNotPresent
             command:
             - /bin/date

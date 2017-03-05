@@ -1,0 +1,22 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: httpd-daemonset
+  namespace: default
+spec:
+  template:
+    metadata:
+      annotations:
+        rkt.kubernetes.io/host-create-directories: /tmp/httpd1 /tmp/httpd2
+      labels:
+        run: httpd-host
+    spec:
+      hostNetwork: true
+      containers:
+      - name: httpd-daemonset-pod
+        image: enjoliver.local/debian:latest
+        imagePullPolicy: IfNotPresent
+        command:
+        - /dgr/bin/busybox
+        - httpd
+        - -fv

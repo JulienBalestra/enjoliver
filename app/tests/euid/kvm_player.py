@@ -39,11 +39,20 @@ def get_kvm_sleep(f="/tmp/virt-host-validate"):
                             d *= 2
                         break
                 r.seek(0)
-                print(r.read())
+                display(r.read())
         os.remove(f)
     except OSError:
         pass
     return d
+
+
+def display(message):
+    for i in range(3):
+        try:
+            print(message)
+            break
+        except BlockingIOError:
+            time.sleep(0.01)
 
 
 @unittest.skipIf(os.geteuid() != 0, "TestKVMDiscovery need privilege")
@@ -112,12 +121,12 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         :return: None
         """
         try:
-            print("==> sleep %d..." % t)
+            display("==> sleep %d..." % t)
             time.sleep(t)
         except KeyboardInterrupt:
             pass
         finally:
-            print("==> sleep finish")
+            display("==> sleep finish")
 
     @staticmethod
     def process_target_matchbox():
@@ -126,7 +135,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "%s/manage.py" % KernelVirtualMachinePlayer.project_path,
             "matchbox",
         ]
-        print("PID  -> %s\n"
+        display("PID  -> %s\n"
               "exec -> %s" % (os.getpid(), " ".join(cmd)))
         sys.stdout.flush()
         os.environ["TERM"] = "xterm"
@@ -138,7 +147,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "%s" % KernelVirtualMachinePlayer.acserver_bin,
             "%s/ac-config.yml" % KernelVirtualMachinePlayer.runtime_path
         ]
-        print("PID  -> %s\n"
+        display("PID  -> %s\n"
               "exec -> %s" % (os.getpid(), " ".join(cmd)))
         sys.stdout.flush()
         os.environ["TERM"] = "xterm"
@@ -169,7 +178,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "%s/manage.py" % KernelVirtualMachinePlayer.project_path,
             "gunicorn",
         ]
-        print("PID  -> %s\n"
+        display("PID  -> %s\n"
               "exec -> %s" % (os.getpid(), " ".join(cmd)))
         os.execve(cmd[0], cmd, os.environ)
 
@@ -194,7 +203,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "--volume",
             "config,kind=host,source=%s/dnsmasq-rack0.conf" % KernelVirtualMachinePlayer.tests_path
         ]
-        print("PID  -> %s\n"
+        display("PID  -> %s\n"
               "exec -> %s" % (os.getpid(), " ".join(cmd)))
         sys.stdout.flush()
         os.execve(cmd[0], cmd, os.environ)
@@ -225,7 +234,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "/usr/sbin/lldpd",
             "--",
             "-dd"]
-        print("PID  -> %s\n"
+        display("PID  -> %s\n"
               "exec -> %s" % (os.getpid(), " ".join(cmd)))
         sys.stdout.flush()
         os.execve(cmd[0], cmd, os.environ)
@@ -233,7 +242,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     @staticmethod
     def dns_masq_running():
-        print("DNSMASQ probing...")
+        display("DNSMASQ probing...")
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         result = 1
         for i in range(120):
@@ -242,10 +251,10 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 break
             time.sleep(0.5)
             if i % 10 == 0:
-                print("DNSMASQ still NOT ready")
+                display("DNSMASQ still NOT ready")
         sock.close()
         assert result == 0
-        print("DNSMASQ ready")
+        display("DNSMASQ ready")
         sys.stdout.flush()
 
     @staticmethod
@@ -257,7 +266,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 r.close()
                 return
             except Exception as e:
-                print(" GET -> %s : %s" % (url, e))
+                display(" GET -> %s : %s" % (url, e))
             time.sleep(0.5)
         r = requests.get(url)
         r.close()
@@ -273,12 +282,12 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         if os.path.isfile(KernelVirtualMachinePlayer.rkt_bin) is False or \
                         os.path.isfile(KernelVirtualMachinePlayer.matchbox_bin) is False or \
                         os.path.isfile(KernelVirtualMachinePlayer.acserver_bin) is False:
-            print("Call 'make runtime' as user for:\n"
+            display("Call 'make runtime' as user for:\n"
                   "- %s\n" % KernelVirtualMachinePlayer.rkt_bin +
                   "- %s\n" % KernelVirtualMachinePlayer.matchbox_bin +
                   "- %s\n" % KernelVirtualMachinePlayer.acserver_bin)
             exit(2)
-        print("PID -> %s" % os.getpid())
+        display("PID -> %s" % os.getpid())
 
     @classmethod
     def set_matchbox(cls):
@@ -302,9 +311,9 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "--set-env=TERM=%s" % os.getenv("TERM", "xterm"),
             "--exec",
             "/bin/true"]
-        print("call %s" % " ".join(cmd))
+        display("call %s" % " ".join(cmd))
         ret = subprocess.call(cmd)
-        print("Bridge w/ iptables creation exitcode:%d" % ret)
+        display("Bridge w/ iptables creation exitcode:%d" % ret)
         assert subprocess.call(["ip", "link", "show", "rack0"]) == 0
 
     @classmethod
@@ -351,13 +360,13 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     def tearDownClass(cls):
         for p in cls.p_list:
             if p.is_alive():
-                print("TERM -> %s %s" % (p.pid, p.name))
+                display("TERM -> %s %s" % (p.pid, p.name))
                 p.terminate()
                 p.join(10)
                 if p.is_alive():
                     os.kill(p.pid, 9)
-                print("END -> %s %s" % (p.exitcode, p.name))
-            print("EXITED -> %s %s" % (p.exitcode, p.name))
+                display("END -> %s %s" % (p.exitcode, p.name))
+            display("EXITED -> %s %s" % (p.exitcode, p.name))
 
         subprocess.call([
             "%s" % KernelVirtualMachinePlayer.rkt_bin,
@@ -381,7 +390,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         for d in dirs:
             for f in os.listdir(d):
                 if ".json" in f:
-                    print("-> remove %s" % f)
+                    display("-> remove %s" % f)
                     os.remove("%s/%s" % (d, f))
 
     def api_healthz(self, first=True):
@@ -392,7 +401,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             health = json.loads(response_body.decode())
             self.assertTrue(health["global"])
         except Exception as e:
-            print("%s %s" % (self.api_healthz.__name__, e))
+            display("%s %s" % (self.api_healthz.__name__, e))
             if first is True:
                 time.sleep(0.5)
                 self.api_healthz(False)
@@ -443,7 +452,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             for i, m in enumerate(to_start):
                 start = ["virsh", "start", "%s" % m]
                 try:
-                    self.virsh(start, assertion=True), print("")
+                    self.virsh(start, assertion=True), display("")
                     to_start.pop(i)
                     time.sleep(self.testing_sleep_seconds)
 
@@ -466,15 +475,17 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     request = requests.get(endpoint)
                     response_body = json.loads(request.content.decode())
                     request.close()
-                    print("-> RESULT %s %s" % (endpoint, response_body))
+                    display("-> RESULT %s %s" % (endpoint, response_body))
                     sys.stdout.flush()
                     if response_body == {u"health": u"true"}:
                         ips.pop(i)
-                        print("-> REMAIN %s for %s" % (str(ips), self.etcd_endpoint_health.__name__))
+                        display("-> REMAIN %s for %s" % (str(ips), self.etcd_endpoint_health.__name__))
+                        continue
 
-                except requests.exceptions.ConnectionError:
-                    print("-> %d/%d NOT READY %s for %s" % (t, tries, ip, self.etcd_endpoint_health.__name__))
-                    time.sleep(self.testing_sleep_seconds * 2)
+                except Exception as e:
+                    pass
+                display("-> %d/%d NOT READY %s for %s" % (t, tries, ip, self.etcd_endpoint_health.__name__))
+                time.sleep(self.testing_sleep_seconds * 2)
 
         self.assertEqual(len(ips), 0)
 
@@ -487,14 +498,15 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 content = request.content
                 request.close()
                 result = json.loads(content.decode())
-                print("-> RESULT %s %s" % (endpoint, result))
+                display("-> RESULT %s %s" % (endpoint, result))
                 sys.stdout.flush()
                 if len(result["members"]) == members_nb:
                     break
 
-            except requests.exceptions.ConnectionError:
-                print("-> %d/%d NOT READY %s for %s" % (t, tries, ip, self.etcd_member_len.__name__))
-                time.sleep(self.testing_sleep_seconds * 2)
+            except Exception as e:
+                pass
+            display("-> %d/%d NOT READY %s for %s" % (t, tries, ip, self.etcd_member_len.__name__))
+            time.sleep(self.testing_sleep_seconds * 2)
 
         self.assertEqual(len(result["members"]), members_nb)
 
@@ -511,9 +523,9 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 if result and len(result["node"]["nodes"]) == nodes_nb:
                     break
 
-            except (requests.exceptions.ConnectionError, KeyError):
+            except Exception as e:
                 pass
-            print("-> NOT READY %s %s" % (ip, self.etcd_member_k8s_minions.__name__))
+            display("-> %d/%d NOT READY %s for %s" % (t, tries, ip, self.etcd_member_k8s_minions.__name__,))
             time.sleep(self.testing_sleep_seconds)
 
         self.assertEqual(len(result["node"]["nodes"]), nodes_nb)
@@ -530,35 +542,37 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     request = requests.get(endpoint)
                     response_body = request.content
                     request.close()
-                    print("-> RESULT %s %s" % (endpoint, response_body))
+                    display("-> RESULT %s %s" % (endpoint, response_body))
                     sys.stdout.flush()
                     if response_body == b"ok":
-                        print("## kubectl -s %s:8080 get cs" % ip)
+                        display("## kubectl -s %s:8080 get cs" % ip)
                         ips.pop(i)
-                        print("-> REMAIN %s for %s" % (str(ips), self.k8s_api_health.__name__))
+                        display("-> REMAIN %s for %s" % (str(ips), self.k8s_api_health.__name__))
+                        continue
 
-                except requests.exceptions.ConnectionError:
-                    print("-> %d/%d NOT READY %s for %s" % (t + 1, tries, ip, self.k8s_api_health.__name__))
-                    time.sleep(self.testing_sleep_seconds)
+                except Exception as e:
+                    pass
+                display("-> %d/%d NOT READY %s for %s" % (t + 1, tries, ip, self.k8s_api_health.__name__))
+                time.sleep(self.testing_sleep_seconds)
         self.assertEqual(len(ips), 0)
 
-    def create_nginx_deploy(self, api_server_ip):
-        with open("%s/manifests/nginx-deploy.yaml" % self.euid_path) as f:
-            nginx = yaml.load(f)
+    def create_httpd_deploy(self, api_server_ip):
+        with open("%s/manifests/httpd-deploy.yaml" % self.euid_path) as f:
+            httpd = yaml.load(f)
 
         c = kc.ApiClient(host="%s:8080" % api_server_ip)
         b = kc.ExtensionsV1beta1Api(c)
-        b.create_namespaced_deployment("default", nginx)
+        b.create_namespaced_deployment("default", httpd)
 
-    def create_nginx_daemon_set(self, api_server_ip):
-        with open("%s/manifests/nginx-daemonset.yaml" % self.euid_path) as f:
-            nginx = yaml.load(f)
+    def create_httpd_daemon_set(self, api_server_ip):
+        with open("%s/manifests/httpd-daemonset.yaml" % self.euid_path) as f:
+            httpd = yaml.load(f)
 
         c = kc.ApiClient(host="%s:8080" % api_server_ip)
         b = kc.ExtensionsV1beta1Api(c)
-        b.create_namespaced_daemon_set("default", nginx)
+        b.create_namespaced_daemon_set("default", httpd)
 
-    def pod_nginx_is_running(self, api_server_ip, tries=100):
+    def pod_httpd_is_running(self, api_server_ip, tries=100):
         code = 0
         c = kc.ApiClient(host="%s:8080" % api_server_ip)
         core = kc.CoreV1Api(c)
@@ -573,19 +587,19 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                         g = requests.get("http://%s" % ip)
                         code = g.status_code
                         g.close()
-                        print("-> RESULT %s %s" % (ip, code))
+                        display("-> RESULT %s %s" % (ip, code))
                         sys.stdout.flush()
-                    except requests.exceptions.ConnectionError:
-                        print("-> %d/%d NOT READY %s for %s" % (
-                            t + 1, tries, ip, self.pod_nginx_is_running.__name__))
+                    except Exception as e:
+                        display("-> %d/%d NOT READY %s for %s %s" % (
+                            t + 1, tries, ip, self.pod_httpd_is_running.__name__, e))
             except ValueError:
-                print("-> %d/%d NOT READY %s for %s" % (
-                    t + 1, tries, "ValueError", self.pod_nginx_is_running.__name__))
+                display("-> %d/%d NOT READY %s for %s" % (
+                    t + 1, tries, "ValueError", self.pod_httpd_is_running.__name__))
 
             time.sleep(self.testing_sleep_seconds)
         self.assertEqual(404, code)
 
-    def daemon_set_nginx_are_running(self, ips, tries=200):
+    def daemon_set_httpd_are_running(self, ips, tries=200):
         assert type(ips) is list
         assert len(ips) > 0
         for t in range(tries):
@@ -596,16 +610,18 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     g = requests.get("http://%s" % ip)
                     code = g.status_code
                     g.close()
-                    print("-> RESULT %s %s" % (ip, code))
+                    display("-> RESULT %s %s" % (ip, code))
                     sys.stdout.flush()
                     if code == 404:
                         ips.pop(i)
-                        print("-> REMAIN %s for %s" % (str(ips), self.daemon_set_nginx_are_running.__name__))
+                        display("-> REMAIN %s for %s" % (str(ips), self.daemon_set_httpd_are_running.__name__))
+                        continue
 
-                except requests.exceptions.ConnectionError:
-                    print("-> %d/%d NOT READY %s for %s" % (
-                        t + 1, tries, ip, self.daemon_set_nginx_are_running.__name__))
-                    time.sleep(self.testing_sleep_seconds)
+                except Exception as e:
+                    pass
+                display("-> %d/%d NOT READY %s for %s" % (
+                    t + 1, tries, ip, self.daemon_set_httpd_are_running.__name__))
+                time.sleep(self.testing_sleep_seconds)
 
         self.assertEqual(len(ips), 0)
 
@@ -613,7 +629,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     def get_optimized_memory(nb_nodes):
         mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
         mem_gib = mem_bytes / (1024. ** 3)
-        usable_mem_gib = mem_gib * (1.5 if mem_gib > 10 else 1.2)
+        usable_mem_gib = mem_gib * (1.3 if mem_gib > 10 else 1.1)
         return (usable_mem_gib // nb_nodes) * 1024
 
     @staticmethod
@@ -633,13 +649,13 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 "-p",
                 "%d" % proxy_port
             ]
-            print("-> %s" % " ".join(cmd))
+            display("-> %s" % " ".join(cmd))
             os.execve(cmd[0], cmd, os.environ)
 
         return run
 
     def iteractive_usage(self, stop="/tmp/e.stop", api_server_uri=None, fns=None):
-        print("-> Starting %s" % self.iteractive_usage.__name__)
+        display("-> Starting %s" % self.iteractive_usage.__name__)
         kp, proxy_port = None, 8001
         if api_server_uri:
             kp = multiprocessing.Process(target=self.kubectl_proxy(api_server_uri, proxy_port=proxy_port))
@@ -651,10 +667,10 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                         r = requests.get("http://127.0.0.1:%d/healthz" % proxy_port)
                         r.close()
                         if r.status_code == 200:
-                            print("## kubectl -s 127.0.0.1:%d get cs" % proxy_port)
+                            display("## kubectl -s 127.0.0.1:%d get cs" % proxy_port)
                             break
                     except Exception as e:
-                        print("-> %d/%d %s" % (i + 1, maxi, type(e)))
+                        display("-> %d/%d %s" % (i + 1, maxi, e))
                 time.sleep(0.5)
 
         with open(stop, "w") as f:
@@ -666,10 +682,10 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 if fns:
                     [fn() for fn in fns]
                 if int(time.time()) % 30 == 0:
-                    print("-> Stop with \"sudo rm -v\" %s or \"echo 1 > %s\"" % (stop, stop))
+                    display("-> Stop with \"sudo rm -v\" %s or \"echo 1 > %s\"" % (stop, stop))
                 time.sleep(self.wait_setup_teardown)
             if api_server_uri and kp.is_alive():
                 kp.terminate()
                 kp.join(timeout=5)
         finally:
-            print("-> Stopping %s" % self.iteractive_usage.__name__)
+            display("-> Stopping %s" % self.iteractive_usage.__name__)

@@ -72,9 +72,9 @@ class TestKVMK8sEnjolivageDisk0(TestKVMK8sEnjolivageDisk):
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
                 time.sleep(self.testing_sleep_seconds)
 
-            time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds * 10)
+            time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds)
 
-            for i in range(60):
+            for i in range(120):
                 if plan_k8s_2t.apply() == 1:
                     break
                 time.sleep(self.testing_sleep_seconds)
@@ -90,11 +90,11 @@ class TestKVMK8sEnjolivageDisk0(TestKVMK8sEnjolivageDisk):
             self.k8s_api_health(plan_k8s_2t.kubernetes_control_plane_ip_list)
             self.etcd_member_k8s_minions(plan_k8s_2t.etcd_member_ip_list[0], nb_node)
 
-            self.create_nginx_daemon_set(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
-            self.create_nginx_deploy(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+            self.create_httpd_daemon_set(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+            self.create_httpd_deploy(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
             ips = copy.deepcopy(plan_k8s_2t.kubernetes_control_plane_ip_list + plan_k8s_2t.kubernetes_nodes_ip_list)
-            self.daemon_set_nginx_are_running(ips)
-            self.pod_nginx_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+            self.daemon_set_httpd_are_running(ips)
+            self.pod_httpd_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
 
             self.write_ending(marker)
         finally:
@@ -162,9 +162,9 @@ class TestKVMK8sEnjolivageDisk1(TestKVMK8sEnjolivageDisk):
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
                 time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds)
 
-            time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds * 10)
+            time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds)
 
-            for i in range(60):
+            for i in range(120):
                 if plan_k8s_2t.apply() == 1:
                     break
                 time.sleep(self.testing_sleep_seconds)
@@ -180,11 +180,11 @@ class TestKVMK8sEnjolivageDisk1(TestKVMK8sEnjolivageDisk):
             self.k8s_api_health(plan_k8s_2t.kubernetes_control_plane_ip_list)
             self.etcd_member_k8s_minions(plan_k8s_2t.etcd_member_ip_list[0], nb_node)
 
-            self.create_nginx_daemon_set(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
-            self.create_nginx_deploy(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+            self.create_httpd_daemon_set(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+            self.create_httpd_deploy(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
             ips = copy.deepcopy(plan_k8s_2t.kubernetes_control_plane_ip_list + plan_k8s_2t.kubernetes_nodes_ip_list)
-            self.daemon_set_nginx_are_running(ips)
-            self.pod_nginx_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+            self.daemon_set_httpd_are_running(ips)
+            self.pod_httpd_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
 
             self.write_ending(marker)
         finally:

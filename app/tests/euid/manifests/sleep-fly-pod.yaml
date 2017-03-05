@@ -8,7 +8,7 @@ spec:
   hostNetwork: true
   containers:
     - name: sleep-fly
-      image: quay.io/julienbalestra/nginx:latest
+      image: enjoliver.local/debian:latest
       imagePullPolicy: IfNotPresent
       command:
         - /bin/sleep
