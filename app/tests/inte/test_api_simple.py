@@ -11,7 +11,6 @@ import requests
 from app import api
 from app import configs
 from app import generator
-from app import model
 from common import posts
 
 ec = configs.EnjoliverConfig(importer=__file__)
@@ -176,8 +175,8 @@ class TestAPI(unittest.TestCase):
                  "initrd %s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz \n" \
                  "boot\n" % (gen.profile.api_uri, gen.profile.api_uri, gen.profile.api_uri)
         expect = str.encode(expect)
-        self.assertEqual(result.data, expect)
-        self.assertEqual(result.status_code, 200)
+        self.assertEqual(expect, result.data)
+        self.assertEqual(200, result.status_code)
 
     def test_05_ipxe_selector(self):
         mac = "00:00:00:00:00:00"
@@ -201,8 +200,8 @@ class TestAPI(unittest.TestCase):
                  "initrd %s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz \n" \
                  "boot\n" % (gen.profile.api_uri, gen.profile.api_uri, gen.profile.api_uri)
         expect = str.encode(expect)
-        self.assertEqual(result.data, expect)
-        self.assertEqual(result.status_code, 200)
+        self.assertEqual(expect, result.data)
+        self.assertEqual(200, result.status_code)
 
     def test_06_discovery_400(self):
         result = self.app.post('/discovery', data="ok")

@@ -33,13 +33,11 @@ class TestGenerateGroups(TestCase):
 
         self.gen._metadata()
         self.assertEqual(expect['api_uri'], self.gen._target_data["metadata"]["api_uri"])
-        self.assertEqual(expect['etcd_initial_cluster'], self.gen._target_data["metadata"]["etcd_initial_cluster"])
 
     def test_990_generate(self):
         expect = {
             'profile': 'etcd-proxy.yaml',
             'metadata': {
-                'etcd_initial_cluster': '',
                 'api_uri': '%s' % self.gen.api_uri,
                 'ssh_authorized_keys': []
             },
@@ -115,7 +113,6 @@ class TestGenerateGroupsSelectorLower(TestCase):
 
     def test_01_metadata(self):
         expect = {
-            'etcd_initial_cluster': '',
             'api_uri': "%s" % self.gen.api_uri,
             'ssh_authorized_keys': []
         }
@@ -132,7 +129,6 @@ class TestGenerateGroupsSelectorLower(TestCase):
         expect = {
             'profile': 'etcd-proxy.yaml',
             'metadata': {
-                'etcd_initial_cluster': '',
                 'api_uri': self.gen.api_uri,
                 'selector': {'mac': '08:00:27:37:28:2e'},
                 'ssh_authorized_keys': []
@@ -188,9 +184,10 @@ class TestGenerateGroupsSelectorUpper(TestCase):
         self.assertIsNotNone(ip)
 
     def test_01_metadata(self):
-        expect = {'etcd_initial_cluster': '',
-                  'api_uri': "%s" % self.gen.api_uri,
-                  'ssh_authorized_keys': []}
+        expect = {
+            'api_uri': "%s" % self.gen.api_uri,
+            'ssh_authorized_keys': []
+        }
         self.gen._metadata()
         self.gen._target_data["metadata"]['ssh_authorized_keys'] = []
         self.assertEqual(expect, self.gen._target_data["metadata"])
@@ -204,7 +201,6 @@ class TestGenerateGroupsSelectorUpper(TestCase):
         expect = {
             'profile': 'etcd-proxy.yaml',
             'metadata': {
-                'etcd_initial_cluster': '',
                 'api_uri': "%s" % self.gen.api_uri,
                 'selector': {'mac': '08:00:27:37:28:2e'},
                 'ssh_authorized_keys': []
@@ -281,7 +277,6 @@ class TestGenerateGroupsExtraMetadata(TestCase):
         expect = {
             'profile': 'etcd-proxy.yaml',
             'metadata': {
-                'etcd_initial_cluster': '',
                 'api_uri': "%s" % self.gen.api_uri,
                 'selector': {'mac': '08:00:27:37:28:2e'},
                 'ssh_authorized_keys': []
