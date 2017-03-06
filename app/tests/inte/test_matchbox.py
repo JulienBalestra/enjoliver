@@ -195,26 +195,6 @@ class TestBootConfigCommon(TestCase):
         request.close()
         self.assertEqual(200, request.status_code)
 
-    def test_03_assets_coreos(self):
-        request = requests.get("%s/assets/coreos" % self.matchbox_endpoint)
-        request.close()
-        self.assertEqual(200, request.status_code)
-
-    def test_03_assets_coreos_serve(self):
-        request = requests.get("%s/assets/coreos/serve" % self.matchbox_endpoint)
-        request.close()
-        self.assertEqual(200, request.status_code)
-
-    def test_03_assets_coreos_serve_kernel(self):
-        request = requests.get("%s/assets/coreos/serve/coreos_production_pxe.vmlinuz" % self.matchbox_endpoint)
-        request.close()
-        self.assertEqual(200, request.status_code)
-
-    def test_03_assets_coreos_serve_initrd(self):
-        request = requests.get("%s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz" % self.matchbox_endpoint)
-        request.close()
-        self.assertEqual(200, request.status_code)
-
     def test_03_assets_coreos_serve_404(self):
         r = requests.get("%s/assets/coreos/serve/404_request.not-here" % self.matchbox_endpoint)
         self.assertEqual(404, r.status_code)
