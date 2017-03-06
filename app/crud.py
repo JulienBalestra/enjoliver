@@ -499,7 +499,7 @@ class InjectLifecycle(object):
 
     def refresh_lifecycle_coreos_install(self, success):
         l = self.session.query(LifecycleCoreosInstall).filter(
-            LifecycleIgnition.machine_interface == self.interface.id).first()
+            LifecycleCoreosInstall.machine_interface == self.interface.id).first()
         if not l:
             l = LifecycleCoreosInstall(
                 machine_interface=self.interface.id,
