@@ -87,7 +87,7 @@ def backup_sqlite(cache, application):
     return jsonify(b)
 
 
-def healthz(application, session, request):
+def healthz(application, smart, request):
     """
     Query all services and return the status
     :return: json
@@ -110,7 +110,10 @@ def healthz(application, session, request):
             status["global"] = False
             LOGGER.error(e)
     try:
-        status["db"] = crud.health_check(session, ts=time.time(), who=request.remote_addr)
+        with smart.connected_session() as session:
+            status["db"] = crud.health_check(session, ts=time.time(), who=request.remote_addr)
+        if len(smart.engines) > 1:
+            status["dbs"] = smart.engine_urls
     except Exception as e:
         status["global"] = False
         LOGGER.error(e)

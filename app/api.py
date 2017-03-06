@@ -167,8 +167,7 @@ def root():
 
 @application.route('/healthz', methods=['GET'])
 def healthz():
-    with smart.connected_session() as session:
-        d = ops.healthz(application, session, request)
+    d = ops.healthz(application, smart, request)
     return jsonify(d)
 
 
