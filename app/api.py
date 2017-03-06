@@ -455,12 +455,13 @@ def require_install_authorization(request_raw_query):
     :return:
     """
     LOGGER.info("%s %s %s" % (request.method, request.remote_addr, request.url))
-    lock = cache.get("lock-install")
-    if lock is not None:
-        LOGGER.warning("Locked by %s" % lock)
-        return Response(response="Locked by %s" % lock, status=403)
-    cache.set("lock-install", request_raw_query, timeout=ec.coreos_install_lock_seconds)
-    LOGGER.info("Granted to %s" % request_raw_query)
+    if ec.coreos_install_lock_seconds > 0:
+        lock = cache.get("lock-install")
+        if lock is not None:
+            LOGGER.warning("Locked by %s" % lock)
+            return Response(response="Locked by %s" % lock, status=403)
+        cache.set("lock-install", request_raw_query, timeout=ec.coreos_install_lock_seconds)
+        LOGGER.info("Granted to %s" % request_raw_query)
     return Response(response="Granted", status=200)
 
 

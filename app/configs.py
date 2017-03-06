@@ -167,7 +167,7 @@ class EnjoliverConfig(object):
         self.plan_pid_file = self.config_override("plan_pid_file", "%s/plan.pid" % os.path.dirname(__file__))
 
         self.coreos_install_base_url = self.config_override("coreos_install_base_url", None)
-        self.coreos_install_lock_seconds = self.config_override("coreos_install_lock_seconds", 28)
+        self.coreos_install_lock_seconds = self.config_override("coreos_install_lock_seconds", 0)
 
         if self.logging_level.lower() == "debug":
             print("configs file: %s for %s" % (yaml_full_path, importer))
