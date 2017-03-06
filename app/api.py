@@ -61,8 +61,7 @@ def lifecycle_post_ignition(request_raw_query):
         LOGGER.error("%s have incorrect matchbox return" % request.path)
         return "MatchboxValueError", 406
 
-    conn, session = smart.create_conn_with_session()
-    try:
+    with smart.connected_session() as session:
         i = crud.InjectLifecycle(session, request_raw_query=request_raw_query)
         if json.dumps(machine_ignition, sort_keys=True) == json.dumps(matchbox_ignition, sort_keys=True):
             i.refresh_lifecycle_ignition(True)
@@ -70,16 +69,12 @@ def lifecycle_post_ignition(request_raw_query):
         else:
             i.refresh_lifecycle_ignition(False)
             r = "Outdated", 210
-    finally:
-        session.close()
-        conn.close()
     return r
 
 
 @application.route("/lifecycle/rolling/<string:request_raw_query>", methods=["GET"])
 def lifecycle_rolling_get(request_raw_query):
-    conn, session = smart.create_conn_with_session()
-    try:
+    with smart.connected_session() as session:
         life = crud.FetchLifecycle(session)
         mac = crud.InjectLifecycle.get_mac_from_raw_query(request_raw_query)
         d = life.get_rolling_status(mac)
@@ -88,9 +83,6 @@ def lifecycle_rolling_get(request_raw_query):
             return "Enabled %s" % mac, 200
         elif d is False:
             return "Disable %s" % mac, 403
-    finally:
-        session.close()
-        conn.close()
 
     return "ForeignDisabled %s" % mac, 401
 
@@ -98,66 +90,50 @@ def lifecycle_rolling_get(request_raw_query):
 @application.route("/lifecycle/rolling/<string:request_raw_query>", methods=["POST"])
 def lifecycle_rolling_post(request_raw_query):
     LOGGER.info("%s %s" % (request.method, request.url))
-    conn, session = smart.create_conn_with_session()
-    try:
-        life = crud.InjectLifecycle(session, request_raw_query)
-        life.apply_lifecycle_rolling(True)
-        d = "Enabled %s" % life.mac, 200
-    except AttributeError:
-        d = "Unknown in db %s" % request_raw_query, 401
-    finally:
-        session.close()
-        conn.close()
+    with smart.connected_session() as session:
+        try:
+            life = crud.InjectLifecycle(session, request_raw_query)
+            life.apply_lifecycle_rolling(True)
+            d = "Enabled %s" % life.mac, 200
+        except AttributeError:
+            d = "Unknown in db %s" % request_raw_query, 401
     return d
 
 
 @application.route("/lifecycle/rolling/<string:request_raw_query>", methods=["DELETE"])
 def lifecycle_rolling_delete(request_raw_query):
     LOGGER.info("%s %s" % (request.method, request.url))
-    conn, session = smart.create_conn_with_session()
-    try:
+    with smart.connected_session() as session:
         life = crud.InjectLifecycle(session, request_raw_query)
         life.apply_lifecycle_rolling(False)
         d = "Disabled %s" % life.mac, 200
-    finally:
-        session.close()
-        conn.close()
     return d
 
 
 @application.route("/lifecycle/rolling", methods=["GET"])
 def lifecycle_rolling_all():
-    conn, session = smart.create_conn_with_session()
-    try:
+    with smart.connected_session() as session:
         life = crud.FetchLifecycle(session)
         d = life.get_all_rolling_status()
-    finally:
-        session.close()
-        conn.close()
+
     return jsonify(d)
 
 
 @application.route("/lifecycle/ignition", methods=["GET"])
 def lifecycle_get_ignition_status():
-    conn, session = smart.create_conn_with_session()
-    try:
+    with smart.connected_session() as session:
         q = crud.FetchLifecycle(session)
         d = q.get_all_updated_status()
-    finally:
-        session.close()
-        conn.close()
+
     return jsonify(d)
 
 
 @application.route("/lifecycle/coreos-install", methods=["GET"])
 def lifecycle_get_coreos_install_status():
-    conn, session = smart.create_conn_with_session()
-    try:
+    with smart.connected_session() as session:
         q = crud.FetchLifecycle(session)
         d = q.get_all_coreos_install_status()
-    finally:
-        session.close()
-        conn.close()
+
     return jsonify(d)
 
 
@@ -171,13 +147,9 @@ def lifecycle_post_coreos_install(status, request_raw_query):
     else:
         LOGGER.error("%s %s" % (request.method, request.url))
         return "success or fail != %s" % status.lower(), 403
-    conn, session = smart.create_conn_with_session()
-    try:
+    with smart.connected_session() as session:
         i = crud.InjectLifecycle(session, request_raw_query=request_raw_query)
         i.refresh_lifecycle_coreos_install(success)
-    finally:
-        session.close()
-        conn.close()
     return "%s" % status, 200
 
 
@@ -195,12 +167,8 @@ def root():
 
 @application.route('/healthz', methods=['GET'])
 def healthz():
-    conn, session = smart.create_conn_with_session()
-    try:
+    with smart.connected_session() as session:
         d = ops.healthz(application, session, request)
-    finally:
-        session.close()
-        conn.close()
     return jsonify(d)
 
 
@@ -213,19 +181,16 @@ def discovery():
     except (KeyError, TypeError, ValueError):
         return err
 
-    conn, session = smart.create_conn_with_session()
-    try:
-        i = crud.InjectDiscovery(session,
-                                 ignition_journal=ignition_journal,
-                                 discovery=r)
-        new = i.commit()
-        cache.delete(request.path)
-        d = jsonify({"total_elt": new[0], "new": new[1]})
-    except TypeError:
-        d = err
-    finally:
-        session.close()
-        conn.close()
+    with smart.connected_session() as session:
+        try:
+            i = crud.InjectDiscovery(session,
+                                     ignition_journal=ignition_journal,
+                                     discovery=r)
+            new = i.commit()
+            cache.delete(request.path)
+            d = jsonify({"total_elt": new[0], "new": new[1]})
+        except TypeError:
+            d = err
     return d
 
 
@@ -233,14 +198,10 @@ def discovery():
 def discovery_get():
     all_data = cache.get(request.path)
     if all_data is None:
-        conn, session = smart.create_conn_with_session()
-        try:
+        with smart.connected_session() as session:
             fetch = crud.FetchDiscovery(session, ignition_journal=ignition_journal)
             all_data = fetch.get_all()
             cache.set(request.path, all_data, timeout=30)
-        finally:
-            session.close()
-            conn.close()
     return jsonify(all_data)
 
 
@@ -248,54 +209,38 @@ def discovery_get():
 def scheduler_get():
     all_data = cache.get(request.path)
     if all_data is None:
-        conn, session = smart.create_conn_with_session()
-        try:
+        with smart.connected_session() as session:
             fetch = crud.FetchSchedule(session)
             all_data = fetch.get_schedules()
             cache.set(request.path, all_data, timeout=30)
-        finally:
-            session.close()
-            conn.close()
 
     return jsonify(all_data)
 
 
 @application.route('/scheduler/<string:role>', methods=['GET'])
 def get_schedule_by_role(role):
-    conn, session = smart.create_conn_with_session()
-    try:
+    with smart.connected_session() as session:
         fetch = crud.FetchSchedule(session)
         multi = role.split("&")
         data = fetch.get_roles(*multi)
-    finally:
-        session.close()
-        conn.close()
 
     return jsonify(data)
 
 
 @application.route('/scheduler/available', methods=['GET'])
 def get_available_machine():
-    conn, session = smart.create_conn_with_session()
-    try:
+    with smart.connected_session() as session:
         fetch = crud.FetchSchedule(session)
         data = fetch.get_available_machines()
-    finally:
-        session.close()
-        conn.close()
 
     return jsonify(data)
 
 
 @application.route('/scheduler/ip-list/<string:role>', methods=['GET'])
 def get_schedule_role_ip_list(role):
-    conn, session = smart.create_conn_with_session()
-    try:
+    with smart.connected_session() as session:
         fetch = crud.FetchSchedule(session)
         ip_list_role = fetch.get_role_ip_list(role)
-    finally:
-        session.close()
-        conn.close()
 
     return jsonify(ip_list_role)
 
@@ -313,14 +258,10 @@ def scheduler_post():
                 }
             }), 406
 
-    conn, session = smart.create_conn_with_session()
-    try:
+    with smart.connected_session() as session:
         inject = crud.InjectSchedule(session, data=r)
         inject.apply_roles()
         inject.commit()
-    finally:
-        session.close()
-        conn.close()
 
     cache.delete(request.path)
     return jsonify(r)
@@ -335,55 +276,39 @@ def backup_database():
 
 @application.route('/discovery/interfaces', methods=['GET'])
 def discovery_interfaces():
-    conn, session = smart.create_conn_with_session()
-    try:
+    with smart.connected_session() as session:
         fetch = crud.FetchDiscovery(session, ignition_journal=ignition_journal)
         interfaces = fetch.get_all_interfaces()
-    finally:
-        session.close()
-        conn.close()
 
     return jsonify(interfaces)
 
 
 @application.route('/discovery/ignition-journal/<string:uuid>/<string:boot_id>', methods=['GET'])
 def discovery_ignition_journal_by_boot_id(uuid, boot_id):
-    conn, session = smart.create_conn_with_session()
-    try:
+    with smart.connected_session() as session:
         fetch = crud.FetchDiscovery(session,
                                     ignition_journal=ignition_journal)
         lines = fetch.get_ignition_journal(uuid, boot_id=boot_id)
-    finally:
-        session.close()
-        conn.close()
 
     return jsonify(lines)
 
 
 @application.route('/discovery/ignition-journal/<string:uuid>', methods=['GET'])
 def discovery_ignition_journal_by_uuid(uuid):
-    conn, session = smart.create_conn_with_session()
-    try:
+    with smart.connected_session() as session:
         fetch = crud.FetchDiscovery(session,
                                     ignition_journal=ignition_journal)
         lines = fetch.get_ignition_journal(uuid)
-    finally:
-        session.close()
-        conn.close()
 
     return jsonify(lines)
 
 
 @application.route('/discovery/ignition-journal', methods=['GET'])
 def discovery_ignition_journal_summary():
-    conn, session = smart.create_conn_with_session()
-    try:
+    with smart.connected_session() as session:
         fetch = crud.FetchDiscovery(session,
                                     ignition_journal=ignition_journal)
         lines = fetch.get_ignition_journal_summary()
-    finally:
-        session.close()
-        conn.close()
 
     return jsonify(lines)
 
@@ -520,15 +445,14 @@ def user_view_machine():
 
     key = "discovery"
     all_data = cache.get(key)
-    conn, session = smart.create_conn_with_session()
+    with smart.connected_session() as session:
 
-    if all_data is None:
-        disco = crud.FetchDiscovery(session, ignition_journal=ignition_journal)
-        all_data = disco.get_all()
-        cache.set(key, all_data, timeout=30)
+        if all_data is None:
+            disco = crud.FetchDiscovery(session, ignition_journal=ignition_journal)
+            all_data = disco.get_all()
+            cache.set(key, all_data, timeout=30)
 
-    res = [["Created", "cidr-boot", "mac-boot", "fqdn", "Roles", "Installed", "Up-to-date", "Rolling"]]
-    try:
+        res = [["Created", "cidr-boot", "mac-boot", "fqdn", "Roles", "Installed", "Up-to-date", "Rolling"]]
         for i in all_data:
             sub_list = list()
             sub_list.append(i["boot-info"]["created-date"])
@@ -563,9 +487,6 @@ def user_view_machine():
                             rolling = "ForeignDisabled"
                         sub_list.append(rolling)
             res.append(sub_list)
-    finally:
-        session.close()
-        conn.close()
 
     return jsonify(res)
 

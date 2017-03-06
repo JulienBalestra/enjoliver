@@ -563,7 +563,7 @@ storage:
         inline: |
           #!/usr/bin/env bash
 
-          set -ex
+          set -e
 
           curl -f ${API_URI}/healthz
 
@@ -593,6 +593,11 @@ storage:
 
           /opt/bin/kubectl drain {{.kubernetes_node_name}} --force --ignore-daemonsets
           systemctl stop fleet.service
+
+          for u in install-etcd.service install-fleet.service install-cni.service install-hyperkube.service
+          do
+            systemctl reload $u
+          done
 
           DISK_GUID="00000000-0000-0000-0000-000000000001"
           sgdisk --disk-guid=${DISK_GUID} /dev/sda

@@ -1,8 +1,8 @@
 import random
 import time
+from contextlib import contextmanager
 
 from sqlalchemy import create_engine
-from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker
 
 import logger
@@ -35,23 +35,27 @@ class SmartClient(object):
                 self.engines.append(e)
         self.log.info("total: %d" % len(self.engines))
 
-    def create_conn_with_session(self):
+    @contextmanager
+    def connected_session(self):
         conn = self.get_engine_connection()
         Session = sessionmaker(bind=conn)
         session = Session(bind=conn)
-        return conn, session
+        try:
+            yield session
+        finally:
+            session.close()
+            conn.close()
 
     def get_engine_connection(self):
-        ts = time.time()
-        if time.time() - self.last_shuffle > 60:
-            random.shuffle(self.engines)
-            self.last_shuffle = ts
+        random.shuffle(self.engines)
         for engine in self.engines:
             try:
                 conn = engine.connect()
                 return conn
-            except OperationalError:
-                self.log.error("could not connect to %s" % engine.url)
+            except Exception as e:
+                self.log.error("could not connect to %s %s" % (engine.url, e))
+
+        self.log.critical("could not connect to any of %s" % ",".join(["%s" % k.url for k in self.engines]))
         raise ConnectionError(",".join(["%s" % k.url for k in self.engines]))
 
     def create_base(self):
