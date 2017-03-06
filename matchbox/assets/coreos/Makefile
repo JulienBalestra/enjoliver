@@ -18,7 +18,7 @@ ASC=CoreOS_Image_Signing_Key.asc
 KEY=$(addprefix $(VERSION)/, $(ASC))
 GPG=gpg
 
-default: $(KEY) $(KERNEL) $(INITRD) $(TEXT_VERSION)
+default: $(KEY) $(KERNEL) $(INITRD) $(TEXT_VERSION) $(IMAGE)
 
 $(VERSION):
 	test $(VERSION)
@@ -41,9 +41,6 @@ $(INITRD): $(KEY) $(VERSION)
 $(TEXT_VERSION): $(VERSION)
 	curl -Lf $(CHANNEL)/$(TEXT_VERSION) -o $(TEXT_VERSION)
 
-image: $(IMAGE)
-	ln -sfv $(SERVE) current
-
 $(IMAGE):
 	curl -Lf $(CHANNEL)/$(IMAGE) -o $(IMAGE)
 	curl -Lf $(CHANNEL)/$(IMAGE).sig -o $(IMAGE).sig
@@ -53,11 +50,11 @@ clean:
 	@rm -rfv $(VERSION) 2>&1 || true
 
 $(SERVE):
-	@ls -dF $(VERSION)
 	ln -vsf $(VERSION) $(SERVE)
+	ln -vsf $(SERVE) current
 
 fclean: clean
 	@find * -maxdepth 1 -type d -exec rm -Rfv {} \;
-	@rm -v $(SERVE) 2>&1 || true
+	@rm -v $(SERVE) current || true
 
 re: fclean default

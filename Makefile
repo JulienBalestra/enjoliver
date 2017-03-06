@@ -59,24 +59,24 @@ acis: acserver
 	pkill acserver
 
 assets:
-	make -C matchbox/assets/coreos
-	make -C matchbox/assets/coreos serve
 	# Self
 	make -C matchbox/assets/discoveryC
 
 clean: check_clean
-	make -C matchbox/assets/cni fclean
-	make -C matchbox/assets/coreos fclean
-	make -C matchbox/assets/discoveryC fclean
-	make -C matchbox/assets/hyperkube fclean
-	make -C matchbox/assets/lldp fclean
-	make -C matchbox/assets/rkt fclean
-
-clean_after_assets:
-	rm -v cni/cni.tar.gz
-	make -C discoveryC clean
+	make -C cni clean
+	make -C etcd clean
+	make -C fleet clean
 	make -C hyperkube clean
 	make -C lldp clean
+	make -C rkt clean
+
+clean_after_assets:
+	make -C discoveryC clean
+
+fclean: clean_after_assets clean check_clean
+	rm -Rf $(ENV)
+	rm -Rf runtime/acserver.d/*
+	rm -Rf runtime/target/*
 
 check_clean:
 	make -C app/tests/ fclean
@@ -119,7 +119,7 @@ config:
 	touch $(HOME)/.config/enjoliver/config.json
 
 dev_setup:
-	echo "Need MY_USER for non root operations"
+	echo "Need MY_USER for non root operations and root for dgr"
 	test $(MY_USER)
 	test $(shell id -u -r) -eq 0
 	su - $(MY_USER) -c "make -C $(CWD) submodules"
@@ -128,9 +128,11 @@ dev_setup:
 	su - $(MY_USER) -c "make -C $(CWD) pip"
 	make -C $(CWD) acis
 	su - $(MY_USER) -c "make -C $(CWD) assets"
-	su - $(MY_USER) -c "make -C $(CWD)/matchbox/assets/coreos image"
+	su - $(MY_USER) -c "make -C $(CWD)/matchbox/assets/coreos"
+	su - $(MY_USER) -c "make -C $(CWD)/matchbox/assets/coreos serve"
 	su - $(MY_USER) -c "make -C $(CWD) validate"
 	su - $(MY_USER) -c "make -C $(CWD) config"
+	chown -R $(MY_USER): $(CWD)
 
 prod_setup:
 	make -C $(CWD) submodules
