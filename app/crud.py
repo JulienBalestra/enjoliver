@@ -469,7 +469,7 @@ class InjectLifecycle(object):
             m = "InjectLifecycle mac: '%s' unknown in db" % self.mac
             self.log.error(m)
             raise AttributeError(m)
-        self.log.info("InjectLifecycle mac: %s" % self.mac)
+        self.log.debug("InjectLifecycle mac: %s" % self.mac)
 
     @staticmethod
     def get_mac_from_raw_query(request_raw_query):
