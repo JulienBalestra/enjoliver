@@ -776,7 +776,7 @@ storage:
           locksmithctl -endpoint {{.kubernetes_etcd_servers}} unlock "${REQUEST_RAW_QUERY}" || true
           locksmithctl -endpoint {{.kubernetes_etcd_servers}} lock "${REQUEST_RAW_QUERY}"
 
-          /opt/bin/kubectl drain {{.kubernetes_node_name}} --force --ignore-daemonsets
+          /opt/bin/kubectl drain {{.kubernetes_node_name}} --force --ignore-daemonsets --delete-local-data
           systemctl stop fleet.service
 
           for u in install-etcd.service install-fleet.service install-cni.service install-hyperkube.service
