@@ -8,6 +8,7 @@ ACI=$(PROJECT)/aci
 HYPERKUBE_BIN=hyperkube
 
 DEBIAN=debian
+GO=go
 BUILDER_HYPERKUBE=builder-hyperkube
 HYPERKUBE=hyperkube
 
@@ -19,7 +20,12 @@ $(DEBIAN):
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) install
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) push
 
-$(BUILDER_HYPERKUBE): $(DEBIAN)
+$(GO): $(DEBIAN)
+	@echo ENV IMAGE=$(ACI)/aci-$(GO)
+	IMAGE=$(ACI)/aci-$(GO) make -C $(RUNTIME) install
+	IMAGE=$(ACI)/aci-$(GO) make -C $(RUNTIME) push
+
+$(BUILDER_HYPERKUBE): $(GO)
 	@echo ENV IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE)
 	IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE) make -C $(RUNTIME) install
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) push
@@ -47,6 +53,7 @@ gc:
 
 clean: gc
 	rm -v $(HYPERKUBE_BIN) || true
+	IMAGE=$(ACI)/aci-$(GO) make -C $(RUNTIME) clean
 	IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE) make -C $(RUNTIME) clean
 	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) clean
 

@@ -1,0 +1,15 @@
+name: enjoliver.local/go:1.7.5
+aci:
+  dependencies:
+    - enjoliver.local/debian:latest
+  app:
+    environment:
+      - { name: GOPATH, value: "/go" }
+      - { name: GOROOT, value: "/usr/bin/go" }
+
+
+builder:
+  dependencies:
+    - enjoliver.local/debian:latest
+
+
