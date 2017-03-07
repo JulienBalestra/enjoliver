@@ -8,87 +8,11 @@ Travis-ci (com / org)
 * [![Build Status](https://travis-ci.org/JulienBalestra/enjoliver.svg?branch=master)](https://travis-ci.org/JulienBalestra/enjoliver) - Public
 
 
-Circle-ci
-
-* [![CircleCI](https://circleci.com/gh/JulienBalestra/enjoliver/tree/master.svg?style=svg)](https://circleci.com/gh/JulienBalestra/enjoliver/tree/master) - Public
-
 ## Description
 
 Deploy an usable Kubernetes cluster with iPXE.
+    * Baremetal
+    * Linux KVM
 
 The Kubernetes Kubelet runtime is rkt.
 
-Docker:// prefix is removed from Kubernetes by patches and recompile.
-Extra features are (alpha) adds like:
-
-* easily identify who's who `systemctl list-units "k8s_*"`
-* get logs of a pod by the `journalctl --identifier`
-* creates volumes by pods annotations `rkt.kubernetes.io/host-create-directories: /tmp/my-dir`
-
-## Incoming
-
-* Dev
-    * Use qemu-kvm rkt stage1
-  
-       
-* Custom @home baremetal CI
-    * KVM
-
-## Linux checkout and local run
-
-### Requirements
-
-#### Debian / Ubuntu auto-way
-
-
-    sudo make apt
-    
-    # MY_USER is your non-root user
-    sudo MY_USER=${USER} make setup
-    make validate
-        
-    # Testing
-    make check
-    sudo make check_euid
-    
-    # Quick using
-    sudo make -C app/tests/ check_euid_it_k8s_fast
-    
-    # Stop the cluster
-    echo "" > /tmp/e.stop
-    
-    
-
-#### Handy way
-
-##### Mandatory:
-
-* curl
-* python
-* python-virtualenv
-* qemu-kvm
-* libvirt-bin
-* virtinst
-* jq
-* file
-* npm
-* golang # > 1.3
-
-
-    ./apt.sh # Over Debian-based
-
-
-##### Optional:
-
-* liblzma-dev
-* mkisofs
-* isolinux
-* virt-manager
-
-
-## Release
-
-    sudo make release
-    ls -lh release/*.aci
-    
-    
