@@ -1,8 +1,10 @@
 #! /usr/bin/env python
+import json
 import os
 import sys
-
 import time
+
+import requests
 
 try:
     import generator
@@ -12,6 +14,7 @@ except ImportError:
 
 import schedulerv2
 import sync
+import logger
 
 from configs import EnjoliverConfig
 
@@ -78,10 +81,25 @@ class Kubernetes2Tiers(object):
 
 
 if __name__ == '__main__':
+    log = logger.get_logger(__file__)
     wait = 60
-
     ec = EnjoliverConfig(importer=__file__)
     Kubernetes2Tiers.wait = wait
+
+    health = "%s/healthz" % ec.api_uri
+    tries = 10
+    for i in range(tries):
+        try:
+            r = requests.get(health)
+            content = r.content.decode()
+            s = json.loads(content)
+            if s["global"] is True:
+                log.info("%d/%d Global status is %s" % (i, tries, s["global"]))
+                break
+            log.warning("%d/%d Global status is %s" % (i, tries, s["global"]))
+        except Exception as e:
+            log.error("%d/%d [%s] returned -> %s" % (i, tries, health, e))
+        time.sleep(10)
 
     k2t = Kubernetes2Tiers(
         ignition_dict=ec.ignition_dict,
