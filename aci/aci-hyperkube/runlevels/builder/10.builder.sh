@@ -32,7 +32,7 @@ done
 # Build
 make hyperkube
 
-cp -v _output/local/go/bin/hyperkube /opt/source-project/hyperkube
+#cp -v _output/local/go/bin/hyperkube /opt/source-project/hyperkube
 cp -v _output/local/go/bin/hyperkube ${ROOTFS}
 cd -P ${ROOTFS}
 ./hyperkube --make-symlinks

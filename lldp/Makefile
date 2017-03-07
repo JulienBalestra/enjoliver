@@ -29,7 +29,7 @@ gc:
 	$(RKT) --local-config=$(RUNTIME) image gc --grace-period=0s
 
 clean: gc
-	IMAGE=$(CWD)/aci-lldp make -C $(RUNTIME) clean
+	IMAGE=$(ACI)/aci-$(LLDP) make -C $(RUNTIME) clean
 
 fclean: clean
 	IMAGE=$(ACI)/aci-$(BASE) make -C $(RUNTIME) clean

@@ -57,6 +57,12 @@ acis: acserver
 	make -C rkt || pkill acserver || exit 1
 	# Find a better way to stop it
 	pkill acserver
+	make -C cni clean
+	make -C etcd clean
+	make -C fleet clean
+	make -C hyperkube clean
+	make -C lldp clean
+	make -C rkt clean
 
 assets:
 	# Self
