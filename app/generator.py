@@ -4,6 +4,8 @@ import json
 import os
 import re
 
+import deepdiff
+
 import logger
 from configs import EnjoliverConfig
 
@@ -81,20 +83,19 @@ class GenerateCommon(object):
         file_path = "%s/%s.json" % (self.target_path, self.target_data["id"])
         try:
             with open(file_path, 'r') as f:
-                on_disk = f.read()
-            on_disk_hash = hashlib.sha256(on_disk.encode()).hexdigest()
+                on_disk = json.loads(f.read())
         except Exception as e:
-            self.log.warning("get hash of %s raise: %s" % (file_path, e))
-            on_disk_hash = ""
+            self.log.warning("get data of %s raise: %s" % (file_path, e))
+            on_disk = {}
 
         render = self.render()
-        render_hash = hashlib.sha256(render.encode()).hexdigest()
-        if render_hash != on_disk_hash:
+        diff = deepdiff.DeepDiff(self._target_data, on_disk, ignore_order=True)
+        if diff:
             with open(file_path, "w") as fd:
                 fd.write(render)
             self.log.info("replaced: %s" % file_path)
         else:
-            self.log.debug("same hash -> %s" % file_path)
+            self.log.debug("no diff: %s" % file_path)
 
     @staticmethod
     def ensure_directory(path):

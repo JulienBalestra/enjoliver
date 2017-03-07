@@ -47,7 +47,7 @@ def configs():
 
 
 @application.route("/lifecycle/ignition/<string:request_raw_query>", methods=["POST"])
-def lifecycle_post_ignition(request_raw_query):
+def submit_lifecycle_ignition(request_raw_query):
     try:
         machine_ignition = json.loads(request.get_data())
     except ValueError:
@@ -73,7 +73,7 @@ def lifecycle_post_ignition(request_raw_query):
 
 
 @application.route("/lifecycle/rolling/<string:request_raw_query>", methods=["GET"])
-def lifecycle_rolling_get(request_raw_query):
+def report_lifecycle_rolling(request_raw_query):
     with smart.connected_session() as session:
         life = crud.FetchLifecycle(session)
         mac = crud.InjectLifecycle.get_mac_from_raw_query(request_raw_query)
@@ -88,7 +88,7 @@ def lifecycle_rolling_get(request_raw_query):
 
 
 @application.route("/lifecycle/rolling/<string:request_raw_query>", methods=["POST"])
-def lifecycle_rolling_post(request_raw_query):
+def change_lifecycle_rolling(request_raw_query):
     LOGGER.info("%s %s" % (request.method, request.url))
     with smart.connected_session() as session:
         try:
@@ -138,7 +138,7 @@ def lifecycle_get_coreos_install_status():
 
 
 @application.route("/lifecycle/coreos-install/<string:status>/<string:request_raw_query>", methods=["POST"])
-def lifecycle_post_coreos_install(status, request_raw_query):
+def report_lifecycle_coreos_install(status, request_raw_query):
     LOGGER.info("%s %s" % (request.method, request.url))
     if status.lower() == "success":
         success = True

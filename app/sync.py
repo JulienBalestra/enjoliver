@@ -1,6 +1,5 @@
 import json
 import os
-import random
 import re
 
 import ipaddr
@@ -131,49 +130,49 @@ class ConfigSyncSchedules(object):
         return self._query_ip_list(schedulerv2.ScheduleRoles.kubernetes_node)
 
     @staticmethod
-    def shuffler_http_uri(ips, ec_value):
+    def order_http_uri(ips, ec_value):
         ips.sort()
         e = ["http://%s:%d" % (k, ec_value) for k in ips]
-        random.shuffle(e)
+        # random.shuffle(e)
         return e
 
     @staticmethod
-    def shuffler_etcd_named(ips, ec_value):
+    def order_etcd_named(ips, ec_value):
         ips.sort()
         e = ["%s=http://%s:%d" % (k, k, ec_value) for k in ips]
-        random.shuffle(e)
+        # random.shuffle(e)
         return ",".join(e)
 
     @property
     def kubernetes_etcd_initial_cluster(self):
-        return self.shuffler_etcd_named(self.etcd_member_ip_list, ec.kubernetes_etcd_peer_port)
+        return self.order_etcd_named(self.etcd_member_ip_list, ec.kubernetes_etcd_peer_port)
 
     @property
     def fleet_etcd_initial_cluster(self):
-        return self.shuffler_etcd_named(self.etcd_member_ip_list, ec.fleet_etcd_peer_port)
+        return self.order_etcd_named(self.etcd_member_ip_list, ec.fleet_etcd_peer_port)
 
     @property
     def kubernetes_etcd_member_client_uri_list(self):
-        return self.shuffler_http_uri(self.etcd_member_ip_list, ec.kubernetes_etcd_client_port)
+        return self.order_http_uri(self.etcd_member_ip_list, ec.kubernetes_etcd_client_port)
 
     @property
     def fleet_etcd_member_client_uri_list(self):
-        return self.shuffler_http_uri(self.etcd_member_ip_list, ec.fleet_etcd_client_port)
+        return self.order_http_uri(self.etcd_member_ip_list, ec.fleet_etcd_client_port)
 
     @property
     def kubernetes_etcd_member_peer_uri_list(self):
-        return self.shuffler_http_uri(self.etcd_member_ip_list, ec.kubernetes_etcd_peer_port)
+        return self.order_http_uri(self.etcd_member_ip_list, ec.kubernetes_etcd_peer_port)
 
     @property
     def fleet_etcd_member_peer_uri_list(self):
-        return self.shuffler_http_uri(self.etcd_member_ip_list, ec.fleet_etcd_peer_port)
+        return self.order_http_uri(self.etcd_member_ip_list, ec.fleet_etcd_peer_port)
 
     @property
     def kubernetes_control_plane(self):
-        return self.shuffler_http_uri(self.kubernetes_control_plane_ip_list, ec.kubernetes_api_server_port)
+        return self.order_http_uri(self.kubernetes_control_plane_ip_list, ec.kubernetes_api_server_port)
 
     def produce_matchbox_data(self, marker, i, m, automatic_name, update_extra_metadata=None):
-        random.seed(m["mac"].__hash__())
+        # random.seed(m["mac"].__hash__())
         fqdn = None
         try:
             fqdn = m["fqdn"]
