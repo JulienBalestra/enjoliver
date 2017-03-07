@@ -581,6 +581,8 @@ storage:
               exit 0
           fi
 
+          set -x
+
           curl -f ${API_URI}/ignition?${REQUEST_RAW_QUERY} -o /tmp/coreos-install.json
           cat /tmp/coreos-install.json | jq -e . > /dev/null
 
