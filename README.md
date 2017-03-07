@@ -11,8 +11,9 @@ Travis-ci (com / org)
 ## Description
 
 Deploy an usable Kubernetes cluster with iPXE.
-    * Baremetal
-    * Linux KVM
+
+* Baremetal
+* Linux KVM
 
 The Kubernetes Kubelet runtime is rkt.
 
