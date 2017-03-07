@@ -29,6 +29,19 @@ do
     }
 done
 
+# If building in a slow travis instance, avoid to be killed by "no logs output since ..."
+cat << EOF > tick.sh
+#!/bin/bash
+until ls -lh _output/local/go/bin/hyperkube
+do
+    echo "compiling..."
+    sleep 60
+done
+EOF
+chmod +x tick.sh
+
+./tick.sh &
+
 # Build
 make hyperkube
 
