@@ -25,7 +25,6 @@ $(PYTHON): $(DEBIAN)
 	@echo ENV IMAGE=$(ACI)/aci-$(PYTHON)
 	IMAGE=$(ACI)/aci-$(PYTHON) make -C $(RUNTIME) install
 	IMAGE=$(ACI)/aci-$(PYTHON) make -C $(RUNTIME) test
-	IMAGE=$(ACI)/aci-$(PYTHON) make -C $(RUNTIME) push
 
 $(BUILDER_ENJOLIVER): $(BUILDER_HYPERKUBE) $(PYTHON)
 	@echo ENV IMAGE=$(ACI)/aci-$(BUILDER_ENJOLIVER)
