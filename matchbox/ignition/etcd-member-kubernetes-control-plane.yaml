@@ -780,16 +780,12 @@ storage:
           /opt/bin/kubectl drain {{.kubernetes_node_name}} --force --ignore-daemonsets --delete-local-data
           systemctl stop fleet.service
 
-          for u in install-etcd.service install-fleet.service install-cni.service install-hyperkube.service
-          do
-            systemctl reload $u
-          done
-
           DISK_GUID="00000000-0000-0000-0000-000000000001"
           sgdisk --disk-guid=${DISK_GUID} /dev/sda
           cgpt show -v /dev/sda | grep -c ${DISK_GUID}
 
           rm -v /etc/metadata.env || true
+          rm -Rf /opt/rootfs/* || true
 
           kexec --reuse-cmdline \
             --append="coreos.first_boot=1 coreos.randomize_disk_guid=${DISK_GUID}" \
