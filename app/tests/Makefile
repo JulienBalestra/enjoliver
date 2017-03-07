@@ -33,7 +33,7 @@ $(PYTHON):
 	$(PROJECT)/$(ENV_NAME)/bin/pip install -r $(PROJECT)/requirements.txt
 	$(PYTHON) --version
 
-runtime:
+runtime: $(TESTING_RSA)
 	$(CWD)/config.py
 
 

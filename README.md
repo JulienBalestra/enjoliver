@@ -23,7 +23,7 @@ The Kubernetes Kubelet runtime is rkt.
 
 ### Production - Baremetal
 
-You can take as example the `aci/aci-enjoliver` to see how the rkt container is build with `dgr`
+You can take as example the `aci/aci-enjoliver` to see how the rkt container is built with `dgr`
  
  
 ### Development - Local KVM
@@ -35,9 +35,19 @@ Requirements:
 * See `.travis.yml` for example as setup & tests
 
 
+
     sudo MY_USER=julien make dev_setup
     
     
 Start an interactive Kubernetes deployment of 2 nodes:
 
+
     sudo make -C app/tests check_euid_it_plans_enjolivage_disk_2_nodes
+    
+
+Connect inside:
+
+
+    ./app/s.sh
+    
+    
