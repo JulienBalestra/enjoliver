@@ -1,3 +1,7 @@
+"""
+Over the application Model, queries to the database
+"""
+
 import datetime
 import os
 import socket
@@ -11,6 +15,10 @@ from model import ChassisPort, Chassis, MachineInterface, Machine, \
 
 
 class FetchDiscovery(object):
+    """
+    Get data created during the discovery phase
+    """
+
     def __init__(self, session, ignition_journal):
         self.session = session
         self.ignition_journal = ignition_journal
@@ -72,8 +80,8 @@ class FetchDiscovery(object):
     def get_ignition_journal_summary(self):
         summaries = []
         try:
-            ig = os.listdir(self.ignition_journal)
-            for uuid in ig:
+            ign_dir = os.listdir(self.ignition_journal)
+            for uuid in ign_dir:
                 summary = dict()
                 summary["uuid"] = uuid
                 boot_id_list = []
@@ -125,25 +133,41 @@ class FetchDiscovery(object):
 
 
 def health_check(session, ts, who):
-    health = False
-    h = Healthz()
-    h.ts = ts
-    h.host = who
-    session.add(h)
+    """
+    During the health check, this update the only row stored inside the database to check the health of the db
+    :param session: a constructed session
+    :param ts: timestamp
+    :param who: the host who asked for the check
+    :return:
+    """
+    health_status = False
+    health = Healthz()
+    health.ts = ts
+    health.host = who
+    session.add(health)
     session.commit()
     query_ts = session.query(Healthz).filter(Healthz.ts == ts).all()
     if query_ts[0].ts != ts:
         raise AssertionError("%s not in %s" % (ts, query_ts))
     session.query(Healthz).filter(Healthz.ts < ts).delete()
     session.commit()
-    health = True
-    return health
+    health_status = True
+    return health_status
 
 
 class InjectDiscovery(object):
+    """
+    Store the data provides during the discovery process
+    """
     log = logger.get_logger(__file__)
 
     def __init__(self, session, ignition_journal, discovery):
+        """
+
+        :param session:
+        :param ignition_journal:
+        :param discovery:
+        """
         self.session = session
         self.ignition_journal = ignition_journal
         self.adds = 0
@@ -180,13 +204,18 @@ class InjectDiscovery(object):
         self.adds += 1
         return machine
 
-    def _get_verifed_dns_query(self, i):
+    def _get_verifed_dns_query(self, interface):
+        """
+        A discovery machine give a FQDN. This method will do the resolution before insert in the db
+        :param interface:
+        :return:
+        """
         fqdn = []
         try:
-            for name in i["fqdn"]:
+            for name in interface["fqdn"]:
                 try:
-                    r = socket.gethostbyaddr(i["ipv4"])[0]
-                    self.log.debug("succeed to make dns request for %s:%s" % (i["ipv4"], r))
+                    r = socket.gethostbyaddr(interface["ipv4"])[0]
+                    self.log.debug("succeed to make dns request for %s:%s" % (interface["ipv4"], r))
                     if name[-1] == ".":
                         name = name[:-1]
 
@@ -195,12 +224,12 @@ class InjectDiscovery(object):
                     else:
                         self.log.warning(
                             "fail to verify domain name discoveryC %s != %s socket.gethostbyaddr for %s %s" % (
-                                name, r, i["ipv4"], i["mac"]))
+                                name, r, interface["ipv4"], interface["mac"]))
                 except socket.herror:
-                    self.log.error("Verify FAILED '%s':%s socket.herror returning None" % (name, i["ipv4"]))
+                    self.log.error("Verify FAILED '%s':%s socket.herror returning None" % (name, interface["ipv4"]))
 
         except (KeyError, TypeError):
-            self.log.warning("No fqdn for %s returning None" % i["ipv4"])
+            self.log.warning("No fqdn for %s returning None" % interface["ipv4"])
 
         if fqdn and len(fqdn) > 1:
             raise AttributeError("Should be only one: %s" % fqdn)
@@ -209,22 +238,23 @@ class InjectDiscovery(object):
     def _machine_interfaces(self):
         m_interfaces = self.machine.interfaces
 
-        for i in self.discovery["interfaces"]:
+        for interface in self.discovery["interfaces"]:
             # TODO make only one query instead of many
-            if i["mac"] and self.session.query(MachineInterface).filter(MachineInterface.mac == i["mac"]).count() == 0:
-                self.log.debug("mac not in db: %s adding" % i["mac"])
+            if interface["mac"] and self.session.query(MachineInterface).filter(
+                            MachineInterface.mac == interface["mac"]).count() == 0:
+                self.log.debug("mac not in db: %s adding" % interface["mac"])
 
-                fqdn = self._get_verifed_dns_query(i)
+                fqdn = self._get_verifed_dns_query(interface)
 
                 m_interfaces.append(
                     MachineInterface(
-                        name=i["name"],
-                        netmask=i["netmask"],
-                        mac=i["mac"],
-                        ipv4=i["ipv4"],
-                        cidrv4=i["cidrv4"],
-                        as_boot=True if i["mac"] == self.discovery["boot-info"]["mac"] else False,
-                        gateway=i["gateway"],
+                        name=interface["name"],
+                        netmask=interface["netmask"],
+                        mac=interface["mac"],
+                        ipv4=interface["ipv4"],
+                        cidrv4=interface["cidrv4"],
+                        as_boot=True if interface["mac"] == self.discovery["boot-info"]["mac"] else False,
+                        gateway=interface["gateway"],
                         fqdn=fqdn,
                         machine_id=self.machine.id)
                 )
@@ -236,13 +266,14 @@ class InjectDiscovery(object):
         chassis_list = []
         if self.discovery["lldp"]["is_file"] is False or not self.discovery["lldp"]["data"]["interfaces"]:
             return chassis_list
-        for j in self.discovery["lldp"]["data"]["interfaces"]:
-            chassis = self.session.query(Chassis).filter(Chassis.mac == j["chassis"]["id"]).count()
+        for lldp_intefaces in self.discovery["lldp"]["data"]["interfaces"]:
+            chassis = self.session.query(Chassis).filter(Chassis.mac == lldp_intefaces["chassis"]["id"]).count()
             if chassis == 0:
-                self.log.debug("chassis %s %s not in db" % (j["chassis"]["name"], j["chassis"]["id"]))
+                self.log.debug(
+                    "chassis %s %s not in db" % (lldp_intefaces["chassis"]["name"], lldp_intefaces["chassis"]["id"]))
                 chassis = Chassis(
-                    name=j["chassis"]["name"],
-                    mac=j["chassis"]["id"]
+                    name=lldp_intefaces["chassis"]["name"],
+                    mac=lldp_intefaces["chassis"]["id"]
                 )
                 self.session.add(chassis)
                 self.adds += 1
@@ -251,9 +282,9 @@ class InjectDiscovery(object):
         return chassis_list
 
     def __get_mac_by_name(self, name):
-        for i in self.discovery["interfaces"]:
-            if i["name"] == name:
-                return i["mac"]
+        for interface in self.discovery["interfaces"]:
+            if interface["name"] == name:
+                return interface["mac"]
 
     def _chassis_port(self):
         chassis_port_list = []
@@ -312,17 +343,21 @@ class InjectDiscovery(object):
 
 
 class FetchSchedule(object):
+    """
+    Retrieve the information about schedules
+    """
+
     def __init__(self, session):
         self.session = session
 
     def get_schedules(self):
         r = {}
-        for i in self.session.query(Schedule, MachineInterface).join(
+        for interface in self.session.query(Schedule, MachineInterface).join(
                 MachineInterface):
             try:
-                r[i[1].mac] += [i[0].role]
+                r[interface[1].mac] += [interface[0].role]
             except KeyError:
-                r[i[1].mac] = [i[0].role]
+                r[interface[1].mac] = [interface[0].role]
 
         return r
 
@@ -332,11 +367,11 @@ class FetchSchedule(object):
         return r
 
     def get_available_machines(self):
-        l = []
+        available_machines = []
         for i in self.session.query(MachineInterface).outerjoin(
                 Schedule, MachineInterface.id == Schedule.machine_interface).filter(
                     MachineInterface.as_boot == True).filter(Schedule.machine_interface == None):
-            l.append(
+            available_machines.append(
                 {
                     "mac": i.mac,
                     "ipv4": i.ipv4,
@@ -349,13 +384,12 @@ class FetchSchedule(object):
                     "fqdn": i.fqdn
                 }
             )
-        return l
+        return available_machines
 
     def get_role(self, role):
-        s = self.session.query(Schedule).filter(Schedule.role == role).all()
-        l = []
-        for i in s:
-            l.append({
+        all_roles = []
+        for i in self.session.query(Schedule).filter(Schedule.role == role):
+            all_roles.append({
                 "mac": i.interface.mac,
                 "ipv4": i.interface.ipv4,
                 "cidrv4": i.interface.cidrv4,
@@ -368,15 +402,14 @@ class FetchSchedule(object):
                 "fqdn": i.interface.fqdn
             })
 
-        return l
+        return all_roles
 
     def get_roles(self, *args):
-        s = self.session.query(MachineInterface).join(Schedule).filter(
-            Schedule.role.in_(args)
-        ).group_by(MachineInterface).having(func.count(MachineInterface.id) == len(args)).all()
-        l = []
-        for i in s:
-            l.append(
+        roles = []
+        for i in self.session.query(MachineInterface).join(Schedule).filter(
+                Schedule.role.in_(args)
+        ).group_by(MachineInterface).having(func.count(MachineInterface.id) == len(args)):
+            roles.append(
                 {
                     "mac": i.mac,
                     "ipv4": i.ipv4,
@@ -389,15 +422,18 @@ class FetchSchedule(object):
                     "roles": [k.role for k in i.schedule]
                 }
             )
-        return l
+        return roles
 
     def get_role_ip_list(self, role):
-        s = self.session.query(Schedule).filter(Schedule.role == role).all()
+        query = self.session.query(Schedule).filter(Schedule.role == role)
 
-        return [k.interface.ipv4 for k in s]
+        return [k.interface.ipv4 for k in query]
 
 
 class InjectSchedule(object):
+    """
+    Store the information of a schedule
+    """
     log = logger.get_logger(__file__)
 
     def __init__(self, session, data):
@@ -455,6 +491,9 @@ class InjectSchedule(object):
 
 
 class InjectLifecycle(object):
+    """
+    Store the data from the Lifecycle machine state
+    """
     log = logger.get_logger(__file__)
 
     def __init__(self, session, request_raw_query):
@@ -474,8 +513,8 @@ class InjectLifecycle(object):
     @staticmethod
     def get_mac_from_raw_query(request_raw_query):
         mac = ""
-        s = request_raw_query.split("&")
-        for param in s:
+        raw_query_list = request_raw_query.split("&")
+        for param in raw_query_list:
             if "mac=" in param:
                 mac = param.replace("mac=", "")
         if not mac:
@@ -483,52 +522,55 @@ class InjectLifecycle(object):
         return mac.replace("-", ":")
 
     def refresh_lifecycle_ignition(self, up_to_date):
-        l = self.session.query(LifecycleIgnition).filter(
+        lifecycle = self.session.query(LifecycleIgnition).filter(
             LifecycleIgnition.machine_interface == self.interface.id).first()
-        if not l:
-            l = LifecycleIgnition(
+        if not lifecycle:
+            lifecycle = LifecycleIgnition(
                 machine_interface=self.interface.id,
                 up_to_date=up_to_date
             )
-            self.session.add(l)
+            self.session.add(lifecycle)
         else:
-            l.up_to_date = up_to_date
-            l.updated_date = datetime.datetime.utcnow()
+            lifecycle.up_to_date = up_to_date
+            lifecycle.updated_date = datetime.datetime.utcnow()
 
         self.session.commit()
 
     def refresh_lifecycle_coreos_install(self, success):
-        l = self.session.query(LifecycleCoreosInstall).filter(
+        lifecycle = self.session.query(LifecycleCoreosInstall).filter(
             LifecycleCoreosInstall.machine_interface == self.interface.id).first()
-        if not l:
-            l = LifecycleCoreosInstall(
+        if not lifecycle:
+            lifecycle = LifecycleCoreosInstall(
                 machine_interface=self.interface.id,
                 success=success
             )
-            self.session.add(l)
+            self.session.add(lifecycle)
         else:
-            l.up_to_date = success
-            l.updated_date = datetime.datetime.utcnow()
+            lifecycle.up_to_date = success
+            lifecycle.updated_date = datetime.datetime.utcnow()
 
         self.session.commit()
 
     def apply_lifecycle_rolling(self, enable):
-        l = self.session.query(LifecycleRolling).filter(
+        lifecycle = self.session.query(LifecycleRolling).filter(
             LifecycleRolling.machine_interface == self.interface.id).first()
-        if not l:
-            l = LifecycleRolling(
+        if not lifecycle:
+            lifecycle = LifecycleRolling(
                 machine_interface=self.interface.id,
                 enable=enable
             )
-            self.session.add(l)
+            self.session.add(lifecycle)
         else:
-            l.enable = enable
-            l.updated_date = datetime.datetime.utcnow()
+            lifecycle.enable = enable
+            lifecycle.updated_date = datetime.datetime.utcnow()
 
         self.session.commit()
 
 
 class FetchLifecycle(object):
+    """
+    Get the data of the Lifecycle state
+    """
     log = logger.get_logger(__file__)
 
     def __init__(self, session):
@@ -537,9 +579,9 @@ class FetchLifecycle(object):
     def get_ignition_uptodate_status(self, mac):
         interface = self.session.query(MachineInterface).filter(MachineInterface.mac == mac).first()
         if interface:
-            l = self.session.query(LifecycleIgnition).filter(
+            lifecycle = self.session.query(LifecycleIgnition).filter(
                 LifecycleIgnition.machine_interface == interface.id).first()
-            return l.up_to_date if l else None
+            return lifecycle.up_to_date if lifecycle else None
         return None
 
     def get_all_updated_status(self):
@@ -560,16 +602,16 @@ class FetchLifecycle(object):
     def get_coreos_install_status(self, mac):
         interface = self.session.query(MachineInterface).filter(MachineInterface.mac == mac).first()
         if interface:
-            l = self.session.query(LifecycleCoreosInstall).filter(
+            lifecycle = self.session.query(LifecycleCoreosInstall).filter(
                 LifecycleCoreosInstall.machine_interface == interface.id).first()
-            return l.success if l else None
+            return lifecycle.success if lifecycle else None
         self.log.debug("mac: %s return None" % mac)
         return None
 
     def get_all_coreos_install_status(self):
-        l = []
+        life_status_list = []
         for s in self.session.query(LifecycleCoreosInstall):
-            l.append(
+            life_status_list.append(
                 {
                     "mac": s.interface.mac,
                     "fqdn": s.interface.fqdn,
@@ -579,7 +621,7 @@ class FetchLifecycle(object):
                     "updated_date": s.updated_date
                 }
             )
-        return l
+        return life_status_list
 
     def get_rolling_status(self, mac):
         interface = self.session.query(MachineInterface).filter(MachineInterface.mac == mac).first()
@@ -591,9 +633,9 @@ class FetchLifecycle(object):
         return None
 
     def get_all_rolling_status(self):
-        l = []
+        life_roll_list = []
         for s in self.session.query(LifecycleRolling):
-            l.append(
+            life_roll_list.append(
                 {
                     "mac": s.interface.mac,
                     "fqdn": s.interface.fqdn,
@@ -603,4 +645,4 @@ class FetchLifecycle(object):
                     "updated_date": s.updated_date
                 }
             )
-        return l
+        return life_roll_list

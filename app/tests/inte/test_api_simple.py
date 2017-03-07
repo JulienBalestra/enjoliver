@@ -50,12 +50,12 @@ class TestAPI(unittest.TestCase):
             os.remove(ec.db_path)
         except OSError:
             pass
-        api.smart.create_base()
-        api.cache.clear()
+        api.SMART.create_base()
+        api.CACHE.clear()
 
         shutil.rmtree(ec.ignition_journal_dir, ignore_errors=True)
 
-        cls.app = api.app.test_client()
+        cls.app = api.APP.test_client()
         cls.app.testing = True
 
         cls.p_matchbox = Process(target=TestAPI.process_target_matchbox)
@@ -106,7 +106,7 @@ class TestAPI(unittest.TestCase):
     def setUp(self):
         self.assertTrue(self.p_matchbox.is_alive())
         self.clean_sandbox()
-        api.cache.clear()
+        api.CACHE.clear()
 
     def test_00_healthz(self):
         expect = {

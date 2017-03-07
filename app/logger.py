@@ -1,23 +1,32 @@
+"""
+Construct a logger for the application
+"""
 import logging
 
-from configs import EnjoliverConfig
+import configs
+# from configs import EnjoliverConfig
 
-ec = EnjoliverConfig(importer=__file__)
+EC = configs.EnjoliverConfig(importer=__file__)
 
-formatter = logging.Formatter('%(levelname)-7s %(module)-8s %(funcName)s %(message)s')
+FORMATTER = logging.Formatter('%(levelname)-7s %(module)-8s %(funcName)s %(message)s')
 
-consoleHandler = logging.StreamHandler()
+CONSOLE_HANDLER = logging.StreamHandler()
 
-if ec.logging_level.upper() == "DEBUG":
-    consoleHandler.setLevel(logging.DEBUG)
+if EC.logging_level.upper() == "DEBUG":
+    CONSOLE_HANDLER.setLevel(logging.DEBUG)
 else:
-    consoleHandler.setLevel(logging.INFO)
+    CONSOLE_HANDLER.setLevel(logging.INFO)
 
-consoleHandler.setFormatter(formatter)
+CONSOLE_HANDLER.setFormatter(FORMATTER)
 
 
 def get_logger(name):
+    """
+    Get the generated logger for the application
+    :param name: usually the name of the __file__
+    :return:
+    """
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
-    logger.addHandler(consoleHandler)
+    logger.addHandler(CONSOLE_HANDLER)
     return logger

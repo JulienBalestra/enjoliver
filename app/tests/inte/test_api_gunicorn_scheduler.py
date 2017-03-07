@@ -79,7 +79,7 @@ class TestAPIGunicornScheduler(unittest.TestCase):
 
         cls.clean_sandbox()
 
-        api.smart.create_base()
+        api.SMART.create_base()
 
         cls.p_matchbox = Process(target=TestAPIGunicornScheduler.process_target_matchbox)
         cls.p_api = Process(target=TestAPIGunicornScheduler.process_target_api)

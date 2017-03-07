@@ -1,3 +1,6 @@
+"""
+Sync the matchbox configuration
+"""
 import json
 import os
 import re
@@ -10,7 +13,7 @@ import logger
 import schedulerv2
 from configs import EnjoliverConfig
 
-ec = EnjoliverConfig(importer=__file__)
+EC = EnjoliverConfig(importer=__file__)
 
 
 class ConfigSyncSchedules(object):
@@ -18,9 +21,9 @@ class ConfigSyncSchedules(object):
 
     log = logger.get_logger(__file__)
 
-    sub_ips = ec.sub_ips
-    range_nb_ips = ec.range_nb_ips
-    skip_ips = ec.skip_ips
+    sub_ips = EC.sub_ips
+    range_nb_ips = EC.range_nb_ips
+    skip_ips = EC.skip_ips
 
     def __init__(self, api_uri, matchbox_path, ignition_dict, extra_selector_dict=None):
         """
@@ -145,31 +148,31 @@ class ConfigSyncSchedules(object):
 
     @property
     def kubernetes_etcd_initial_cluster(self):
-        return self.order_etcd_named(self.etcd_member_ip_list, ec.kubernetes_etcd_peer_port)
+        return self.order_etcd_named(self.etcd_member_ip_list, EC.kubernetes_etcd_peer_port)
 
     @property
     def fleet_etcd_initial_cluster(self):
-        return self.order_etcd_named(self.etcd_member_ip_list, ec.fleet_etcd_peer_port)
+        return self.order_etcd_named(self.etcd_member_ip_list, EC.fleet_etcd_peer_port)
 
     @property
     def kubernetes_etcd_member_client_uri_list(self):
-        return self.order_http_uri(self.etcd_member_ip_list, ec.kubernetes_etcd_client_port)
+        return self.order_http_uri(self.etcd_member_ip_list, EC.kubernetes_etcd_client_port)
 
     @property
     def fleet_etcd_member_client_uri_list(self):
-        return self.order_http_uri(self.etcd_member_ip_list, ec.fleet_etcd_client_port)
+        return self.order_http_uri(self.etcd_member_ip_list, EC.fleet_etcd_client_port)
 
     @property
     def kubernetes_etcd_member_peer_uri_list(self):
-        return self.order_http_uri(self.etcd_member_ip_list, ec.kubernetes_etcd_peer_port)
+        return self.order_http_uri(self.etcd_member_ip_list, EC.kubernetes_etcd_peer_port)
 
     @property
     def fleet_etcd_member_peer_uri_list(self):
-        return self.order_http_uri(self.etcd_member_ip_list, ec.fleet_etcd_peer_port)
+        return self.order_http_uri(self.etcd_member_ip_list, EC.fleet_etcd_peer_port)
 
     @property
     def kubernetes_control_plane(self):
-        return self.order_http_uri(self.kubernetes_control_plane_ip_list, ec.kubernetes_api_server_port)
+        return self.order_http_uri(self.kubernetes_control_plane_ip_list, EC.kubernetes_api_server_port)
 
     def produce_matchbox_data(self, marker, i, m, automatic_name, update_extra_metadata=None):
         # random.seed(m["mac"].__hash__())
@@ -183,7 +186,7 @@ class ConfigSyncSchedules(object):
 
         dns_attr = self.get_dns_attr(self.log, fqdn)
         extra_metadata = {
-            "etc_hosts": ec.etc_hosts,
+            "etc_hosts": EC.etc_hosts,
             # Etcd
             "etcd_name": m["ipv4"],
 
@@ -191,38 +194,38 @@ class ConfigSyncSchedules(object):
             "fleet_etcd_initial_cluster": self.fleet_etcd_initial_cluster,
 
             "kubernetes_etcd_initial_advertise_peer_urls": "http://%s:%d" % (
-                m["ipv4"], ec.kubernetes_etcd_peer_port),
+                m["ipv4"], EC.kubernetes_etcd_peer_port),
             "fleet_etcd_initial_advertise_peer_urls": "http://%s:%d" % (
-                m["ipv4"], ec.fleet_etcd_peer_port),
+                m["ipv4"], EC.fleet_etcd_peer_port),
 
             "kubernetes_etcd_member_client_uri_list": ",".join(self.kubernetes_etcd_member_client_uri_list),
             "fleet_etcd_member_client_uri_list": ",".join(self.fleet_etcd_member_client_uri_list),
 
-            "kubernetes_etcd_data_dir": ec.kubernetes_etcd_data_dir,
-            "fleet_etcd_data_dir": ec.fleet_etcd_data_dir,
+            "kubernetes_etcd_data_dir": EC.kubernetes_etcd_data_dir,
+            "fleet_etcd_data_dir": EC.fleet_etcd_data_dir,
 
-            "kubernetes_etcd_client_port": ec.kubernetes_etcd_client_port,
-            "fleet_etcd_client_port": ec.fleet_etcd_client_port,
+            "kubernetes_etcd_client_port": EC.kubernetes_etcd_client_port,
+            "fleet_etcd_client_port": EC.fleet_etcd_client_port,
 
             "kubernetes_etcd_advertise_client_urls": "http://%s:%d" % (
-                m["ipv4"], ec.kubernetes_etcd_client_port),
+                m["ipv4"], EC.kubernetes_etcd_client_port),
             "fleet_etcd_advertise_client_urls": "http://%s:%d" % (
-                m["ipv4"], ec.fleet_etcd_client_port),
+                m["ipv4"], EC.fleet_etcd_client_port),
 
-            "fleet_etcd_servers": ec.fleet_etcd_servers,
+            "fleet_etcd_servers": EC.fleet_etcd_servers,
 
             # Kubernetes
-            "kubernetes_etcd_servers": ec.kubernetes_etcd_servers,
-            "kubernetes_api_server_port": ec.kubernetes_api_server_port,
+            "kubernetes_etcd_servers": EC.kubernetes_etcd_servers,
+            "kubernetes_api_server_port": EC.kubernetes_api_server_port,
             "kubernetes_node_ip": "%s" % m["ipv4"],
             "kubernetes_node_name": "%s" % m["ipv4"] if fqdn == automatic_name else fqdn,
-            "kubernetes_service_cluster_ip_range": ec.kubernetes_service_cluster_ip_range,
+            "kubernetes_service_cluster_ip_range": EC.kubernetes_service_cluster_ip_range,
 
-            "hyperkube_image_url": ec.hyperkube_image_url,
-            "rkt_image_url": ec.rkt_image_url,
-            "etcd_image_url": ec.etcd_image_url,
-            "fleet_image_url": ec.fleet_image_url,
-            "cni_image_url": ec.cni_image_url,
+            "hyperkube_image_url": EC.hyperkube_image_url,
+            "rkt_image_url": EC.rkt_image_url,
+            "etcd_image_url": EC.etcd_image_url,
+            "fleet_image_url": EC.fleet_image_url,
+            "cni_image_url": EC.cni_image_url,
             # IPAM
             "cni": json.dumps(self.cni_ipam(m["cidrv4"], m["gateway"]), sort_keys=True),
             "network": {
@@ -262,8 +265,8 @@ class ConfigSyncSchedules(object):
                 "kubernetes_etcd_member_peer_uri_list": ",".join(self.kubernetes_etcd_member_peer_uri_list),
                 "fleet_etcd_member_peer_uri_list": ",".join(self.fleet_etcd_member_peer_uri_list),
 
-                "kubernetes_etcd_peer_port": ec.kubernetes_etcd_peer_port,
-                "fleet_etcd_peer_port": ec.fleet_etcd_peer_port,
+                "kubernetes_etcd_peer_port": EC.kubernetes_etcd_peer_port,
+                "fleet_etcd_peer_port": EC.fleet_etcd_peer_port,
 
                 # K8s Control Plane
                 "kubernetes_apiserver_count": len(machine_roles),

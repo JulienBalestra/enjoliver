@@ -1,3 +1,6 @@
+"""
+Schedule the roles with the given constraints
+"""
 import abc
 import json
 import time
@@ -8,7 +11,7 @@ import logger
 from configs import EnjoliverConfig
 from model import ScheduleRoles
 
-ec = EnjoliverConfig(importer=__file__)
+EC = EnjoliverConfig(importer=__file__)
 
 
 class CommonScheduler(object):
@@ -19,8 +22,8 @@ class CommonScheduler(object):
 
     log = logger.get_logger(__file__)
 
-    apply_deps_tries = ec.apply_deps_tries
-    apply_deps_delay = ec.apply_deps_delay
+    apply_deps_tries = EC.apply_deps_tries
+    apply_deps_delay = EC.apply_deps_delay
 
     @staticmethod
     def fetch_available(api_uri):
@@ -126,7 +129,7 @@ class CommonScheduler(object):
 
 
 class EtcdMemberKubernetesControlPlane(CommonScheduler):
-    expected_nb = ec.etcd_member_kubernetes_control_plane_expected_nb
+    expected_nb = EC.etcd_member_kubernetes_control_plane_expected_nb
     roles = [ScheduleRoles.etcd_member, ScheduleRoles.kubernetes_control_plane]
     roles.sort()
     __name__ = "".join(roles)

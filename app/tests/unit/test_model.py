@@ -41,8 +41,8 @@ class TestModel(unittest.TestCase):
                 ec.db_uri = 'sqlite:///:memory:'
 
         cls.smart = smartdb.SmartClient(ec.db_uri)
-        model.Base.metadata.drop_all(cls.smart.get_engine_connection())
-        model.Base.metadata.create_all(cls.smart.get_engine_connection())
+        model.BASE.metadata.drop_all(cls.smart.get_engine_connection())
+        model.BASE.metadata.create_all(cls.smart.get_engine_connection())
         with cls.smart.connected_session() as session:
             fetch = crud.FetchDiscovery(session, cls.ignition_journal_path)
             assert fetch.get_all_interfaces() == []

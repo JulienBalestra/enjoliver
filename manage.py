@@ -49,7 +49,7 @@ def gunicorn(ec):
         "%s/env/bin/gunicorn" % project_path,
         "--chdir",
         app_path,
-        "api:app",
+        "api:APP",
         "--worker-class",
         ec.gunicorn_worker_type,
         "-b",

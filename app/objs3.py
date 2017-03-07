@@ -1,3 +1,6 @@
+"""
+Interface with S3 to store / fetch backups
+"""
 import os
 import time
 

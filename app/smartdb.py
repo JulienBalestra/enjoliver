@@ -1,3 +1,6 @@
+"""
+Always give a working freshly connected session
+"""
 from contextlib import contextmanager
 
 from sqlalchemy import create_engine
@@ -65,7 +68,7 @@ class SmartClient(object):
         raise ConnectionError(",".join(["%s" % k.url for k in self.engines]))
 
     def create_base(self):
-        model.Base.metadata.create_all(self.get_engine_connection())
+        model.BASE.metadata.create_all(self.get_engine_connection())
 
 
 class _SingleEndpoint(SmartClient):

@@ -1,3 +1,7 @@
+"""
+Help the application to be more exploitable
+"""
+
 import ctypes
 import math
 import os
@@ -12,7 +16,7 @@ import crud
 import logger
 import objs3
 
-libc = ctypes.CDLL("libc.so.6")  # TODO deep inside the SQLITE sync
+LIBC = ctypes.CDLL("libc.so.6")  # TODO deep inside the SQLITE sync
 LOGGER = logger.get_logger(__file__)
 
 
@@ -34,7 +38,7 @@ def backup_sqlite(cache, application):
     dest_s3 = "%s/%s.db" % (application.config["BACKUP_BUCKET_DIRECTORY"], now_rounded)
     db_path = application.config["DB_PATH"]
     bucket_name = application.config["BACKUP_BUCKET_NAME"]
-    b = {
+    resp = {
         "copy": False,
         "upload": False,
         "source_fs": db_path,
@@ -50,41 +54,41 @@ def backup_sqlite(cache, application):
         "already_locked": False,
     }
     if cache.get(application.config["BACKUP_LOCK_KEY"]):
-        b["already_locked"] = True
+        resp["already_locked"] = True
         LOGGER.warning("already_locked")
-        return jsonify(b)
+        return jsonify(resp)
 
     try:
-        source_st = os.stat(b["source_fs"])
+        source_st = os.stat(resp["source_fs"])
         timeout = math.ceil(source_st.st_size / (1024 * 1024.))
         LOGGER.info("Backup lock key set with timeout == %ss" % timeout)
-        cache.set(application.config["BACKUP_LOCK_KEY"], b["dest_fs"], timeout=timeout)
-        libc.sync()
-        shutil.copy2(db_path, b["dest_fs"])
-        dest_st = os.stat(b["dest_fs"])
-        b["size"], b["copy"] = dest_st.st_size, True
-        LOGGER.info("backup copy done %s size:%s" % (b["dest_fs"], dest_st.st_size))
+        cache.set(application.config["BACKUP_LOCK_KEY"], resp["dest_fs"], timeout=timeout)
+        LIBC.sync()
+        shutil.copy2(db_path, resp["dest_fs"])
+        dest_st = os.stat(resp["dest_fs"])
+        resp["size"], resp["copy"] = dest_st.st_size, True
+        LOGGER.info("backup copy done %s size:%s" % (resp["dest_fs"], dest_st.st_size))
     except Exception as e:
         LOGGER.error("<%s %s>" % (e, type(e)))
     finally:
         cache.delete(application.config["BACKUP_LOCK_KEY"])
-        b["lock_duration"] = time.time() - start
-        LOGGER.debug("lock duration: %ss" % b["lock_duration"])
+        resp["lock_duration"] = time.time() - start
+        LOGGER.debug("lock duration: %ss" % resp["lock_duration"])
 
     try:
-        if b["copy"] is False:
-            LOGGER.error("copy is False: %s" % b["dest_fs"])
-            raise IOError(b["dest_fs"])
+        if resp["copy"] is False:
+            LOGGER.error("copy is False: %s" % resp["dest_fs"])
+            raise IOError(resp["dest_fs"])
 
-        so = objs3.S3Operator(b["bucket_name"])
-        so.upload(b["dest_fs"], b["dest_s3"])
-        b["upload"] = True
+        s3op = objs3.S3Operator(resp["bucket_name"])
+        s3op.upload(resp["dest_fs"], resp["dest_s3"])
+        resp["upload"] = True
     except Exception as e:
         LOGGER.error("<%s %s>" % (e, type(e)))
 
-    b["backup_duration"] = time.time() - start
-    LOGGER.info("backup duration: %ss" % b["backup_duration"])
-    return jsonify(b)
+    resp["backup_duration"] = time.time() - start
+    LOGGER.info("backup duration: %ss" % resp["backup_duration"])
+    return jsonify(resp)
 
 
 def healthz(application, smart, request):
@@ -102,8 +106,8 @@ def healthz(application, smart, request):
         application.logger.error("MATCHBOX_URI is None")
     for k in status["matchbox"]:
         try:
-            r = requests.get("%s%s" % (application.config["MATCHBOX_URI"], k))
-            r.close()
+            req = requests.get("%s%s" % (application.config["MATCHBOX_URI"], k))
+            req.close()
             status["matchbox"][k] = True
         except Exception as e:
             status["matchbox"][k] = False
@@ -123,6 +127,11 @@ def healthz(application, smart, request):
 
 
 def shutdown(ec):
+    """
+    Try to gracefully shutdown the application
+    :param ec:
+    :return:
+    """
     LOGGER.warning("shutdown asked")
     pid_files = [ec.plan_pid_file, ec.matchbox_pid_file]
     gunicorn_pid = None
@@ -157,6 +166,6 @@ def shutdown(ec):
         LOGGER.info("%s running: %s " % (pid, pid.is_running()))
 
     pid_list.append(gunicorn_pid)
-    r = jsonify(["%s" % k for k in pid_list])
+    resp = jsonify(["%s" % k for k in pid_list])
     gunicorn_pid.terminate()
-    return r
+    return resp

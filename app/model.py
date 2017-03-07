@@ -1,3 +1,6 @@
+"""
+Database Model for the application
+"""
 import datetime
 import re
 
@@ -6,10 +9,15 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, validates
 
-Base = declarative_base()
+BASE = declarative_base()
 
 
 def compile_regex(regex):
+    """
+    Compile the regex for the module constants
+    :param regex:
+    :return:
+    """
     r = re.compile(regex)
 
     def match(string):
@@ -20,13 +28,16 @@ def compile_regex(regex):
     return match
 
 
-mac_regex = compile_regex("^([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})$")
-ipv4_regex = compile_regex(
-    "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$")
-uuid_regex = compile_regex("^([0-9A-Fa-f]{8}[-]){1}([0-9A-Fa-f]{4}[-]){3}([0-9A-Fa-f]{12})$")
+MAC_REGEX = compile_regex("^([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})$")
+IPV4_REGEX = compile_regex(
+    r"^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$")
+UUID_REGEX = compile_regex("^([0-9A-Fa-f]{8}[-]){1}([0-9A-Fa-f]{4}[-]){3}([0-9A-Fa-f]{12})$")
 
 
-class Machine(Base):
+class Machine(BASE):
+    """
+    Machine represent the Virtual machine, Physical Server
+    """
     __tablename__ = 'machine'
     id = Column(Integer, primary_key=True, autoincrement=True)
 
@@ -38,15 +49,24 @@ class Machine(Base):
 
     @validates('uuid')
     def validate_uuid_field(self, key, uuid):
+        """
+        The uuid field is the same from /etc/machine-id but with '-' separators
+        :param key:
+        :param uuid:
+        :return:
+        """
         if len(uuid) != 36:
             raise LookupError("len(uuid) != 36 -> %s" % uuid)
-        return uuid_regex(uuid)
+        return UUID_REGEX(uuid)
 
     def __repr__(self):
         return "<%s: %s %s %s>" % (Machine.__name__, self.uuid, self.created_date, self.updated_date)
 
 
-class Healthz(Base):
+class Healthz(BASE):
+    """
+    Healthz is used to check the write capabilities during health checks
+    """
     __tablename__ = 'healthz'
     id = Column(Integer, primary_key=True, autoincrement=True)
 
@@ -54,7 +74,11 @@ class Healthz(Base):
     host = Column(String, nullable=True)
 
 
-class MachineInterface(Base):
+class MachineInterface(BASE):
+    """
+    The interface of each Machine
+    Common interface is eth0
+    """
     __tablename__ = 'machine-interface'
     id = Column(Integer, primary_key=True, autoincrement=True)
 
@@ -77,18 +101,33 @@ class MachineInterface(Base):
 
     @validates('mac')
     def validate_mac(self, key, mac):
-        return mac_regex(mac)
+        """
+        :param key:
+        :param mac:
+        :return:
+        """
+        return MAC_REGEX(mac)
 
     @validates('ipv4')
     @validates('gateway')
     def validate_ipv4(self, key, ipv4):
-        return ipv4_regex(ipv4)
+        """
+        Gateway and IPv4 validation
+        :param key:
+        :param ipv4:
+        :return:
+        """
+        return IPV4_REGEX(ipv4)
 
     def __repr__(self):
         return "<%s: %s %s>" % (MachineInterface.__name__, self.mac, self.cidrv4)
 
 
-class Chassis(Base):
+class Chassis(BASE):
+    """
+    Chassis is the physical switch inside a DataCenter
+    Reports done with Link Layer Discovery Protocol
+    """
     __tablename__ = 'chassis'
     id = Column(Integer, primary_key=True, autoincrement=True)
 
@@ -99,13 +138,16 @@ class Chassis(Base):
 
     @validates('mac')
     def validate_mac(self, key, mac):
-        return mac_regex(mac)
+        return MAC_REGEX(mac)
 
     def __repr__(self):
         return "<%s: mac:%s name:%s>" % (Chassis.__name__, self.mac, self.name)
 
 
-class ChassisPort(Base):
+class ChassisPort(BASE):
+    """
+    Each chassis have interfaces == port
+    """
     __tablename__ = 'chassis-port'
     id = Column(Integer, primary_key=True, autoincrement=True)
 
@@ -120,6 +162,10 @@ class ChassisPort(Base):
 
 
 class ScheduleRoles(object):
+    """
+    Roles available for the Scheduler
+    Roles can be stacked
+    """
     etcd_member = "etcd-member"
     kubernetes_control_plane = "kubernetes-control-plane"
     kubernetes_node = "kubernetes-node"
@@ -127,7 +173,10 @@ class ScheduleRoles(object):
     roles = [etcd_member, kubernetes_control_plane, kubernetes_node]
 
 
-class Schedule(Base):
+class Schedule(BASE):
+    """
+    Schedule is a state of a machine associated to ScheduleRoles
+    """
     __tablename__ = 'schedule'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -144,7 +193,11 @@ class Schedule(Base):
         return role_name
 
 
-class LifecycleIgnition(Base):
+class LifecycleIgnition(BASE):
+    """
+    During the Lifecycle of a Machine, the state of the /usr/share/oem/coreos-install.json is POST to a dedicated Flask
+    route, this table store this event and if the current Machine is up to date
+    """
     __tablename__ = 'lifecycle-ignition'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -156,7 +209,10 @@ class LifecycleIgnition(Base):
     up_to_date = Column(Boolean)
 
 
-class LifecycleCoreosInstall(Base):
+class LifecycleCoreosInstall(BASE):
+    """
+    After the script 'coreos-install' the discovery machine POST the success / failure to a dedicated Flask route
+    """
     __tablename__ = 'lifecycle-coreos-install'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -168,7 +224,11 @@ class LifecycleCoreosInstall(Base):
     success = Column(Boolean)
 
 
-class LifecycleRolling(Base):
+class LifecycleRolling(BASE):
+    """
+    Allow the current machine to used the semaphore locksmithd to do a rolling update
+    By kexec / reboot / rediscovery
+    """
     __tablename__ = 'lifecycle-rolling'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
