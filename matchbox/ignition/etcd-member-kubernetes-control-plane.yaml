@@ -282,6 +282,7 @@ systemd:
           --runonce=true \
           --enable-server=false \
           --cloud-provider="" \
+          --healthz-port=20248 \
           \
           --container-runtime=rkt \
           --rkt-path=/opt/rootfs/usr/bin/rkt \
@@ -822,7 +823,15 @@ storage:
 
           for i in {0..60}
           do
-              curl -f 127.0.0.1:{{.kubernetes_api_server_port}}/healthz && break
+              echo "127.0.0.1:{{.kubernetes_api_server_port}}/healthz"
+              curl -fs 127.0.0.1:{{.kubernetes_api_server_port}}/healthz -w '\n' && break
+              sleep 2
+          done
+
+          for i in {0..60}
+          do
+              echo "127.0.0.1:10248/healthz"
+              curl -fs 127.0.0.1:10248/healthz -w '\n' && break
               sleep 2
           done
 
@@ -830,7 +839,12 @@ storage:
 
           etcdctl --endpoint {{.kubernetes_etcd_servers}} cluster-health
           etcdctl --endpoint {{.fleet_etcd_servers}} cluster-health
-          curl -f 127.0.0.1:{{.kubernetes_api_server_port}}/healthz
+
+          echo "127.0.0.1:{{.kubernetes_api_server_port}}/healthz"
+          curl -fs 127.0.0.1:{{.kubernetes_api_server_port}}/healthz -w '\n'
+
+          echo "127.0.0.1:10248/healthz"
+          curl -fs 127.0.0.1:10248/healthz -w '\n'
 
           set +e
 
@@ -844,7 +858,7 @@ storage:
 
           /opt/bin/kubectl uncordon {{.kubernetes_node_name}}
 
-          # Remove the lock
+          echo "remove the lock"
           locksmithctl -endpoint {{.kubernetes_etcd_servers}} unlock "${REQUEST_RAW_QUERY}" || true
 
 
