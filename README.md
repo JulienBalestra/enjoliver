@@ -16,3 +16,27 @@ Deploy an usable Kubernetes cluster with iPXE.
 
 The Kubernetes Kubelet runtime is rkt.
 
+
+## Setups
+
+
+### Production - Baremetal
+
+You can take as example the `aci/aci-enjoliver` to see how the rkt container is build with `dgr`
+ 
+ 
+### Development - Local KVM
+
+Requirements:
+
+* Linux with filesystem overlay
+* See `apt.sh` for packages or `sudo make apt`
+* See `.travis.yml` for example as setup & tests
+
+
+    sudo MY_USER=julien make dev_setup
+    
+    
+Start an interactive Kubernetes deployment of 2 nodes:
+
+    sudo make -C app/tests check_euid_it_plans_enjolivage_disk_2_nodes
