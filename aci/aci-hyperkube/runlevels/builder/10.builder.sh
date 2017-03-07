@@ -2,7 +2,7 @@
 
 . /dgr/bin/functions.sh
 isLevelEnabled "debug" && set -x
-set -ex
+set -e
 
 set -o pipefail
 
