@@ -293,8 +293,12 @@ class ConfigSyncSchedules(object):
             )
 
     def apply(self):
-        self.etcd_member_kubernetes_control_plane()
-        self.kubernetes_nodes()
+        try:
+            self.etcd_member_kubernetes_control_plane()
+            self.kubernetes_nodes()
+        except Exception as e:
+            # If the sync fail, it's not a big deal, next pass will do it again
+            self.log.error("fail to apply the sync %s" % e)
 
     def _query_roles(self, *roles):
         roles = "&".join(roles)
