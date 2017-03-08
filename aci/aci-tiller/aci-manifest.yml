@@ -1,0 +1,9 @@
+name: enjoliver.local/tiller:2.2.2
+
+builder:
+  dependencies:
+    - enjoliver.local/builder-hyperkube:latest
+
+aci:
+  dependencies:
+    - enjoliver.local/debian:latest
