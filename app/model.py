@@ -206,6 +206,7 @@ class LifecycleIgnition(BASE):
     machine_interface = Column(Integer, ForeignKey('machine-interface.id'), nullable=False)
 
     updated_date = Column(DateTime, default=None)
+    last_change_date = Column(DateTime, default=None)
     up_to_date = Column(Boolean)
 
 

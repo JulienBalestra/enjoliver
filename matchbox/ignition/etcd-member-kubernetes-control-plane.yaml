@@ -13,6 +13,19 @@ systemd:
       enable: false
       mask: true
 
+    - name: clean-cni.service
+      enable: true
+      contents: |
+        [Unit]
+        ConditionDirectoryNotEmpty=/var/lib/cni/networks/bond0
+        RefuseManualStart=true
+        [Service]
+        Type=oneshot
+        ExecStart=/bin/rm -Rf /var/lib/cni/networks/bond0
+        RemainAfterExit=yes
+        [Install]
+        WantedBy=multi-user.target
+
     - name: fetch-metadata.service
       enable: true
       contents: |
@@ -565,7 +578,7 @@ storage:
       contents:
         inline: |
           {
-            "name": "rkt.kubernetes.io",
+            "name": "bond0",
             "type": "macvlan",
             "master": "bond0",
             "ipam": {{ .cni }}

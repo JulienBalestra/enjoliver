@@ -531,8 +531,11 @@ class InjectLifecycle(object):
             )
             self.session.add(lifecycle)
         else:
+            now = datetime.datetime.utcnow()
+            if lifecycle.up_to_date != up_to_date:
+                lifecycle.last_change_date = now
             lifecycle.up_to_date = up_to_date
-            lifecycle.updated_date = datetime.datetime.utcnow()
+            lifecycle.updated_date = now
 
         self.session.commit()
 
@@ -665,22 +668,24 @@ class FetchView(object):
             "CIDR",
             "MAC",
             "Install",
-            "UpdateReport",
+            "LastReport",
+            "LastUpdate",
             "UpToDate",
             "AutoUpdate",
         ]]
         for interface in query:
 
-            lifecycle_coreos_install, ignition_updated_date = None, None
-            lifecycle_ignition_up_to_date, lifecycle_rolling = None, None
+            coreos_install, ignition_updated_date, ignition_last_change = None, None, None
+            ignition_up_to_date, lifecycle_rolling = None, None
 
             if interface.lifecycle_coreos_install:
-                lifecycle_coreos_install = "Installed" if interface.lifecycle_coreos_install[
-                                                              0].success is True else "Error"
+                coreos_install = "Installed" if interface.lifecycle_coreos_install[
+                                                    0].success is True else "Error"
 
             if interface.lifecycle_ignition:
                 ignition_updated_date = interface.lifecycle_ignition[0].updated_date
-                lifecycle_ignition_up_to_date = interface.lifecycle_ignition[0].up_to_date
+                ignition_up_to_date = interface.lifecycle_ignition[0].up_to_date
+                ignition_last_change = interface.lifecycle_ignition[0].last_change_date
 
             if interface.lifecycle_rolling:
                 lifecycle_rolling = "Enable" if interface.lifecycle_rolling[0].enable else "Disable"
@@ -691,9 +696,10 @@ class FetchView(object):
                     interface.fqdn,
                     interface.cidrv4,
                     interface.mac,
-                    lifecycle_coreos_install,
+                    coreos_install,
                     ignition_updated_date,
-                    lifecycle_ignition_up_to_date,
+                    ignition_last_change,
+                    ignition_up_to_date,
                     lifecycle_rolling,
                 ]
             )
