@@ -127,7 +127,7 @@ class CommonScheduler(object):
             self.log.error("ConnectionError %s" % url)
             return 0
 
-    def _apply_with_retry(self, apply_fn, nb_try=3, seconds_sleep=3):
+    def _apply_with_retry(self, apply_fn, nb_try, seconds_sleep):
         for i in range(nb_try):
             try:
                 return apply_fn()
@@ -151,8 +151,8 @@ class EtcdMemberKubernetesControlPlane(CommonScheduler):
         self.log.info("with api_uri %s" % api_uri)
         self.api_uri = api_uri
 
-    def apply(self):
-        return self._apply_with_retry(self._apply_budget, nb_try=5, seconds_sleep=5)
+    def apply(self, nb_try=2, seconds_sleep=0):
+        return self._apply_with_retry(self._apply_budget, nb_try=nb_try, seconds_sleep=seconds_sleep)
 
 
 class KubernetesNode(CommonScheduler):
@@ -171,5 +171,5 @@ class KubernetesNode(CommonScheduler):
             sch_cp = EtcdMemberKubernetesControlPlane(self.api_uri)
             self.apply_dep(sch_cp)
 
-    def apply(self):
-        return self._apply_with_retry(self._apply_everything, nb_try=5, seconds_sleep=10)
+    def apply(self, nb_try=2, seconds_sleep=0):
+        return self._apply_with_retry(self._apply_everything, nb_try=nb_try, seconds_sleep=seconds_sleep)

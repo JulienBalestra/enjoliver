@@ -295,7 +295,7 @@ class ConfigSyncSchedules(object):
                 update_extra_metadata=None,
             )
 
-    def apply(self, nb_try=3, seconds_sleep=3):
+    def apply(self, nb_try=2, seconds_sleep=0):
         for i in range(nb_try):
             try:
                 self.etcd_member_kubernetes_control_plane()

@@ -61,10 +61,10 @@ class Kubernetes2Tiers(object):
         gen.dumps()
 
     def apply(self):
-        while self._sch_k8s_control_plane.apply() is False:
+        while self._sch_k8s_control_plane.apply(nb_try=5, seconds_sleep=self.wait / 10) is False:
             time.sleep(self.wait)
-        nb = self._sch_k8s_node.apply()
-        self._sync.apply()
+        nb = self._sch_k8s_node.apply(nb_try=5, seconds_sleep=self.wait / 10)
+        self._sync.apply(nb_try=5, seconds_sleep=self.wait / 10)
         return nb
 
     @property
@@ -99,7 +99,7 @@ if __name__ == '__main__':
             log.warning("%d/%d Global status is %s" % (i, tries, s["global"]))
         except Exception as e:
             log.error("%d/%d [%s] returned -> %s" % (i, tries, health, e))
-        time.sleep(10)
+        time.sleep(wait / 10)
 
     k2t = Kubernetes2Tiers(
         ignition_dict=ec.ignition_dict,
