@@ -665,7 +665,7 @@ class FetchView(object):
             "CIDR",
             "MAC",
             "Install",
-            "LastUpdate",
+            "UpdateReport",
             "UpToDate",
             "AutoUpdate",
         ]]
