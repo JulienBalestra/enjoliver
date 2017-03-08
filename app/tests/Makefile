@@ -142,6 +142,9 @@ check_euid_it_plans_enjolivage_disk_2_nodes: $(PYTHON) runtime
 check_euid_plans_enjolivage_disk: $(PYTHON) runtime
 	PYTHONPATH=$(shell pwd)/../.. DISK_OK=yes $(PYTHON) euid/plans/test_kvm_plan_k8s_enjolivage_disk.py
 
+check_euid_plans_enjolivage_disk_lifecycle: $(PYTHON) runtime
+	PYTHONPATH=$(shell pwd)/../.. DISK_OK=yes $(PYTHON) euid/plans/test_kvm_plan_k8s_enjolivage_disk_lifecycle.py
+
 check_euid_kvm_player: $(PYTHON) runtime
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) euid/test_kvm_player.py
 

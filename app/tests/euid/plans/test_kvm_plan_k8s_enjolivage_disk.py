@@ -41,7 +41,9 @@ class TestKVMK8sEnjolivageDisk0(TestKVMK8sEnjolivageDisk):
                 "kubernetes_nodes": "%s-%s" % (marker, "k8s-node"),
             },
             matchbox_path=self.test_matchbox_path,
-            api_uri=self.api_uri)
+            api_uri=self.api_uri,
+            extra_selectors=self.ec.extra_selectors,
+        )
 
         for i in range(nb_node):
             machine_marker = "%s-%d" % (marker, i)
@@ -132,7 +134,9 @@ class TestKVMK8sEnjolivageDisk1(TestKVMK8sEnjolivageDisk):
                 "kubernetes_nodes": "%s-%s" % (marker, "k8s-node"),
             },
             matchbox_path=self.test_matchbox_path,
-            api_uri=self.api_uri)
+            api_uri=self.api_uri,
+            extra_selectors=self.ec.extra_selectors,
+        )
         plan_k8s_2t._sch_k8s_control_plane.expected_nb = 1
 
         for i in range(nb_node):

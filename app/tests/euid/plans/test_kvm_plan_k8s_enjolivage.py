@@ -40,7 +40,8 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
                 "kubernetes_nodes": "%s-%s" % (marker, "k8s-node"),
             },
             matchbox_path=self.test_matchbox_path,
-            api_uri=self.api_uri)
+            api_uri=self.api_uri,
+        )
 
         for m in nodes:
             destroy, undefine = ["virsh", "destroy", m], \
