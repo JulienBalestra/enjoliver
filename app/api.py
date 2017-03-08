@@ -437,55 +437,9 @@ def user_interface():
 
 @APPLICATION.route('/ui/view/machine', methods=['GET'])
 def user_view_machine():
-    """
-    TODO This will change to use VueJS and avoid multiple queries
-    :return:
-    """
-
-    key = "discovery"
-    all_data = CACHE.get(key)
     with SMART.connected_session() as session:
-
-        if all_data is None:
-            disco = crud.FetchDiscovery(session, ignition_journal=ignition_journal)
-            all_data = disco.get_all()
-            CACHE.set(key, all_data, timeout=30)
-
-        res = [["Created", "cidr-boot", "mac-boot", "fqdn", "Roles", "Installed", "Up-to-date", "Rolling"]]
-        for i in all_data:
-            sub_list = list()
-            sub_list.append(i["boot-info"]["created-date"])
-            for j in i["interfaces"]:
-                if j["as_boot"]:
-                    sub_list.append(j["cidrv4"])
-                    sub_list.append(j["mac"])
-                    sub_list.append(j["fqdn"])
-                    try:
-                        schedule = crud.FetchSchedule(session)
-                        roles = schedule.get_roles_by_mac_selector(j["mac"])
-                        if not roles:
-                            raise NotImplementedError
-                        sub_list.append(roles)
-                    except Exception:
-                        sub_list.append("NoRole")
-
-                    life = crud.FetchLifecycle(session)
-                    installed = life.get_coreos_install_status(j["mac"])
-                    if installed is None:
-                        for i in ["PendingInstall", "PendingBoot", "ForeignDisabled"]:
-                            sub_list.append(i)
-                    else:
-                        sub_list.append(installed)
-                        ignition = life.get_ignition_uptodate_status(j["mac"])
-                        if ignition is None:
-                            ignition = "PendingBoot"
-                        sub_list.append(ignition)
-
-                        rolling = life.get_rolling_status(j["mac"])
-                        if rolling is None:
-                            rolling = "ForeignDisabled"
-                        sub_list.append(rolling)
-            res.append(sub_list)
+        view = crud.FetchView(session)
+        res = view.get_machines()
 
     return jsonify(res)
 

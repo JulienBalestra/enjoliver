@@ -646,3 +646,55 @@ class FetchLifecycle(object):
                 }
             )
         return life_roll_list
+
+
+class FetchView(object):
+    """
+    Get the data for the User Interface View
+    """
+    log = logger.get_logger(__file__)
+
+    def __init__(self, session):
+        self.session = session
+
+    def get_machines(self):
+        query = self.session.query(MachineInterface).filter(MachineInterface.as_boot == True)
+        result = [[
+            "Roles",
+            "FQDN",
+            "CIDR",
+            "MAC",
+            "Install",
+            "LastUpdate",
+            "UpToDate",
+            "AutoUpdate",
+        ]]
+        for interface in query:
+
+            lifecycle_coreos_install, ignition_updated_date = None, None
+            lifecycle_ignition_up_to_date, lifecycle_rolling = None, None
+
+            if interface.lifecycle_coreos_install:
+                lifecycle_coreos_install = "Installed" if interface.lifecycle_coreos_install[
+                                                              0].success is True else "Error"
+
+            if interface.lifecycle_ignition:
+                ignition_updated_date = interface.lifecycle_ignition[0].updated_date
+                lifecycle_ignition_up_to_date = interface.lifecycle_ignition[0].up_to_date
+
+            if interface.lifecycle_rolling:
+                lifecycle_rolling = "Enable" if interface.lifecycle_rolling[0].enable else "Disable"
+
+            result.append(
+                [
+                    ",".join([r.role for r in interface.schedule]),
+                    interface.fqdn,
+                    interface.cidrv4,
+                    interface.mac,
+                    lifecycle_coreos_install,
+                    ignition_updated_date,
+                    lifecycle_ignition_up_to_date,
+                    lifecycle_rolling,
+                ]
+            )
+        return result

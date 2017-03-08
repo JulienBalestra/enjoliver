@@ -314,14 +314,5 @@ class TestAPI(unittest.TestCase):
 
     def test_vue_machine(self):
         r = self.app.get("/ui/view/machine")
-        d = json.loads(r.data.decode())
-        self.assertEqual([
-            "Created",
-            "cidr-boot",
-            "mac-boot",
-            "fqdn",
-            "Roles",
-            "Installed",
-            "Up-to-date",
-            "Rolling"
-        ], d[0])
+        json.loads(r.data.decode())
+        self.assertEqual(200, r.status_code)

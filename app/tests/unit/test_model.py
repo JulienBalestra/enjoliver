@@ -125,7 +125,7 @@ class TestModel(unittest.TestCase):
                     'ipv4': u'172.20.0.65',
                     "gateway": "172.20.0.1",
                     'fqdn': None,
-    
+
                 },
                 {
                     'machine': u'a21a9123-302d-488d-976c-5d6ded84a32d',
@@ -155,11 +155,13 @@ class TestModel(unittest.TestCase):
             self.assertEqual(len(fetch.get_ignition_journal(posts.M02["boot-info"]["uuid"])), 39)
             self.assertEqual([
                 {'machine': u'b7f5f93a-b029-475f-b3a4-479ba198cb8a', 'mac': u'52:54:00:e8:32:5b', 'name': u'eth0',
-                 'cidrv4': u'172.20.0.65/21', 'as_boot': True, 'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
+                 'cidrv4': u'172.20.0.65/21', 'as_boot': True,
+                 'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
                  'netmask': 21, 'ipv4': u'172.20.0.65', 'fqdn': None,
                  "gateway": "172.20.0.1"},
                 {'machine': u'a21a9123-302d-488d-976c-5d6ded84a32d', 'mac': u'52:54:00:a5:24:f5', 'name': u'eth0',
-                 'cidrv4': u'172.20.0.51/21', 'as_boot': True, 'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
+                 'cidrv4': u'172.20.0.51/21', 'as_boot': True,
+                 'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
                  'netmask': 21, 'ipv4': u'172.20.0.51', 'fqdn': None,
                  "gateway": "172.20.0.1"}
             ], interfaces)
@@ -647,3 +649,22 @@ class TestModel(unittest.TestCase):
         with self.smart.connected_session() as session:
             f = crud.FetchLifecycle(session)
             self.assertIsNone(f.get_rolling_status(posts.M04["boot-info"]["mac"]))
+
+    def test_38(self):
+        with self.smart.connected_session() as session:
+            view = crud.FetchView(session)
+            result = view.get_machines()
+        self.assertEqual(25, len(result))
+        # Roles
+        for i in result[1:]:
+            roles = i[0].split(",")
+            for r in roles:
+                self.assertIn(r, [
+                    "",
+                    model.ScheduleRoles.etcd_member,
+                    model.ScheduleRoles.kubernetes_control_plane,
+                    model.ScheduleRoles.kubernetes_node
+                ])
+        # CIDR
+        for i in result[1:]:
+            self.assertEqual(1, i[2].count("/"))
