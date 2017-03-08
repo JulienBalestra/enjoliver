@@ -301,7 +301,7 @@ class ConfigSyncSchedules(object):
                 self.etcd_member_kubernetes_control_plane()
                 self.kubernetes_nodes()
             except Exception as e:
-                self.log.error("fail to apply the sync %s" % e)
+                self.log.error("fail to apply the sync %s %s" % (type(e), e))
                 if i + 1 == nb_try:
                     raise
 

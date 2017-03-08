@@ -132,7 +132,7 @@ class CommonScheduler(object):
             try:
                 return apply_fn()
             except Exception as e:
-                self.log.error("fail to apply the schedule %s" % e)
+                self.log.error("fail to apply the schedule %s %s" % (type(e), e))
                 if i + 1 == nb_try:
                     raise
 
