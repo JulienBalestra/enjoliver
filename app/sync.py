@@ -4,6 +4,7 @@ Sync the matchbox configuration
 import json
 import os
 import re
+import time
 
 import ipaddr
 import requests
@@ -294,27 +295,32 @@ class ConfigSyncSchedules(object):
                 update_extra_metadata=None,
             )
 
-    def apply(self):
-        try:
-            self.etcd_member_kubernetes_control_plane()
-            self.kubernetes_nodes()
-        except Exception as e:
-            # If the sync fail, it's not a big deal, next pass will do it again
-            self.log.error("fail to apply the sync %s" % e)
+    def apply(self, nb_try=3, seconds_sleep=3):
+        for i in range(nb_try):
+            try:
+                self.etcd_member_kubernetes_control_plane()
+                self.kubernetes_nodes()
+            except Exception as e:
+                self.log.error("fail to apply the sync %s" % e)
+                if i + 1 == nb_try:
+                    raise
+
+            self.log.warning("retry %d/%d in %d s" % (i + 1, nb_try, seconds_sleep))
+            time.sleep(seconds_sleep)
 
     def _query_roles(self, *roles):
         roles = "&".join(roles)
         self.log.debug("roles='%s'" % roles)
-        r = requests.get("%s/scheduler/%s" % (self.api_uri, roles))
-        d = json.loads(r.content.decode())
-        r.close()
-        d.sort(key=lambda k: k["mac"])
-        return d
+        req = requests.get("%s/scheduler/%s" % (self.api_uri, roles))
+        data = json.loads(req.content.decode())
+        req.close()
+        data.sort(key=lambda k: k["mac"])
+        return data
 
     def _query_ip_list(self, role):
         self.log.debug("role='%s'" % role)
-        r = requests.get("%s/scheduler/ip-list/%s" % (self.api_uri, role))
-        d = json.loads(r.content.decode())
-        r.close()
-        d.sort()
-        return d
+        req = requests.get("%s/scheduler/ip-list/%s" % (self.api_uri, role))
+        data = json.loads(req.content.decode())
+        req.close()
+        data.sort()
+        return data

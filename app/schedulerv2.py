@@ -127,6 +127,18 @@ class CommonScheduler(object):
             self.log.error("ConnectionError %s" % url)
             return 0
 
+    def _apply_with_retry(self, apply_fn, nb_try=3, seconds_sleep=3):
+        for i in range(nb_try):
+            try:
+                return apply_fn()
+            except Exception as e:
+                self.log.error("fail to apply the schedule %s" % e)
+                if i + 1 == nb_try:
+                    raise
+
+            self.log.warning("retry %d/%d in %d s" % (i + 1, nb_try, seconds_sleep))
+            time.sleep(seconds_sleep)
+
 
 class EtcdMemberKubernetesControlPlane(CommonScheduler):
     expected_nb = EC.etcd_member_kubernetes_control_plane_expected_nb
@@ -140,7 +152,7 @@ class EtcdMemberKubernetesControlPlane(CommonScheduler):
         self.api_uri = api_uri
 
     def apply(self):
-        return self._apply_budget()
+        return self._apply_with_retry(self._apply_budget, nb_try=5, seconds_sleep=5)
 
 
 class KubernetesNode(CommonScheduler):
@@ -160,4 +172,4 @@ class KubernetesNode(CommonScheduler):
             self.apply_dep(sch_cp)
 
     def apply(self):
-        return self._apply_everything()
+        return self._apply_with_retry(self._apply_everything, nb_try=5, seconds_sleep=10)
