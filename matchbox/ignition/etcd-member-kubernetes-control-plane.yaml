@@ -751,6 +751,8 @@ storage:
 
           set -e
 
+          set -o pipefail
+
           curl -f ${API_URI}/healthz
 
           test ${REQUEST_RAW_QUERY}
@@ -775,6 +777,8 @@ storage:
             exit 0
           }
 
+          curl -f ${API_URI}/metadata?${REQUEST_RAW_QUERY} -o /tmp/metadata.env
+
           locksmithctl -endpoint {{.kubernetes_etcd_servers}} status
           locksmithctl -endpoint {{.kubernetes_etcd_servers}} unlock "${REQUEST_RAW_QUERY}" || true
           locksmithctl -endpoint {{.kubernetes_etcd_servers}} lock "${REQUEST_RAW_QUERY}"
@@ -794,6 +798,7 @@ storage:
             -l /usr/boot/vmlinuz
 
           cp -v /tmp/coreos-install.json /usr/share/oem/coreos-install.json
+          cp -v /tmp/metadata.env /etc/metadata.env
 
           systemctl kexec
 
