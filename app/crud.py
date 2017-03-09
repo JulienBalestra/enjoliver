@@ -13,6 +13,16 @@ import logger
 from model import ChassisPort, Chassis, MachineInterface, Machine, \
     Healthz, Schedule, ScheduleRoles, LifecycleIgnition, LifecycleCoreosInstall, LifecycleRolling
 
+LOGGER = logger.get_logger(__file__)
+
+
+def retry_commit(session):
+    try:
+        session.commit()
+    except Exception as e:
+        LOGGER.warning(e)
+        session.commit()
+
 
 class FetchDiscovery(object):
     """
@@ -149,8 +159,8 @@ def health_check(session, ts, who):
     query_ts = session.query(Healthz).filter(Healthz.ts == ts).all()
     if query_ts[0].ts != ts:
         raise AssertionError("%s not in %s" % (ts, query_ts))
-    session.query(Healthz).filter(Healthz.ts < ts).delete()
-    session.commit()
+    session.query(Healthz).filter(Healthz.ts < ts - 10).delete()
+    retry_commit(session)
     health_status = True
     return health_status
 
@@ -323,12 +333,13 @@ class InjectDiscovery(object):
         with open("%s/%s/%s" % (self.ignition_journal, uuid, boot_id), "w") as f:
             f.write("\n".join(self.discovery["ignition-journal"]))
 
-    def commit(self):
+    def commit(self, report=True):
         try:
             if self.adds != 0 or self.updates != 0:
                 try:
                     self.log.debug("commiting")
-                    self.session.commit()
+                    retry_commit(self.session)
+                    # self.session.commit()
 
                 except Exception as e:
                     self.log.error("%s %s adds=%s updates=%s" % (type(e), e, self.adds, self.updates))
@@ -337,9 +348,10 @@ class InjectDiscovery(object):
                     self.session.rollback()
                     raise
         finally:
-            machine_nb = self.session.query(Machine).count()
-            self.log.debug("closing")
-            return machine_nb, True if self.adds else False
+            if report:
+                machine_nb = self.session.query(Machine).count()
+                self.log.debug("closing")
+                return machine_nb, True if self.adds else False
 
 
 class FetchSchedule(object):
@@ -469,12 +481,12 @@ class InjectSchedule(object):
 
         return
 
-    def commit(self):
+    def commit(self, report=True):
         try:
             if self.adds != 0 or self.updates != 0:
                 try:
                     self.log.debug("commiting")
-                    self.session.commit()
+                    retry_commit(self.session)
 
                 except Exception as e:
                     self.log.error("%s %s adds=%s updates=%s" % (type(e), e, self.adds, self.updates))
@@ -483,11 +495,12 @@ class InjectSchedule(object):
                     self.session.rollback()
                     raise
         finally:
-            roles_rapport = {}
-            for r in ScheduleRoles.roles:
-                roles_rapport[r] = self.session.query(Schedule).filter(Schedule.role == r).count()
-            self.log.debug("closing")
-            return roles_rapport, True if self.adds else False
+            if report:
+                roles_rapport = {}
+                for r in ScheduleRoles.roles:
+                    roles_rapport[r] = self.session.query(Schedule).filter(Schedule.role == r).count()
+                self.log.debug("closing")
+                return roles_rapport, True if self.adds else False
 
 
 class InjectLifecycle(object):
@@ -552,7 +565,8 @@ class InjectLifecycle(object):
             lifecycle.up_to_date = success
             lifecycle.updated_date = datetime.datetime.utcnow()
 
-        self.session.commit()
+        retry_commit(self.session)
+        # self.session.commit()
 
     def apply_lifecycle_rolling(self, enable):
         lifecycle = self.session.query(LifecycleRolling).filter(
@@ -567,7 +581,7 @@ class InjectLifecycle(object):
             lifecycle.enable = enable
             lifecycle.updated_date = datetime.datetime.utcnow()
 
-        self.session.commit()
+        retry_commit(self.session)
 
 
 class FetchLifecycle(object):

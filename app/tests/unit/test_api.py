@@ -27,6 +27,7 @@ class TestAPI(unittest.TestCase):
 
         cls.app = api.APP.test_client()
         smart = api.SmartClient(ec.db_uri)
+        api.SMART = smart
         smart.create_base()
 
         cls.app.testing = True
