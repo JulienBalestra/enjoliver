@@ -30,7 +30,6 @@ class SmartClient(object):
         self._create_engines(db_uri.split(","))
 
     def _create_engines(self, uri_list):
-        random.shuffle(uri_list)
         for single_uri in uri_list:
             e = create_engine(single_uri)
             if "%s" % e.url not in self.engine_urls:

@@ -1,13 +1,17 @@
 """
 Manual test suite for CockroachDB integration
 
-rkt run --net=host --insecure-options=all --interactive aci-cockroachdb --exec /usr/local/bin/cockroach -- start
+./runtime/runtime.rkt run --net=host --insecure-options=all --interactive enjoliver.local/cockroach:latest \
+    --exec /usr/bin/cockroach -- start --http-port 8082
 
-rkt run --net=host --insecure-options=all --interactive aci-cockroachdb --exec /usr/local/bin/cockroach -- start \
-    --port 26258 --join=localhost:26257 --http-port 8081
+./runtime/runtime.rkt run --net=host --insecure-options=all --interactive enjoliver.local/cockroach:latest \
+    --exec /usr/bin/cockroach -- start --port 26258 --join=localhost:26257,localhost:26259 --http-port 8082
 
-rkt run --net=host --insecure-options=all --interactive aci-cockroachdb --exec /usr/local/bin/cockroach -- start \
-    --port 26259 --join=localhost:26257 --http-port 8082
+./runtime/runtime.rkt run --net=host --insecure-options=all --interactive enjoliver.local/cockroach:latest \
+    --exec /usr/bin/cockroach -- start --port 26259 --join=localhost:26257,localhost:26258 --http-port 8083
+
+./runtime/runtime.rkt run --net=host --insecure-options=all --interactive enjoliver.local/cockroach:latest \
+    --exec /usr/bin/cockroach -- sql
 """
 import os
 import time
@@ -106,5 +110,5 @@ class TestEnjoliverCockroach(unittest.TestCase):
         os.execve(cmd[0], cmd, os.environ)
 
     def test_00(self):
-        for i in range(100):
+        for i in range(10000):
             requests.get("%s/healthz" % EC.api_uri)

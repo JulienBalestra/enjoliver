@@ -1,0 +1,9 @@
+name: enjoliver.local/cockroach:latest
+
+builder:
+  dependencies:
+    - enjoliver.local/debian:latest
+
+aci:
+  dependencies:
+    - enjoliver.local/debian:latest

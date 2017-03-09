@@ -671,3 +671,8 @@ class TestModel(unittest.TestCase):
         # CIDR
         for i in result[1:]:
             self.assertEqual(1, i[2].count("/"))
+
+    def test_99_healthz(self):
+        for i in range(10):
+            with self.smart.connected_session() as session:
+                crud.health_check(session, time.time(), "unittest")
