@@ -2,6 +2,7 @@ import datetime
 import os
 import shutil
 import unittest
+import time
 
 from app import configs
 from app import crud
@@ -43,6 +44,8 @@ class TestModel(unittest.TestCase):
         cls.smart = smartdb.SmartClient(ec.db_uri)
         model.BASE.metadata.drop_all(cls.smart.get_engine_connection())
         model.BASE.metadata.create_all(cls.smart.get_engine_connection())
+        with cls.smart.connected_session() as session:
+            crud.health_check(session, time.time(), "unittest")
         with cls.smart.connected_session() as session:
             fetch = crud.FetchDiscovery(session, cls.ignition_journal_path)
             assert fetch.get_all_interfaces() == []
