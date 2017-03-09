@@ -150,7 +150,6 @@ def health_check(session, ts, who):
     :param who: the host who asked for the check
     :return:
     """
-    health_status = False
     health = Healthz()
     health.ts = ts
     health.host = who
@@ -161,8 +160,7 @@ def health_check(session, ts, who):
         raise AssertionError("%s not in %s" % (ts, query_ts))
     session.query(Healthz).filter(Healthz.ts < ts - 10).delete()
     retry_commit(session)
-    health_status = True
-    return health_status
+    return True
 
 
 class InjectDiscovery(object):
