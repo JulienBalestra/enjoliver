@@ -16,11 +16,12 @@ from model import ChassisPort, Chassis, MachineInterface, Machine, \
 LOGGER = logger.get_logger(__file__)
 
 
-def retry_commit(session):
+def retry_commit(session, v=True):
     try:
         session.commit()
     except Exception as e:
-        LOGGER.warning(e)
+        if v:
+            LOGGER.warning(e)
         session.commit()
 
 
@@ -159,7 +160,10 @@ def health_check(session, ts, who):
     if query_ts[0].ts != ts:
         raise AssertionError("%s not in %s" % (ts, query_ts))
     session.query(Healthz).filter(Healthz.ts < ts - 10).delete()
-    retry_commit(session)
+    try:
+        retry_commit(session, v=False)
+    except Exception as e:
+        LOGGER.warning("cannot delete outdated Healthz rows %s" % type(e))
     return True
 
 
@@ -548,7 +552,8 @@ class InjectLifecycle(object):
             lifecycle.up_to_date = up_to_date
             lifecycle.updated_date = now
 
-        self.session.commit()
+        retry_commit(self.session)
+        # self.session.commit()
 
     def refresh_lifecycle_coreos_install(self, success):
         lifecycle = self.session.query(LifecycleCoreosInstall).filter(
