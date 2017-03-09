@@ -1,6 +1,7 @@
 """
 Always give a working freshly connected session
 """
+import random
 from contextlib import contextmanager
 
 from sqlalchemy import create_engine
@@ -29,6 +30,7 @@ class SmartClient(object):
         self._create_engines(db_uri.split(","))
 
     def _create_engines(self, uri_list):
+        random.shuffle(uri_list)
         for single_uri in uri_list:
             e = create_engine(single_uri)
             if "%s" % e.url not in self.engine_urls:
@@ -39,12 +41,14 @@ class SmartClient(object):
     @contextmanager
     def connected_session(self):
         conn = self.get_engine_connection()
-        Session = sessionmaker(bind=conn)
-        session = Session(bind=conn)
         try:
-            yield session
+            Session = sessionmaker(bind=conn)
+            session = Session(bind=conn)
+            try:
+                yield session
+            finally:
+                session.close()
         finally:
-            session.close()
             conn.close()
 
     @property
@@ -68,7 +72,11 @@ class SmartClient(object):
         raise ConnectionError(",".join(["%s" % k.url for k in self.engines]))
 
     def create_base(self):
-        model.BASE.metadata.create_all(self.get_engine_connection())
+        conn = self.get_engine_connection()
+        try:
+            model.BASE.metadata.create_all(conn)
+        finally:
+            conn.close()
 
 
 class _SingleEndpoint(SmartClient):

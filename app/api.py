@@ -1,3 +1,5 @@
+import os
+
 import requests
 from flask import Flask, request, json, jsonify, render_template, Response
 from werkzeug.contrib.cache import FileSystemCache
@@ -31,8 +33,10 @@ APPLICATION.config["BACKUP_BUCKET_NAME"] = EC.backup_bucket_name
 APPLICATION.config["BACKUP_BUCKET_DIRECTORY"] = EC.backup_bucket_directory
 APPLICATION.config["BACKUP_LOCK_KEY"] = EC.backup_lock_key
 
-APPLICATION.config["SMART_CLIENT"] = SmartClient(APPLICATION.config["DB_URI"])
-SMART = APPLICATION.config["SMART_CLIENT"]
+SMART = SmartClient
+
+if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "None"):
+    SMART = SmartClient(APPLICATION.config["DB_URI"])
 
 
 @APPLICATION.route("/shutdown", methods=["POST"])
