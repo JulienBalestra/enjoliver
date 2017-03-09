@@ -164,8 +164,8 @@ def health_check(session, ts, who):
     health.host = who
     session.add(health)
     run_transaction(session)
-    query_ts = session.query(Healthz).filter(Healthz.ts == ts).all()
-    if query_ts[0].ts != ts:
+    query_ts = session.query(Healthz).filter(Healthz.ts == ts).first()
+    if query_ts.ts != ts:
         raise AssertionError("%s not in %s" % (ts, query_ts))
     session.query(Healthz).filter(Healthz.ts < ts - 10).delete()
     try:

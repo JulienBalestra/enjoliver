@@ -10,13 +10,12 @@ import requests
 
 from app import api
 from app import configs
-from app import model
 from app import schedulerv2
 from app import sync
 from common import posts
 
-ec = configs.EnjoliverConfig(importer=__file__)
-ec.api_uri = "http://127.0.0.1:5000"
+EC = configs.EnjoliverConfig(importer=__file__)
+EC.api_uri = "http://127.0.0.1:5000"
 
 
 class TestAPIGunicornScheduler(unittest.TestCase):
@@ -33,7 +32,7 @@ class TestAPIGunicornScheduler(unittest.TestCase):
 
     test_matchbox_path = "%s/test_matchbox" % tests_path
 
-    api_discovery = "%s/discovery" % ec.api_uri
+    api_discovery = "%s/discovery" % EC.api_uri
 
     @staticmethod
     def process_target_matchbox():
@@ -71,14 +70,14 @@ class TestAPIGunicornScheduler(unittest.TestCase):
     def setUpClass(cls):
         time.sleep(0.1)
         try:
-            os.remove(ec.db_path)
+            os.remove(EC.db_path)
         except OSError:
             pass
 
-        shutil.rmtree(ec.ignition_journal_dir, ignore_errors=True)
+        shutil.rmtree(EC.ignition_journal_dir, ignore_errors=True)
 
         cls.clean_sandbox()
-        smart = api.SmartClient(ec.db_uri)
+        smart = api.SmartClient(EC.db_uri)
         api.SMART = smart
         api.SMART.create_base()
 
@@ -90,8 +89,8 @@ class TestAPIGunicornScheduler(unittest.TestCase):
         cls.p_api.start()
         assert cls.p_api.is_alive() is True
 
-        cls.matchbox_running(ec.matchbox_uri, cls.p_matchbox)
-        cls.api_running(ec.api_uri, cls.p_api)
+        cls.matchbox_running(EC.matchbox_uri, cls.p_matchbox)
+        cls.api_running(EC.api_uri, cls.p_api)
 
     @classmethod
     def tearDownClass(cls):
@@ -158,7 +157,7 @@ class TestAPIGunicornScheduler(unittest.TestCase):
                 u'/assets': True,
                 u"/metadata": True
             }}
-        request = requests.get("%s/healthz" % ec.api_uri)
+        request = requests.get("%s/healthz" % EC.api_uri)
         response_body = request.content
         response_code = request.status_code
         request.close()
@@ -171,7 +170,7 @@ class TestEtcdMemberKubernetesControlPlane1(TestAPIGunicornScheduler):
     def test_01(self):
         r = requests.post(self.api_discovery, data=json.dumps(posts.M01))
         self.assertEqual(r.status_code, 200)
-        sch = schedulerv2.EtcdMemberKubernetesControlPlane(ec.api_uri)
+        sch = schedulerv2.EtcdMemberKubernetesControlPlane(EC.api_uri)
         sch.expected_nb = 1
         self.assertTrue(sch.apply())
         self.assertTrue(sch.apply())
@@ -182,7 +181,7 @@ class TestEtcdMemberKubernetesControlPlane2(TestAPIGunicornScheduler):
         r = requests.post(self.api_discovery, data=json.dumps(posts.M01))
         r.close()
         self.assertEqual(r.status_code, 200)
-        sch = schedulerv2.EtcdMemberKubernetesControlPlane(ec.api_uri)
+        sch = schedulerv2.EtcdMemberKubernetesControlPlane(EC.api_uri)
         self.assertFalse(sch.apply())
         self.assertFalse(sch.apply())
         r = requests.post(self.api_discovery, data=json.dumps(posts.M02))
@@ -193,7 +192,7 @@ class TestEtcdMemberKubernetesControlPlane2(TestAPIGunicornScheduler):
         self.assertTrue(sch.apply())
 
         s = sync.ConfigSyncSchedules(
-            ec.api_uri,
+            EC.api_uri,
             self.test_matchbox_path,
             ignition_dict={
                 "etcd_member_kubernetes_control_plane": "inte-testapigunicornscheduler-etcd-k8s-cp",
@@ -208,7 +207,7 @@ class TestEtcdMemberKubernetesControlPlane3(TestAPIGunicornScheduler):
         r = requests.post(self.api_discovery, data=json.dumps(posts.M01))
         r.close()
         self.assertEqual(r.status_code, 200)
-        sch = schedulerv2.EtcdMemberKubernetesControlPlane(ec.api_uri)
+        sch = schedulerv2.EtcdMemberKubernetesControlPlane(EC.api_uri)
         self.assertFalse(sch.apply())
         self.assertFalse(sch.apply())
         r = requests.post(self.api_discovery, data=json.dumps(posts.M02))
@@ -218,14 +217,14 @@ class TestEtcdMemberKubernetesControlPlane3(TestAPIGunicornScheduler):
         r.close()
         self.assertTrue(sch.apply())
 
-        sch_no = schedulerv2.KubernetesNode(ec.api_uri, True)
+        sch_no = schedulerv2.KubernetesNode(EC.api_uri, True)
         self.assertEqual(0, sch_no.apply())
         r = requests.post(self.api_discovery, data=json.dumps(posts.M04))
         r.close()
         self.assertEqual(1, sch_no.apply())
 
         s = sync.ConfigSyncSchedules(
-            ec.api_uri,
+            EC.api_uri,
             self.test_matchbox_path,
             ignition_dict={
                 "etcd_member_kubernetes_control_plane": "inte-testapigunicornscheduler-etcd-k8s-cp",
@@ -242,12 +241,12 @@ class TestEtcdMemberKubernetesControlPlane4(TestAPIGunicornScheduler):
             self.assertEqual(r.status_code, 200)
             r.close()
 
-        sch_no = schedulerv2.KubernetesNode(ec.api_uri, True)
+        sch_no = schedulerv2.KubernetesNode(EC.api_uri, True)
 
         self.assertEqual(len(posts.ALL) - schedulerv2.EtcdMemberKubernetesControlPlane.expected_nb, sch_no.apply())
 
         s = sync.ConfigSyncSchedules(
-            ec.api_uri,
+            EC.api_uri,
             self.test_matchbox_path,
             ignition_dict={
                 "etcd_member_kubernetes_control_plane": "inte-testapigunicornscheduler-etcd-k8s-cp",
