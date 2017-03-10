@@ -8,9 +8,14 @@ type DiscoveryData struct {
 }
 
 func CollectData() DiscoveryData {
+	var err error
+
 	data := DiscoveryData{}
 	data.Interfaces = LocalIfaces()
-	data.BootInfo, _ = ParseCommandLine()
+	data.BootInfo, err = ParseCommandLine()
+	if err != nil {
+		data.BootInfo, _ = ParseMetadata()
+	}
 	data.LLDPInfo = ParseLLDPFile()
 	data.IgnitionJournal = GetIgnitionJournal()
 	return data

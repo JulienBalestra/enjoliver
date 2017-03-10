@@ -80,3 +80,24 @@ func Test2ParseCommandLine(t *testing.T) {
 		t.Error(bi.Mac)
 	}
 }
+
+func Test3ParseMetadata(t *testing.T) {
+	//var c Config
+	var err error
+	var discoAddress = "http://127.0.0.1:5000"
+
+	os.Setenv("DISCOVERY_ADDRESS", discoAddress)
+	CONF, err = CreateConfig()
+	if err != nil {
+		t.Fail()
+	}
+	CONF.EnjoliverMetadata = "tests" + CONF.EnjoliverMetadata + "0"
+
+	bi, err := ParseMetadata()
+	if bi.Mac != "52:54:00:74:17:9d" {
+		t.Error(bi.Mac)
+	}
+	if bi.Uuid != "673cdde4-2f54-417b-ad7f-3909c0faee59" {
+		t.Error(bi.Mac)
+	}
+}

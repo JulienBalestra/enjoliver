@@ -1,0 +1,12 @@
+name: enjoliver.local/discovery:latest
+
+builder:
+  dependencies:
+    - enjoliver.local/builder-hyperkube:latest
+
+  mountPoints:
+    - {from: ../../, to: /opt/source-project}
+
+aci:
+  dependencies:
+    - enjoliver.local/debian:latest

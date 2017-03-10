@@ -8,11 +8,12 @@ import (
 
 type Config struct {
 	// http://IP:PORT
-	DiscoveryAddress string
-	ProcCmdline      string
-	ProcBootId       string
-	LLDPFile         string
-	IgnitionFile     string
+	DiscoveryAddress  string
+	ProcCmdline       string
+	EnjoliverMetadata string
+	ProcBootId        string
+	LLDPFile          string
+	IgnitionFile      string
 }
 
 func CreateConfig() (Config, error) {
@@ -42,6 +43,13 @@ func CreateConfig() (Config, error) {
 	if c.ProcCmdline == "" {
 		log.Printf("Environment PROC_CMDLINE is nil setting default: %s", ProcCmdlineDefault)
 		c.ProcCmdline = ProcCmdlineDefault
+	}
+
+	EnjoliverMetadata := "/etc/metadata.env"
+	c.EnjoliverMetadata = os.Getenv("METADATA_ENV")
+	if c.EnjoliverMetadata == "" {
+		log.Printf("Environment METADATA_ENV is nil setting default: %s", ProcCmdlineDefault)
+		c.EnjoliverMetadata = EnjoliverMetadata
 	}
 
 	BootIdDefault := "/proc/sys/kernel/random/boot_id"

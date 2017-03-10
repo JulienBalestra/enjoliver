@@ -38,7 +38,7 @@ func getRandomId() string {
 
 }
 
-func getBootInfo(url string) (BootInfo, error) {
+func getBootInfoFromUrl(url string) (BootInfo, error) {
 	var bi BootInfo
 	var uuid string = "uuid="
 	var mac string = "mac="
@@ -73,5 +73,42 @@ func ParseCommandLine() (BootInfo, error) {
 		log.Println(err)
 		return bi, err
 	}
-	return getBootInfo(url)
+	return getBootInfoFromUrl(url)
+}
+
+/*
+REQUEST_RAW_QUERY='uuid=673cdde4-2f54-417b-ad7f-3909c0faee59&mac=52-54-00-74-17-9d&os=installed'
+*/
+func getBootInfoFromMetadata(b []byte) (BootInfo, error) {
+	var bi BootInfo
+	prefix := "REQUEST_RAW_QUERY="
+	str := string(b)
+	fields := strings.Fields(str)
+	for _, word := range fields {
+		if strings.Contains(word, prefix) {
+			line := strings.Split(word, prefix)[1]
+			line = strings.Replace(line, "'", "", -1)
+			selectors := strings.Split(line, "&")
+			for _, selector := range selectors {
+				kv := strings.Split(selector, "=")
+				if kv[0] == "uuid" {
+					bi.Uuid = kv[1]
+				} else if kv[0] == "mac" {
+					bi.Mac = strings.Replace(kv[1], "-", ":", -1)
+				}
+			}
+			bi.RandomId = getRandomId()
+			return bi, nil
+		}
+	}
+	return bi, errors.New("No REQUEST_RAW_QUERY")
+}
+
+func ParseMetadata() (BootInfo, error) {
+	var bi BootInfo
+	b, err := ioutil.ReadFile(CONF.EnjoliverMetadata)
+	if err != nil {
+		return bi, err
+	}
+	return getBootInfoFromMetadata(b)
 }

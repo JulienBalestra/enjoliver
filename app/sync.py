@@ -262,6 +262,8 @@ class ConfigSyncSchedules(object):
         machine_roles = self._query_roles(*roles)
         for i, m in enumerate(machine_roles):
             update_md = {
+                # Roles
+                "roles": ",".join(roles),
                 # Etcd Members
                 "kubernetes_etcd_member_peer_uri_list": ",".join(self.kubernetes_etcd_member_peer_uri_list),
                 "fleet_etcd_member_peer_uri_list": ",".join(self.fleet_etcd_member_peer_uri_list),
@@ -287,12 +289,16 @@ class ConfigSyncSchedules(object):
 
         machine_roles = self._query_roles(*roles)
         for i, m in enumerate(machine_roles):
+            update_md = {
+                # Roles
+                "roles": ",".join(roles),
+            }
             self.produce_matchbox_data(
                 marker=marker,
                 i=i,
                 m=m,
                 automatic_name="no-%d-%s" % (i, m["ipv4"].replace(".", "-")),
-                update_extra_metadata=None,
+                update_extra_metadata=update_md,
             )
 
     def apply(self, nb_try=2, seconds_sleep=0):
