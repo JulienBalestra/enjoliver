@@ -1,0 +1,49 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: discovery-daemonset
+  namespace: default
+spec:
+  template:
+    metadata:
+      annotations:
+        rkt.kubernetes.io/host-create-directories: /run/lldp
+      labels:
+        run: discovery-host
+    spec:
+      hostNetwork: true
+      containers:
+      - name: discovery-daemonset-pod
+        image: enjoliver.local/discovery:latest
+        command:
+        - /bin/bash
+        - -c
+        - "/usr/bin/discoveryC && exec -a discoverySleep sleep 3600"
+
+        env:
+        - name: DISCOVERY_ADDRESS
+          value: "http://172.20.0.1:5000/discovery"
+
+        volumeMounts:
+        - mountPath: /etc/metadata.env
+          name: metadata
+        - mountPath: /proc/cmdline
+          name: cmdline
+        - mountPath: /proc/sys/kernel/random/boot_id
+          name: boot-id
+        - mountPath: /run
+          name: run
+
+      volumes:
+      - name: metadata
+        hostPath:
+          path: /etc/metadata.env
+      - name: cmdline
+        hostPath:
+          path: /proc/cmdline
+      - name: boot-id
+        hostPath:
+          path: /proc/sys/kernel/random/boot_id
+      - name: run
+        hostPath:
+          path: /run

@@ -6,6 +6,14 @@ systemd:
       enable: false
       mask: true
 
+    - name: locksmithd.service
+      enable: false
+      mask: true
+
+    - name: ntpd.service
+      enable: false
+      mask: true
+
     - name: containerd.service
       enable: false
       mask: true
@@ -168,6 +176,13 @@ storage:
               fi
               sleep ${TIMER}
           done
+
+    - path: /etc/coreos/update.conf
+      mode: 0644
+      filesystem: root
+      contents:
+        inline: |
+          REBOOT_STRATEGY=off
 
 {{ if index . "ssh_authorized_keys" }}
 passwd:
