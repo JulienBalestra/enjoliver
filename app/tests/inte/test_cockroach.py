@@ -2,13 +2,13 @@
 Manual test suite for CockroachDB integration
 
 ./runtime/runtime.rkt run --net=host --insecure-options=all --interactive enjoliver.local/cockroach:latest \
-    --exec /usr/bin/cockroach -- start --http-port 8082
+    --exec /usr/bin/cockroach -- start --port 26257 --http-port 8081
 
 ./runtime/runtime.rkt run --net=host --insecure-options=all --interactive enjoliver.local/cockroach:latest \
-    --exec /usr/bin/cockroach -- start --port 26258 --join=localhost:26257,localhost:26259 --http-port 8082
+    --exec /usr/bin/cockroach -- start --port 26258 --http-port 8082 --join=127.0.0.1:26257,127.0.0.1:26259
 
 ./runtime/runtime.rkt run --net=host --insecure-options=all --interactive enjoliver.local/cockroach:latest \
-    --exec /usr/bin/cockroach -- start --port 26259 --join=localhost:26257,localhost:26258 --http-port 8083
+    --exec /usr/bin/cockroach -- start --port 26259 --http-port 8083 --join=127.0.0.1:26257,127.0.0.1:26258
 
 ./runtime/runtime.rkt run --net=host --insecure-options=all --interactive enjoliver.local/cockroach:latest \
     --exec /usr/bin/cockroach -- sql

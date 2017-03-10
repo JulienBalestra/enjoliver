@@ -6,8 +6,6 @@ import datetime
 import os
 import socket
 
-import psycopg2
-import sqlalchemy
 from sqlalchemy import func
 from sqlalchemy.orm import subqueryload
 
@@ -16,21 +14,6 @@ from model import ChassisPort, Chassis, MachineInterface, Machine, \
     Healthz, Schedule, ScheduleRoles, LifecycleIgnition, LifecycleCoreosInstall, LifecycleRolling
 
 LOGGER = logger.get_logger(__file__)
-
-
-def run_transaction(session):
-    if session.bind.engine.driver == 'psycopg2':
-        for i in range(100):
-            try:
-                session.commit()
-                return
-            except sqlalchemy.exc.DatabaseError as e:
-                if isinstance(e.orig, psycopg2.OperationalError):
-                    if e.orig.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
-                        continue
-                raise
-
-    session.commit()
 
 
 class FetchDiscovery(object):
@@ -163,12 +146,12 @@ def health_check(session, ts, who):
     health.ts = ts
     health.host = who
     session.add(health)
-    run_transaction(session)
+    session.commit()
     session.query(Healthz).filter(Healthz.ts == ts).delete()
     try:
-        run_transaction(session)
+        session.commit()
     except Exception as e:
-        LOGGER.warning("cannot delete outdated Healthz rows %s" % type(e))
+        LOGGER.warning("cannot delete inserted Healthz %s %s" % (ts, type(e)))
     return True
 
 
@@ -345,7 +328,7 @@ class InjectDiscovery(object):
             if self.adds != 0 or self.updates != 0:
                 try:
                     self.log.debug("commiting")
-                    run_transaction(self.session)
+                    self.session.commit()
                     # self.session.commit()
 
                 except Exception as e:
@@ -493,7 +476,7 @@ class InjectSchedule(object):
             if self.adds != 0 or self.updates != 0:
                 try:
                     self.log.debug("commiting")
-                    run_transaction(self.session)
+                    self.session.commit()
 
                 except Exception as e:
                     self.log.error("%s %s adds=%s updates=%s" % (type(e), e, self.adds, self.updates))
@@ -557,7 +540,7 @@ class InjectLifecycle(object):
             lifecycle.up_to_date = up_to_date
             lifecycle.updated_date = now
 
-        run_transaction(self.session)
+        self.session.commit()
         # self.session.commit()
 
     def refresh_lifecycle_coreos_install(self, success):
@@ -573,7 +556,7 @@ class InjectLifecycle(object):
             lifecycle.up_to_date = success
             lifecycle.updated_date = datetime.datetime.utcnow()
 
-        run_transaction(self.session)
+        self.session.commit()
         # self.session.commit()
 
     def apply_lifecycle_rolling(self, enable):
@@ -589,7 +572,7 @@ class InjectLifecycle(object):
             lifecycle.enable = enable
             lifecycle.updated_date = datetime.datetime.utcnow()
 
-        run_transaction(self.session)
+        self.session.commit()
 
 
 class FetchLifecycle(object):

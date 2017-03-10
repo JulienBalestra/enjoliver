@@ -7,3 +7,7 @@ builder:
 aci:
   dependencies:
     - enjoliver.local/debian:latest
+  app:
+    mountPoints:
+      - name: cockroach-data
+        path: /cockroach-data

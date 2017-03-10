@@ -64,7 +64,7 @@ def submit_lifecycle_ignition(request_raw_query):
         LOGGER.error("%s have incorrect matchbox return" % request.path)
         return "MatchboxValueError", 406
 
-    with SMART.connected_session() as session:
+    with SMART.new_session() as session:
         inject = crud.InjectLifecycle(session, request_raw_query=request_raw_query)
         if json.dumps(machine_ignition, sort_keys=True) == json.dumps(matchbox_ignition, sort_keys=True):
             inject.refresh_lifecycle_ignition(True)
@@ -77,7 +77,7 @@ def submit_lifecycle_ignition(request_raw_query):
 
 @APPLICATION.route("/lifecycle/rolling/<string:request_raw_query>", methods=["GET"])
 def report_lifecycle_rolling(request_raw_query):
-    with SMART.connected_session() as session:
+    with SMART.new_session() as session:
         life = crud.FetchLifecycle(session)
         mac = crud.InjectLifecycle.get_mac_from_raw_query(request_raw_query)
         allow = life.get_rolling_status(mac)
@@ -93,7 +93,7 @@ def report_lifecycle_rolling(request_raw_query):
 @APPLICATION.route("/lifecycle/rolling/<string:request_raw_query>", methods=["POST"])
 def change_lifecycle_rolling(request_raw_query):
     LOGGER.info("%s %s" % (request.method, request.url))
-    with SMART.connected_session() as session:
+    with SMART.new_session() as session:
         try:
             life = crud.InjectLifecycle(session, request_raw_query)
             life.apply_lifecycle_rolling(True)
@@ -106,7 +106,7 @@ def change_lifecycle_rolling(request_raw_query):
 @APPLICATION.route("/lifecycle/rolling/<string:request_raw_query>", methods=["DELETE"])
 def lifecycle_rolling_delete(request_raw_query):
     LOGGER.info("%s %s" % (request.method, request.url))
-    with SMART.connected_session() as session:
+    with SMART.new_session() as session:
         life = crud.InjectLifecycle(session, request_raw_query)
         life.apply_lifecycle_rolling(False)
         report = "Disabled %s" % life.mac, 200
@@ -115,7 +115,7 @@ def lifecycle_rolling_delete(request_raw_query):
 
 @APPLICATION.route("/lifecycle/rolling", methods=["GET"])
 def lifecycle_rolling_all():
-    with SMART.connected_session() as session:
+    with SMART.new_session() as session:
         fetch = crud.FetchLifecycle(session)
         rolling_status_list = fetch.get_all_rolling_status()
 
@@ -124,7 +124,7 @@ def lifecycle_rolling_all():
 
 @APPLICATION.route("/lifecycle/ignition", methods=["GET"])
 def lifecycle_get_ignition_status():
-    with SMART.connected_session() as session:
+    with SMART.new_session() as session:
         fetch = crud.FetchLifecycle(session)
         updated_status_list = fetch.get_all_updated_status()
 
@@ -133,7 +133,7 @@ def lifecycle_get_ignition_status():
 
 @APPLICATION.route("/lifecycle/coreos-install", methods=["GET"])
 def lifecycle_get_coreos_install_status():
-    with SMART.connected_session() as session:
+    with SMART.new_session() as session:
         fetch = crud.FetchLifecycle(session)
         install_status_list = fetch.get_all_coreos_install_status()
 
@@ -150,7 +150,7 @@ def report_lifecycle_coreos_install(status, request_raw_query):
     else:
         LOGGER.error("%s %s" % (request.method, request.url))
         return "success or fail != %s" % status.lower(), 403
-    with SMART.connected_session() as session:
+    with SMART.new_session() as session:
         inject = crud.InjectLifecycle(session, request_raw_query=request_raw_query)
         inject.refresh_lifecycle_coreos_install(success)
     return "%s" % status, 200
@@ -183,7 +183,7 @@ def discovery():
     except (KeyError, TypeError, ValueError):
         return err
 
-    with SMART.connected_session() as session:
+    with SMART.new_session() as session:
         try:
             inject = crud.InjectDiscovery(
                 session,
@@ -201,7 +201,7 @@ def discovery():
 def discovery_get():
     all_data = CACHE.get(request.path)
     if all_data is None:
-        with SMART.connected_session() as session:
+        with SMART.new_session() as session:
             fetch = crud.FetchDiscovery(session, ignition_journal=ignition_journal)
             all_data = fetch.get_all()
             CACHE.set(request.path, all_data, timeout=30)
@@ -212,7 +212,7 @@ def discovery_get():
 def scheduler_get():
     all_data = CACHE.get(request.path)
     if all_data is None:
-        with SMART.connected_session() as session:
+        with SMART.new_session() as session:
             fetch = crud.FetchSchedule(session)
             all_data = fetch.get_schedules()
             CACHE.set(request.path, all_data, timeout=30)
@@ -222,7 +222,7 @@ def scheduler_get():
 
 @APPLICATION.route('/scheduler/<string:role>', methods=['GET'])
 def get_schedule_by_role(role):
-    with SMART.connected_session() as session:
+    with SMART.new_session() as session:
         fetch = crud.FetchSchedule(session)
         multi = role.split("&")
         data = fetch.get_roles(*multi)
@@ -232,7 +232,7 @@ def get_schedule_by_role(role):
 
 @APPLICATION.route('/scheduler/available', methods=['GET'])
 def get_available_machine():
-    with SMART.connected_session() as session:
+    with SMART.new_session() as session:
         fetch = crud.FetchSchedule(session)
         data = fetch.get_available_machines()
 
@@ -241,7 +241,7 @@ def get_available_machine():
 
 @APPLICATION.route('/scheduler/ip-list/<string:role>', methods=['GET'])
 def get_schedule_role_ip_list(role):
-    with SMART.connected_session() as session:
+    with SMART.new_session() as session:
         fetch = crud.FetchSchedule(session)
         ip_list_role = fetch.get_role_ip_list(role)
 
@@ -261,7 +261,7 @@ def scheduler_post():
                 }
             }), 406
 
-    with SMART.connected_session() as session:
+    with SMART.new_session() as session:
         inject = crud.InjectSchedule(session, data=req)
         inject.apply_roles()
         inject.commit()
@@ -279,7 +279,7 @@ def backup_database():
 
 @APPLICATION.route('/discovery/interfaces', methods=['GET'])
 def discovery_interfaces():
-    with SMART.connected_session() as session:
+    with SMART.new_session() as session:
         fetch = crud.FetchDiscovery(session, ignition_journal=ignition_journal)
         interfaces = fetch.get_all_interfaces()
 
@@ -288,7 +288,7 @@ def discovery_interfaces():
 
 @APPLICATION.route('/discovery/ignition-journal/<string:uuid>/<string:boot_id>', methods=['GET'])
 def discovery_ignition_journal_by_boot_id(uuid, boot_id):
-    with SMART.connected_session() as session:
+    with SMART.new_session() as session:
         fetch = crud.FetchDiscovery(session,
                                     ignition_journal=ignition_journal)
         lines = fetch.get_ignition_journal(uuid, boot_id=boot_id)
@@ -298,7 +298,7 @@ def discovery_ignition_journal_by_boot_id(uuid, boot_id):
 
 @APPLICATION.route('/discovery/ignition-journal/<string:uuid>', methods=['GET'])
 def discovery_ignition_journal_by_uuid(uuid):
-    with SMART.connected_session() as session:
+    with SMART.new_session() as session:
         fetch = crud.FetchDiscovery(session,
                                     ignition_journal=ignition_journal)
         lines = fetch.get_ignition_journal(uuid)
@@ -308,7 +308,7 @@ def discovery_ignition_journal_by_uuid(uuid):
 
 @APPLICATION.route('/discovery/ignition-journal', methods=['GET'])
 def discovery_ignition_journal_summary():
-    with SMART.connected_session() as session:
+    with SMART.new_session() as session:
         fetch = crud.FetchDiscovery(session,
                                     ignition_journal=ignition_journal)
         lines = fetch.get_ignition_journal_summary()
@@ -441,7 +441,7 @@ def user_interface():
 
 @APPLICATION.route('/ui/view/machine', methods=['GET'])
 def user_view_machine():
-    with SMART.connected_session() as session:
+    with SMART.new_session() as session:
         view = crud.FetchView(session)
         res = view.get_machines()
 

@@ -10,3 +10,4 @@ curl -fL https://binaries.cockroachdb.com/cockroach-latest.linux-amd64.tgz -o co
 tar -xzvf cockroach.tar.gz --strip-components=1
 
 mv -v cockroach ${ROOTFS}/usr/bin/
+mkdir -pv ${ROOTFS}/cockroach-data

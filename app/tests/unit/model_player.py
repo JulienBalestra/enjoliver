@@ -1,53 +1,29 @@
 import datetime
-import os
-import shutil
-import unittest
 import time
+import unittest
 
 from app import configs
 from app import crud
 from app import model
-from app import smartdb
 from common import posts
 
 ec = configs.EnjoliverConfig()
 
 
+@unittest.skipIf(__name__ == "__main__", "")
 class TestModel(unittest.TestCase):
-    unit_path = os.path.dirname(os.path.abspath(__file__))
-    dbs_path = "%s/dbs" % unit_path
-    ignition_journal_path = "%s/ignition_journal" % unit_path
-
-    # engine = None
-
     @classmethod
     def setUpClass(cls):
-        try:
-            shutil.rmtree(cls.ignition_journal_path)
-        except OSError:
-            pass
+        raise NotImplementedError
 
-        if "sqlite:///" in ec.db_uri:
-
-            db = "%s/%s.sqlite" % (cls.dbs_path, TestModel.__name__.lower())
-
-            if True:
-                try:
-                    os.remove(db)
-                except OSError:
-                    pass
-                assert os.path.isfile(db) is False
-                ec.db_uri = 'sqlite:///%s' % db
-            else:
-                ec.db_uri = 'sqlite:///:memory:'
-
-        cls.smart = smartdb.SmartClient(ec.db_uri)
-        model.BASE.metadata.drop_all(cls.smart.get_engine_connection())
-        model.BASE.metadata.create_all(cls.smart.get_engine_connection())
-        with cls.smart.connected_session() as session:
+    @staticmethod
+    def set_up_class_checks(smart, ignition_journal_path):
+        model.BASE.metadata.drop_all(smart.get_engine_connection())
+        model.BASE.metadata.create_all(smart.get_engine_connection())
+        with smart.new_session() as session:
             crud.health_check(session, time.time(), "unittest")
-        with cls.smart.connected_session() as session:
-            fetch = crud.FetchDiscovery(session, cls.ignition_journal_path)
+        with smart.new_session() as session:
+            fetch = crud.FetchDiscovery(session, ignition_journal_path)
             assert fetch.get_all_interfaces() == []
             assert fetch.get_all() == []
             assert fetch.get_ignition_journal("") == []
@@ -55,11 +31,11 @@ class TestModel(unittest.TestCase):
 
     # @unittest.skip("")
     def test_00(self):
+        with self.smart.new_session() as session:
+            inject = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M01)
+            inject.commit()
 
-        with self.smart.connected_session() as session:
-            i = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M01)
-            i.commit()
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
             interfaces = fetch.get_all_interfaces()
             self.assertEqual([
@@ -81,11 +57,11 @@ class TestModel(unittest.TestCase):
 
     # @unittest.skip("")
     def test_00_1(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             i = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M01)
             i.commit()
 
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
             interfaces = fetch.get_all_interfaces()
             self.assertEqual([
@@ -103,13 +79,13 @@ class TestModel(unittest.TestCase):
                 }
             ], interfaces)
 
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
             journal = fetch.get_ignition_journal(posts.M01["boot-info"]["uuid"])
             self.assertEqual(len(journal), len(posts.M01["ignition-journal"]))
 
     def test_01(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             i = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M02)
             i.commit()
             fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
@@ -145,7 +121,7 @@ class TestModel(unittest.TestCase):
             ], interfaces)
 
     def test_02(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             m1 = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M01)
             m1.commit()
             i = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M02)
@@ -170,7 +146,7 @@ class TestModel(unittest.TestCase):
             ], interfaces)
 
     def test_03(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             i = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M03)
             i.commit()
             fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
@@ -179,7 +155,7 @@ class TestModel(unittest.TestCase):
             self.assertEqual(len(fetch.get_ignition_journal(posts.M03["boot-info"]["uuid"])), 39)
 
     def test_04(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             for p in posts.ALL:
                 i = crud.InjectDiscovery(session, self.ignition_journal_path, p)
                 i.commit()
@@ -188,7 +164,7 @@ class TestModel(unittest.TestCase):
             self.assertEqual(len(posts.ALL), len(interfaces))
 
     def test_05(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             for p in posts.ALL:
                 i = crud.InjectDiscovery(session, self.ignition_journal_path, p)
                 i.commit()
@@ -198,12 +174,12 @@ class TestModel(unittest.TestCase):
             self.assertEqual(len(posts.ALL), len(interfaces))
 
     def test_06(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             i = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M16)
             i.commit()
 
     def test_07(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             with self.assertRaises(KeyError):
                 i = crud.InjectDiscovery(session, self.ignition_journal_path, {
                     u'boot-info': {},
@@ -224,7 +200,7 @@ class TestModel(unittest.TestCase):
             self.assertEqual(587, line_nb)
 
     def test_08(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
             all_data = fetch.get_all_interfaces()
             chassis_names = [k["chassis_name"] for k in all_data]
@@ -232,7 +208,7 @@ class TestModel(unittest.TestCase):
             self.assertEqual(19, chassis_names.count("rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4"))
 
     def test_09(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             inject = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M01)
             inject.commit()
             fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
@@ -265,7 +241,7 @@ class TestModel(unittest.TestCase):
             ],
             u'ignition-journal': None
         }
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             inject = crud.InjectDiscovery(session, self.ignition_journal_path, p)
             inject.commit()
             fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
@@ -280,17 +256,17 @@ class TestModel(unittest.TestCase):
             }
         }
         e = {'kubernetes-control-plane': 0, 'kubernetes-node': 0, 'etcd-member': 1}
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             inject = crud.InjectSchedule(session, s)
             inject.apply_roles()
             self.assertEqual(inject.commit(), (e, True))
 
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             inject = crud.InjectSchedule(session, s)
             inject.apply_roles()
             self.assertEqual(inject.commit(), (e, False))
 
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             fetch = crud.FetchSchedule(session)
             e = fetch.get_schedules()
             self.assertEqual({mac: [u"etcd-member"]}, e)
@@ -305,15 +281,15 @@ class TestModel(unittest.TestCase):
             }
         }
         e = {'kubernetes-control-plane': 0, 'kubernetes-node': 0, 'etcd-member': 2}
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             inject = crud.InjectSchedule(session, s)
             inject.apply_roles()
             self.assertEqual(inject.commit(), (e, True))
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             inject = crud.InjectSchedule(session, s)
             inject.apply_roles()
             self.assertEqual(inject.commit(), (e, False))
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             fetch = crud.FetchSchedule(session)
             self.assertEqual([u"etcd-member"], fetch.get_roles_by_mac_selector(mac))
 
@@ -326,17 +302,17 @@ class TestModel(unittest.TestCase):
             }
         }
         e = {'kubernetes-control-plane': 0, 'kubernetes-node': 0, 'etcd-member': 3}
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             inject = crud.InjectSchedule(session, s)
             inject.apply_roles()
             self.assertEqual(inject.commit(), (e, True))
 
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             inject = crud.InjectSchedule(session, s)
             inject.apply_roles()
             self.assertEqual(inject.commit(), (e, False))
 
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             fetch = crud.FetchSchedule(session)
             self.assertEqual([u"etcd-member"], fetch.get_roles_by_mac_selector(mac))
 
@@ -349,15 +325,15 @@ class TestModel(unittest.TestCase):
             }
         }
         e = {'kubernetes-control-plane': 1, 'kubernetes-node': 0, 'etcd-member': 3}
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             inject = crud.InjectSchedule(session, s)
             inject.apply_roles()
             self.assertEqual(inject.commit(), (e, True))
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             inject = crud.InjectSchedule(session, s)
             inject.apply_roles()
             self.assertEqual(inject.commit(), (e, False))
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             fetch = crud.FetchSchedule(session)
             self.assertEqual([u"kubernetes-control-plane"], fetch.get_roles_by_mac_selector(mac))
 
@@ -370,15 +346,15 @@ class TestModel(unittest.TestCase):
             }
         }
         e = {'kubernetes-control-plane': 1, 'kubernetes-node': 0, 'etcd-member': 4}
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             inject = crud.InjectSchedule(session, s)
             inject.apply_roles()
             self.assertEqual(inject.commit(), (e, True))
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             inject = crud.InjectSchedule(session, s)
             inject.apply_roles()
             self.assertEqual(inject.commit(), (e, False))
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             fetch = crud.FetchSchedule(session)
             self.assertEqual([u"kubernetes-control-plane", "etcd-member"], fetch.get_roles_by_mac_selector(mac))
 
@@ -391,15 +367,15 @@ class TestModel(unittest.TestCase):
             }
         }
         e = {'kubernetes-control-plane': 1, 'kubernetes-node': 1, 'etcd-member': 4}
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             inject = crud.InjectSchedule(session, s)
             inject.apply_roles()
             self.assertEqual(inject.commit(), (e, True))
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             inject = crud.InjectSchedule(session, s)
             inject.apply_roles()
             self.assertEqual(inject.commit(), (e, False))
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             fetch = crud.FetchSchedule(session)
             self.assertEqual(["kubernetes-node"], fetch.get_roles_by_mac_selector(mac))
 
@@ -412,15 +388,15 @@ class TestModel(unittest.TestCase):
             }
         }
         e = {'kubernetes-control-plane': 1, 'kubernetes-node': 2, 'etcd-member': 4}
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             inject = crud.InjectSchedule(session, s)
             inject.apply_roles()
             self.assertEqual(inject.commit(), (e, True))
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             inject = crud.InjectSchedule(session, s)
             inject.apply_roles()
             self.assertEqual(inject.commit(), (e, False))
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             fetch = crud.FetchSchedule(session)
             self.assertEqual(["kubernetes-node"], fetch.get_roles_by_mac_selector(mac))
 
@@ -433,15 +409,15 @@ class TestModel(unittest.TestCase):
             }
         }
         e = {'kubernetes-control-plane': 1, 'kubernetes-node': 3, 'etcd-member': 4}
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             inject = crud.InjectSchedule(session, s)
             inject.apply_roles()
             self.assertEqual(inject.commit(), (e, True))
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             inject = crud.InjectSchedule(session, s)
             inject.apply_roles()
             self.assertEqual(inject.commit(), (e, False))
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             fetch = crud.FetchSchedule(session)
             self.assertEqual(["kubernetes-node"], fetch.get_roles_by_mac_selector(mac))
 
@@ -454,19 +430,19 @@ class TestModel(unittest.TestCase):
             }
         }
         e = {'kubernetes-control-plane': 1, 'kubernetes-node': 3, 'etcd-member': 4}
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             inject = crud.InjectSchedule(session, s)
             with self.assertRaises(LookupError):
                 inject.apply_roles()
 
             self.assertEqual(inject.commit(), (e, False))
 
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             fetch = crud.FetchSchedule(session)
             self.assertEqual([], fetch.get_roles_by_mac_selector(mac))
 
     def test_19(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             fetch = crud.FetchSchedule(session)
             self.assertEqual(7, len(fetch.get_schedules()))
 
@@ -477,12 +453,12 @@ class TestModel(unittest.TestCase):
                 "mac": ""
             }
         }
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             with self.assertRaises(AttributeError):
                 crud.InjectSchedule(session, s)
 
     def test_21(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             f = crud.FetchSchedule(session)
             r = f.get_role("etcd-member")
             self.assertEqual(4, len(r))
@@ -498,7 +474,7 @@ class TestModel(unittest.TestCase):
                 self.assertEqual(datetime.datetime, type(i["created_date"]))
 
     def test_22(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             f = crud.FetchSchedule(session)
             r = f.get_role("kubernetes-node")
         self.assertEqual(3, len(r))
@@ -514,7 +490,7 @@ class TestModel(unittest.TestCase):
             self.assertEqual(datetime.datetime, type(i["created_date"]))
 
     def test_23(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             f = crud.FetchSchedule(session)
             r = f.get_role("kubernetes-control-plane")
         self.assertEqual(1, len(r))
@@ -530,19 +506,19 @@ class TestModel(unittest.TestCase):
             self.assertEqual(datetime.datetime, type(i["created_date"]))
 
     def test_24(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             f = crud.FetchSchedule(session)
             r = f.get_role_ip_list("etcd-member")
         self.assertEqual(4, len(r))
 
     def test_25(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             f = crud.FetchSchedule(session)
             r = f.get_role_ip_list("kubernetes-control-plane")
         self.assertEqual(1, len(r))
 
     def test_26(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             f = crud.FetchSchedule(session)
             r = f.get_role_ip_list("kubernetes-node")
         self.assertEqual(3, len(r))
@@ -556,105 +532,105 @@ class TestModel(unittest.TestCase):
             }
         }
         e = {'kubernetes-control-plane': 2, 'kubernetes-node': 3, 'etcd-member': 5}
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             inject = crud.InjectSchedule(session, s)
             inject.apply_roles()
             self.assertEqual(inject.commit(), (e, True))
 
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             inject = crud.InjectSchedule(session, s)
             inject.apply_roles()
             self.assertEqual(inject.commit(), (e, False))
 
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             fetch = crud.FetchSchedule(session)
             self.assertEqual(["kubernetes-control-plane", "etcd-member"], fetch.get_roles_by_mac_selector(mac))
             self.assertEqual(2, len(fetch.get_roles(model.ScheduleRoles.etcd_member,
                                                     model.ScheduleRoles.kubernetes_control_plane)))
 
     def test_28(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             a = crud.FetchSchedule(session)
             self.assertEqual(16, len(a.get_available_machines()))
 
     def test_30(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             rq = "uuid=%s&mac=%s&os=installed" % (posts.M01["boot-info"]["uuid"], posts.M01["boot-info"]["mac"])
             i = crud.InjectLifecycle(session, request_raw_query=rq)
             self.assertEqual(i.mac, posts.M01["boot-info"]["mac"])
 
     def test_31(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             rq = "os=installed"
             with self.assertRaises(AttributeError):
                 crud.InjectLifecycle(session, request_raw_query=rq)
 
     def test_32(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             rq = "uuid=%s&mac=%s&os=installed" % (posts.M01["boot-info"]["uuid"], posts.M01["boot-info"]["mac"])
             i = crud.InjectLifecycle(session, request_raw_query=rq)
             i.refresh_lifecycle_ignition(True)
 
     def test_33(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             rq = "uuid=%s&mac=%s&os=installed" % (posts.M02["boot-info"]["uuid"], posts.M02["boot-info"]["mac"])
             i = crud.InjectLifecycle(session, request_raw_query=rq)
             i.refresh_lifecycle_ignition(True)
             j = crud.InjectLifecycle(session, request_raw_query=rq)
             j.refresh_lifecycle_ignition(True)
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             f = crud.FetchLifecycle(session)
             self.assertTrue(f.get_ignition_uptodate_status(posts.M02["boot-info"]["mac"]))
 
     def test_34(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             rq = "uuid=%s&mac=%s&os=installed" % (posts.M03["boot-info"]["uuid"], posts.M03["boot-info"]["mac"])
             i = crud.InjectLifecycle(session, request_raw_query=rq)
             i.refresh_lifecycle_ignition(True)
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             j = crud.InjectLifecycle(session, request_raw_query=rq)
             j.refresh_lifecycle_ignition(False)
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             f = crud.FetchLifecycle(session)
             self.assertFalse(f.get_ignition_uptodate_status(posts.M03["boot-info"]["mac"]))
             self.assertEqual(3, len(f.get_all_updated_status()))
 
     def test_35(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             rq = "uuid=%s&mac=%s&os=installed" % (posts.M03["boot-info"]["uuid"], posts.M03["boot-info"]["mac"])
             i = crud.InjectLifecycle(session, request_raw_query=rq)
             i.refresh_lifecycle_coreos_install(True)
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             f = crud.FetchLifecycle(session)
             self.assertTrue(f.get_coreos_install_status(posts.M03["boot-info"]["mac"]))
             self.assertEqual(1, len(f.get_all_coreos_install_status()))
 
     def test_36(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             rq = "uuid=%s&mac=%s&os=installed" % (posts.M03["boot-info"]["uuid"], posts.M03["boot-info"]["mac"])
             i = crud.InjectLifecycle(session, request_raw_query=rq)
             i.apply_lifecycle_rolling(True)
 
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             f = crud.FetchLifecycle(session)
             self.assertTrue(f.get_rolling_status(posts.M03["boot-info"]["mac"]))
 
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             n = crud.InjectLifecycle(session, rq)
             n.apply_lifecycle_rolling(False)
 
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             f = crud.FetchLifecycle(session)
             r = f.get_rolling_status(posts.M03["boot-info"]["mac"])
             self.assertFalse(r)
 
     def test_37(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             f = crud.FetchLifecycle(session)
             self.assertIsNone(f.get_rolling_status(posts.M04["boot-info"]["mac"]))
 
     def test_38(self):
-        with self.smart.connected_session() as session:
+        with self.smart.new_session() as session:
             view = crud.FetchView(session)
             result = view.get_machines()
         self.assertEqual(25, len(result))
@@ -674,5 +650,5 @@ class TestModel(unittest.TestCase):
 
     def test_99_healthz(self):
         for i in range(10):
-            with self.smart.connected_session() as session:
+            with self.smart.new_session() as session:
                 crud.health_check(session, time.time(), "unittest")

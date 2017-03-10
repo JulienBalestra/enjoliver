@@ -1,7 +1,6 @@
 """
 Always give a working freshly connected session
 """
-import random
 from contextlib import contextmanager
 
 from sqlalchemy import create_engine
@@ -12,9 +11,10 @@ import model
 
 
 class SmartClient(object):
-    engines = []
     log = logger.get_logger(__file__)
-    last_shuffle = 0
+
+    engines = []
+    lazy_engine = None
 
     @staticmethod
     def parse_db_uri(db_uri):
@@ -26,8 +26,12 @@ class SmartClient(object):
         o = object.__new__(cls.parse_db_uri(db_uri))
         return o
 
-    def __init__(self, db_uri):
+    def __init__(self, db_uri, lazy=True):
         self._create_engines(db_uri.split(","))
+        if lazy:
+            self.new_session = self.lazy_session
+        else:
+            self.new_session = self.connected_session
 
     def _create_engines(self, uri_list):
         for single_uri in uri_list:
@@ -41,14 +45,37 @@ class SmartClient(object):
     def connected_session(self):
         conn = self.get_engine_connection()
         try:
-            Session = sessionmaker(bind=conn)
-            session = Session(bind=conn)
+            with self.new_session_maker(conn) as sm:
+                session = sm()
+                try:
+                    yield session
+                finally:
+                    session.close()
+        finally:
+            conn.close()
+
+    @contextmanager
+    def new_session_maker(self, bind):
+        sm = sessionmaker(bind)
+        try:
+            yield sm
+        finally:
+            sm.close_all()
+
+    @contextmanager
+    def new_session(self):
+        raise NotImplementedError
+
+    @contextmanager
+    def lazy_session(self):
+        if not self.lazy_engine:
+            self.lazy_engine = self.engines[0]
+        with self.new_session_maker(self.lazy_engine) as sm:
+            session = sm()
             try:
                 yield session
             finally:
                 session.close()
-        finally:
-            conn.close()
 
     @property
     def engine_urls(self):
