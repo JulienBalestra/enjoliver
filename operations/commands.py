@@ -4,6 +4,7 @@ import argparse
 import datetime
 import json
 import os
+import statistics
 import sys
 import time
 
@@ -51,10 +52,10 @@ class EnjoliverCommandLine(object):
     def summarize_locksmith(self):
         lines = list()
         lines.append("Locksmith:")
-        for i in range(len(self.etcd_member_ips)):
+        for i, ip in enumerate(self.etcd_member_ips):
             try:
                 req = requests.get(
-                    "http://%s:2379/v2/keys/coreos.com/updateengine/rebootlock/semaphore" % self.etcd_member_ips[i])
+                    "http://%s:2379/v2/keys/coreos.com/updateengine/rebootlock/semaphore" % ip)
                 req.close()
                 if req.status_code == 404:
                     lines.append("  Empty")
@@ -73,35 +74,39 @@ class EnjoliverCommandLine(object):
 
             except Exception as e:
                 if i + 1 < len(self.etcd_member_ips):
-                    print("ERROR %s for %s" % (type(e), i))
                     continue
                 raise
+            break
         return lines
 
     def summarize_etcd_members(self):
         lines = list()
         lines.append("Etcd Members:")
         lines.append("  Kubernetes:")
-        lines.append(" " * 4 + "\n".join(["etcdctl --endpoint http://%s:2379" % k for k in self.etcd_member_ips]))
+        for e in self.etcd_member_ips:
+            lines.append(" " * 4 + "etcdctl --endpoint http://%s:2379" % e)
         lines.append("  Fleet:")
-        lines.append(" " * 4 + "\n".join(["etcdctl --endpoint http://%s:4001" % k for k in self.etcd_member_ips]))
+        for f in self.etcd_member_ips:
+            lines.append(" " * 4 + "etcdctl --endpoint http://%s:4001" % f)
         return lines
 
     def summarize_control_planes(self):
         lines = list()
         lines.append("Kubernetes:")
-        lines.append("  " + "\n".join(["kubectl -s %s:8080" % k for k in self.k8s_control_plane_ips]))
+        for cp in self.k8s_control_plane_ips:
+            lines.append("  " + "kubectl -s %s:8080" % cp)
         return lines
 
     def summarize_fleet(self):
         lines = list()
         lines.append("Fleet:")
-        lines.append(
-            "  " + "\n".join(["fleetctl --endpoint=http://%s:4001 --driver=etcd" % k for k in self.etcd_member_ips]))
+        for f in self.etcd_member_ips:
+            lines.append("  " + "fleetctl --endpoint=http://%s:4001 --driver=etcd" % f)
         return lines
 
     def summarize_enjoliver_health(self):
         req = requests.get("%s/healthz" % self.enj_uri)
+        req.close()
         content = json.loads(req.content.decode())
         lines = list()
         lines.append("Enjoliver:")
@@ -114,12 +119,31 @@ class EnjoliverCommandLine(object):
         ignition = json.loads(req.content.decode())
         lines = list()
         up_to_date = 0
+        updated_periods = []
+        now = datetime.datetime.now()
         for i in ignition:
             if i["up-to-date"] is True:
                 up_to_date += 1
+                updated_date = datetime.datetime.strptime(i["updated_date"], "%a, %d %b %Y %H:%M:%S GMT")
+                if i["last_change_date"] and updated_date + datetime.timedelta(seconds=70) < now:
+                    updated_periods.append(
+                        datetime.datetime.strptime(i["last_change_date"], "%a, %d %b %Y %H:%M:%S GMT"))
 
-        lines.append("Lifecycle:")
-        lines.append("  UpToDate:   %d/%d" % (up_to_date, (len(ignition))))
+        updated_periods.sort()
+        timedeltas = [updated_periods[i - 1] - updated_periods[i] for i in range(1, len(updated_periods))]
+        if timedeltas:
+            average_timedelta = sum(timedeltas, datetime.timedelta(0)) / len(timedeltas)
+            average_timedelta = datetime.timedelta(microseconds=average_timedelta.microseconds) - average_timedelta
+
+            median_timedelta = statistics.median(timedeltas)
+            median_timedelta = datetime.timedelta(microseconds=median_timedelta.microseconds) - median_timedelta
+
+            eta = median_timedelta.seconds * datetime.timedelta(seconds=(len(ignition) - up_to_date))
+            eta = (eta + now).strftime("%H:%M") if eta else ""
+        else:
+            average_timedelta = ""
+            median_timedelta = ""
+            eta = ""
 
         req = requests.get("%s/lifecycle/rolling" % self.enj_uri)
         req.close()
@@ -128,11 +152,18 @@ class EnjoliverCommandLine(object):
         for j in rolling:
             if j["enable"] is True:
                 rolling_nb += 1
-        lines.append("  AutoUpdate: %d/%d" % (rolling_nb, len(ignition)))
+
+        lines.append("Lifecycle:")
+        lines.append("  AutoUpdate:   %d/%d" % (rolling_nb, len(ignition)))
+        lines.append("  UpToDate:     %d/%d" % (up_to_date, (len(ignition))))
+        lines.append("  AvgUpdate:    %s" % average_timedelta)
+        lines.append("  MedUpdate:    %s" % median_timedelta)
+        lines.append("  ETA:          %s" % eta)
         return lines
 
     def _get_ips_of_role(self, role):
         req = requests.get("%s/scheduler/%s" % (self.enj_uri, role))
+        req.close()
         schedules = json.loads(req.content.decode())
         ips = []
         for i in schedules:
@@ -170,6 +201,7 @@ class EnjoliverCommandLine(object):
                 pass
         mac = []
         req = requests.get("%s/discovery/interfaces" % self.enj_uri)
+        req.close()
         for m in json.loads(req.content.decode()):
             if m["as_boot"] is True and m["ipv4"] in match:
                 mac.append(m["mac"])
@@ -186,6 +218,7 @@ class EnjoliverCommandLine(object):
                 }
             })
             req = requests.post("%s/scheduler" % self.enj_uri, data=data)
+            req.close()
             assert req.status_code == 200
             print(" " * 4 + "%d/%d %s" % (i + 1, len(mac), m))
         print("")
@@ -238,4 +271,4 @@ if __name__ == '__main__':
                     os.write(1, b"\nExited\n")
                     break
         else:
-            print(enjoliver.get_all_summaries())
+            print("\n".join(enjoliver.get_all_summaries()), end='')

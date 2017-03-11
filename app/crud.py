@@ -602,7 +602,8 @@ class FetchLifecycle(object):
                     "mac": s.interface.mac,
                     "cidrv4": s.interface.cidrv4,
                     "created_date": s.created_date,
-                    "updated_date": s.updated_date
+                    "updated_date": s.updated_date,
+                    "last_change_date": s.last_change_date,
                 }
             )
         return l
