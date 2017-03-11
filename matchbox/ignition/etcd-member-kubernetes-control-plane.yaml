@@ -140,6 +140,10 @@ systemd:
         [Unit]
         Requires=install-cni.service
         After=install-cni.service
+        Requires=install-fleet.service
+        After=install-fleet.service
+        Requires=install-etcd.service
+        After=install-etcd.service
         Requires=install-rkt.service
         After=install-rkt.service
         Requires=install-hyperkube.service
