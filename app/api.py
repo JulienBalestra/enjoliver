@@ -1,6 +1,7 @@
 import os
 
 import requests
+from flasgger import Swagger
 from flask import Flask, request, json, jsonify, render_template, Response
 from werkzeug.contrib.cache import FileSystemCache
 
@@ -18,6 +19,7 @@ CACHE = FileSystemCache(EC.werkzeug_fs_cache_dir)
 LOGGER = logger.get_logger(__file__)
 
 APP = APPLICATION = Flask(__name__)
+Swagger(APP)
 
 APPLICATION.config["MATCHBOX_URI"] = EC.matchbox_uri
 APPLICATION.config["API_URI"] = EC.api_uri
@@ -41,98 +43,233 @@ if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "None"):
 
 @APPLICATION.route("/shutdown", methods=["POST"])
 def shutdown():
+    """
+    Shutdown
+    Shutdown the application
+    ---
+    tags:
+      - ops
+    responses:
+      200:
+        description: List of the state of each PIDs
+    """
     return ops.shutdown(EC)
 
 
 @APPLICATION.route("/configs", methods=["GET"])
 def configs():
+    """
+    Configs
+    Returns the current running configuration
+    ---
+    tags:
+      - ops
+    responses:
+      200:
+        description: A JSON of the configuration
+    """
     return jsonify(EC.__dict__)
 
 
 @APPLICATION.route("/lifecycle/ignition/<string:request_raw_query>", methods=["POST"])
 def submit_lifecycle_ignition(request_raw_query):
+    """
+    Lifecycle Ignition
+    ---
+    tags:
+      - lifecycle
+    responses:
+      200:
+        description: A JSON of the ignition status
+    """
     try:
         machine_ignition = json.loads(request.get_data())
     except ValueError:
         LOGGER.error("%s have incorrect content" % request.path)
-        return "FlaskValueError", 406
+        return jsonify({"message": "FlaskValueError"}), 406
     req = requests.get("%s/ignition?%s" % (EC.matchbox_uri, request_raw_query))
     try:
         matchbox_ignition = json.loads(req.content)
         req.close()
     except ValueError:
         LOGGER.error("%s have incorrect matchbox return" % request.path)
-        return "MatchboxValueError", 406
+        return jsonify({"message": "MatchboxValueError"}), 406
 
     with SMART.new_session() as session:
         inject = crud.InjectLifecycle(session, request_raw_query=request_raw_query)
         if json.dumps(machine_ignition, sort_keys=True) == json.dumps(matchbox_ignition, sort_keys=True):
             inject.refresh_lifecycle_ignition(True)
-            resp = "Up-to-date", 200
+            resp = jsonify({"message": "Up-to-date"}), 200
         else:
             inject.refresh_lifecycle_ignition(False)
-            resp = "Outdated", 210
+            resp = jsonify({"message": "Outdated"}), 210
     return resp
 
 
 @APPLICATION.route("/lifecycle/rolling/<string:request_raw_query>", methods=["GET"])
 def report_lifecycle_rolling(request_raw_query):
+    """
+    Lifecycle Rolling Update
+    Get the current policy for a given machine by UUID or MAC
+    ---
+    tags:
+      - lifecycle
+    parameters:
+      - name: request_raw_query
+        in: path
+        description: Pass the mac as 'mac=<mac>'
+        required: true
+        type: string
+    responses:
+      403:
+        description: mac address is not parsable
+        schema:
+            type: dict
+      200:
+        description: Rolling Update is enable
+        schema:
+            type: dict
+      403:
+        description: Rolling Update is not enable
+        schema:
+            type: dict
+    """
     with SMART.new_session() as session:
         life = crud.FetchLifecycle(session)
-        mac = crud.InjectLifecycle.get_mac_from_raw_query(request_raw_query)
+        try:
+            mac = crud.InjectLifecycle.get_mac_from_raw_query(request_raw_query)
+        except AttributeError as e:
+            return jsonify({"enable": None, "request_raw_query": "%s:%s" % (request_raw_query, e)}), 403
+
         allow = life.get_rolling_status(mac)
 
         if allow is True:
-            return "Enabled %s" % mac, 200
+            return jsonify({"enable": True, "request_raw_query": request_raw_query}), 200
         elif allow is False:
-            return "Disable %s" % mac, 403
+            return jsonify({"enable": False, "request_raw_query": request_raw_query}), 403
 
-    return "ForeignDisabled %s" % mac, 401
+    return jsonify({"enable": False, "request_raw_query": request_raw_query}), 401
 
 
 @APPLICATION.route("/lifecycle/rolling/<string:request_raw_query>", methods=["POST"])
 def change_lifecycle_rolling(request_raw_query):
+    """
+    Lifecycle Rolling Update
+    Change the current policy for a given machine by MAC
+    ---
+    tags:
+      - lifecycle
+    parameters:
+      - name: request_raw_query
+        in: path
+        description: Pass the mac as 'mac=<mac>'
+        required: true
+        type: string
+    responses:
+      200:
+        description: Rolling Update is enable
+        schema:
+            type: dict
+      401:
+        description: Mac address is not in database
+        schema:
+            type: dict
+    """
     LOGGER.info("%s %s" % (request.method, request.url))
     with SMART.new_session() as session:
         try:
             life = crud.InjectLifecycle(session, request_raw_query)
             life.apply_lifecycle_rolling(True)
-            status = "Enabled %s" % life.mac, 200
+            status = jsonify({"enable": True, "request_raw_query": request_raw_query}), 200
         except AttributeError:
-            status = "Unknown in db %s" % request_raw_query, 401
+            status = jsonify({"enable": None, "request_raw_query": request_raw_query}), 401
     return status
 
 
 @APPLICATION.route("/lifecycle/rolling/<string:request_raw_query>", methods=["DELETE"])
 def lifecycle_rolling_delete(request_raw_query):
+    """
+    Lifecycle Rolling Update
+    Disable the current policy for a given machine by UUID or MAC
+    ---
+    tags:
+      - lifecycle
+    parameters:
+      - name: request_raw_query
+        in: path
+        description: Pass the mac as 'mac=<mac>'
+        required: true
+        type: string
+    responses:
+      200:
+        description: Rolling Update is not enable
+        schema:
+            type: dict
+    """
     LOGGER.info("%s %s" % (request.method, request.url))
     with SMART.new_session() as session:
         life = crud.InjectLifecycle(session, request_raw_query)
         life.apply_lifecycle_rolling(False)
-        report = "Disabled %s" % life.mac, 200
+        report = jsonify({"enable": False, "request_raw_query": request_raw_query}), 200
     return report
 
 
 @APPLICATION.route("/lifecycle/rolling", methods=["GET"])
 def lifecycle_rolling_all():
+    """
+    Lifecycle Rolling Update
+    Get the policy list
+    ---
+    tags:
+      - lifecycle
+    responses:
+      200:
+        description: Rolling Update status
+        schema:
+            type: list
+    """
     with SMART.new_session() as session:
         fetch = crud.FetchLifecycle(session)
         rolling_status_list = fetch.get_all_rolling_status()
 
-    return jsonify(rolling_status_list)
+    return jsonify(rolling_status_list), 200
 
 
 @APPLICATION.route("/lifecycle/ignition", methods=["GET"])
 def lifecycle_get_ignition_status():
+    """
+    Lifecycle Ignition Update
+    Get the update status of all Ignition reports
+    ---
+    tags:
+      - lifecycle
+    responses:
+      200:
+        description: Ignition Update status
+        schema:
+            type: list
+    """
     with SMART.new_session() as session:
         fetch = crud.FetchLifecycle(session)
         updated_status_list = fetch.get_all_updated_status()
 
-    return jsonify(updated_status_list)
+    return jsonify(updated_status_list), 200
 
 
 @APPLICATION.route("/lifecycle/coreos-install", methods=["GET"])
 def lifecycle_get_coreos_install_status():
+    """
+    Lifecycle CoreOS Install
+    Get all the CoreOS Install status
+    ---
+    tags:
+      - lifecycle
+    responses:
+      200:
+        description: CoreOS Install status list
+        schema:
+            type: list
+    """
     with SMART.new_session() as session:
         fetch = crud.FetchLifecycle(session)
         install_status_list = fetch.get_all_coreos_install_status()
@@ -142,6 +279,18 @@ def lifecycle_get_coreos_install_status():
 
 @APPLICATION.route("/lifecycle/coreos-install/<string:status>/<string:request_raw_query>", methods=["POST"])
 def report_lifecycle_coreos_install(status, request_raw_query):
+    """
+    Lifecycle CoreOS Install
+    Report the status of a CoreOS install by MAC
+    ---
+    tags:
+      - lifecycle
+    responses:
+      200:
+        description: CoreOS Install report
+        schema:
+            type: dict
+    """
     LOGGER.info("%s %s" % (request.method, request.url))
     if status.lower() == "success":
         success = True
@@ -153,14 +302,22 @@ def report_lifecycle_coreos_install(status, request_raw_query):
     with SMART.new_session() as session:
         inject = crud.InjectLifecycle(session, request_raw_query=request_raw_query)
         inject.refresh_lifecycle_coreos_install(success)
-    return "%s" % status, 200
+    return jsonify({"success": success, "request_raw_query": request_raw_query}), 200
 
 
 @APPLICATION.route('/', methods=['GET'])
 def root():
     """
     Map the API
-    :return: available routes
+    List all the avaiable routes
+    ---
+    tags:
+      - ops
+    responses:
+      200:
+        description: Routes
+        schema:
+            type: list
     """
     rules = [k.rule for k in APPLICATION.url_map.iter_rules()]
     rules = list(set(rules))
@@ -170,12 +327,36 @@ def root():
 
 @APPLICATION.route('/healthz', methods=['GET'])
 def healthz():
+    """
+    Health
+    Get the status of the application
+    ---
+    tags:
+      - ops
+    responses:
+      200:
+        description: Components status
+        schema:
+            type: dict
+    """
     resp = ops.healthz(APPLICATION, SMART, request)
     return jsonify(resp)
 
 
 @APPLICATION.route('/discovery', methods=['POST'])
 def discovery():
+    """
+    Discovery
+    Report the current facts of a machine
+    ---
+    tags:
+      - discovery
+    responses:
+      200:
+        description: Number of machines and if the machine is new
+        schema:
+            type: dict
+    """
     LOGGER.info("%s %s" % (request.method, request.url))
     err = jsonify({u'boot-info': {}, u'lldp': {}, u'interfaces': []}), 406
     try:
@@ -199,6 +380,18 @@ def discovery():
 
 @APPLICATION.route('/discovery', methods=['GET'])
 def discovery_get():
+    """
+    Discovery
+    List
+    ---
+    tags:
+      - discovery
+    responses:
+      200:
+        description: Discovery data
+        schema:
+            type: list
+    """
     all_data = CACHE.get(request.path)
     if all_data is None:
         with SMART.new_session() as session:
@@ -210,6 +403,18 @@ def discovery_get():
 
 @APPLICATION.route('/scheduler', methods=['GET'])
 def scheduler_get():
+    """
+    Scheduler
+    List all the running schedules
+    ---
+    tags:
+      - scheduler
+    responses:
+      200:
+        description: Current schedules
+        schema:
+            type: list
+    """
     all_data = CACHE.get(request.path)
     if all_data is None:
         with SMART.new_session() as session:
@@ -222,6 +427,24 @@ def scheduler_get():
 
 @APPLICATION.route('/scheduler/<string:role>', methods=['GET'])
 def get_schedule_by_role(role):
+    """
+    Scheduler
+    List all the running schedules
+    ---
+    tags:
+      - scheduler
+    parameters:
+      - name: role
+        in: path
+        description: name of the role
+        required: true
+        type: string
+    responses:
+      200:
+        description: Current schedules for a given role
+        schema:
+            type: list
+    """
     with SMART.new_session() as session:
         fetch = crud.FetchSchedule(session)
         multi = role.split("&")
@@ -232,6 +455,18 @@ def get_schedule_by_role(role):
 
 @APPLICATION.route('/scheduler/available', methods=['GET'])
 def get_available_machine():
+    """
+    Scheduler
+    List all the machine without schedule
+    ---
+    tags:
+      - scheduler
+    responses:
+      200:
+        description: Current machine available for a schedule
+        schema:
+            type: list
+    """
     with SMART.new_session() as session:
         fetch = crud.FetchSchedule(session)
         data = fetch.get_available_machines()
@@ -241,6 +476,24 @@ def get_available_machine():
 
 @APPLICATION.route('/scheduler/ip-list/<string:role>', methods=['GET'])
 def get_schedule_role_ip_list(role):
+    """
+    Scheduler
+    List all the IP addresse of a given schedules role
+    ---
+    tags:
+      - scheduler
+    parameters:
+      - name: role
+        in: path
+        description: name of the role
+        required: true
+        type: string
+    responses:
+      200:
+        description: Current IP address of schedules for a given role
+        schema:
+            type: list
+    """
     with SMART.new_session() as session:
         fetch = crud.FetchSchedule(session)
         ip_list_role = fetch.get_role_ip_list(role)
@@ -250,6 +503,22 @@ def get_schedule_role_ip_list(role):
 
 @APPLICATION.route('/scheduler', methods=['POST'])
 def scheduler_post():
+    """
+    Scheduler
+    Affect a schedule to a machine
+    ---
+    tags:
+      - scheduler
+    responses:
+      406:
+        description: Incorrect body content
+        schema:
+            type: dict
+      200:
+        description: The body sent
+        schema:
+            type: dict
+    """
     try:
         req = json.loads(request.get_data())
     except ValueError:
@@ -272,6 +541,22 @@ def scheduler_post():
 
 @APPLICATION.route('/backup/db', methods=['POST'])
 def backup_database():
+    """
+    Backup
+    Backup the database if it's SQLite
+    ---
+    tags:
+      - ops
+    responses:
+      200:
+        description: Backup report
+        schema:
+            type: dict
+      404:
+        description: If the database is not SQLite
+        schema:
+            type: dict
+    """
     if "sqlite://" in EC.db_uri:
         return ops.backup_sqlite(cache=CACHE, application=APPLICATION)
     return jsonify({"NotImplementedError": "%s" % EC.api_uri}), 404

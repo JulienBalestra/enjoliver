@@ -124,10 +124,13 @@ class EnjoliverCommandLine(object):
         for i in ignition:
             if i["up-to-date"] is True:
                 up_to_date += 1
-                updated_date = datetime.datetime.strptime(i["updated_date"], "%a, %d %b %Y %H:%M:%S GMT")
-                if i["last_change_date"] and updated_date + datetime.timedelta(seconds=70) < now:
-                    updated_periods.append(
+                try:
+                    updated_date = datetime.datetime.strptime(i["updated_date"], "%a, %d %b %Y %H:%M:%S GMT")
+                    if i["last_change_date"] and updated_date + datetime.timedelta(seconds=70) < now:
+                        updated_periods.append(
                         datetime.datetime.strptime(i["last_change_date"], "%a, %d %b %Y %H:%M:%S GMT"))
+                except TypeError:
+                    pass
 
         updated_periods.sort()
         timedeltas = [updated_periods[i - 1] - updated_periods[i] for i in range(1, len(updated_periods))]
@@ -141,9 +144,9 @@ class EnjoliverCommandLine(object):
             eta = median_timedelta.seconds * datetime.timedelta(seconds=(len(ignition) - up_to_date))
             eta = (eta + now).strftime("%H:%M") if eta else ""
         else:
-            average_timedelta = ""
-            median_timedelta = ""
-            eta = ""
+            average_timedelta = "-"
+            median_timedelta = "-"
+            eta = "-"
 
         req = requests.get("%s/lifecycle/rolling" % self.enj_uri)
         req.close()

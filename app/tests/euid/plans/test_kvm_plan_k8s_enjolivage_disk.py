@@ -77,7 +77,7 @@ class TestKVMK8sEnjolivageDisk0(TestKVMK8sEnjolivageDisk):
             time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds)
 
             for i in range(120):
-                if plan_k8s_2t.apply() == 1:
+                if plan_k8s_2t.apply() == (nb_node - plan_k8s_2t._sch_k8s_control_plane.expected_nb):
                     break
                 time.sleep(self.testing_sleep_seconds)
 
