@@ -290,7 +290,10 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(200, r.status_code)
         r = self.app.get("/lifecycle/rolling/%s" % rawq)
         self.assertEqual(200, r.status_code)
-        self.assertEqual('Enabled 52:54:00:e8:32:5b', r.data.decode())
+        self.assertEqual({
+            "enable": True,
+            "request_raw_query": "mac=52-54-00-e8-32-5b&uuid=b7f5f93a-b029-475f-b3a4-479ba198cb8a&os=installed"
+        }, json.loads(r.data.decode()))
         r = self.app.post("/lifecycle/rolling/%s" % rawq)
         self.assertEqual(200, r.status_code)
 
@@ -305,7 +308,10 @@ class TestAPI(unittest.TestCase):
             posts.M02["boot-info"]["mac"].replace(":", "-"), posts.M02["boot-info"]["uuid"])
         r = self.app.get("/lifecycle/rolling/%s" % rawq)
         self.assertEqual(401, r.status_code)
-        self.assertEqual('ForeignDisabled 52:54:00:a5:24:f5', r.data.decode())
+        self.assertEqual({
+            "enable": False,
+            "request_raw_query": "mac=52-54-00-a5-24-f5&uuid=a21a9123-302d-488d-976c-5d6ded84a32d&os=installed"
+        }, json.loads(r.data.decode()))
 
     def test_lifecycle_08(self):
         rawq = "mac=%s&uuid=%s&os=installed" % (

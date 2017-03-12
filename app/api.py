@@ -564,6 +564,18 @@ def backup_database():
 
 @APPLICATION.route('/discovery/interfaces', methods=['GET'])
 def discovery_interfaces():
+    """
+    Discovery
+    List only the interfaces
+    ---
+    tags:
+      - discovery
+    responses:
+      200:
+        description: Discovery interfaces
+        schema:
+            type: list
+    """
     with SMART.new_session() as session:
         fetch = crud.FetchDiscovery(session, ignition_journal=ignition_journal)
         interfaces = fetch.get_all_interfaces()
@@ -573,6 +585,29 @@ def discovery_interfaces():
 
 @APPLICATION.route('/discovery/ignition-journal/<string:uuid>/<string:boot_id>', methods=['GET'])
 def discovery_ignition_journal_by_boot_id(uuid, boot_id):
+    """
+    Discovery
+    Get the Ignition journal
+    ---
+    tags:
+      - discovery
+    parameters:
+      - name: uuid
+        in: path
+        description: uuid of the machine
+        required: true
+        type: string
+      - name: boot_id
+        in: path
+        description: boot-id of the machine
+        required: true
+        type: string
+    responses:
+      200:
+        description: Lines of the journal
+        schema:
+            type: list
+    """
     with SMART.new_session() as session:
         fetch = crud.FetchDiscovery(session,
                                     ignition_journal=ignition_journal)
@@ -583,6 +618,24 @@ def discovery_ignition_journal_by_boot_id(uuid, boot_id):
 
 @APPLICATION.route('/discovery/ignition-journal/<string:uuid>', methods=['GET'])
 def discovery_ignition_journal_by_uuid(uuid):
+    """
+    Discovery
+    Get the Ignition journal
+    ---
+    tags:
+      - discovery
+    parameters:
+      - name: uuid
+        in: path
+        description: uuid of the machine
+        required: true
+        type: string
+    responses:
+      200:
+        description: Lines of the journal
+        schema:
+            type: list
+    """
     with SMART.new_session() as session:
         fetch = crud.FetchDiscovery(session,
                                     ignition_journal=ignition_journal)
@@ -593,6 +646,18 @@ def discovery_ignition_journal_by_uuid(uuid):
 
 @APPLICATION.route('/discovery/ignition-journal', methods=['GET'])
 def discovery_ignition_journal_summary():
+    """
+    Discovery
+    Get the available Ignition journal
+    ---
+    tags:
+      - discovery
+    responses:
+      200:
+        description: Lines available journals
+        schema:
+            type: list
+    """
     with SMART.new_session() as session:
         fetch = crud.FetchDiscovery(session,
                                     ignition_journal=ignition_journal)
@@ -605,8 +670,15 @@ def discovery_ignition_journal_summary():
 @APPLICATION.route('/boot.ipxe.0', methods=['GET'])
 def boot_ipxe():
     """
-    Replace the matchbox/boot.ipxe by insert retry for dhcp and full URL for the chain
-    :return: str
+    iPXE
+    ---
+    tags:
+      - matchbox
+    responses:
+      200:
+        description: iPXE boot script to chain load on /ipxe
+        schema:
+            type: string
     """
     LOGGER.info("%s %s" % (request.method, request.url))
     try:
@@ -638,6 +710,17 @@ def boot_ipxe():
 
 @APPLICATION.route("/ignition", methods=["GET"])
 def ignition():
+    """
+    Ignition
+    ---
+    tags:
+      - matchbox
+    responses:
+      200:
+        description: Ignition configuration
+        schema:
+            type: dict
+    """
     matchbox_uri = APPLICATION.config.get("MATCHBOX_URI")
     if matchbox_uri:
         matchbox_resp = requests.get("%s%s" % (matchbox_uri, request.full_path))
@@ -650,6 +733,17 @@ def ignition():
 
 @APPLICATION.route("/metadata", methods=["GET"])
 def metadata():
+    """
+    Metadata
+    ---
+    tags:
+      - matchbox
+    responses:
+      200:
+        description: Metadata of the current group/profile
+        schema:
+            type: string
+    """
     matchbox_uri = APPLICATION.config.get("MATCHBOX_URI")
     if matchbox_uri:
         matchbox_resp = requests.get("%s%s" % (matchbox_uri, request.full_path))
@@ -663,9 +757,20 @@ def metadata():
 @APP.route('/install-authorization/<string:request_raw_query>')
 def require_install_authorization(request_raw_query):
     """
-    Used to avoid burst of
-    :param request_raw_query:
-    :return:
+    Install Authorization
+    Temporize the installation to avoid burst of downloads / extract in memory
+    ---
+    tags:
+      - ops
+    responses:
+      200:
+        description: Granted to install
+        schema:
+            type: string
+      403:
+        description: Locked
+        schema:
+            type: string
     """
     LOGGER.info("%s %s %s" % (request.method, request.remote_addr, request.url))
     if EC.coreos_install_lock_seconds > 0:
@@ -681,6 +786,20 @@ def require_install_authorization(request_raw_query):
 @APP.route('/assets', defaults={'path': ''})
 @APP.route('/assets/<path:path>')
 def assets(path):
+    """
+    Assets server
+    Serve the assets
+    ---
+    tags:
+      - matchbox
+    responses:
+      200:
+        description: Content of the asset
+      404:
+        description: Not valid
+        schema:
+            type: string
+    """
     LOGGER.info("%s %s" % (request.method, request.url))
     matchbox_uri = APPLICATION.config.get("MATCHBOX_URI")
     if matchbox_uri:
@@ -696,8 +815,19 @@ def assets(path):
 @APPLICATION.route('/ipxe', methods=['GET'])
 def ipxe():
     """
-    Fetch the matchbox/ipxe?<key>=<value> and insert retry for dhcp
-    :return: str
+    iPXE
+    ---
+    tags:
+      - matchbox
+    responses:
+      200:
+        description: iPXE script
+        schema:
+            type: string
+      404:
+        description: Not valid
+        schema:
+            type: string
     """
     LOGGER.info("%s %s" % (request.method, request.url))
     try:
