@@ -96,13 +96,16 @@ def submit_lifecycle_ignition(request_raw_query):
         return jsonify({"message": "MatchboxValueError"}), 406
 
     with SMART.new_session() as session:
-        inject = crud.InjectLifecycle(session, request_raw_query=request_raw_query)
-        if json.dumps(machine_ignition, sort_keys=True) == json.dumps(matchbox_ignition, sort_keys=True):
-            inject.refresh_lifecycle_ignition(True)
-            resp = jsonify({"message": "Up-to-date"}), 200
-        else:
-            inject.refresh_lifecycle_ignition(False)
-            resp = jsonify({"message": "Outdated"}), 210
+        try:
+            inject = crud.InjectLifecycle(session, request_raw_query=request_raw_query)
+            if json.dumps(machine_ignition, sort_keys=True) == json.dumps(matchbox_ignition, sort_keys=True):
+                inject.refresh_lifecycle_ignition(True)
+                resp = jsonify({"message": "Up-to-date"}), 200
+            else:
+                inject.refresh_lifecycle_ignition(False)
+                resp = jsonify({"message": "Outdated"}), 210
+        except AttributeError:
+            resp = jsonify({"message": "Unknown"}), 406
     return resp
 
 
