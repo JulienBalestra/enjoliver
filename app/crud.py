@@ -541,7 +541,6 @@ class InjectLifecycle(object):
             lifecycle.updated_date = now
 
         self.session.commit()
-        # self.session.commit()
 
     def refresh_lifecycle_coreos_install(self, success):
         lifecycle = self.session.query(LifecycleCoreosInstall).filter(
@@ -557,19 +556,20 @@ class InjectLifecycle(object):
             lifecycle.updated_date = datetime.datetime.utcnow()
 
         self.session.commit()
-        # self.session.commit()
 
-    def apply_lifecycle_rolling(self, enable):
+    def apply_lifecycle_rolling(self, enable, strategy="kexec"):
         lifecycle = self.session.query(LifecycleRolling).filter(
             LifecycleRolling.machine_interface == self.interface.id).first()
         if not lifecycle:
             lifecycle = LifecycleRolling(
                 machine_interface=self.interface.id,
-                enable=enable
+                enable=enable,
+                strategy=strategy,
             )
             self.session.add(lifecycle)
         else:
             lifecycle.enable = enable
+            lifecycle.strategy = strategy
             lifecycle.updated_date = datetime.datetime.utcnow()
 
         self.session.commit()
@@ -637,9 +637,10 @@ class FetchLifecycle(object):
         if interface:
             l = self.session.query(LifecycleRolling).filter(
                 LifecycleRolling.machine_interface == interface.id).first()
-            return l.enable if l else None
+            if l:
+                return l.enable, l.strategy
         self.log.debug("mac: %s return None" % mac)
-        return None
+        return None, None
 
     def get_all_rolling_status(self):
         life_roll_list = []
@@ -694,7 +695,8 @@ class FetchView(object):
                 ignition_last_change = interface.lifecycle_ignition[0].last_change_date
 
             if interface.lifecycle_rolling:
-                lifecycle_rolling = "Enable" if interface.lifecycle_rolling[0].enable else "Disable"
+                lifecycle_rolling = interface.lifecycle_rolling[0].strategy if interface.lifecycle_rolling[
+                    0].enable else "Disable"
 
             result.append(
                 [

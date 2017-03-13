@@ -622,12 +622,15 @@ class TestModel(unittest.TestCase):
         with self.smart.new_session() as session:
             f = crud.FetchLifecycle(session)
             r = f.get_rolling_status(posts.M03["boot-info"]["mac"])
-            self.assertFalse(r)
+            self.assertFalse(r[0])
+            self.assertEqual("kexec", r[1])
 
     def test_37(self):
         with self.smart.new_session() as session:
             f = crud.FetchLifecycle(session)
-            self.assertIsNone(f.get_rolling_status(posts.M04["boot-info"]["mac"]))
+            t = f.get_rolling_status(posts.M04["boot-info"]["mac"])
+            self.assertIsNone(t[0])
+            self.assertIsNone(t[1])
 
     def test_38(self):
         with self.smart.new_session() as session:

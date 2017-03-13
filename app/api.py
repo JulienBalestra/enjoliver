@@ -1,3 +1,4 @@
+import json as std_json
 import os
 
 import requests
@@ -144,14 +145,14 @@ def report_lifecycle_rolling(request_raw_query):
         except AttributeError as e:
             return jsonify({"enable": None, "request_raw_query": "%s:%s" % (request_raw_query, e)}), 403
 
-        allow = life.get_rolling_status(mac)
+        allow, strategy = life.get_rolling_status(mac)
 
         if allow is True:
-            return jsonify({"enable": True, "request_raw_query": request_raw_query}), 200
+            return jsonify({"enable": True, "request_raw_query": request_raw_query, "strategy": strategy}), 200
         elif allow is False:
-            return jsonify({"enable": False, "request_raw_query": request_raw_query}), 403
+            return jsonify({"enable": False, "request_raw_query": request_raw_query, "strategy": strategy}), 403
 
-    return jsonify({"enable": False, "request_raw_query": request_raw_query}), 401
+    return jsonify({"enable": False, "request_raw_query": request_raw_query, "strategy": None}), 401
 
 
 @APPLICATION.route("/lifecycle/rolling/<string:request_raw_query>", methods=["POST"])
@@ -179,13 +180,20 @@ def change_lifecycle_rolling(request_raw_query):
             type: dict
     """
     LOGGER.info("%s %s" % (request.method, request.url))
+    try:
+        strategy = json.loads(request.get_data())["strategy"]
+        LOGGER.info("%s %s rolling strategy: setting to %s" % (request.method, request.url, strategy))
+    except (KeyError, std_json.decoder.JSONDecodeError):
+        LOGGER.info("%s %s rolling strategy: setting default to kexec" % (request.method, request.url))
+        strategy = "kexec"
+
     with SMART.new_session() as session:
         try:
             life = crud.InjectLifecycle(session, request_raw_query)
-            life.apply_lifecycle_rolling(True)
-            status = jsonify({"enable": True, "request_raw_query": request_raw_query}), 200
+            life.apply_lifecycle_rolling(True, strategy)
+            status = jsonify({"enable": True, "request_raw_query": request_raw_query, "strategy": strategy}), 200
         except AttributeError:
-            status = jsonify({"enable": None, "request_raw_query": request_raw_query}), 401
+            status = jsonify({"enable": None, "request_raw_query": request_raw_query, "strategy": strategy}), 401
     return status
 
 
@@ -212,7 +220,7 @@ def lifecycle_rolling_delete(request_raw_query):
     LOGGER.info("%s %s" % (request.method, request.url))
     with SMART.new_session() as session:
         life = crud.InjectLifecycle(session, request_raw_query)
-        life.apply_lifecycle_rolling(False)
+        life.apply_lifecycle_rolling(False, None)
         report = jsonify({"enable": False, "request_raw_query": request_raw_query}), 200
     return report
 

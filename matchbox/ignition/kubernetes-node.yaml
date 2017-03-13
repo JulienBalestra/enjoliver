@@ -620,15 +620,19 @@ storage:
           curl -f ${API_URI}/ignition?${REQUEST_RAW_QUERY} -o /tmp/coreos-install.json
           cat /tmp/coreos-install.json | jq -e . > /dev/null
 
-          curl -f ${API_URI}/lifecycle/rolling/${REQUEST_RAW_QUERY} || {
+          STRATEGY=$(curl -f ${API_URI}/lifecycle/rolling/${REQUEST_RAW_QUERY} | jq -re .strategy ) || {
             exit 0
           }
 
+          echo "locksmithctl operations..."
           locksmithctl -endpoint {{.kubernetes_etcd_servers}} status
           locksmithctl -endpoint {{.kubernetes_etcd_servers}} unlock "${REQUEST_RAW_QUERY}" || true
           locksmithctl -endpoint {{.kubernetes_etcd_servers}} lock "${REQUEST_RAW_QUERY}"
 
+          echo "stopping fleet..."
           systemctl stop fleet.service
+
+          echo "draining node..."
           /opt/bin/kubectl drain {{.kubernetes_node_name}} --force --ignore-daemonsets --delete-local-data
 
           DISK_GUID="00000000-0000-0000-0000-000000000001"
@@ -637,12 +641,16 @@ storage:
 
           rm -Rf /opt/rootfs/* || true
 
+          cp -v /tmp/coreos-install.json /usr/share/oem/coreos-install.json
+
+          if [ ${STRATEGY} == "reboot" ]
+          then
+            systemctl reboot
+          fi
+
           kexec --reuse-cmdline \
             --append="coreos.first_boot=1 coreos.randomize_disk_guid=${DISK_GUID}" \
             -l /usr/boot/vmlinuz
-
-          cp -v /tmp/coreos-install.json /usr/share/oem/coreos-install.json
-
           systemctl kexec
 
 

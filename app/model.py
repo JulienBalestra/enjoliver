@@ -238,3 +238,11 @@ class LifecycleRolling(BASE):
     machine_interface = Column(Integer, ForeignKey('machine-interface.id'), nullable=False)
     updated_date = Column(DateTime, default=None)
     enable = Column(Boolean, default=False)
+    strategy = Column(String, default="kexec")
+
+    @validates('strategy')
+    def validate_role(self, key, strategy):
+        if strategy not in ["reboot", "kexec"]:
+            raise LookupError("%s not in %s" % (strategy, ["reboot", "kexec"]))
+        return strategy
+

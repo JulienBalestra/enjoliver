@@ -292,7 +292,8 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(200, r.status_code)
         self.assertEqual({
             "enable": True,
-            "request_raw_query": "mac=52-54-00-e8-32-5b&uuid=b7f5f93a-b029-475f-b3a4-479ba198cb8a&os=installed"
+            "request_raw_query": "mac=52-54-00-e8-32-5b&uuid=b7f5f93a-b029-475f-b3a4-479ba198cb8a&os=installed",
+            "strategy": "kexec",
         }, json.loads(r.data.decode()))
         r = self.app.post("/lifecycle/rolling/%s" % rawq)
         self.assertEqual(200, r.status_code)
@@ -310,6 +311,7 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(401, r.status_code)
         self.assertEqual({
             "enable": False,
+            "strategy": None,
             "request_raw_query": "mac=52-54-00-a5-24-f5&uuid=a21a9123-302d-488d-976c-5d6ded84a32d&os=installed"
         }, json.loads(r.data.decode()))
 
