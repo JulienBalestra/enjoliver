@@ -624,6 +624,8 @@ storage:
             exit 0
           }
 
+          echo "Update enable by strategy: ${STRATEGY}"
+
           echo "locksmithctl operations..."
           locksmithctl -endpoint {{.kubernetes_etcd_servers}} status
           locksmithctl -endpoint {{.kubernetes_etcd_servers}} unlock "${REQUEST_RAW_QUERY}" || true
@@ -635,9 +637,10 @@ storage:
           echo "draining node..."
           /opt/bin/kubectl drain {{.kubernetes_node_name}} --force --ignore-daemonsets --delete-local-data
 
+          DEVICE=/dev/sda
           DISK_GUID="00000000-0000-0000-0000-000000000001"
-          sgdisk --disk-guid=${DISK_GUID} /dev/sda
-          cgpt show -v /dev/sda | grep -c ${DISK_GUID}
+          sgdisk --disk-guid=${DISK_GUID} ${DEVICE}
+          cgpt show -v ${DEVICE} | grep -c ${DISK_GUID}
 
           rm -Rf /opt/rootfs/* || true
 

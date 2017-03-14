@@ -28,7 +28,7 @@ The configuration of each host is managed by Ignition.
 During the lifecycle of the Kubernetes cluster, rolling updates are **fast** and fully controlled.
 * The rolling update of the configuration changes are granted by Enjoliver API.
 * The semaphore is managed by locksmith.
-* The Ignition is applied after a fast systemd-kexec
+* The Ignition is applied after a fast systemd-kexec or normal reboot
 
 Each node can reboot with iPXE to be re-installed and re-join the cluster.
 
@@ -49,6 +49,7 @@ Requirements:
 * See `apt.sh` for packages or `sudo make apt`
 * See `.travis.yml` for example as setup & tests
 
+All in one dev setup:
 
 
     sudo MY_USER=julien make dev_setup
