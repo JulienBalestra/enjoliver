@@ -390,8 +390,8 @@ storage:
               - /hyperkube
               - apiserver
               - proxy
-              - --bind-address=127.0.0.1
-              - --insecure-bind-address=127.0.0.1
+              - --bind-address=0.0.0.0
+              - --insecure-bind-address=0.0.0.0
               - --etcd-servers={{.kubernetes_etcd_servers}}
               - --service-cluster-ip-range={{.kubernetes_service_cluster_ip_range}}
               resources:
