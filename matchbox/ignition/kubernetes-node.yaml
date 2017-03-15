@@ -324,7 +324,7 @@ systemd:
             After=rkt-metadata.service
             [Service]
             EnvironmentFile=/etc/metadata.env
-            ExecStartPre=/bin/ls -l /opt/bin/rkt
+            ExecStartPre=/bin/ls -lL /opt/bin/rkt
             ExecStart=
             ExecStart=/opt/rootfs/usr/bin/fleetd
             Restart=always
