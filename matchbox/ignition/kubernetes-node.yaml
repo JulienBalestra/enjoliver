@@ -321,10 +321,14 @@ systemd:
             [Unit]
             After=installs.target
             After=etcd3@fleet.service
+            After=rkt-metadata.service
             [Service]
             EnvironmentFile=/etc/metadata.env
+            ExecStartPre=/bin/ls -l /opt/bin/rkt
             ExecStart=
             ExecStart=/opt/rootfs/usr/bin/fleetd
+            Restart=always
+            RestartSec=10
 
     - name: lifecycle-ready.service
       enable: true
@@ -664,6 +668,7 @@ storage:
           #!/usr/bin/env bash
 
           test "${REQUEST_RAW_QUERY}" || exit 2
+          test "${NETWORK_IP}" || exit 2
 
           for i in {0..60}
           do
@@ -691,6 +696,14 @@ storage:
               sleep 2
           done
 
+          for i in {0..60}
+          do
+              echo "Machine IP registered in Fleet"
+              fleetctl --endpoint http://127.0.0.1:4001 --driver etcd list-machines \
+                --fields ip --no-legend | grep -c ${NETWORK_IP} && break
+              sleep 2
+          done
+
           set -e
 
           etcdctl --endpoint {{.kubernetes_etcd_servers}} cluster-health
@@ -701,6 +714,10 @@ storage:
 
           echo "127.0.0.1:10248/healthz"
           curl -fs 127.0.0.1:10248/healthz -w '\n'
+
+          echo "Machine IP registered in Fleet"
+          fleetctl --endpoint http://127.0.0.1:4001 --driver etcd list-machines \
+                  --fields ip --no-legend | grep -c ${NETWORK_IP}
 
           set +e
 
@@ -716,6 +733,7 @@ storage:
 
           echo "remove the lock"
           locksmithctl -endpoint {{.kubernetes_etcd_servers}} unlock "${REQUEST_RAW_QUERY}" || true
+          echo "$(hostname) is ready"
 
 
 networkd:
