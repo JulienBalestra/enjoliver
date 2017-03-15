@@ -613,7 +613,9 @@ class TestModel(unittest.TestCase):
 
         with self.smart.new_session() as session:
             f = crud.FetchLifecycle(session)
-            self.assertTrue(f.get_rolling_status(posts.M03["boot-info"]["mac"]))
+            status = f.get_rolling_status(posts.M03["boot-info"]["mac"])
+            self.assertTrue(status[0])
+            self.assertEqual("kexec", status[1])
 
         with self.smart.new_session() as session:
             n = crud.InjectLifecycle(session, rq)
@@ -624,6 +626,37 @@ class TestModel(unittest.TestCase):
             r = f.get_rolling_status(posts.M03["boot-info"]["mac"])
             self.assertFalse(r[0])
             self.assertEqual("kexec", r[1])
+
+        with self.smart.new_session() as session:
+            n = crud.InjectLifecycle(session, rq)
+            n.apply_lifecycle_rolling(True, "reboot")
+
+        with self.smart.new_session() as session:
+            f = crud.FetchLifecycle(session)
+            r = f.get_rolling_status(posts.M03["boot-info"]["mac"])
+            self.assertTrue(r[0])
+            self.assertEqual("reboot", r[1])
+
+        with self.smart.new_session() as session:
+            n = crud.InjectLifecycle(session, rq)
+            n.apply_lifecycle_rolling(True, "poweroff")
+
+        with self.smart.new_session() as session:
+            f = crud.FetchLifecycle(session)
+            r = f.get_rolling_status(posts.M03["boot-info"]["mac"])
+            self.assertTrue(r[0])
+            self.assertEqual("poweroff", r[1])
+
+        with self.smart.new_session() as session:
+            n = crud.InjectLifecycle(session, rq)
+            with self.assertRaises(LookupError):
+                n.apply_lifecycle_rolling(True, "notpossible")
+
+        with self.smart.new_session() as session:
+            f = crud.FetchLifecycle(session)
+            r = f.get_rolling_status(posts.M03["boot-info"]["mac"])
+            self.assertTrue(r[0])
+            self.assertEqual("poweroff", r[1])
 
     def test_37(self):
         with self.smart.new_session() as session:

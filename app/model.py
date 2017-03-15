@@ -228,9 +228,10 @@ class LifecycleCoreosInstall(BASE):
 class LifecycleRolling(BASE):
     """
     Allow the current machine to used the semaphore locksmithd to do a rolling update
-    By kexec / reboot / rediscovery
+    By kexec / reboot / poweroff
     """
     __tablename__ = 'lifecycle-rolling'
+    _strategy_choice = ["reboot", "kexec", "poweroff", None]
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     created_date = Column(DateTime, default=datetime.datetime.utcnow)
@@ -242,7 +243,6 @@ class LifecycleRolling(BASE):
 
     @validates('strategy')
     def validate_role(self, key, strategy):
-        if strategy not in ["reboot", "kexec"]:
-            raise LookupError("%s not in %s" % (strategy, ["reboot", "kexec"]))
+        if strategy not in self._strategy_choice:
+            raise LookupError("%s not in %s" % (strategy, self._strategy_choice))
         return strategy
-

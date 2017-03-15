@@ -644,17 +644,16 @@ storage:
 
           rm -Rf /opt/rootfs/* || true
 
-          cp -v /tmp/coreos-install.json /usr/share/oem/coreos-install.json
-
-          if [ ${STRATEGY} == "reboot" ]
+          if [ ${STRATEGY} == "kexec" ]
           then
-            systemctl reboot
+            kexec --reuse-cmdline \
+                  --append="coreos.first_boot=1 coreos.randomize_disk_guid=${DISK_GUID}" \
+                  -l /usr/boot/vmlinuz
           fi
 
-          kexec --reuse-cmdline \
-            --append="coreos.first_boot=1 coreos.randomize_disk_guid=${DISK_GUID}" \
-            -l /usr/boot/vmlinuz
-          systemctl kexec
+          cp -v /tmp/coreos-install.json /usr/share/oem/coreos-install.json
+
+          systemctl ${STRATEGY}
 
 
     - path: /opt/bin/lifecycle-ready
