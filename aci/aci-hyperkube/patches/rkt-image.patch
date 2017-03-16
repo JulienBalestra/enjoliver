@@ -1,0 +1,25 @@
+From a18811ebecbf2c6485b292085c5e85a1035887d7 Mon Sep 17 00:00:00 2001
+From: Julien Balestra <julien.balestra@gmail.com>
+Date: Thu, 16 Mar 2017 16:14:56 +0100
+Subject: [PATCH] Remove dockerPrefix, no-store and insecure the fetch
+
+---
+ pkg/kubelet/rkt/image.go | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/pkg/kubelet/rkt/image.go b/pkg/kubelet/rkt/image.go
+index 8fefad9..57498ed 100644
+--- a/pkg/kubelet/rkt/image.go
++++ b/pkg/kubelet/rkt/image.go
+@@ -80,7 +80,7 @@ func (r *Runtime) PullImage(image kubecontainer.ImageSpec, pullSecrets []api.Sec
+ 	// Today, `--no-store` will fetch the remote image regardless of whether the content of the image
+ 	// has changed or not. This causes performance downgrades when the image tag is ':latest' and
+ 	// the image pull policy is 'always'. The issue is tracked in https://github.com/coreos/rkt/issues/2937.
+-	if _, err := r.cli.RunCommand(&config, "fetch", "--no-store", dockerPrefix+img); err != nil {
++	if _, err := r.cli.RunCommand(&config, "fetch", "--insecure-options=all", img); err != nil {
+ 		glog.Errorf("Failed to fetch: %v", err)
+ 		return err
+ 	}
+-- 
+2.7.4
+

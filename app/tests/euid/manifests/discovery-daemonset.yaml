@@ -6,8 +6,6 @@ metadata:
 spec:
   template:
     metadata:
-      annotations:
-        rkt.kubernetes.io/host-create-directories: /run/lldp
       labels:
         run: discovery-host
     spec:
