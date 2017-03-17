@@ -30,24 +30,24 @@ spec:
 
         volumeMounts:
           - name: tmp-httpd1
-            mountPath: /tmp/httpd1
+            mountPath: /tmp/httpd/httpd1
 
           - name: tmp-httpd2
-            mountPath: /tmp/httpd2
+            mountPath: /tmp/httpd/httpd2
 
-#          - name: tmp-cm
-#            mountPath: /tmp/cm
+          #- name: tmp-cm
+          #  mountPath: /tmp/cm
 
       volumes:
         - name: tmp-httpd1
           hostPath:
-            path: /tmp/httpd1
+            path: /tmp/httpd/httpd1
 
         - name: tmp-httpd2
           hostPath:
-            path: /tmp/httpd2
+            path: /tmp/httpd/httpd2
 
 
-#        - name: tmp-cm
-#          configMap:
-#            name: httpd-daemonset
+        #- name: tmp-cm
+        #  configMap:
+        #    name: httpd-daemonset
