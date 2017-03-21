@@ -137,15 +137,18 @@ class ConfigSyncSchedules(object):
     def order_http_uri(ips, ec_value):
         ips.sort()
         e = ["http://%s:%d" % (k, ec_value) for k in ips]
-        # random.shuffle(e)
         return e
 
     @staticmethod
     def order_etcd_named(ips, ec_value):
         ips.sort()
         e = ["%s=http://%s:%d" % (k, k, ec_value) for k in ips]
-        # random.shuffle(e)
         return ",".join(e)
+
+    @staticmethod
+    def order_consul_ips(ips):
+        ips.sort()
+        return ips
 
     @property
     def kubernetes_etcd_initial_cluster(self):
@@ -174,6 +177,10 @@ class ConfigSyncSchedules(object):
     @property
     def kubernetes_control_plane(self):
         return self.order_http_uri(self.kubernetes_control_plane_ip_list, EC.kubernetes_api_server_port)
+
+    @property
+    def consul_server_ip_list(self):
+        return self.order_consul_ips(self.etcd_member_ip_list)
 
     def produce_matchbox_data(self, marker, i, m, automatic_name, update_extra_metadata=None):
         # random.seed(m["mac"].__hash__())
@@ -222,11 +229,15 @@ class ConfigSyncSchedules(object):
             "kubernetes_node_name": "%s" % m["ipv4"] if fqdn == automatic_name else fqdn,
             "kubernetes_service_cluster_ip_range": EC.kubernetes_service_cluster_ip_range,
 
+            # Consul
+            "consul_server_ip_list": self.consul_server_ip_list,
+
             "hyperkube_image_url": EC.hyperkube_image_url,
             "rkt_image_url": EC.rkt_image_url,
             "etcd_image_url": EC.etcd_image_url,
             "fleet_image_url": EC.fleet_image_url,
             "cni_image_url": EC.cni_image_url,
+            "consul_image_url": EC.consul_image_url,
             # IPAM
             "cni": json.dumps(self.cni_ipam(m["cidrv4"], m["gateway"]), sort_keys=True),
             "network": {
@@ -273,6 +284,7 @@ class ConfigSyncSchedules(object):
 
                 # K8s Control Plane
                 "kubernetes_apiserver_count": len(machine_roles),
+                "consul_bootstrap_count": len(machine_roles),
                 "kubernetes_advertise_ip": "%s" % m["ipv4"],  # TODO still usable ?
             }
             self.produce_matchbox_data(

@@ -50,6 +50,7 @@ acserver:
 
 acis: acserver
 	make -C cni || pkill acserver || exit 1
+	make -C consul || pkill acserver || exit 1
 	make -C etcd || pkill acserver || exit 1
 	make -C fleet || pkill acserver || exit 1
 	make -C hyperkube || pkill acserver || exit 1
@@ -58,6 +59,7 @@ acis: acserver
 	# Find a better way to stop it
 	pkill acserver
 	make -C cni clean
+	make -C consul clean
 	make -C etcd clean
 	make -C fleet clean
 	make -C hyperkube clean
@@ -70,6 +72,7 @@ assets:
 
 clean: check_clean
 	make -C cni clean
+	make -C consul clean
 	make -C etcd clean
 	make -C fleet clean
 	make -C hyperkube clean

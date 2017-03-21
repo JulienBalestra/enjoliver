@@ -1,0 +1,13 @@
+name: enjoliver.local/consul:0.7.5
+
+builder:
+  dependencies:
+    - enjoliver.local/debian:latest
+
+aci:
+  dependencies:
+    - enjoliver.local/debian:latest
+  app:
+    mountPoints:
+      - name: consul-data
+        path: /consul-data

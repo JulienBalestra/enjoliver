@@ -140,6 +140,7 @@ class EnjoliverConfig(object):
         self.etcd_image_url = self.config_override("etcd_image_url", "enjoliver.local/etcd:3.1.3")
         self.fleet_image_url = self.config_override("fleet_image_url", "enjoliver.local/fleet:1.0.0")
         self.cni_image_url = self.config_override("cni_image_url", "enjoliver.local/cni:0.5.0")
+        self.consul_image_url = self.config_override("consul_image_url", 'enjoliver.local/consul:0.7.5')
 
         # Ignition
         # All of them have to be in the matchbox/ignition

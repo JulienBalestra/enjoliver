@@ -48,6 +48,28 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
+    - name: install-consul.service
+      enable: true
+      contents: |
+        [Unit]
+        Requires=network-online.target
+        After=network-online.target
+        AssertFileIsExecutable=!/opt/rootfs/usr/bin/consul
+        [Service]
+        Type=oneshot
+        Environment=IMAGE={{.consul_image_url}}
+        ExecStartPre=/usr/bin/rkt fetch --insecure-options=all $IMAGE
+        ExecStartPre=/usr/bin/rkt image export $IMAGE /tmp/%p.aci
+        ExecStartPre=/usr/bin/rkt image rm $IMAGE
+        ExecStartPre=/usr/bin/tar -C /opt/rootfs -xvf /tmp/%p.aci --strip-components=1
+        ExecStartPre=/bin/rm -v /tmp/%p.aci
+
+        ExecStart=/usr/bin/ln -sfv /opt/rootfs/usr/bin/consul /opt/bin/consul
+        ExecReload=-/bin/rm -v /opt/rootfs/usr/bin/consul
+        RemainAfterExit=yes
+        [Install]
+        WantedBy=multi-user.target
+
     - name: install-fleet.service
       enable: true
       contents: |
@@ -144,6 +166,8 @@ systemd:
         After=install-fleet.service
         Requires=install-etcd.service
         After=install-etcd.service
+        After=install-consul.service
+        Requires=install-consul.service
         Requires=install-rkt.service
         After=install-rkt.service
         Requires=install-hyperkube.service
@@ -377,6 +401,37 @@ systemd:
         Type=oneshot
         ExecStart=/opt/bin/lifecycle-ready
         RemainAfterExit=yes
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: consul.service
+      enable: true
+      contents: |
+        [Unit]
+        After=install-consul.service
+        [Service]
+        EnvironmentFile=/etc/metadata.env
+        ExecStartPre=/bin/mkdir -pv /var/lib/consul
+        ExecStart=/opt/rootfs/usr/bin/consul agent \
+          -advertise={{.network.ip}} \
+          -bootstrap-expect={{.consul_bootstrap_count}} \
+          -data-dir=/var/lib/consul \
+          -server
+        Restart=always
+        RestartSec=10
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: consul-join.service
+      enable: true
+      contents: |
+        [Unit]
+        After=consul.service
+        [Service]
+        ExecStart=/opt/rootfs/usr/bin/consul join \
+          {{ range $element := .consul_server_ip_list }}{{$element}} {{end}}
+        Restart=on-failure
+        RestartSec=10
         [Install]
         WantedBy=multi-user.target
 
