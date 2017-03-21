@@ -1,0 +1,9 @@
+name: enjoliver.local/vault:0.7.0
+
+builder:
+  dependencies:
+    - enjoliver.local/debian:latest
+
+aci:
+  dependencies:
+    - enjoliver.local/debian:latest

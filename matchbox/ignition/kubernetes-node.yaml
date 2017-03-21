@@ -247,7 +247,7 @@ systemd:
         [Service]
         EnvironmentFile=/etc/metadata.env
         Environment=MANIFESTS=/etc/kubernetes/manifests
-        ExecStartPre=/opt/bin/etcdctl ls
+        ExecStartPre=/opt/bin/etcdctl --endpoint {{.kubernetes_etcd_servers}} set /_coreos.com/fleet nope
         ExecStartPre=/opt/rootfs/usr/bin/rkt fetch --pull-policy=update --insecure-options=all {{.hyperkube_image_url}}
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
         ExecStartPre=/bin/mkdir -pv $MANIFESTS
@@ -289,7 +289,7 @@ systemd:
         [Service]
         EnvironmentFile=/etc/metadata.env
         Environment=MANIFESTS=/etc/kubernetes/manifests
-        ExecStartPre=/opt/bin/etcdctl ls
+        ExecStartPre=/opt/bin/etcdctl --endpoint {{.kubernetes_etcd_servers}} set /_coreos.com/fleet nope
         ExecStartPre=/usr/bin/curl -f http://127.0.0.1:8080/healthz
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
         ExecStartPre=/bin/mkdir -pv $MANIFESTS
@@ -349,6 +349,7 @@ systemd:
             [Service]
             EnvironmentFile=/etc/metadata.env
             ExecStartPre=/bin/ls -lL /opt/bin/rkt
+            ExecStartPre=/opt/bin/etcdctl --endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} set /registry nope
             ExecStart=
             ExecStart=/opt/rootfs/usr/bin/fleetd
             Restart=always
