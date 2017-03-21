@@ -50,21 +50,21 @@ acserver:
 
 acis: acserver
 	make -C cni || pkill acserver || exit 1
+	make -C cni clean
 	make -C consul || pkill acserver || exit 1
+	make -C consul clean
 	make -C etcd || pkill acserver || exit 1
+	make -C etcd clean
 	make -C fleet || pkill acserver || exit 1
+	make -C fleet clean
 	make -C hyperkube || pkill acserver || exit 1
+	make -C hyperkube clean
 	make -C lldp || pkill acserver || exit 1
+	make -C lldp clean
 	make -C rkt || pkill acserver || exit 1
+	make -C rkt clean
 	# Find a better way to stop it
 	pkill acserver
-	make -C cni clean
-	make -C consul clean
-	make -C etcd clean
-	make -C fleet clean
-	make -C hyperkube clean
-	make -C lldp clean
-	make -C rkt clean
 
 assets:
 	# Self
