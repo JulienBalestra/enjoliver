@@ -18,7 +18,7 @@ class SmartClient(object):
 
     @staticmethod
     def parse_db_uri(db_uri):
-        if "cockroachdb://" in db_uri and db_uri.count(",") > 1:
+        if "cockroachdb://" in db_uri and db_uri.count(",") > 0:
             return _MultipleEndpoints
         return _SingleEndpoint
 
@@ -26,9 +26,9 @@ class SmartClient(object):
         o = object.__new__(cls.parse_db_uri(db_uri))
         return o
 
-    def __init__(self, db_uri, lazy=True):
+    def __init__(self, db_uri):
         self._create_engines(db_uri.split(","))
-        if lazy:
+        if isinstance(self, _SingleEndpoint):
             self.new_session = self.lazy_session
         else:
             self.new_session = self.connected_session
