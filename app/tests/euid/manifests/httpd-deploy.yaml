@@ -1,7 +1,7 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: httpd-daemonset
+  name: httpd-deploy
   namespace: default
 spec:
   replicas: 1
@@ -16,7 +16,7 @@ spec:
         run: httpd-cni
     spec:
       containers:
-      - name: httpd-daemonset-pod
+      - name: httpd-deploy-pod
         image: enjoliver.local/debian:latest
         imagePullPolicy: IfNotPresent
         command:
