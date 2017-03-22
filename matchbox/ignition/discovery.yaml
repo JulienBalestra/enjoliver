@@ -139,6 +139,8 @@ storage:
         inline: |
           #!/bin/bash -x
 
+          set -o pipefail
+
           NEW_IGNITION=/run/new-ignition.json
 
           if [ -z ${TIMER} ]
@@ -150,7 +152,18 @@ storage:
 
           while true
           do
+              sleep ${TIMER}
+
               curl -f ${API_URI}/scheduler | jq -e ". | has(${NORMALIZED_MAC})"
+              if [ $? -ne 0 ]
+              then
+                echo "${API_URI}/scheduler still not have ${NORMALIZED_MAC}"
+                continue
+              fi
+
+              # Be sure the returned Ignition is not a discovery one
+              curl -f ${API_URI}/ignition?${QUERY} |
+                jq -e '.storage.files[] | select(.path == "/etc/hostname") | .contents.source' | grep -c discovery
               if [ $? -eq 0 ]
               then
                   sleep 1
@@ -174,7 +187,6 @@ storage:
                   curl -f -XPOST "${API_URI}/lifecycle/coreos-install/success/${QUERY}"
                   systemctl reboot
               fi
-              sleep ${TIMER}
           done
 
     - path: /etc/coreos/update.conf
