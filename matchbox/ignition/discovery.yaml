@@ -119,6 +119,9 @@ storage:
         inline: |
           discovery
 
+    - path: /etc/discovery
+      filesystem: root
+
     - path: /etc/metadata-endpoints.env
       filesystem: root
       mode: 0644
@@ -161,15 +164,12 @@ storage:
                 continue
               fi
 
+              curl -f ${API_URI}/ignition?${QUERY} -o ${NEW_IGNITION} || continue
+
               # Be sure the returned Ignition is not a discovery one
-              curl -f ${API_URI}/ignition?${QUERY} |
-                jq -e '.storage.files[] | select(.path == "/etc/hostname") | .contents.source' | grep -c discovery
-              if [ $? -eq 0 ]
+              jq -e '.storage.files[] | select(.path == "/etc/discovery") | .contents.source' ${NEW_IGNITION}
+              if [ $? -ne 0 ]
               then
-                  sleep 1
-                  curl -o ${NEW_IGNITION} -f \
-                    ${API_URI}/ignition?${QUERY} || continue
-                  ls -l /run/ignition.json ${NEW_IGNITION}
                   udevadm settle
 
                   until curl -f "${API_URI}/install-authorization/${QUERY}"
