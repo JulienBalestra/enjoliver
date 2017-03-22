@@ -70,6 +70,28 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
+    - name: install-vault.service
+      enable: true
+      contents: |
+        [Unit]
+        Requires=network-online.target
+        After=network-online.target
+        AssertFileIsExecutable=!/opt/rootfs/usr/bin/vault
+        [Service]
+        Type=oneshot
+        Environment=IMAGE={{.vault_image_url}}
+        ExecStartPre=/usr/bin/rkt fetch --insecure-options=all $IMAGE
+        ExecStartPre=/usr/bin/rkt image export $IMAGE /tmp/%p.aci
+        ExecStartPre=/usr/bin/rkt image rm $IMAGE
+        ExecStartPre=/usr/bin/tar -C /opt/rootfs -xvf /tmp/%p.aci --strip-components=1
+        ExecStartPre=/bin/rm -v /tmp/%p.aci
+
+        ExecStart=/usr/bin/ln -sfv /opt/rootfs/usr/bin/vault /opt/bin/vault
+        ExecReload=-/bin/rm -v /opt/rootfs/usr/bin/vault
+        RemainAfterExit=yes
+        [Install]
+        WantedBy=multi-user.target
+
     - name: install-fleet.service
       enable: true
       contents: |
@@ -166,8 +188,10 @@ systemd:
         After=install-fleet.service
         Requires=install-etcd.service
         After=install-etcd.service
-        After=install-consul.service
         Requires=install-consul.service
+        After=install-consul.service
+        Requires=install-vault.service
+        After=install-vault.service
         Requires=install-rkt.service
         After=install-rkt.service
         Requires=install-hyperkube.service
@@ -375,12 +399,24 @@ systemd:
         [Unit]
         After=install-consul.service
         [Service]
-        EnvironmentFile=/etc/metadata.env
         ExecStartPre=/bin/mkdir -pv /var/lib/consul
         ExecStart=/opt/rootfs/usr/bin/consul agent \
           -advertise={{.network.ip}} \
           -data-dir=/var/lib/consul \
           {{ range $element := .consul_server_ip_list }} -join {{$element}}{{end}}
+        Restart=always
+        RestartSec=10
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: vault.service
+      enable: true
+      contents: |
+        [Unit]
+        After=install-vault.service
+        After=consul.service
+        [Service]
+        ExecStart=/opt/rootfs/usr/bin/vault server -config=/etc/vault.d/
         Restart=always
         RestartSec=10
         [Install]
@@ -463,6 +499,7 @@ storage:
           API_URI='{{.api_uri}}'
           CNI='{{.cni}}'
           CNI_IMAGE_URL='{{.cni_image_url}}'
+          CONSUL_IMAGE_URL={{.consul_image_url}}
           DNS_ATTR_DC='{{.dns_attr.dc}}'
           DNS_ATTR_DOMAIN='{{.dns_attr.domain}}'
           DNS_ATTR_POS='{{.dns_attr.pos}}'
@@ -501,6 +538,7 @@ storage:
           RKT_IMAGE_URL='{{.rkt_image_url}}'
           ROLES='{{.roles}}'
           SELECTOR_MAC='{{.selector.mac}}'
+          VAULT_IMAGE_URL='{{.vault_image_url}}'
 
     - path: /etc/hostname
       filesystem: root
@@ -543,6 +581,21 @@ storage:
             "type": "macvlan",
             "master": "bond0",
             "ipam": {{ .cni }}
+          }
+
+    - path: /etc/vault.d/config.json
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          storage "consul" {
+            address = "127.0.0.1:8500"
+            path    = "vault"
+          }
+
+          listener "tcp" {
+            address     = "127.0.0.1:8200"
+            tls_disable = 1
           }
 
     - path: /etc/fleet/fleet.conf
