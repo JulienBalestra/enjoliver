@@ -13,7 +13,7 @@ export PATH=$PATH:/go/bin:/usr/local/go/bin
 
 
 # Fetch sources
-WORK_DIR="${GOPATH}/k8s.io/kubernetes"
+WORK_DIR="${GOPATH}/src/k8s.io/kubernetes"
 mkdir -p ${WORK_DIR}
 curl -sLf "https://github.com/kubernetes/kubernetes/archive/v${ACI_VERSION}.tar.gz" \
     | tar xzf - -C ${WORK_DIR} --strip 1

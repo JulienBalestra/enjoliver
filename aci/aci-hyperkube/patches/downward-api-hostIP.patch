@@ -1,0 +1,55 @@
+From 692796f261bcbb4a02ccc490554f2c393931480c Mon Sep 17 00:00:00 2001
+From: Julien Balestra <julien.balestra@gmail.com>
+Date: Wed, 22 Mar 2017 16:11:52 +0100
+Subject: [PATCH] Allow the downward API to propose the status.hostIP
+
+---
+ pkg/api/v1/conversion.go         | 3 ++-
+ pkg/api/validation/validation.go | 2 +-
+ pkg/kubelet/kubelet_pods.go      | 3 +++
+ 3 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/pkg/api/v1/conversion.go b/pkg/api/v1/conversion.go
+index 160b063..b182e73 100644
+--- a/pkg/api/v1/conversion.go
++++ b/pkg/api/v1/conversion.go
+@@ -201,7 +201,8 @@ func addConversionFuncs(scheme *runtime.Scheme) error {
+ 				"spec.restartPolicy",
+ 				"spec.serviceAccountName",
+ 				"status.phase",
+-				"status.podIP":
++				"status.podIP",
++				"status.hostIP":
+ 				return label, value, nil
+ 				// This is for backwards compatibility with old v1 clients which send spec.host
+ 			case "spec.host":
+diff --git a/pkg/api/validation/validation.go b/pkg/api/validation/validation.go
+index 1c24a0d..85c52df 100644
+--- a/pkg/api/validation/validation.go
++++ b/pkg/api/validation/validation.go
+@@ -1345,7 +1345,7 @@ func validateEnv(vars []api.EnvVar, fldPath *field.Path) field.ErrorList {
+ 	return allErrs
+ }
+ 
+-var validFieldPathExpressionsEnv = sets.NewString("metadata.name", "metadata.namespace", "spec.nodeName", "spec.serviceAccountName", "status.podIP")
++var validFieldPathExpressionsEnv = sets.NewString("status.hostIP", "metadata.name", "metadata.namespace", "spec.nodeName", "spec.serviceAccountName", "status.podIP")
+ var validContainerResourceFieldPathExpressions = sets.NewString("limits.cpu", "limits.memory", "requests.cpu", "requests.memory")
+ 
+ func validateEnvVarValueFrom(ev api.EnvVar, fldPath *field.Path) field.ErrorList {
+diff --git a/pkg/kubelet/kubelet_pods.go b/pkg/kubelet/kubelet_pods.go
+index c56f257..1e12d88 100644
+--- a/pkg/kubelet/kubelet_pods.go
++++ b/pkg/kubelet/kubelet_pods.go
+@@ -522,6 +522,9 @@ func (kl *Kubelet) podFieldSelectorRuntimeValue(fs *api.ObjectFieldSelector, pod
+ 		return pod.Spec.ServiceAccountName, nil
+ 	case "status.podIP":
+ 		return podIP, nil
++	case "status.hostIP":
++		return kl.nodeIP.String(), nil
++
+ 	}
+ 	return fieldpath.ExtractFieldPathAsString(pod, internalFieldPath)
+ }
+-- 
+2.7.4
+
