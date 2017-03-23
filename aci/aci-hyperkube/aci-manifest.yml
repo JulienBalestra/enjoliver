@@ -6,7 +6,7 @@ builder:
 
   mountPoints:
     - {from: ../../, to: /opt/source-project}
-    #- {from: /tmp/go, to: /go}
+    - {from: /tmp/go, to: /go}
 
 tester:
   aci:

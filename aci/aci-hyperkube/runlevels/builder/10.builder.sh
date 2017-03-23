@@ -46,12 +46,16 @@ chmod +x tick.sh
 make hyperkube
 
 # Small hack to check if the travis instance have enough space
+# Keep the current build state for dev rebuild
 AVAIL=$(df /dgr/aci-home --output=avail | tail -1)
 if [ ${AVAIL} -gt 100000000 ]
 then
-    cp -v _output/local/go/bin/hyperkube /opt/source-project/hyperkube
+    cp -v _output/local/go/bin/hyperkube ${ROOTFS}
+    cp -v _output/local/go/bin/hyperkube /opt/source-project/hyperkube || true
+else
+    mv -v _output/local/go/bin/hyperkube ${ROOTFS}
+    rm -Rf /go/*
 fi
 
-cp -v _output/local/go/bin/hyperkube ${ROOTFS}
 cd -P ${ROOTFS}
 ./hyperkube --make-symlinks

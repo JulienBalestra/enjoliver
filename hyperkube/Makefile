@@ -5,7 +5,6 @@ RUNTIME=$(PROJECT)/runtime
 RKT=$(RUNTIME)/rkt/rkt
 ACI=$(PROJECT)/aci
 
-HYPERKUBE_BIN=hyperkube
 
 DEBIAN=debian
 GO=go
@@ -30,12 +29,14 @@ $(BUILDER_HYPERKUBE): $(GO)
 	IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE) make -C $(RUNTIME) install
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) push
 
-$(HYPERKUBE_BIN): $(BUILDER_HYPERKUBE)
+hyperkube_bin: $(BUILDER_HYPERKUBE)
 	@echo ENV IMAGE=$(ACI)/aci-$(HYPERKUBE)
 	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) build
 	ls -lh $(HYPERKUBE_BIN)
 
-install: $(DEBIAN) $(BUILDER_HYPERKUBE)
+prepare: $(BUILDER_HYPERKUBE)
+
+install: prepare
 	@echo ENV IMAGE=$(ACI)/aci-$(HYPERKUBE)
 	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) install
 
@@ -52,11 +53,17 @@ gc:
 	$(RKT) --local-config=$(RUNTIME) image gc --grace-period=0s
 
 clean: gc
+	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) clean
+	IMAGE=$(ACI)/aci-$(HYPERKUBE)-dev make -C $(RUNTIME) clean
+
+fclean: clean
 	rm -v $(HYPERKUBE_BIN) || true
 	IMAGE=$(ACI)/aci-$(GO) make -C $(RUNTIME) clean
 	IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE) make -C $(RUNTIME) clean
-	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) clean
-
-fclean: clean
 
 re: clean default
+
+re_quick:
+	@echo ENV IMAGE=$(ACI)/aci-$(HYPERKUBE)
+	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) build
+	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) push
