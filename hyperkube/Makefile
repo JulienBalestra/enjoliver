@@ -54,7 +54,6 @@ gc:
 
 clean: gc
 	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) clean
-	IMAGE=$(ACI)/aci-$(HYPERKUBE)-dev make -C $(RUNTIME) clean
 
 fclean: clean
 	rm -v $(HYPERKUBE_BIN) || true
