@@ -34,7 +34,7 @@ hyperkube_bin: $(BUILDER_HYPERKUBE)
 	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) build
 	ls -lh $(HYPERKUBE_BIN)
 
-prepare: $(BUILDER_HYPERKUBE)
+prepare: $(GO) $(BUILDER_HYPERKUBE)
 
 install: prepare
 	@echo ENV IMAGE=$(ACI)/aci-$(HYPERKUBE)

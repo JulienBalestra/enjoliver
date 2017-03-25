@@ -33,6 +33,25 @@ During the lifecycle of the Kubernetes cluster, rolling updates are **fast** and
 Each node can reboot with iPXE to be re-installed and re-join the cluster.
 
 
+## Current Stack
+
+### Upstream
+
+* etcd
+* cni
+* rkt
+* Kubernetes
+    * #PR: ~/aci/aci-hyperkube/patches
+* Consul
+* Vault
+* CoreOS - stable channel
+* dgr
+
+### Stick
+
+* fleet 1.0.0
+
+
 ## Setups
 
 
