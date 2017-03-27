@@ -59,7 +59,7 @@ class TestKVMK8SEtcdOperator0(TestKVMK8sEtcdOperator):
                     "--name",
                     "%s" % m,
                     "--network=bridge:rack0,model=virtio",
-                    "--memory=6144",
+                    "--memory=%d" % self.ram_kvm_node_memory_mb,
                     "--vcpus=%d" % self.get_optimized_cpu(nb_node),
                     "--pxe",
                     "--disk",

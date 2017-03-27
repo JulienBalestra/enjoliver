@@ -113,6 +113,9 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     os.environ["ENJOLIVER_MATCHBOX_ASSETS"] = assets_path
     ec = configs.EnjoliverConfig(importer=__file__)
 
+    # Memory needed for RAM nodes
+    ram_kvm_node_memory_mb = 8192
+
     @staticmethod
     def pause(t=600):
         """

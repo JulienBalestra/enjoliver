@@ -23,19 +23,22 @@ cd ${WORK_DIR}
 PATCHES_DIR="${ACI_HOME}/patches"
 for patch in $(ls $PATCHES_DIR)
 do
+    echo "${PATCHES_DIR}/${patch}"
+    head -4 "${PATCHES_DIR}/${patch}"
     patch -p1 < "${PATCHES_DIR}/${patch}" || {
         echo >&2 "Unable to apply patch ${patch}"
         exit 1
     }
+    echo ""
 done
 
 # If building in a slow travis instance, avoid to be killed by "no logs output since ..."
 cat << EOF > tick.sh
 #!/bin/bash
-until ls -lh _output/local/go/bin/hyperkube
+until test -x _output/local/go/bin/hyperkube
 do
-    echo "compiling..."
-    sleep 60
+    echo -n "."
+    sleep 0.5
 done
 EOF
 chmod +x tick.sh
