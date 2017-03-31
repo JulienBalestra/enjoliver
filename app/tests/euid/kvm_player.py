@@ -139,7 +139,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "matchbox",
         ]
         display("PID  -> %s\n"
-              "exec -> %s" % (os.getpid(), " ".join(cmd)))
+                "exec -> %s" % (os.getpid(), " ".join(cmd)))
         sys.stdout.flush()
         os.environ["TERM"] = "xterm"
         os.execve(cmd[0], cmd, os.environ)
@@ -151,7 +151,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "%s/ac-config.yml" % KernelVirtualMachinePlayer.runtime_path
         ]
         display("PID  -> %s\n"
-              "exec -> %s" % (os.getpid(), " ".join(cmd)))
+                "exec -> %s" % (os.getpid(), " ".join(cmd)))
         sys.stdout.flush()
         os.environ["TERM"] = "xterm"
         os.execve(cmd[0], cmd, os.environ)
@@ -182,7 +182,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "gunicorn",
         ]
         display("PID  -> %s\n"
-              "exec -> %s" % (os.getpid(), " ".join(cmd)))
+                "exec -> %s" % (os.getpid(), " ".join(cmd)))
         os.execve(cmd[0], cmd, os.environ)
 
     @staticmethod
@@ -207,7 +207,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "config,kind=host,source=%s/dnsmasq-rack0.conf" % KernelVirtualMachinePlayer.tests_path
         ]
         display("PID  -> %s\n"
-              "exec -> %s" % (os.getpid(), " ".join(cmd)))
+                "exec -> %s" % (os.getpid(), " ".join(cmd)))
         sys.stdout.flush()
         os.execve(cmd[0], cmd, os.environ)
         os._exit(2)
@@ -238,7 +238,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "--",
             "-dd"]
         display("PID  -> %s\n"
-              "exec -> %s" % (os.getpid(), " ".join(cmd)))
+                "exec -> %s" % (os.getpid(), " ".join(cmd)))
         sys.stdout.flush()
         os.execve(cmd[0], cmd, os.environ)
         os._exit(2)  # Should not happen
@@ -286,9 +286,9 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                         os.path.isfile(KernelVirtualMachinePlayer.matchbox_bin) is False or \
                         os.path.isfile(KernelVirtualMachinePlayer.acserver_bin) is False:
             display("Call 'make runtime' as user for:\n"
-                  "- %s\n" % KernelVirtualMachinePlayer.rkt_bin +
-                  "- %s\n" % KernelVirtualMachinePlayer.matchbox_bin +
-                  "- %s\n" % KernelVirtualMachinePlayer.acserver_bin)
+                    "- %s\n" % KernelVirtualMachinePlayer.rkt_bin +
+                    "- %s\n" % KernelVirtualMachinePlayer.matchbox_bin +
+                    "- %s\n" % KernelVirtualMachinePlayer.acserver_bin)
             exit(2)
         display("PID -> %s" % os.getpid())
 
@@ -513,25 +513,24 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
         self.assertEqual(len(result["members"]), members_nb)
 
-    def etcd_member_k8s_minions(self, ip, nodes_nb, tries=200):
-        result = {}
+    def k8s_node_nb(self, api_server_ip, nodes_nb, tries=200):
+        c = kc.ApiClient(host="%s:8080" % api_server_ip)
+        core = kc.CoreV1Api(c)
+        items = []
         for t in range(tries):
             try:
-                endpoint = "http://%s:2379/v2/keys/registry/minions" % ip
-                request = requests.get(endpoint)
-                content = request.content
-                request.close()
-                result = json.loads(content.decode())
-                sys.stdout.flush()
-                if result and len(result["node"]["nodes"]) == nodes_nb:
+                nodes = core.list_node()
+                if nodes and len(nodes.items) == nodes_nb:
+                    items = nodes.items
                     break
 
             except Exception as e:
                 pass
-            display("-> %d/%d NOT READY %s for %s" % (t, tries, ip, self.etcd_member_k8s_minions.__name__,))
+            display("-> %d/%d NOT READY %s for %s %d/%d" % (
+                t, tries, api_server_ip, self.k8s_node_nb.__name__, len(items), nodes_nb))
             time.sleep(self.testing_sleep_seconds)
 
-        self.assertEqual(len(result["node"]["nodes"]), nodes_nb)
+        self.assertEqual(len(items), nodes_nb)
 
     def k8s_api_health(self, ips, tries=200):
         assert type(ips) is list

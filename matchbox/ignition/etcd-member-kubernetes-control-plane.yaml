@@ -296,52 +296,10 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
-    - name: kubelet-runonce.service
-      enable: true
-      contents: |
-        [Unit]
-        After=installs.target
-        After=rkt-api.service
-        After=etcd3@kubernetes.service
-
-        [Service]
-        EnvironmentFile=/etc/metadata.env
-        Environment=MANIFESTS=/etc/kubernetes/manifests
-        ExecStartPre=/opt/bin/etcdctl --endpoint {{.kubernetes_etcd_servers}} set /_coreos.com/fleet nope
-        ExecStartPre=/opt/rootfs/usr/bin/rkt fetch --pull-policy=update --insecure-options=all {{.hyperkube_image_url}}
-        ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
-        ExecStartPre=/bin/mkdir -pv $MANIFESTS
-        ExecStart=/opt/rootfs/hyperkube kubelet \
-          \
-          --network-plugin=cni \
-          --cni-bin-dir=/opt/rootfs/usr/bin \
-          --cni-conf-dir=/etc/rkt/net.d \
-          \
-          --pod-manifest-path=${MANIFESTS} \
-          --hostname-override=${KUBERNETES_NODE_NAME} \
-          --node-ip=${KUBERNETES_NODE_IP} \
-          --register-schedulable=false \
-          --allow-privileged=true \
-          --runonce=true \
-          --enable-server=false \
-          --cloud-provider="" \
-          --healthz-port=20248 \
-          \
-          --container-runtime=rkt \
-          --rkt-path=/opt/rootfs/usr/bin/rkt \
-          --v=2
-        RestartSec=15s
-        TimeoutStartSec=infinity
-        Restart=on-failure
-
-        [Install]
-        WantedBy=multi-user.target
-
     - name: kubelet.service
       enable: true
       contents: |
         [Unit]
-        After=kubelet-runonce.service
         After=rkt-api.service
         After=etcd3@kubernetes.service
         Requires=rkt-api.service
@@ -349,8 +307,9 @@ systemd:
         [Service]
         EnvironmentFile=/etc/metadata.env
         Environment=MANIFESTS=/etc/kubernetes/manifests
-        ExecStartPre=/opt/bin/etcdctl --endpoint {{.kubernetes_etcd_servers}} set /_coreos.com/fleet nope
-        ExecStartPre=/usr/bin/curl -f http://127.0.0.1:8080/healthz
+        Environment=ETCDCTL_API=3
+        ExecStartPre=/opt/bin/etcdctl --endpoints {{.kubernetes_etcd_servers}} endpoint health
+        ExecStartPre=/opt/rootfs/usr/bin/rkt fetch --pull-policy=update --insecure-options=all {{.hyperkube_image_url}}
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
         ExecStartPre=/bin/mkdir -pv $MANIFESTS
         ExecStart=/opt/rootfs/hyperkube kubelet \
@@ -371,7 +330,8 @@ systemd:
           \
           --container-runtime=rkt \
           --rkt-path=/opt/rootfs/usr/bin/rkt \
-          --v=2
+          --v=2 \
+          --enable-cri=false
         Restart=always
         RestartSec=30s
 
@@ -503,6 +463,14 @@ storage:
       filesystem: root
       mode: 0644
 
+    - path: /var/lib/kubernetes/token.csv
+      filesystem: root
+      contents:
+        inline: |
+          chAng3m3,admin,admin
+          chAng3m3,scheduler,scheduler
+          chAng3m3,kubelet,kubelet
+
     - path: /etc/kubernetes/manifests/kube-apiserver.yaml
       filesystem: root
       contents:
@@ -527,7 +495,7 @@ storage:
               - --allow-privileged=true
               - --service-cluster-ip-range={{.kubernetes_service_cluster_ip_range}}
               - --admission-control=NamespaceLifecycle,LimitRanger,DefaultStorageClass,ResourceQuota
-              - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1
+              - --runtime-config=batch/v2alpha1
               - --apiserver-count={{.kubernetes_apiserver_count}}
               - --enable-swagger-ui=true
               resources:
@@ -540,6 +508,14 @@ storage:
                   path: /healthz
                 initialDelaySeconds: 15
                 timeoutSeconds: 15
+              volumeMounts:
+              - name: kubernetes
+                mountPath: /var/lib/kubernetes
+                readOnly: true
+            volumes:
+            - name: kubernetes
+              hostPath:
+                path: /var/lib/kubernetes
 
     - path: /etc/kubernetes/manifests/kube-controller-manager.yaml
       filesystem: root

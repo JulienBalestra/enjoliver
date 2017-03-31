@@ -17,7 +17,11 @@ $(DEBIAN):
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) install
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) push
 
-test: $(DEBIAN)
+build: $(DEBIAN)
+	@echo ENV IMAGE=$(ACI)/aci-$(ETCD)
+	IMAGE=$(ACI)/aci-$(ETCD) make -C $(RUNTIME) build
+
+test: build
 	@echo ENV IMAGE=$(ACI)/aci-$(ETCD)
 	IMAGE=$(ACI)/aci-$(ETCD) make -C $(RUNTIME) test
 

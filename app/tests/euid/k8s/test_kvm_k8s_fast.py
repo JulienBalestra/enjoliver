@@ -98,12 +98,11 @@ class TestKVMK8SFast0(TestKVMK8sFast):
                                  self.ec.kubernetes_etcd_client_port)
             self.etcd_member_len(sy.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb,
                                  self.ec.fleet_etcd_client_port)
-            self.etcd_endpoint_health(sy.kubernetes_control_plane_ip_list + sy.kubernetes_nodes_ip_list,
-                                      self.ec.kubernetes_etcd_client_port)
+            self.etcd_endpoint_health(sy.kubernetes_control_plane_ip_list, self.ec.kubernetes_etcd_client_port)
             self.etcd_endpoint_health(sy.kubernetes_control_plane_ip_list + sy.kubernetes_nodes_ip_list,
                                       self.ec.fleet_etcd_client_port)
             self.k8s_api_health(sy.kubernetes_control_plane_ip_list)
-            self.etcd_member_k8s_minions(sy.kubernetes_control_plane_ip_list[0], nb_node)
+            self.k8s_node_nb(sy.kubernetes_control_plane_ip_list[0], nb_node)
             self.write_ending(marker)
         finally:
             if os.getenv("TEST"):

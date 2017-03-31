@@ -81,7 +81,7 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
             self.etcd_endpoint_health(plan_k8s_2t.etcd_member_ip_list, self.ec.kubernetes_etcd_client_port)
             self.etcd_endpoint_health(plan_k8s_2t.etcd_member_ip_list, self.ec.fleet_etcd_client_port)
             self.k8s_api_health(plan_k8s_2t.kubernetes_control_plane_ip_list)
-            self.etcd_member_k8s_minions(plan_k8s_2t.etcd_member_ip_list[0], nb_node)
+            self.k8s_node_nb(plan_k8s_2t.etcd_member_ip_list[0], nb_node)
 
             self.create_httpd_daemon_set(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
             self.create_httpd_deploy(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
