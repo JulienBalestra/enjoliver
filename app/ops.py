@@ -3,18 +3,19 @@ Help the application to be more exploitable
 """
 
 import ctypes
+import shutil
+
 import math
 import os
-import shutil
-import time
-
 import psutil
 import requests
+import time
 from flask import jsonify
 
 import crud
 import logger
 import objs3
+import smartdb
 
 LIBC = ctypes.CDLL("libc.so.6")  # TODO deep inside the SQLITE sync
 LOGGER = logger.get_logger(__file__)
@@ -91,7 +92,7 @@ def backup_sqlite(cache, application):
     return jsonify(resp)
 
 
-def healthz(application, smart, request):
+def healthz(application, smart: smartdb.SmartClient, request):
     """
     Query all services and return the status
     :return: json
@@ -113,9 +114,14 @@ def healthz(application, smart, request):
             status["matchbox"][k] = False
             status["global"] = False
             LOGGER.error(e)
+
+    @smartdb.cockroach_transaction
+    def op():
+        with smart.new_session() as session:
+            return crud.health_check(session, ts=time.time(), who=request.remote_addr)
+
     try:
-        with smart.connected_cockroach_session() as session:
-            status["db"] = crud.health_check(session, ts=time.time(), who=request.remote_addr)
+        status["db"] = op()
         if len(smart.engines) > 1:
             status["dbs"] = smart.engine_urls
     except Exception as e:

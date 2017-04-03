@@ -1,6 +1,6 @@
 import json as std_json
-import os
 
+import os
 import requests
 from flasgger import Swagger
 from flask import Flask, request, json, jsonify, render_template, Response
@@ -10,6 +10,7 @@ import crud
 import logger
 import model
 import ops
+import smartdb
 from configs import EnjoliverConfig
 from smartdb import SmartClient
 
@@ -96,18 +97,21 @@ def submit_lifecycle_ignition(request_raw_query):
         LOGGER.error("%s have incorrect matchbox return" % request.path)
         return jsonify({"message": "MatchboxValueError"}), 406
 
-    with SMART.new_session() as session:
-        try:
-            inject = crud.InjectLifecycle(session, request_raw_query=request_raw_query)
-            if json.dumps(machine_ignition, sort_keys=True) == json.dumps(matchbox_ignition, sort_keys=True):
-                inject.refresh_lifecycle_ignition(True)
-                resp = jsonify({"message": "Up-to-date"}), 200
-            else:
-                inject.refresh_lifecycle_ignition(False)
-                resp = jsonify({"message": "Outdated"}), 210
-        except AttributeError:
-            resp = jsonify({"message": "Unknown"}), 406
-    return resp
+    @smartdb.cockroach_transaction
+    def op():
+        with SMART.new_session() as session:
+            try:
+                inject = crud.InjectLifecycle(session, request_raw_query=request_raw_query)
+                if json.dumps(machine_ignition, sort_keys=True) == json.dumps(matchbox_ignition, sort_keys=True):
+                    inject.refresh_lifecycle_ignition(True)
+                    return jsonify({"message": "Up-to-date"}), 200
+                else:
+                    inject.refresh_lifecycle_ignition(False)
+                    return jsonify({"message": "Outdated"}), 210
+            except AttributeError:
+                return jsonify({"message": "Unknown"}), 406
+
+    return op()
 
 
 @APPLICATION.route("/lifecycle/rolling/<string:request_raw_query>", methods=["GET"])
@@ -187,14 +191,17 @@ def change_lifecycle_rolling(request_raw_query):
         LOGGER.info("%s %s rolling strategy: setting default to kexec" % (request.method, request.url))
         strategy = "kexec"
 
-    with SMART.new_session() as session:
-        try:
-            life = crud.InjectLifecycle(session, request_raw_query)
-            life.apply_lifecycle_rolling(True, strategy)
-            status = jsonify({"enable": True, "request_raw_query": request_raw_query, "strategy": strategy}), 200
-        except AttributeError:
-            status = jsonify({"enable": None, "request_raw_query": request_raw_query, "strategy": strategy}), 401
-    return status
+    @smartdb.cockroach_transaction
+    def op():
+        with SMART.new_session() as session:
+            try:
+                life = crud.InjectLifecycle(session, request_raw_query)
+                life.apply_lifecycle_rolling(True, strategy)
+                return jsonify({"enable": True, "request_raw_query": request_raw_query, "strategy": strategy}), 200
+            except AttributeError:
+                return jsonify({"enable": None, "request_raw_query": request_raw_query, "strategy": strategy}), 401
+
+    return op()
 
 
 @APPLICATION.route("/lifecycle/rolling/<string:request_raw_query>", methods=["DELETE"])
@@ -218,11 +225,15 @@ def lifecycle_rolling_delete(request_raw_query):
             type: dict
     """
     LOGGER.info("%s %s" % (request.method, request.url))
-    with SMART.new_session() as session:
-        life = crud.InjectLifecycle(session, request_raw_query)
-        life.apply_lifecycle_rolling(False, None)
-        report = jsonify({"enable": False, "request_raw_query": request_raw_query}), 200
-    return report
+
+    @smartdb.cockroach_transaction
+    def op():
+        with SMART.new_session() as session:
+            life = crud.InjectLifecycle(session, request_raw_query)
+            life.apply_lifecycle_rolling(False, None)
+            return jsonify({"enable": False, "request_raw_query": request_raw_query}), 200
+
+    return op()
 
 
 @APPLICATION.route("/lifecycle/rolling", methods=["GET"])
@@ -310,9 +321,14 @@ def report_lifecycle_coreos_install(status, request_raw_query):
     else:
         LOGGER.error("%s %s" % (request.method, request.url))
         return "success or fail != %s" % status.lower(), 403
-    with SMART.new_session() as session:
-        inject = crud.InjectLifecycle(session, request_raw_query=request_raw_query)
-        inject.refresh_lifecycle_coreos_install(success)
+
+    @smartdb.cockroach_transaction
+    def op():
+        with SMART.new_session() as session:
+            inject = crud.InjectLifecycle(session, request_raw_query=request_raw_query)
+            inject.refresh_lifecycle_coreos_install(success)
+
+    op()
     return jsonify({"success": success, "request_raw_query": request_raw_query}), 200
 
 
@@ -375,18 +391,21 @@ def discovery():
     except (KeyError, TypeError, ValueError):
         return err
 
-    with SMART.new_session() as session:
-        try:
+    @smartdb.cockroach_transaction
+    def op():
+        with SMART.new_session() as session:
             inject = crud.InjectDiscovery(
                 session,
                 ignition_journal=ignition_journal,
                 discovery=req)
             new = inject.commit()
             CACHE.delete(request.path)
-            resp = jsonify({"total_elt": new[0], "new": new[1]})
-        except TypeError:
-            resp = err
-    return resp
+            return jsonify({"total_elt": new[0], "new": new[1]})
+
+    try:
+        return op()
+    except TypeError:
+        return err
 
 
 @APPLICATION.route('/discovery', methods=['GET'])
@@ -541,11 +560,13 @@ def scheduler_post():
                 }
             }), 406
 
-    with SMART.new_session() as session:
-        inject = crud.InjectSchedule(session, data=req)
-        inject.apply_roles()
-        inject.commit()
-
+    @smartdb.cockroach_transaction
+    def op():
+        with SMART.new_session() as session:
+            inject = crud.InjectSchedule(session, data=req)
+            inject.apply_roles()
+            inject.commit()
+    op()
     CACHE.delete(request.path)
     return jsonify(req)
 
@@ -570,7 +591,7 @@ def backup_database():
     """
     if "sqlite://" in EC.db_uri:
         return ops.backup_sqlite(cache=CACHE, application=APPLICATION)
-    return jsonify({"NotImplementedError": "%s" % EC.api_uri}), 404
+    return jsonify({"NotImplementedError": "%s" % EC.db_uri}), 404
 
 
 @APPLICATION.route('/discovery/interfaces', methods=['GET'])

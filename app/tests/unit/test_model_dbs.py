@@ -1,6 +1,7 @@
-import os
 import shutil
 import unittest
+
+import os
 
 from app import configs
 from app import smartdb
@@ -27,7 +28,7 @@ class TestModelSQLiteMemory(model_player.TestModel):
         cls.set_up_class_checks(cls.smart, cls.ignition_journal_path)
 
 
-@unittest.skip("")
+@unittest.skip("TODO")
 class TestModelSQLiteFS(model_player.TestModel):
     unit_path = os.path.dirname(os.path.abspath(__file__))
     dbs_path = "%s/dbs" % unit_path
@@ -52,7 +53,7 @@ class TestModelSQLiteFS(model_player.TestModel):
         cls.set_up_class_checks(cls.smart, cls.ignition_journal_path)
 
 
-@unittest.skip("")
+@unittest.skip("TODO")
 class TestModelCockroach(model_player.TestModel):
     unit_path = os.path.dirname(os.path.abspath(__file__))
     dbs_path = "%s/dbs" % unit_path
@@ -75,7 +76,7 @@ class TestModelCockroach(model_player.TestModel):
         cls.set_up_class_checks(cls.smart, cls.ignition_journal_path)
 
 
-@unittest.skip("")
+@unittest.skip("TODO")
 class TestModelPostgresql(model_player.TestModel):
     unit_path = os.path.dirname(os.path.abspath(__file__))
     dbs_path = "%s/dbs" % unit_path
