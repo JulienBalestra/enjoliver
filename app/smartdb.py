@@ -3,7 +3,7 @@ Always give a working freshly connected session
 """
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 import logger
@@ -31,7 +31,7 @@ class SmartClient(object):
         if isinstance(self, _SingleEndpoint):
             self.new_session = self.lazy_session
         else:
-            self.new_session = self.connected_session
+            self.new_session = self.connected_cockroach_session
 
     def _create_engines(self, uri_list):
         for single_uri in uri_list:
@@ -42,11 +42,13 @@ class SmartClient(object):
         self.log.info("total: %d" % len(self.engines))
 
     @contextmanager
-    def connected_session(self):
+    def connected_cockroach_session(self, snap=True):
         conn = self.get_engine_connection()
         try:
             with self.new_session_maker(conn) as sm:
                 session = sm()
+                if isinstance(self, _MultipleEndpoints) and snap:
+                    session.execute(text("SET TRANSACTION ISOLATION LEVEL SNAPSHOT;"))
                 try:
                     yield session
                 finally:

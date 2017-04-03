@@ -114,7 +114,7 @@ def healthz(application, smart, request):
             status["global"] = False
             LOGGER.error(e)
     try:
-        with smart.connected_session() as session:
+        with smart.connected_cockroach_session() as session:
             status["db"] = crud.health_check(session, ts=time.time(), who=request.remote_addr)
         if len(smart.engines) > 1:
             status["dbs"] = smart.engine_urls
