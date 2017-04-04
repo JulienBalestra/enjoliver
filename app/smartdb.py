@@ -3,7 +3,11 @@ Always give a working freshly connected session
 """
 from contextlib import contextmanager
 
+import psycopg2
+import psycopg2.errorcodes
 from sqlalchemy import create_engine
+from sqlalchemy import text
+from sqlalchemy.exc import DatabaseError
 from sqlalchemy.orm import sessionmaker
 
 import logger
@@ -31,7 +35,7 @@ class SmartClient(object):
         if isinstance(self, _SingleEndpoint):
             self.new_session = self.lazy_session
         else:
-            self.new_session = self.connected_session
+            self.new_session = self.connected_cockroach_session
 
     def _create_engines(self, uri_list):
         for single_uri in uri_list:
@@ -42,11 +46,13 @@ class SmartClient(object):
         self.log.info("total: %d" % len(self.engines))
 
     @contextmanager
-    def connected_session(self):
+    def connected_cockroach_session(self, snap=False):
         conn = self.get_engine_connection()
         try:
             with self.new_session_maker(conn) as sm:
                 session = sm()
+                if isinstance(self, _MultipleEndpoints) and snap:
+                    session.execute(text("SET TRANSACTION ISOLATION LEVEL SNAPSHOT;"))
                 try:
                     yield session
                 finally:
@@ -111,3 +117,16 @@ class _SingleEndpoint(SmartClient):
 
 class _MultipleEndpoints(SmartClient):
     pass
+
+
+def cockroach_transaction(f):
+    def run_transaction(*args, **kwargs):
+        while True:
+            try:
+                return f(*args, **kwargs)
+            except DatabaseError as e:
+                if not isinstance(e.orig, psycopg2.OperationalError) and \
+                        not e.orig.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
+                    raise
+
+    return run_transaction

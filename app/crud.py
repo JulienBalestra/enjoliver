@@ -3,9 +3,9 @@ Over the application Model, queries to the database
 """
 
 import datetime
-import os
 import socket
 
+import os
 from sqlalchemy import func
 from sqlalchemy.orm import subqueryload
 
@@ -147,11 +147,8 @@ def health_check(session, ts, who):
     health.host = who
     session.add(health)
     session.commit()
-    session.query(Healthz).filter(Healthz.ts == ts).delete()
-    try:
-        session.commit()
-    except Exception as e:
-        LOGGER.warning("cannot delete inserted Healthz %s %s" % (ts, type(e)))
+    session.query(Healthz).filter(Healthz.ts < ts).delete()
+    session.commit()
     return True
 
 

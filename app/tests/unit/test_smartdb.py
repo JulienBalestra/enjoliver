@@ -1,7 +1,6 @@
-import os
 import unittest
 
-import sqlalchemy
+import os
 
 from app import configs
 from app import smartdb
@@ -44,20 +43,20 @@ class TestModel(unittest.TestCase):
         self.assertEqual(smartdb._SingleEndpoint, type(ss))
         self.assertEqual(1, len(ss.engines))
         ss.create_base()
-        ss.connected_session()
+        ss.connected_cockroach_session()
 
     def test_04(self):
-        ss = smartdb.SmartClient("cockroachdb://root@127.0.0.1:26257")
+        ss = smartdb.SmartClient("cockroachdb://root@127.0.0.1:16257")
         self.assertEqual(smartdb._SingleEndpoint, type(ss))
         self.assertEqual(1, len(ss.engines))
         with self.assertRaises(ConnectionError):
-            with ss.connected_session() as session:
+            with ss.connected_cockroach_session() as session:
                 pass
         with ss.new_session() as session:
             pass
 
     def test_05(self):
-        ss = smartdb.SmartClient("cockroachdb://root@127.0.0.1:26257,cockroachdb://root@127.0.1.1:26257")
+        ss = smartdb.SmartClient("cockroachdb://root@127.0.0.1:16257,cockroachdb://root@127.0.1.1:16257")
         self.assertEqual(smartdb._MultipleEndpoints, type(ss))
         self.assertEqual(2, len(ss.engines))
         with self.assertRaises(ConnectionError):
