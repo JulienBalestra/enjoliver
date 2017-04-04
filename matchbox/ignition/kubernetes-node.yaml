@@ -656,6 +656,7 @@ storage:
       contents:
         inline: |
            export PATH=/opt/bin:$PATH
+           export VAULT_ADDR=http://127.0.0.1:8200
 
     - path: /etc/modules-load.d/network.conf
       mode: 0644

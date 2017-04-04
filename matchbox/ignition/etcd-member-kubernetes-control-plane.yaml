@@ -884,6 +884,7 @@ storage:
       contents:
         inline: |
            export PATH=/opt/bin:$PATH
+           export VAULT_ADDR=http://127.0.0.1:8200
 
     - path: /etc/modules-load.d/network.conf
       mode: 0644
@@ -1043,17 +1044,67 @@ storage:
         inline: |
           #!/usr/bin/env bash
 
+          set -x
+
           export VAULT_ADDR="http://127.0.0.1:8200"
           /opt/bin/vault init -check && exit 0
 
-          set -e
-          set -o pipefail
-
+          echo "vault init"
           /opt/bin/vault init -auto -key-shares=1 -key-threshold=1 > /etc/vault.d/keys
           UNSEALKEY1=$(cat /etc/vault.d/keys | grep "Unseal Key 1:" | cut -f4 -d ' ')
 
+          echo "vault unseal"
           /opt/bin/vault unseal ${UNSEALKEY1}
+          echo "consul kv put unsealkey1"
           /opt/bin/consul kv put unsealkey1 ${UNSEALKEY1}
+
+          ROOTTOKEN=$(cat /etc/vault.d/keys | grep "Initial Root Token:" | cut -f4 -d ' ')
+
+          /opt/bin/vault auth ${ROOTTOKEN}
+          /opt/bin/consul kv put roottoken ${ROOTTOKEN}
+
+          CLUSTER_ID=enjoliver
+          for COMPONENT in etcd kubernetes
+          do
+            /opt/bin/vault mount -path $CLUSTER_ID/pki/$COMPONENT pki
+            /opt/bin/vault mount-tune -max-lease-ttl=87600h $CLUSTER_ID/pki/etcd
+            /opt/bin/vault write $CLUSTER_ID/pki/$COMPONENT/root/generate/internal \
+              common_name=$CLUSTER_ID/pki/$COMPONENT ttl=87600h
+          done
+
+          /opt/bin/vault write $CLUSTER_ID/pki/etcd/roles/member \
+              allow_any_name=true \
+              max_ttl="720h"
+
+          /opt/bin/vault write $CLUSTER_ID/pki/kubernetes/roles/kubelet \
+              allowed_domains="kubelet" \
+              allow_bare_domains=true \
+              allow_subdomains=false \
+              max_ttl="720h"
+
+          openssl genrsa 4096 > /etc/vault.d/token-key
+          /opt/bin/vault write secret/$CLUSTER_ID/k8s/token key=@/etc/vault.d/token-key
+          rm /etc/vault.d/token-key
+
+          cat << EOF | /opt/bin/vault policy-write $CLUSTER_ID/pki/etcd/member -
+          path "$CLUSTER_ID/pki/etcd/issue/member" {
+            policy = "write"
+          }
+          EOF
+
+          cat << EOF | /opt/bin/vault policy-write $CLUSTER_ID/pki/kubernetes/kube-apiserver -
+          path "$CLUSTER_ID/pki/kubernetes/issue/kube-apiserver" {
+            policy = "write"
+          }
+          path "secret/$CLUSTER_ID/kubernetes/token" {
+            policy = "read"
+          }
+          EOF
+
+          /opt/bin/vault write auth/token/roles/kubernetes \
+            period="720h" \
+            orphan=true \
+            allowed_policies="$CLUSTER_ID/pki/etcd/member,$CLUSTER_ID/pki/kubernetes/kube-apiserver"
 
     - path: /opt/bin/vault-unseal
       mode: 0544
