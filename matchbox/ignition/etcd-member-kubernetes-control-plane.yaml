@@ -1050,8 +1050,10 @@ storage:
           set -o pipefail
 
           /opt/bin/vault init -auto -key-shares=1 -key-threshold=1 > /etc/vault.d/keys
-          cat /etc/vault.d/keys | grep "Unseal Key 1:" | cut -f4 -d ' ' | \
-            xargs /opt/bin/consul kv put unsealkey1
+          UNSEALKEY1=$(cat /etc/vault.d/keys | grep "Unseal Key 1:" | cut -f4 -d ' ')
+
+          /opt/bin/vault unseal ${UNSEALKEY1}
+          /opt/bin/consul kv put unsealkey1 ${UNSEALKEY1}
 
     - path: /opt/bin/vault-unseal
       mode: 0544
@@ -1070,7 +1072,11 @@ storage:
           echo "Unsealing the vault..."
           while true
           do
-            /opt/bin/consul kv get unsealkey1 | xargs /opt/bin/vault unseal
+            /opt/bin/vault status
+            if [ $? -eq 2 ]
+            then
+              /opt/bin/consul kv get unsealkey1 | xargs /opt/bin/vault unseal
+            fi
             sleep 5
           done
 

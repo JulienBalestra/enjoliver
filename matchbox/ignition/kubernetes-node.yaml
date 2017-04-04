@@ -825,7 +825,11 @@ storage:
           echo "Unsealing the vault..."
           while true
           do
-            /opt/bin/consul kv get unsealkey1 | xargs /opt/bin/vault unseal
+            /opt/bin/vault status
+            if [ $? -eq 2 ]
+            then
+              /opt/bin/consul kv get unsealkey1 | xargs /opt/bin/vault unseal
+            fi
             sleep 5
           done
 
