@@ -384,6 +384,19 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
+    - name: vault-unseal.service
+      enable: true
+      contents: |
+        [Unit]
+        After=vault.service
+        [Service]
+        ExecStartPre=/opt/bin/vault version
+        ExecStart=/opt/bin/vault-unseal
+        RestartSec=2
+        Restart=always
+        [Install]
+        WantedBy=multi-user.target
+
     - name: lifecycle-update.service
       contents: |
         [Unit]
@@ -794,6 +807,27 @@ storage:
           echo "remove the lock"
           locksmithctl -endpoint {{.kubernetes_etcd_servers}} unlock "${REQUEST_RAW_QUERY}" || true
           echo "$(hostname) is ready"
+
+    - path: /opt/bin/vault-unseal
+      mode: 0544
+      filesystem: root
+      contents:
+        inline: |
+          #!/usr/bin/env bash
+
+          export VAULT_ADDR="http://127.0.0.1:8200"
+
+          until /opt/bin/vault init -check
+          do
+              sleep 10
+          done
+
+          echo "Unsealing the vault..."
+          while true
+          do
+            /opt/bin/consul kv get unsealkey1 | xargs /opt/bin/vault unseal
+            sleep 5
+          done
 
 
 networkd:
