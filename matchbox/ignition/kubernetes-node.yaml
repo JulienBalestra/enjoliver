@@ -70,28 +70,6 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
-    - name: install-vault.service
-      enable: true
-      contents: |
-        [Unit]
-        Requires=network-online.target
-        After=network-online.target
-        AssertFileIsExecutable=!/opt/rootfs/usr/bin/vault
-        [Service]
-        Type=oneshot
-        Environment=IMAGE={{.vault_image_url}}
-        ExecStartPre=/usr/bin/rkt fetch --insecure-options=all $IMAGE
-        ExecStartPre=/usr/bin/rkt image export $IMAGE /tmp/%p.aci
-        ExecStartPre=/usr/bin/rkt image rm $IMAGE
-        ExecStartPre=/usr/bin/tar -C /opt/rootfs -xvf /tmp/%p.aci --strip-components=1
-        ExecStartPre=/bin/rm -v /tmp/%p.aci
-
-        ExecStart=/usr/bin/ln -sfv /opt/rootfs/usr/bin/vault /opt/bin/vault
-        ExecReload=-/bin/rm -v /opt/rootfs/usr/bin/vault
-        RemainAfterExit=yes
-        [Install]
-        WantedBy=multi-user.target
-
     - name: install-fleet.service
       enable: true
       contents: |
@@ -190,8 +168,6 @@ systemd:
         After=install-etcd.service
         Requires=install-consul.service
         After=install-consul.service
-        Requires=install-vault.service
-        After=install-vault.service
         Requires=install-rkt.service
         After=install-rkt.service
         Requires=install-hyperkube.service
@@ -355,48 +331,6 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
-    - name: consul.service
-      enable: true
-      contents: |
-        [Unit]
-        After=install-consul.service
-        [Service]
-        ExecStartPre=/bin/mkdir -pv /var/lib/consul
-        ExecStart=/opt/rootfs/usr/bin/consul agent \
-          -advertise={{.network.ip}} \
-          -data-dir=/var/lib/consul \
-          {{ range $element := .consul_server_ip_list }} -join {{$element}}{{end}}
-        Restart=always
-        RestartSec=10
-        [Install]
-        WantedBy=multi-user.target
-
-    - name: vault.service
-      enable: true
-      contents: |
-        [Unit]
-        After=install-vault.service
-        After=consul.service
-        [Service]
-        ExecStart=/opt/rootfs/usr/bin/vault server -config=/etc/vault.d/
-        Restart=always
-        RestartSec=10
-        [Install]
-        WantedBy=multi-user.target
-
-    - name: vault-unseal.service
-      enable: true
-      contents: |
-        [Unit]
-        After=vault.service
-        [Service]
-        ExecStartPre=/opt/bin/vault version
-        ExecStart=/opt/bin/vault-unseal
-        RestartSec=2
-        Restart=always
-        [Install]
-        WantedBy=multi-user.target
-
     - name: lifecycle-update.service
       contents: |
         [Unit]
@@ -529,7 +463,6 @@ storage:
           RKT_IMAGE_URL='{{.rkt_image_url}}'
           ROLES='{{.roles}}'
           SELECTOR_MAC='{{.selector.mac}}'
-          VAULT_IMAGE_URL='{{.vault_image_url}}'
 
     - path: /etc/hostname
       filesystem: root
@@ -572,21 +505,6 @@ storage:
             "type": "macvlan",
             "master": "bond0",
             "ipam": {{ .cni }}
-          }
-
-    - path: /etc/vault.d/config.json
-      filesystem: root
-      mode: 0644
-      contents:
-        inline: |
-          storage "consul" {
-            address = "127.0.0.1:8500"
-            path    = "vault"
-          }
-
-          listener "tcp" {
-            address     = "127.0.0.1:8200"
-            tls_disable = 1
           }
 
     - path: /etc/fleet/fleet.conf
@@ -656,7 +574,6 @@ storage:
       contents:
         inline: |
            export PATH=/opt/bin:$PATH
-           export VAULT_ADDR=http://127.0.0.1:8200
 
     - path: /etc/modules-load.d/network.conf
       mode: 0644
@@ -808,32 +725,6 @@ storage:
           echo "remove the lock"
           locksmithctl -endpoint {{.kubernetes_etcd_servers}} unlock "${REQUEST_RAW_QUERY}" || true
           echo "$(hostname) is ready"
-
-    - path: /opt/bin/vault-unseal
-      mode: 0544
-      filesystem: root
-      contents:
-        inline: |
-          #!/usr/bin/env bash
-
-          export VAULT_ADDR="http://127.0.0.1:8200"
-
-          until /opt/bin/vault init -check
-          do
-              sleep 10
-          done
-
-          echo "Unsealing the vault..."
-          while true
-          do
-            /opt/bin/vault status
-            if [ $? -eq 2 ]
-            then
-              /opt/bin/consul kv get unsealkey1 | xargs /opt/bin/vault unseal
-            fi
-            sleep 5
-          done
-
 
 networkd:
   units:
