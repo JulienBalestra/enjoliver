@@ -117,7 +117,7 @@ def healthz(application, smart: smartdb.SmartClient, request):
 
     @smartdb.cockroach_transaction
     def op():
-        with smart.new_session() as session:
+        with smart.new_session(snap=True) as session:
             return crud.health_check(session, ts=time.time(), who=request.remote_addr)
 
     try:
