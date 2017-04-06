@@ -136,7 +136,6 @@ class FetchDiscovery(object):
 
 def health_check(session, ts, who):
     """
-    During the health check, this update the only row stored inside the database to check the health of the db
     :param session: a constructed session
     :param ts: timestamp
     :param who: the host who asked for the check
@@ -147,9 +146,12 @@ def health_check(session, ts, who):
     health.host = who
     session.add(health)
     session.commit()
+    return True
+
+
+def health_check_purge(session, ts):
     session.query(Healthz).filter(Healthz.ts < ts).delete()
     session.commit()
-    return True
 
 
 class InjectDiscovery(object):

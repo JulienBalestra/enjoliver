@@ -688,3 +688,9 @@ class TestModel(unittest.TestCase):
         for i in range(10):
             with self.smart.new_session() as session:
                 crud.health_check(session, time.time(), "unittest")
+
+        with self.smart.new_session() as session:
+            crud.health_check_purge(session, time.time())
+
+        with self.smart.new_session() as session:
+            crud.health_check_purge(session, time.time())
