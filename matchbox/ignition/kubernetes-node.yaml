@@ -765,66 +765,50 @@ storage:
           test "${REQUEST_RAW_QUERY}" || exit 2
           test "${NETWORK_IP}" || exit 2
 
-          for i in {0..60}
+          until /opt/bin/consul members
           do
-              etcdctl --endpoint {{.kubernetes_etcd_servers}} cluster-health && break
-              sleep 2
+            echo "waiting consul"
+            sleep 1
           done
 
-          for i in {0..60}
+          until etcdctl --endpoint {{.kubernetes_etcd_servers}} cluster-health
           do
-              etcdctl --endpoint {{.fleet_etcd_servers}} cluster-health && break
-              sleep 2
+              echo "waiting etcd {{.kubernetes_etcd_servers}}"
+              sleep 1
           done
 
-          for i in {0..60}
+          until etcdctl --endpoint {{.fleet_etcd_servers}} cluster-health
           do
-              echo "127.0.0.1:{{.kubernetes_api_server_port}}/healthz"
-              curl -fs 127.0.0.1:{{.kubernetes_api_server_port}}/healthz -w '\n' && break
-              sleep 2
+              echo "waiting {{.fleet_etcd_servers}}"
+              sleep 1
           done
 
-          for i in {0..60}
+          until curl -fs 127.0.0.1:{{.kubernetes_api_server_port}}/healthz
           do
-              echo "127.0.0.1:10248/healthz"
-              curl -fs 127.0.0.1:10248/healthz -w '\n' && break
-              sleep 2
+              echo "waiting 127.0.0.1:{{.kubernetes_api_server_port}}/healthz"
+              sleep 1
           done
 
-          for i in {0..60}
+          until curl -fs 127.0.0.1:10248/healthz
           do
-              echo "Machine IP registered in Fleet"
-              fleetctl --endpoint http://127.0.0.1:4001 --driver etcd list-machines \
-                --fields ip --no-legend | grep -c ${NETWORK_IP} && break
-              sleep 2
+              127.0.0.1:10248/healthz
+              sleep 1
           done
 
-          set -e
-
-          etcdctl --endpoint {{.kubernetes_etcd_servers}} cluster-health
-          etcdctl --endpoint {{.fleet_etcd_servers}} cluster-health
-
-          echo "127.0.0.1:{{.kubernetes_api_server_port}}/healthz"
-          curl -fs 127.0.0.1:{{.kubernetes_api_server_port}}/healthz -w '\n'
-
-          echo "127.0.0.1:10248/healthz"
-          curl -fs 127.0.0.1:10248/healthz -w '\n'
-
-          echo "Machine IP registered in Fleet"
-          fleetctl --endpoint http://127.0.0.1:4001 --driver etcd list-machines \
-                  --fields ip --no-legend | grep -c ${NETWORK_IP}
-
-          set +e
-
-          for i in {0..30}
+          until fleetctl --endpoint {{.fleet_etcd_servers}} --driver etcd list-machines \
+                                --fields ip --no-legend | grep -c ${NETWORK_IP}
           do
-            /opt/bin/kubectl uncordon {{.kubernetes_node_name}} && break
-            sleep 2
+              echo "waiting ${NETWORK_IP} in {{.fleet_etcd_servers}} list-machines"
+              sleep 1
+          done
+
+          until /opt/bin/kubectl uncordon {{.kubernetes_node_name}}
+          do
+            echo "waiting kubectl uncordon {{.kubernetes_node_name}}"
+            sleep 1
           done
 
           set -e
-
-          /opt/bin/kubectl uncordon {{.kubernetes_node_name}}
 
           echo "remove the lock"
           locksmithctl -endpoint {{.kubernetes_etcd_servers}} unlock "${REQUEST_RAW_QUERY}" || true
