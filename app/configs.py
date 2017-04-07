@@ -132,6 +132,16 @@ class EnjoliverConfig(object):
         self.fleet_etcd_servers = self.config_override("fleet_etcd_servers",
                                                        "http://127.0.0.1:%d" % self.fleet_etcd_client_port)
 
+        # Vault Etcd
+        self.vault_etcd_data_dir = self.config_override("vault_etcd_data_dir", "/var/lib/etcd3/vault")
+        self.vault_etcd_client_port = int(self.config_override("vault_etcd_client_port", 4001))
+        self.vault_etcd_peer_port = int(self.config_override("vault_etcd_peer_port", 7001))
+        self.vault_etcd_listen_client_urls = self.config_override(
+            "vault_etcd_listen_client_urls", "https://0.0.0.0:%s" % self.vault_etcd_client_port)
+
+        self.vault_etcd_servers = self.config_override("vault_etcd_servers",
+                                                       "https://127.0.0.1:%d" % self.vault_etcd_client_port)
+
         # Use a real registry in production like:
         # enjoliver.local/hyperkube:latest
         self.lldp_image_url = self.config_override("lldp_image_url", "enjoliver.local/lldp:latest")
