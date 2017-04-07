@@ -52,7 +52,7 @@ class SmartClient(object):
             with self.new_session_maker(conn) as sm:
                 session = sm()
                 if isinstance(self, _MultipleEndpoints) and snap:
-                    session.execute(text("SET TRANSACTION ISOLATION LEVEL SNAPSHOT;"))
+                    session.execute(text("SET TRANSACTION ISOLATION LEVEL SNAPSHOT"))
                 try:
                     yield session
                 finally:
@@ -73,7 +73,7 @@ class SmartClient(object):
         raise NotImplementedError
 
     @contextmanager
-    def lazy_session(self):
+    def lazy_session(self, snap=False):
         if not self.lazy_engine:
             self.lazy_engine = self.engines[0]
         with self.new_session_maker(self.lazy_engine) as sm:
