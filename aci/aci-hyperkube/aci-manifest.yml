@@ -1,4 +1,4 @@
-name: enjoliver.local/hyperkube:1.6.0
+name: enjoliver.local/hyperkube:1.6.1
 
 builder:
   dependencies:

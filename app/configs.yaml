@@ -44,7 +44,7 @@ etcd_member_kubernetes_control_plane_expected_nb: 3
 kubernetes_etcd_data_dir: '/var/lib/etcd3/kubernetes'
 kubernetes_etcd_client_port: 2379
 kubernetes_etcd_peer_port: 2380
-kubernetes_etcd_listen_client_urls: "http://0.0.0.0:2379"
+kubernetes_etcd_listen_client_urls: "https://0.0.0.0:2379"
 
 fleet_etcd_data_dir: '/var/lib/etcd3/fleet'
 fleet_etcd_client_port: 4001
@@ -67,7 +67,7 @@ range_nb_ips: 253
 sub_ips: 256
 
 lldp_image_url: 'enjoliver.local/lldp:latest'
-hyperkube_image_url: 'enjoliver.local/hyperkube:1.6.0'
+hyperkube_image_url: 'enjoliver.local/hyperkube:1.6.1'
 rkt_image_url: 'enjoliver.local/rkt:1.25.0'
 etcd_image_url: 'enjoliver.local/etcd:3.1.5'
 fleet_image_url: 'enjoliver.local/fleet:1.0.0'

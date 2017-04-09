@@ -145,14 +145,9 @@ class ConfigSyncSchedules(object):
         e = ["%s=http{}://%s:%d".format("s" if secure else "") % (k, k, ec_value) for k in ips]
         return ",".join(e)
 
-    @staticmethod
-    def order_consul_ips(ips):
-        ips.sort()
-        return ips
-
     @property
     def kubernetes_etcd_initial_cluster(self):
-        return self.order_etcd_named(self.etcd_member_ip_list, EC.kubernetes_etcd_peer_port)
+        return self.order_etcd_named(self.etcd_member_ip_list, EC.kubernetes_etcd_peer_port, secure=True)
 
     @property
     def vault_etcd_initial_cluster(self):
@@ -164,7 +159,7 @@ class ConfigSyncSchedules(object):
 
     @property
     def kubernetes_etcd_member_client_uri_list(self):
-        return self.order_http_uri(self.etcd_member_ip_list, EC.kubernetes_etcd_client_port)
+        return self.order_http_uri(self.etcd_member_ip_list, EC.kubernetes_etcd_client_port, secure=True)
 
     @property
     def vault_etcd_member_client_uri_list(self):
@@ -176,7 +171,7 @@ class ConfigSyncSchedules(object):
 
     @property
     def kubernetes_etcd_member_peer_uri_list(self):
-        return self.order_http_uri(self.etcd_member_ip_list, EC.kubernetes_etcd_peer_port)
+        return self.order_http_uri(self.etcd_member_ip_list, EC.kubernetes_etcd_peer_port, secure=True)
 
     @property
     def vault_etcd_member_peer_uri_list(self):
@@ -189,10 +184,6 @@ class ConfigSyncSchedules(object):
     @property
     def kubernetes_control_plane(self):
         return self.order_http_uri(self.kubernetes_control_plane_ip_list, EC.kubernetes_api_server_port)
-
-    @property
-    def consul_server_ip_list(self):
-        return self.order_consul_ips(self.etcd_member_ip_list)
 
     def produce_matchbox_data(self, marker, i, m, automatic_name, update_extra_metadata=None):
         fqdn = None
@@ -213,7 +204,7 @@ class ConfigSyncSchedules(object):
             "vault_etcd_initial_cluster": self.vault_etcd_initial_cluster,
             "fleet_etcd_initial_cluster": self.fleet_etcd_initial_cluster,
 
-            "kubernetes_etcd_initial_advertise_peer_urls": "http://%s:%d" % (
+            "kubernetes_etcd_initial_advertise_peer_urls": "https://%s:%d" % (
                 m["ipv4"], EC.kubernetes_etcd_peer_port),
             "vault_etcd_initial_advertise_peer_urls": "https://%s:%d" % (
                 m["ipv4"], EC.vault_etcd_peer_port),
@@ -232,7 +223,7 @@ class ConfigSyncSchedules(object):
             "vault_etcd_client_port": EC.vault_etcd_client_port,
             "fleet_etcd_client_port": EC.fleet_etcd_client_port,
 
-            "kubernetes_etcd_advertise_client_urls": "http://%s:%d" % (
+            "kubernetes_etcd_advertise_client_urls": "https://%s:%d" % (
                 m["ipv4"], EC.kubernetes_etcd_client_port),
             "vault_etcd_advertise_client_urls": "https://%s:%d" % (
                 m["ipv4"], EC.vault_etcd_client_port),
@@ -249,11 +240,10 @@ class ConfigSyncSchedules(object):
             "kubernetes_node_name": "%s" % m["ipv4"] if fqdn == automatic_name else fqdn,
             "kubernetes_service_cluster_ip_range": EC.kubernetes_service_cluster_ip_range,
 
-            # Consul
-            "consul_server_ip_list": self.consul_server_ip_list,
-
             # Vault are located with the etcd members
-            "vault_ip_list": self.etcd_member_ip_list,
+            "vault_ip_list": ",".join(self.etcd_member_ip_list),
+
+            "etcd_member_kubernetes_control_plane_ip_list": ",".join(self.etcd_member_ip_list),
 
             "hyperkube_image_url": EC.hyperkube_image_url,
             "rkt_image_url": EC.rkt_image_url,

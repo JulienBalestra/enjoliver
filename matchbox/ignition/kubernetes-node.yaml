@@ -48,6 +48,28 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
+    - name: install-vault.service
+      enable: true
+      contents: |
+        [Unit]
+        Requires=network-online.target
+        After=network-online.target
+        AssertFileIsExecutable=!/opt/rootfs/usr/bin/vault
+        [Service]
+        Type=oneshot
+        Environment=IMAGE={{.vault_image_url}}
+        ExecStartPre=/usr/bin/rkt fetch --insecure-options=all $IMAGE
+        ExecStartPre=/usr/bin/rkt image export $IMAGE /tmp/%p.aci
+        ExecStartPre=/usr/bin/rkt image rm $IMAGE
+        ExecStartPre=/usr/bin/tar -C /opt/rootfs -xvf /tmp/%p.aci --strip-components=1
+        ExecStartPre=/bin/rm -v /tmp/%p.aci
+
+        ExecStart=/usr/bin/ln -sfv /opt/rootfs/usr/bin/vault /opt/bin/vault
+        ExecReload=-/bin/rm -v /opt/rootfs/usr/bin/vault
+        RemainAfterExit=yes
+        [Install]
+        WantedBy=multi-user.target
+
     - name: install-fleet.service
       enable: true
       contents: |
@@ -144,6 +166,8 @@ systemd:
         After=install-fleet.service
         Requires=install-etcd.service
         After=install-etcd.service
+        Requires=install-vault.service
+        After=install-vault.service
         Requires=install-rkt.service
         After=install-rkt.service
         Requires=install-hyperkube.service
@@ -178,6 +202,41 @@ systemd:
       mask: true
       enable: false
 
+    - name: vault.service
+      enable: true
+      contents: |
+        [Unit]
+        After=install-vault.service
+        After=etcd3@vault.service
+        [Service]
+        ExecStart=/opt/rootfs/usr/bin/vault server -config=/etc/vault.d/
+        Restart=always
+        RestartSec=5
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: vault-token-client@etcd-kubernetes.service
+      enable: true
+      contents: |
+        [Service]
+        ExecStartPre=/bin/mkdir -pv /etc/vault.d/%i
+        ExecStart=/opt/bin/vault-token %i client
+        RestartSec=60
+        Restart=always
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: vault-certs-client@etcd-kubernetes.service
+      enable: true
+      contents: |
+        [Service]
+        EnvironmentFile=/etc/vault.d/etcd-kubernetes/client.token
+        ExecStart=/opt/bin/vault-certs %i client
+        RestartSec=60
+        Restart=always
+        [Install]
+        WantedBy=multi-user.target
+
     - name: etcd3@kubernetes.service
       enable: true
       contents: |
@@ -187,10 +246,17 @@ systemd:
 
         [Service]
         Type=notify
+        ExecStartPre=/bin/ls -l \
+          /etc/vault.d/etcd-kubernetes/client.certificate \
+          /etc/vault.d/etcd-kubernetes/client.private_key \
+          /etc/vault.d/etcd-kubernetes/client.issuing_ca
         ExecStart=/opt/rootfs/usr/bin/etcd \
           grpc-proxy start \
           --endpoints={{ .kubernetes_etcd_member_client_uri_list }} \
-          --listen-addr="127.0.0.1:{{.kubernetes_etcd_client_port}}"
+          --listen-addr="127.0.0.1:{{.kubernetes_etcd_client_port}}" \
+          --cert="/etc/vault.d/etcd-kubernetes/client.certificate" \
+          --key="/etc/vault.d/etcd-kubernetes/client.private_key" \
+          --cacert="/etc/vault.d/etcd-kubernetes/client.issuing_ca"
         RestartSec=15s
         Restart=on-failure
         LimitNOFILE=65826
@@ -438,6 +504,7 @@ storage:
           RKT_IMAGE_URL='{{.rkt_image_url}}'
           ROLES='{{.roles}}'
           SELECTOR_MAC='{{.selector.mac}}'
+          VAULT_IMAGE_URL='{{.vault_image_url}}'
 
     - path: /etc/hostname
       filesystem: root
@@ -635,39 +702,42 @@ storage:
 
           test "${REQUEST_RAW_QUERY}" || exit 2
           test "${NETWORK_IP}" || exit 2
+          export PATH=/opt/rootfs/usr/bin:/opt/bin/:${PATH}
 
-          until etcdctl --endpoint {{.kubernetes_etcd_servers}} cluster-health
+          set -o pipefail
+
+          until ETCDCTL_API=3 etcdctl --endpoints http://127.0.0.1:{{.kubernetes_etcd_client_port}} endpoint health
           do
-              echo "waiting etcd {{.kubernetes_etcd_servers}}"
+              echo "waiting etcd http://127.0.0.1:{{.kubernetes_etcd_client_port}}"
               sleep 1
           done
 
-          until etcdctl --endpoint {{.fleet_etcd_servers}} cluster-health
+          until etcdctl --endpoints http://127.0.0.1:{{.fleet_etcd_client_port}} cluster-health
           do
-              echo "waiting {{.fleet_etcd_servers}}"
+              echo "waiting http://127.0.0.1:{{.fleet_etcd_client_port}}"
               sleep 1
           done
 
-          until curl -fs 127.0.0.1:{{.kubernetes_api_server_port}}/healthz
+          until curl -fs http://127.0.0.1:{{.kubernetes_api_server_port}}/healthz
           do
-              echo "waiting 127.0.0.1:{{.kubernetes_api_server_port}}/healthz"
+              echo "waiting http://127.0.0.1:{{.kubernetes_api_server_port}}/healthz"
               sleep 1
           done
 
-          until curl -fs 127.0.0.1:10248/healthz
+          until curl -fs http://127.0.0.1:10248/healthz
           do
-              127.0.0.1:10248/healthz
+              echo "waiting http://127.0.0.1:10248/healthz"
               sleep 1
           done
 
-          until fleetctl --endpoint {{.fleet_etcd_servers}} --driver etcd list-machines \
+          until fleetctl --endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} --driver etcd list-machines \
                                 --fields ip --no-legend | grep -c ${NETWORK_IP}
           do
               echo "waiting ${NETWORK_IP} in {{.fleet_etcd_servers}} list-machines"
               sleep 1
           done
 
-          until /opt/bin/kubectl uncordon {{.kubernetes_node_name}}
+          until kubectl uncordon {{.kubernetes_node_name}}
           do
             echo "waiting kubectl uncordon {{.kubernetes_node_name}}"
             sleep 1
@@ -676,8 +746,102 @@ storage:
           set -e
 
           echo "remove the lock"
-          locksmithctl -endpoint {{.kubernetes_etcd_servers}} unlock "${REQUEST_RAW_QUERY}" || true
-          echo "$(hostname) is ready"
+          locksmithctl -endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} unlock "${REQUEST_RAW_QUERY}" || true
+          echo "$(hostname) {{.network.ip}} is ready"
+
+    - path: /opt/bin/vault-token
+      mode: 0544
+      filesystem: root
+      contents:
+        inline: |
+          #!/usr/bin/env bash
+
+          export PATH=/opt/bin:${PATH}
+          set -o pipefail
+
+          test ${1} || {
+            echo 'missing $1 eg: etcd-kubernetes'
+            exit 2
+          }
+          test ${2} || {
+            echo 'missing $2 eg: peer'
+            exit 2
+          }
+
+          while true
+          do
+            for ve in $(echo -n {{ .vault_etcd_member_client_uri_list }} | tr ',' ' ')
+            do
+              REQ="${ve}/v2/keys/token/${1}/${2}"
+              echo ${REQ}
+
+              TOKEN=$(curl --insecure -fL ${REQ} | jq -re .node.value)
+              if [ $? -eq 0 ]
+              then
+                echo "TOKEN=${TOKEN}" > /etc/vault.d/${1}/${2}.new
+
+                cmp /etc/vault.d/${1}/${2}.token /etc/vault.d/${1}/${2}.new
+                if [ $? -eq 0 ]
+                then
+                  echo "/etc/vault.d/${1}/${2}.token is up-to-date"
+                  exit 0
+                else
+                  mv -v /etc/vault.d/${1}/${2}.new /etc/vault.d/${1}/${2}.token
+                  exit 0
+                fi
+              fi
+            done
+            sleep 5
+          done
+
+    - path: /opt/bin/vault-certs
+      mode: 0544
+      filesystem: root
+      contents:
+        inline: |
+          #!/usr/bin/env bash
+
+          export PATH=/opt/bin:${PATH}
+          set -o pipefail
+
+          test ${1} || {
+            echo 'missing $1 eg: etcd-kubernetes'
+            exit 2
+          }
+          test ${2} || {
+            echo 'missing $2 eg: peer'
+            exit 2
+          }
+          test ${TOKEN} || {
+            echo 'missing ${TOKEN}'
+            exit 2
+          }
+
+          # TODO consul-template or check if renew
+          test -f /etc/vault.d/${1}/${2}-certs.json && exit 0
+
+          while true
+          do
+            for ve in $(echo -n {{ .vault_ip_list }} | tr ',' ' ')
+            do
+              export VAULT_ADDR="http://${ve}:8200"
+              vault auth ${TOKEN} || continue
+
+              vault write -format=json pki/${1}/issue/${2} \
+                common_name={{.network.ip}} \
+                ip_sans={{.etcd_member_kubernetes_control_plane_ip_list}} \
+                  > /etc/vault.d/${1}/${2}-certs.json
+              if [ $? -eq 0 ]
+              then
+                for item in certificate issuing_ca private_key
+                do
+                  jq -re .data.${item} /etc/vault.d/${1}/${2}-certs.json > /etc/vault.d/${1}/${2}.${item}
+                done
+                exit 0
+              fi
+            done
+            sleep 5
+          done
 
 networkd:
   units:

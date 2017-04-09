@@ -117,7 +117,7 @@ class EnjoliverConfig(object):
         self.kubernetes_etcd_client_port = int(self.config_override("kubernetes_etcd_client_port", 2379))
         self.kubernetes_etcd_peer_port = int(self.config_override("kubernetes_etcd_peer_port", 2380))
         self.kubernetes_etcd_listen_client_urls = self.config_override(
-            "kubernetes_etcd_listen_client_urls", "http://0.0.0.0:%s" % self.kubernetes_etcd_client_port)
+            "kubernetes_etcd_listen_client_urls", "https://0.0.0.0:%s" % self.kubernetes_etcd_client_port)
 
         self.kubernetes_etcd_servers = self.config_override("kubernetes_etcd_servers",
                                                             "http://127.0.0.1:%d" % self.kubernetes_etcd_client_port)
@@ -145,7 +145,7 @@ class EnjoliverConfig(object):
         # Use a real registry in production like:
         # enjoliver.local/hyperkube:latest
         self.lldp_image_url = self.config_override("lldp_image_url", "enjoliver.local/lldp:latest")
-        self.hyperkube_image_url = self.config_override("hyperkube_image_url", "enjoliver.local/hyperkube:1.6.0")
+        self.hyperkube_image_url = self.config_override("hyperkube_image_url", "enjoliver.local/hyperkube:1.6.1")
         self.rkt_image_url = self.config_override("rkt_image_url", "enjoliver.local/rkt:1.25.0")
         self.etcd_image_url = self.config_override("etcd_image_url", "enjoliver.local/etcd:3.1.5")
         self.fleet_image_url = self.config_override("fleet_image_url", "enjoliver.local/fleet:1.0.0")
