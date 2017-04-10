@@ -111,6 +111,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     os.environ["ENJOLIVER_API_URI"] = api_uri
     os.environ["ENJOLIVER_MATCHBOX_PATH"] = test_matchbox_path
     os.environ["ENJOLIVER_MATCHBOX_ASSETS"] = assets_path
+    os.environ["ENJOLIVER_KUBERNETES_APISERVER_INSECURE_BIND_ADDRESS"] = "0.0.0.0"
     ec = configs.EnjoliverConfig(importer=__file__)
 
     # Memory needed for RAM nodes

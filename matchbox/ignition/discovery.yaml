@@ -22,6 +22,10 @@ systemd:
       enable: false
       mask: true
 
+    - name: update-engine-stub.service
+      enable: false
+      mask: true
+
     - name: lldpd.service
       enable: true
       contents: |

@@ -13,6 +13,10 @@ systemd:
       enable: false
       mask: true
 
+    - name: update-engine-stub.service
+      enable: false
+      mask: true
+
     - name: clean-cni.service
       enable: true
       contents: |
@@ -194,7 +198,7 @@ systemd:
     - name: ntpd.service
       enable: true
 
-    - name: etcd-operator@kubernetes.service
+    - name: etcd-operator@vault.service
       enable: true
       contents: |
         [Unit]
@@ -210,7 +214,7 @@ systemd:
         [Install]
         RequiredBy=multi-user.target
 
-    - name: etcd-operator@vault.service
+    - name: etcd-operator@kubernetes.service
       enable: true
       contents: |
         [Unit]
@@ -568,7 +572,8 @@ storage:
               command:
               - /hyperkube
               - apiserver
-              - --insecure-bind-address=127.0.0.1
+              - --advertise-address={{.network.ip}}
+              - --insecure-bind-address={{.kubernetes_apiserver_insecure_bind_address}}
               - --etcd-servers=http://127.0.0.1:{{.kubernetes_etcd_client_port}}
               - --allow-privileged=true
               - --service-cluster-ip-range={{.kubernetes_service_cluster_ip_range}}
@@ -703,11 +708,9 @@ storage:
           FLEET_ETCD_MEMBER_CLIENT_URI_LIST='{{.fleet_etcd_member_client_uri_list}}'
           FLEET_ETCD_MEMBER_PEER_URI_LIST='{{.fleet_etcd_member_peer_uri_list}}'
           FLEET_ETCD_PEER_PORT='{{.fleet_etcd_peer_port}}'
-          FLEET_ETCD_SERVERS='{{.fleet_etcd_servers}}'
           FLEET_IMAGE_URL='{{.fleet_image_url}}'
           HOSTNAME='{{.hostname}}'
           HYPERKUBE_IMAGE_URL='{{.hyperkube_image_url}}'
-          KUBERNETES_ADVERTISE_IP='{{.kubernetes_advertise_ip}}'
           KUBERNETES_APISERVER_COUNT='{{.kubernetes_apiserver_count}}'
           KUBERNETES_API_SERVER_PORT='{{.kubernetes_api_server_port}}'
           KUBERNETES_ETCD_ADVERTISE_CLIENT_URLS='{{.kubernetes_etcd_advertise_client_urls}}'
@@ -718,7 +721,6 @@ storage:
           KUBERNETES_ETCD_MEMBER_CLIENT_URI_LIST='{{.kubernetes_etcd_member_client_uri_list}}'
           KUBERNETES_ETCD_MEMBER_PEER_URI_LIST='{{.kubernetes_etcd_member_peer_uri_list}}'
           KUBERNETES_ETCD_PEER_PORT='{{.kubernetes_etcd_peer_port}}'
-          KUBERNETES_ETCD_SERVERS='{{.kubernetes_etcd_servers}}'
           KUBERNETES_NODE_IP='{{.kubernetes_node_ip}}'
           KUBERNETES_NODE_NAME='{{.kubernetes_node_name}}'
           KUBERNETES_SERVICE_CLUSTER_IP_RANGE='{{.kubernetes_service_cluster_ip_range}}'
@@ -740,7 +742,6 @@ storage:
           VAULT_ETCD_MEMBER_CLIENT_URI_LIST='{{.fleet_etcd_member_client_uri_list}}'
           VAULT_ETCD_MEMBER_PEER_URI_LIST='{{.fleet_etcd_member_peer_uri_list}}'
           VAULT_ETCD_PEER_PORT='{{.fleet_etcd_peer_port}}'
-          VAULT_ETCD_SERVERS='{{.fleet_etcd_servers}}'
           VAULT_ETCD_ADVERTISE_CLIENT_URLS='{{.vault_etcd_advertise_client_urls}}'
           VAULT_ETCD_CLIENT_PORT='{{.vault_etcd_client_port}}'
           VAULT_ETCD_DATA_DIR='{{.vault_etcd_data_dir}}'
@@ -749,7 +750,6 @@ storage:
           VAULT_ETCD_MEMBER_CLIENT_URI_LIST='{{.vault_etcd_member_client_uri_list}}'
           VAULT_ETCD_MEMBER_PEER_URI_LIST='{{.vault_etcd_member_peer_uri_list}}'
           VAULT_ETCD_PEER_PORT='{{.vault_etcd_peer_port}}'
-          VAULT_ETCD_SERVERS='{{.vault_etcd_servers}}'
           VAULT_IMAGE_URL='{{.vault_image_url}}'
 
     - path: /etc/hostname
@@ -1087,7 +1087,7 @@ storage:
 
           until etcdctl -no-sync --endpoints http://127.0.0.1:{{.vault_etcd_client_port}} cluster-health
           do
-              echo "waiting etcd {{.vault_etcd_servers}}"
+              echo "waiting etcd http://127.0.0.1:{{.vault_etcd_client_port}}"
               sleep 1
           done
 
@@ -1122,7 +1122,7 @@ storage:
           until fleetctl --endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} --driver etcd list-machines \
                                 --fields ip --no-legend | grep -c ${NETWORK_IP}
           do
-              echo "waiting ${NETWORK_IP} in {{.fleet_etcd_servers}} list-machines"
+              echo "waiting ${NETWORK_IP} in http://127.0.0.1:{{.fleet_etcd_client_port}} list-machines"
               sleep 1
           done
 
@@ -1161,7 +1161,7 @@ storage:
           vault unseal ${UNSEALKEY1}
           until vault auth ${ROOTTOKEN}
           do
-            sleep 1
+            sleep 0.5
           done
           etcdctl --no-sync --endpoints http://127.0.0.1:{{.vault_etcd_client_port}} \
             set initier "$(hostname)-${{.network.ip}}"
@@ -1199,6 +1199,7 @@ storage:
                 set token/etcd-kubernetes/client
 
           openssl genrsa 4096 | vault write "secret/kubernetes/service-accounts" key=-
+          sleep 1
 
           vault mount -path pki/kubernetes pki
           vault mount-tune -max-lease-ttl=87600h pki/kubernetes

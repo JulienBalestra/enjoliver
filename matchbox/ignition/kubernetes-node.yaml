@@ -13,6 +13,10 @@ systemd:
       enable: false
       mask: true
 
+    - name: update-engine-stub.service
+      enable: false
+      mask: true
+
     - name: clean-cni.service
       enable: true
       contents: |
@@ -462,7 +466,6 @@ storage:
           FLEET_ETCD_INITIAL_ADVERTISE_PEER_URLS='{{.fleet_etcd_initial_advertise_peer_urls}}'
           FLEET_ETCD_INITIAL_CLUSTER='{{.fleet_etcd_initial_cluster}}'
           FLEET_ETCD_MEMBER_CLIENT_URI_LIST='{{.fleet_etcd_member_client_uri_list}}'
-          FLEET_ETCD_SERVERS='{{.fleet_etcd_servers}}'
           FLEET_IMAGE_URL='{{.fleet_image_url}}'
           HOSTNAME='{{.hostname}}'
           HYPERKUBE_IMAGE_URL='{{.hyperkube_image_url}}'
@@ -473,7 +476,6 @@ storage:
           KUBERNETES_ETCD_INITIAL_ADVERTISE_PEER_URLS='{{.kubernetes_etcd_initial_advertise_peer_urls}}'
           KUBERNETES_ETCD_INITIAL_CLUSTER='{{.kubernetes_etcd_initial_cluster}}'
           KUBERNETES_ETCD_MEMBER_CLIENT_URI_LIST='{{.kubernetes_etcd_member_client_uri_list}}'
-          KUBERNETES_ETCD_SERVERS='{{.kubernetes_etcd_servers}}'
           KUBERNETES_NODE_IP='{{.kubernetes_node_ip}}'
           KUBERNETES_NODE_NAME='{{.kubernetes_node_name}}'
           KUBERNETES_SERVICE_CLUSTER_IP_RANGE='{{.kubernetes_service_cluster_ip_range}}'
@@ -716,7 +718,7 @@ storage:
           until fleetctl --endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} --driver etcd list-machines \
                                 --fields ip --no-legend | grep -c ${NETWORK_IP}
           do
-              echo "waiting ${NETWORK_IP} in {{.fleet_etcd_servers}} list-machines"
+              echo "waiting ${NETWORK_IP} in http://127.0.0.1:{{.fleet_etcd_client_port}} list-machines"
               sleep 1
           done
 

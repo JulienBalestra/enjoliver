@@ -230,10 +230,6 @@ class ConfigSyncSchedules(object):
             "fleet_etcd_advertise_client_urls": "http://%s:%d" % (
                 m["ipv4"], EC.fleet_etcd_client_port),
 
-            "kubernetes_etcd_servers": EC.kubernetes_etcd_servers,
-            "vault_etcd_servers": EC.vault_etcd_servers,
-            "fleet_etcd_servers": EC.fleet_etcd_servers,
-
             # Kubernetes
             "kubernetes_api_server_port": EC.kubernetes_api_server_port,
             "kubernetes_node_ip": "%s" % m["ipv4"],
@@ -300,8 +296,7 @@ class ConfigSyncSchedules(object):
 
                 # K8s Control Plane
                 "kubernetes_apiserver_count": len(machine_roles),
-                "consul_bootstrap_count": len(machine_roles),
-                "kubernetes_advertise_ip": "%s" % m["ipv4"],  # TODO still usable ?
+                "kubernetes_apiserver_insecure_bind_address": EC.kubernetes_apiserver_insecure_bind_address,
             }
             self.produce_matchbox_data(
                 marker=marker,
