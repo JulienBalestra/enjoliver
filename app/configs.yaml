@@ -71,7 +71,7 @@ hyperkube_image_url: 'enjoliver.local/hyperkube:1.6.1'
 rkt_image_url: 'enjoliver.local/rkt:1.25.0'
 etcd_image_url: 'enjoliver.local/etcd:3.1.5'
 fleet_image_url: 'enjoliver.local/fleet:1.0.0'
-cni_image_url: 'enjoliver.local/cni:0.5.1'
+cni_image_url: 'enjoliver.local/cni:0.5.2'
 consul_image_url: 'enjoliver.local/consul:0.7.5'
 vault_image_url: 'enjoliver.local/vault:0.7.0'
 
