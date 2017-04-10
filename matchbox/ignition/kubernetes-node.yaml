@@ -226,13 +226,13 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
-    - name: vault-pki-client@etcd-kubernetes.service
+    - name: vault-pki-issue-client@etcd-kubernetes.service
       enable: true
       contents: |
         [Service]
         EnvironmentFile=/etc/vault.d/etcd-kubernetes/client.token
-        ExecStart=/opt/bin/vault-pki %i client
-        RestartSec=60
+        ExecStart=/opt/bin/vault-pki-issue %i client
+        RestartSec=5
         Restart=always
         [Install]
         WantedBy=multi-user.target
@@ -777,7 +777,7 @@ storage:
             sleep 5
           done
 
-    - path: /opt/bin/vault-pki
+    - path: /opt/bin/vault-pki-issue
       mode: 0544
       filesystem: root
       contents:
@@ -812,7 +812,7 @@ storage:
 
               vault write -format=json pki/${1}/issue/${2} \
                 common_name={{.network.ip}} \
-                ip_sans={{.etcd_member_kubernetes_control_plane_ip_list}} \
+                ip_sans={{.network.ip}} \
                   > /etc/vault.d/${1}/${2}-pki.json
               if [ $? -eq 0 ]
               then

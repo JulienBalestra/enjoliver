@@ -328,35 +328,35 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
-    - name: vault-pki-peer@etcd-kubernetes.service
+    - name: vault-pki-issue-peer@etcd-kubernetes.service
       enable: true
       contents: |
         [Service]
         EnvironmentFile=/etc/vault.d/etcd-kubernetes/peer.token
-        ExecStart=/opt/bin/vault-pki %i peer
-        RestartSec=60
+        ExecStart=/opt/bin/vault-pki-issue %i peer
+        RestartSec=5
         Restart=always
         [Install]
         WantedBy=multi-user.target
 
-    - name: vault-pki-client@etcd-kubernetes.service
+    - name: vault-pki-issue-client@etcd-kubernetes.service
       enable: true
       contents: |
         [Service]
         EnvironmentFile=/etc/vault.d/etcd-kubernetes/client.token
-        ExecStart=/opt/bin/vault-pki %i client
-        RestartSec=60
+        ExecStart=/opt/bin/vault-pki-issue %i client
+        RestartSec=5
         Restart=always
         [Install]
         WantedBy=multi-user.target
 
-    - name: vault-pki-kube-apiserver@kubernetes.service
+    - name: vault-pki-issue-kube-apiserver@kubernetes.service
       enable: true
       contents: |
         [Service]
         EnvironmentFile=/etc/vault.d/kubernetes/kube-apiserver.token
-        ExecStart=/opt/bin/vault-pki %i kube-apiserver
-        RestartSec=60
+        ExecStart=/opt/bin/vault-pki-issue %i kube-apiserver
+        RestartSec=5
         Restart=always
         [Install]
         WantedBy=multi-user.target
@@ -367,7 +367,7 @@ systemd:
         [Service]
         EnvironmentFile=/etc/vault.d/kubernetes/kube-apiserver.token
         ExecStart=/opt/bin/vault-secret %i service-accounts
-        RestartSec=60
+        RestartSec=5
         Restart=always
         [Install]
         WantedBy=multi-user.target
@@ -580,6 +580,9 @@ storage:
               - --tls-cert-file=/etc/secrets/kube-apiserver.certificate
               - --tls-private-key-file=/etc/secrets/kube-apiserver.private_key
               - --service-account-key-file=/etc/secrets/service-accounts.key
+              - --service-account-lookup=true
+              - --runtime-config=rbac.authorization.k8s.io/v1alpha1
+              - --authorization-mode=RBAC
               resources:
                 requests:
                   cpu: 200m
@@ -609,6 +612,7 @@ storage:
             name: kube-controller-manager
             namespace: kube-system
           spec:
+            hostNetwork: true
             containers:
             - name: kube-controller-manager
               image: {{.hyperkube_image_url}}
@@ -618,6 +622,10 @@ storage:
               - controller-manager
               - --master=http://127.0.0.1:{{.kubernetes_api_server_port}}
               - --leader-elect=true
+              - --service-account-private-key-file=/etc/secrets/service-accounts.key
+              - --cluster-signing-cert-file=/etc/secrets/kube-apiserver.certificate
+              - --cluster-signing-key-file=/etc/secrets/kube-apiserver.private_key
+              - --root-ca-file=/etc/secrets/kube-apiserver.issuing_ca
               resources:
                 requests:
                   cpu: 200m
@@ -628,7 +636,14 @@ storage:
                   port: 10252
                 initialDelaySeconds: 15
                 timeoutSeconds: 15
-            hostNetwork: true
+              volumeMounts:
+              - name: secrets
+                mountPath: /etc/secrets
+                readOnly: true
+            volumes:
+            - name: secrets
+              hostPath:
+                path: /etc/vault.d/kubernetes
 
     - path: /etc/kubernetes/manifests/kube-scheduler.yaml
       filesystem: root
@@ -1189,7 +1204,9 @@ storage:
           vault mount-tune -max-lease-ttl=87600h pki/kubernetes
           vault write pki/kubernetes/root/generate/internal common_name=kubernetes ttl=87600h # 10y
           vault write pki/kubernetes/roles/kube-apiserver allow_any_name=true max_ttl=720h # 30j
+
           vault write pki/kubernetes/roles/kubelet allow_any_name=true max_ttl=720h # 30j
+          vault write pki/kubernetes/roles/kubectl allow_any_name=true organization="system:masters" max_ttl=720h # 30j
 
           vault policy-write kubernetes/kube-apiserver - << EOF
           path "pki/kubernetes/issue/kube-apiserver" {
@@ -1202,6 +1219,18 @@ storage:
 
           vault policy-write kubernetes/kubelet - << EOF
           path "pki/kubernetes/issue/kubelet" {
+            policy = "write"
+          }
+          EOF
+
+          vault policy-write kubernetes/kubectl - << EOF
+          path "pki/kubernetes/issue/kubectl" {
+            policy = "write"
+          }
+          EOF
+
+          vault policy-write kubernetes/kubectl - << EOF
+          path "pki/kubernetes/issue/kubectl" {
             policy = "write"
           }
           EOF
@@ -1220,7 +1249,12 @@ storage:
               etcdctl --no-sync --endpoints http://127.0.0.1:{{.vault_etcd_client_port}} \
                 set token/kubernetes/kubelet
 
-
+          vault token-create -format=json \
+            -display-name kubernetes/kubectl \
+            -ttl="8760h" -orphan -period="8760h" \
+            -policy="kubernetes/kubectl" | jq -er .auth.client_token | \
+              etcdctl --no-sync --endpoints http://127.0.0.1:{{.vault_etcd_client_port}} \
+                set token/kubernetes/kubectl
 
     - path: /opt/bin/vault-token
       mode: 0544
@@ -1267,7 +1301,7 @@ storage:
             sleep 5
           done
 
-    - path: /opt/bin/vault-pki
+    - path: /opt/bin/vault-pki-issue
       mode: 0544
       filesystem: root
       contents:
