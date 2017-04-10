@@ -292,7 +292,7 @@ systemd:
         EnvironmentFile=/etc/metadata.env
         Environment=MANIFESTS=/etc/kubernetes/manifests
         Environment=ETCDCTL_API=3
-        ExecStartPre=/opt/bin/etcdctl --endpoints {{.kubernetes_etcd_servers}} endpoint health
+        ExecStartPre=/opt/bin/etcdctl --endpoints http://127.0.0.1:{{.kubernetes_etcd_client_port}} endpoint health
         ExecStartPre=/opt/rootfs/usr/bin/rkt fetch --pull-policy=update --insecure-options=all {{.hyperkube_image_url}}
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
         ExecStartPre=/bin/mkdir -pv $MANIFESTS
@@ -404,14 +404,6 @@ storage:
       filesystem: root
       mode: 0644
 
-    - path: /var/lib/kubernetes/token.csv
-      filesystem: root
-      contents:
-        inline: |
-          chAng3m3,admin,admin
-          chAng3m3,scheduler,scheduler
-          chAng3m3,kubelet,kubelet
-
     - path: /etc/kubernetes/manifests/kube-apiserver.yaml
       filesystem: root
       contents:
@@ -431,7 +423,6 @@ storage:
               - /hyperkube
               - apiserver
               - proxy
-              - --bind-address={{.network.ip}}
               - --insecure-bind-address=127.0.0.1
               - --etcd-servers=http://127.0.0.1:{{.kubernetes_etcd_client_port}}
               - --service-cluster-ip-range={{.kubernetes_service_cluster_ip_range}}
