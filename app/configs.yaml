@@ -27,7 +27,7 @@ apply_deps_delay: 60
 #gunicorn_pid_file: '/opt/enjoliver/app/gunicorn.pid'
 #plan_pid_file: '/opt/enjoliver/app/plan.pid'
 
-gunicorn_worker_type: 'gaiohttp'
+gunicorn_worker_type: 'gevent'
 gunicorn_workers: 1
 gunicorn_bind: "0.0.0.0:5000"
 

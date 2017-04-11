@@ -206,19 +206,6 @@ systemd:
       mask: true
       enable: false
 
-    - name: vault.service
-      enable: true
-      contents: |
-        [Unit]
-        After=install-vault.service
-        After=etcd3@vault.service
-        [Service]
-        ExecStart=/opt/rootfs/usr/bin/vault server -config=/etc/vault.d/
-        Restart=always
-        RestartSec=5
-        [Install]
-        WantedBy=multi-user.target
-
     - name: vault-token-client@etcd-kubernetes.service
       enable: true
       contents: |
@@ -230,12 +217,67 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
+    - name: vault-token-kubelet@kubernetes.service
+      enable: true
+      contents: |
+        [Service]
+        ExecStartPre=/bin/mkdir -pv /etc/vault.d/%i
+        ExecStart=/opt/bin/vault-token %i kubelet
+        RestartSec=60
+        Restart=always
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: vault-token-kube-apiserver@kubernetes.service
+      enable: true
+      contents: |
+        [Service]
+        ExecStartPre=/bin/mkdir -pv /etc/vault.d/%i
+        ExecStart=/opt/bin/vault-token %i kube-apiserver
+        RestartSec=60
+        Restart=always
+        [Install]
+        WantedBy=multi-user.target
+
     - name: vault-pki-issue-client@etcd-kubernetes.service
       enable: true
       contents: |
         [Service]
         EnvironmentFile=/etc/vault.d/etcd-kubernetes/client.token
         ExecStart=/opt/bin/vault-pki-issue %i client
+        RestartSec=5
+        Restart=always
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: vault-pki-issue-kubelet@kubernetes.service
+      enable: true
+      contents: |
+        [Service]
+        EnvironmentFile=/etc/vault.d/kubernetes/kubelet.token
+        ExecStart=/opt/bin/vault-pki-issue %i kubelet
+        RestartSec=5
+        Restart=always
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: vault-pki-issue-kube-apiserver@kubernetes.service
+      enable: true
+      contents: |
+        [Service]
+        EnvironmentFile=/etc/vault.d/kubernetes/kube-apiserver.token
+        ExecStart=/opt/bin/vault-pki-issue %i kube-apiserver
+        RestartSec=5
+        Restart=always
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: vault-secret-service-accounts@kubernetes.service
+      enable: true
+      contents: |
+        [Service]
+        EnvironmentFile=/etc/vault.d/kubernetes/kube-apiserver.token
+        ExecStart=/opt/bin/vault-secret %i service-accounts
         RestartSec=5
         Restart=always
         [Install]
@@ -296,6 +338,10 @@ systemd:
         EnvironmentFile=/etc/metadata.env
         Environment=MANIFESTS=/etc/kubernetes/manifests
         Environment=ETCDCTL_API=3
+        ExecStartPre=/bin/ls -l \
+          /etc/vault.d/kubernetes/kubelet.certificate \
+          /etc/vault.d/kubernetes/kubelet.private_key \
+          /etc/vault.d/kubernetes/kubelet.issuing_ca
         ExecStartPre=/opt/bin/etcdctl --endpoints http://127.0.0.1:{{.kubernetes_etcd_client_port}} endpoint health
         ExecStartPre=/opt/rootfs/usr/bin/rkt fetch --pull-policy=update --insecure-options=all {{.hyperkube_image_url}}
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
@@ -319,7 +365,10 @@ systemd:
           --container-runtime=rkt \
           --rkt-path=/opt/rootfs/usr/bin/rkt \
           --v=2 \
-          --enable-cri=false
+          --enable-cri=false \
+          --tls-cert-file=/etc/vault.d/kubernetes/kubelet.certificate \
+          --tls-private-key-file=/etc/vault.d/kubernetes/kubelet.private_key \
+          --client-ca-file=/etc/vault.d/kubernetes/kubelet.issuing_ca
         Restart=always
         RestartSec=30s
 
@@ -430,6 +479,11 @@ storage:
               - --insecure-bind-address=127.0.0.1
               - --etcd-servers=http://127.0.0.1:{{.kubernetes_etcd_client_port}}
               - --service-cluster-ip-range={{.kubernetes_service_cluster_ip_range}}
+              - --tls-ca-file=/etc/secrets/kube-apiserver.issuing_ca
+              - --tls-cert-file=/etc/secrets/kube-apiserver.certificate
+              - --tls-private-key-file=/etc/secrets/kube-apiserver.private_key
+              - --runtime-config=rbac.authorization.k8s.io/v1alpha1
+              - --authorization-mode=RBAC
               resources:
                 requests:
                   cpu: 200m
@@ -440,6 +494,14 @@ storage:
                   path: /healthz
                 initialDelaySeconds: 15
                 timeoutSeconds: 15
+              volumeMounts:
+              - name: secrets
+                mountPath: /etc/secrets
+                readOnly: true
+            volumes:
+            - name: secrets
+              hostPath:
+                path: /etc/vault.d/kubernetes
 
     - path: /etc/metadata.env
       filesystem: root
@@ -787,6 +849,7 @@ storage:
           #!/usr/bin/env bash
 
           export PATH=/opt/bin:${PATH}
+          export VAULT_CAPATH=/etc/vault.d/vault/server.issuing_ca
           set -o pipefail
 
           test ${1} || {
@@ -804,23 +867,34 @@ storage:
 
           # TODO consul-template or check if renew
           test -f /etc/vault.d/${1}/${2}-pki.json && exit 0
+          test -f ${VAULT_CAPATH} || {
+          for ve in $(echo -n {{ .vault_ip_list }} | tr ',' ' ')
+          do
+           curl -f --insecure https://${ve}:{{.vault_etcd_client_port}}/v2/keys/pki/vault/server.issuing_ca \
+             | jq -re .node.value > ${VAULT_CAPATH} && {
+             ln -svf ${VAULT_CAPATH} /etc/ssl/certs/vault
+             break
+             }
+          done
+          }
 
           while true
           do
             for ve in $(echo -n {{ .vault_ip_list }} | tr ',' ' ')
             do
-              export VAULT_ADDR="http://${ve}:8200"
-              vault auth ${TOKEN} || continue
-
-              vault write -format=json pki/${1}/issue/${2} \
-                common_name={{.network.ip}} \
-                ip_sans={{.network.ip}} \
-                  > /etc/vault.d/${1}/${2}-pki.json
+              curl https://${ve}:8200/v1/pki/${1}/issue/${2} \
+                --cacert ${VAULT_CAPATH} -Lf \
+                --header "X-Vault-Token: ${TOKEN}" \
+                -XPOST --data '{
+                  "common_name": "{{.network.ip}}",
+                  "ttl": "17520h",
+                  "ip_sans": "{{.network.ip}}"
+                }' > /etc/vault.d/${1}/${2}-pki.json
               if [ $? -eq 0 ]
               then
                 for item in certificate issuing_ca private_key
                 do
-                  jq -re .data.${item} /etc/vault.d/${1}/${2}-pki.json > /etc/vault.d/${1}/${2}.${item}
+                  jq -re .data.${item} /etc/vault.d/${1}/${2}-pki.json > /etc/vault.d/${1}/${2}.${item}  || continue
                 done
                 exit 0
               fi
@@ -836,6 +910,7 @@ storage:
           #!/usr/bin/env bash
 
           export PATH=/opt/bin:${PATH}
+          export VAULT_CAPATH=/etc/vault.d/vault/server.issuing_ca
           set -o pipefail
 
           test ${1} || {
@@ -853,27 +928,41 @@ storage:
 
           # TODO consul-template or check if renew
           test -f /etc/vault.d/${1}/${2}-secret.json && exit 0
+          test -f ${VAULT_CAPATH} || {
+          for ve in $(echo -n {{ .vault_ip_list }} | tr ',' ' ')
+          do
+            curl -f --insecure https://${ve}:{{.vault_etcd_client_port}}/v2/keys/pki/vault/server.issuing_ca \
+              | jq -re .node.value > ${VAULT_CAPATH} && {
+             ln -svf ${VAULT_CAPATH} /etc/ssl/certs/vault
+             break
+             }
+          done
+          }
 
           while true
           do
             for ve in $(echo -n {{ .vault_ip_list }} | tr ',' ' ')
             do
-              export VAULT_ADDR="http://${ve}:8200"
-              vault auth ${TOKEN} || continue
-
-              vault read -format=json secret/${1}/${2} \
-                  > /etc/vault.d/${1}/${2}-secret.json
+              REQ="https://${ve}:8200/v1/secret/${1}/${2}"
+              echo ${REQ}
+              curl ${REQ} -Lf \
+                --cacert ${VAULT_CAPATH} \
+                --header "X-Vault-Token: ${TOKEN}" > /etc/vault.d/${1}/${2}-secret.json
               if [ $? -eq 0 ]
               then
                 for item in key
                 do
-                  jq -re .data.${item} /etc/vault.d/${1}/${2}-secret.json > /etc/vault.d/${1}/${2}.${item}
+                  jq -re .data.${item} /etc/vault.d/${1}/${2}-secret.json > /etc/vault.d/${1}/${2}.${item} || continue
                 done
                 exit 0
               fi
             done
             sleep 5
           done
+
+    - path: /etc/vault.d/vault/.keep
+      mode: 0600
+      filesystem: root
 
 networkd:
   units:
