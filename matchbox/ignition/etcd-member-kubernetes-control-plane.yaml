@@ -1228,6 +1228,11 @@ storage:
           export PATH=/opt/bin:${PATH}
 
           vault init -check && {
+            curl --insecure https://{{.network.ip}}:8200 || {
+              echo "vault already init but not running with TLS"
+              sleep 120
+              systemctl restart vault
+            }
             exit 0
           }
           function retry {
