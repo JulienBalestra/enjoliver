@@ -1341,7 +1341,7 @@ storage:
           retry vault unseal ${UNSEALKEY1}
           retry vault auth ${ROOTTOKEN} >> /etc/vault.d/vault.log
           etcdctl --no-sync --endpoints http://127.0.0.1:{{.vault_etcd_client_port}} \
-            set initier "$(hostname)-${{.network.ip}}"
+            set initier "https://{{.network.ip}}:8200"
 
           echo "create certs for vault himself"
           vault mount -path pki/vault pki
