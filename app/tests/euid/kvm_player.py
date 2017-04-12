@@ -1,14 +1,14 @@
-import datetime
 import json
 import multiprocessing
+import unittest
+
+import datetime
+import os
+import requests
 import shutil
 import socket
 import subprocess
 import sys
-import unittest
-
-import os
-import requests
 import time
 import yaml
 from kubernetes import client as kc
@@ -490,7 +490,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                         continue
 
                 except Exception as e:
-                    pass
+                    display(e)
                 display("-> %d/%d NOT READY %s for %s" % (t, tries, ip, self.etcd_endpoint_health.__name__))
                 time.sleep(self.testing_sleep_seconds * 2)
 
@@ -511,30 +511,55 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 break
 
             except Exception as e:
-                print(e)
+                display(e)
             display(
                 "-> %d/%d NOT READY initier %s for %s" % (t, tries, ip, self.vault_self_certs.__name__))
             time.sleep(self.testing_sleep_seconds * 2)
 
         for t in range(tries):
             try:
-                endpoint = "https://%s:%d/v2/keys/token/vault/server" % (ip, port)
-                request = requests.get(endpoint, verify=False)
-                content = request.content
-                request.close()
-                token_vault_server = json.loads(content.decode())["node"]["value"].replace("\n", "")
+                token_vault_server = self._get_vault_token(ip, port, "token/vault/server")
                 break
 
             except Exception as e:
-                print(e)
+                display(e)
             display(
                 "-> %d/%d NOT READY token %s for %s" % (t, tries, ip, self.vault_self_certs.__name__))
             time.sleep(self.testing_sleep_seconds * 2)
 
-        request = requests.post(
+        self._vault_issue_certificate(
             "%s/v1/pki/vault/issue/server" % vault_endpoint,
-            headers={'X-Vault-Token': token_vault_server},
+            token_vault_server,
             verify=False,
+        )
+        for vault_cert in [(parent, component) for parent, component in [
+            ("etcd-kubernetes", "client"),
+            ("etcd-fleet", "client"),
+            ("kubernetes", "kube-apiserver"),
+            ("kubernetes", "kubelet")
+        ]]:
+            for t in range(tries):
+                parent, component = vault_cert[0], vault_cert[1]
+                token = self._get_vault_token(ip, port, "%s/%s" % (parent, component))
+                self._vault_issue_certificate(
+                    "%s/v1/pki/%s/issue/%s" % (vault_endpoint, parent, component),
+                    token,
+                    verify=True,
+                )
+
+    def _get_vault_token(self, ip, port, etcd_key):
+        endpoint = "https://%s:%d/v2/keys/%s" % (ip, port, etcd_key)
+        request = requests.get(endpoint, verify=False)
+        content = request.content
+        request.close()
+        token_vault_server = json.loads(content.decode())["node"]["value"].replace("\n", "")
+        return token_vault_server
+
+    def _vault_issue_certificate(self, url, token, verify):
+        request = requests.post(
+            url,
+            headers={'X-Vault-Token': token},
+            verify=verify,
             data=json.dumps({
                 "common_name": "%s" % self.api_ip,
                 "ttl": "17520h",
@@ -543,7 +568,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         try:
             content = json.loads(request.content.decode())["data"]
         except Exception as e:
-            print(request.content.decode())
+            display(request.content.decode())
             raise
         for c in ["certificate", "issuing_ca", "private_key"]:
             with open(os.path.join(self.tests_path, "test_certs", "vault.%s" % c), 'w') as f:
@@ -564,7 +589,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     break
 
             except Exception as e:
-                print(e)
+                display(e)
             display("-> %d/%d NOT READY %s:%d for %s" % (t, tries, ip, port, self.etcd_member_len.__name__))
             time.sleep(self.testing_sleep_seconds * 2)
 
@@ -582,7 +607,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     break
 
             except Exception as e:
-                pass
+                display(e)
             display("-> %d/%d NOT READY %s for %s %d/%d" % (
                 t, tries, api_server_ip, self.k8s_node_nb.__name__, len(items), nodes_nb))
             time.sleep(self.testing_sleep_seconds)
@@ -610,7 +635,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                         continue
 
                 except Exception as e:
-                    pass
+                    display(e)
                 display("-> %d/%d NOT READY %s for %s" % (t + 1, tries, ip, self.k8s_api_health.__name__))
                 time.sleep(self.testing_sleep_seconds)
         self.assertEqual(len(ips), 0)
@@ -677,7 +702,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                         continue
 
                 except Exception as e:
-                    pass
+                    display(e)
                 display("-> %d/%d NOT READY %s for %s" % (
                     t + 1, tries, ip, self.daemon_set_httpd_are_running.__name__))
                 time.sleep(self.testing_sleep_seconds)
