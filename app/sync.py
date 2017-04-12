@@ -155,7 +155,7 @@ class ConfigSyncSchedules(object):
 
     @property
     def fleet_etcd_initial_cluster(self):
-        return self.order_etcd_named(self.etcd_member_ip_list, EC.fleet_etcd_peer_port)
+        return self.order_etcd_named(self.etcd_member_ip_list, EC.fleet_etcd_peer_port, secure=True)
 
     @property
     def kubernetes_etcd_member_client_uri_list(self):
@@ -167,7 +167,7 @@ class ConfigSyncSchedules(object):
 
     @property
     def fleet_etcd_member_client_uri_list(self):
-        return self.order_http_uri(self.etcd_member_ip_list, EC.fleet_etcd_client_port)
+        return self.order_http_uri(self.etcd_member_ip_list, EC.fleet_etcd_client_port, secure=True)
 
     @property
     def kubernetes_etcd_member_peer_uri_list(self):
@@ -179,7 +179,7 @@ class ConfigSyncSchedules(object):
 
     @property
     def fleet_etcd_member_peer_uri_list(self):
-        return self.order_http_uri(self.etcd_member_ip_list, EC.fleet_etcd_peer_port)
+        return self.order_http_uri(self.etcd_member_ip_list, EC.fleet_etcd_peer_port, secure=True)
 
     @property
     def kubernetes_control_plane(self):
@@ -208,7 +208,7 @@ class ConfigSyncSchedules(object):
                 m["ipv4"], EC.kubernetes_etcd_peer_port),
             "vault_etcd_initial_advertise_peer_urls": "https://%s:%d" % (
                 m["ipv4"], EC.vault_etcd_peer_port),
-            "fleet_etcd_initial_advertise_peer_urls": "http://%s:%d" % (
+            "fleet_etcd_initial_advertise_peer_urls": "https://%s:%d" % (
                 m["ipv4"], EC.fleet_etcd_peer_port),
 
             "kubernetes_etcd_member_client_uri_list": ",".join(self.kubernetes_etcd_member_client_uri_list),
@@ -227,7 +227,7 @@ class ConfigSyncSchedules(object):
                 m["ipv4"], EC.kubernetes_etcd_client_port),
             "vault_etcd_advertise_client_urls": "https://%s:%d" % (
                 m["ipv4"], EC.vault_etcd_client_port),
-            "fleet_etcd_advertise_client_urls": "http://%s:%d" % (
+            "fleet_etcd_advertise_client_urls": "https://%s:%d" % (
                 m["ipv4"], EC.fleet_etcd_client_port),
 
             # Kubernetes
