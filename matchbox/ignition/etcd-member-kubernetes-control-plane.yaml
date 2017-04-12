@@ -434,23 +434,23 @@ systemd:
         Type=notify
         EnvironmentFile=/etc/etcd-%i.env
         ExecStartPre=/bin/ls -l \
-          /etc/vault.d/etcd-kubernetes/client.certificate \
-          /etc/vault.d/etcd-kubernetes/client.private_key \
-          /etc/vault.d/etcd-kubernetes/client.issuing_ca \
-          /etc/vault.d/etcd-kubernetes/peer.certificate \
-          /etc/vault.d/etcd-kubernetes/peer.private_key \
-          /etc/vault.d/etcd-kubernetes/peer.issuing_ca
+          /etc/vault.d/etcd-%i/client.certificate \
+          /etc/vault.d/etcd-%i/client.private_key \
+          /etc/vault.d/etcd-%i/client.issuing_ca \
+          /etc/vault.d/etcd-%i/peer.certificate \
+          /etc/vault.d/etcd-%i/peer.private_key \
+          /etc/vault.d/etcd-%i/peer.issuing_ca
         ExecStart=/opt/rootfs/usr/bin/etcd \
-          --cert-file /etc/vault.d/etcd-kubernetes/client.certificate \
-          --key-file /etc/vault.d/etcd-kubernetes/client.private_key \
-          --trusted-ca-file /etc/vault.d/etcd-kubernetes/client.issuing_ca \
+          --cert-file /etc/vault.d/etcd-%i/client.certificate \
+          --key-file /etc/vault.d/etcd-%i/client.private_key \
+          --trusted-ca-file /etc/vault.d/etcd-%i/client.issuing_ca \
           --client-cert-auth \
           \
-          --peer-cert-file /etc/vault.d/etcd-kubernetes/peer.certificate \
-          --peer-key-file /etc/vault.d/etcd-kubernetes/peer.private_key \
-          --peer-trusted-ca-file /etc/vault.d/etcd-kubernetes/peer.issuing_ca \
+          --peer-cert-file /etc/vault.d/etcd-%i/peer.certificate \
+          --peer-key-file /etc/vault.d/etcd-%i/peer.private_key \
+          --peer-trusted-ca-file /etc/vault.d/etcd-%i/peer.issuing_ca \
           --peer-client-cert-auth
-        RestartSec=15s
+        RestartSec=20s
         Restart=on-failure
         LimitNOFILE=65826
         [Install]
@@ -930,23 +930,6 @@ storage:
       mode: 0644
       filesystem: root
 
-    - path: /etc/etcd-fleet
-      mode: 0644
-      filesystem: root
-      contents:
-        inline: |
-          ETCD_NAME={{.etcd_name}}
-          ETCD_INITIAL_CLUSTER={{.fleet_etcd_initial_cluster}}
-          ETCD_ADVERTISE_CLIENT_URLS={{.fleet_etcd_advertise_client_urls}}
-          ETCD_INITIAL_ADVERTISE_PEER_URLS={{.fleet_etcd_initial_advertise_peer_urls}}
-          ETCD_MEMBER_CLIENT_URI_LIST={{.fleet_etcd_member_client_uri_list}}
-          ETCD_MEMBER_PEER_URI_LIST={{.fleet_etcd_member_peer_uri_list}}
-          ETCD_DATA_DIR={{.fleet_etcd_data_dir}}
-          ETCD_LISTEN_CLIENT_URLS="http://0.0.0.0:{{.fleet_etcd_client_port}}"
-          ETCD_LISTEN_PEER_URLS="http://0.0.0.0:{{.fleet_etcd_peer_port}}"
-
-          NETWORK_IP={{.network.ip}}
-
     - path: /etc/etcd-vault
       mode: 0644
       filesystem: root
@@ -963,6 +946,7 @@ storage:
           ETCD_LISTEN_PEER_URLS="https://0.0.0.0:{{.vault_etcd_peer_port}}"
 
           NETWORK_IP={{.network.ip}}
+          ETCD_FLAGS="--insecure-transport=false --insecure-skip-tls-verify=true"
 
     - path: /etc/etcd-kubernetes
       mode: 0644
@@ -980,6 +964,27 @@ storage:
           ETCD_LISTEN_PEER_URLS="https://0.0.0.0:{{.kubernetes_etcd_peer_port}}"
 
           NETWORK_IP={{.network.ip}}
+          ETCD_FLAGS="--cert=/etc/vault.d/etcd-kubernetes/client.certificate \
+          --key=/etc/vault.d/etcd-kubernetes/client.private_key \
+          --cacert=/etc/vault.d/etcd-kubernetes/client.issuing_ca"
+
+    - path: /etc/etcd-fleet
+      mode: 0644
+      filesystem: root
+      contents:
+        inline: |
+          ETCD_NAME={{.etcd_name}}
+          ETCD_INITIAL_CLUSTER={{.fleet_etcd_initial_cluster}}
+          ETCD_ADVERTISE_CLIENT_URLS={{.fleet_etcd_advertise_client_urls}}
+          ETCD_INITIAL_ADVERTISE_PEER_URLS={{.fleet_etcd_initial_advertise_peer_urls}}
+          ETCD_MEMBER_CLIENT_URI_LIST={{.fleet_etcd_member_client_uri_list}}
+          ETCD_MEMBER_PEER_URI_LIST={{.fleet_etcd_member_peer_uri_list}}
+          ETCD_DATA_DIR={{.fleet_etcd_data_dir}}
+          ETCD_LISTEN_CLIENT_URLS="http://0.0.0.0:{{.fleet_etcd_client_port}}"
+          ETCD_LISTEN_PEER_URLS="http://0.0.0.0:{{.fleet_etcd_peer_port}}"
+
+          NETWORK_IP={{.network.ip}}
+          ETCD_FLAGS=""
 
     - path: /opt/bin/etcd-operator
       filesystem: root
@@ -988,6 +993,8 @@ storage:
         inline: |
           #!/usr/bin/env bash
           set -o pipefail ; set -ex
+          export PATH=/opt/bin/:${PATH}
+          export ETCDCTL_API=3
 
           env | grep "^ETCD"
           echo ${ETCD_ENV_FILE}
@@ -997,33 +1004,40 @@ storage:
           if [ ! -d ${ETCD_DATA_DIR}/member ]
           then
 
-              echo "${ETCD_DATA_DIR}/member is not empty"
+              echo "${ETCD_DATA_DIR}/member is empty"
               # Check if there is an existing cluster
-              etcdctl --endpoints ${ETCD_MEMBER_CLIENT_URI_LIST} cluster-health
-              if [ $? -eq 0 ]
+              etcdctl ${ETCD_FLAGS} --endpoints ${ETCD_MEMBER_CLIENT_URI_LIST} endpoint status
+              RET=$?
+
+              if [ ${RET} -eq 128 ]
+              then
+                echo "certs in ETCD_FLAGS=${ETCD_FLAGS} unavailables" >&2
+                exit 2
+
+              elif [ ${RET} -eq 1 ]
               then
                 echo "Existing cluster"
                 ETCD_INITIAL_CLUSTER_STATE=existing
+
                 # Check if this new member make a replacement
-                REMOVE=$(etcdctl --endpoints ${ETCD_MEMBER_CLIENT_URI_LIST} member list | \
-                  grep ${NETWORK_IP} | awk 'sub(/:/,"") {print $1}' | sed 's/\[unstarted\]//' )
+                REMOVE=$(etcdctl ${ETCD_FLAGS} --endpoints ${ETCD_MEMBER_CLIENT_URI_LIST} member list | \
+                  grep {{.network.ip}} | cut -f1 -d ',')
 
                 if [ $REMOVE ]
                 then
                   echo "Remove ${REMOVE}"
-                  etcdctl --endpoints ${ETCD_MEMBER_CLIENT_URI_LIST} member remove ${REMOVE}
+                  etcdctl ${ETCD_FLAGS} --endpoints ${ETCD_MEMBER_CLIENT_URI_LIST} member remove ${REMOVE}
                 fi
 
                 echo "Extend original cluster"
-                ETCD_INITIAL_CLUSTER=$(etcdctl --endpoints ${ETCD_MEMBER_CLIENT_URI_LIST} member add \
-                  ${NETWORK_IP} ${ETCD_INITIAL_ADVERTISE_PEER_URLS} | grep "ETCD_INITIAL_CLUSTER=" | \
+                ETCD_INITIAL_CLUSTER=$(etcdctl ${ETCD_FLAGS} --endpoints ${ETCD_MEMBER_CLIENT_URI_LIST} member add \
+                  ${ETCD_NAME} --peer-urls=${ETCD_INITIAL_ADVERTISE_PEER_URLS} | grep "ETCD_INITIAL_CLUSTER=" | \
                   sed 's/ETCD_INITIAL_CLUSTER=//')
 
                 if [ -z $ETCD_INITIAL_CLUSTER ]
                 then
                   echo "Fail to extend original cluster: ETCD_INITIAL_CLUSTER=${ETCD_INITIAL_CLUSTER}"
                 fi
-
               else
                 ETCD_INITIAL_CLUSTER_STATE=new
                 mkdir -pv ${ETCD_DATA_DIR}
@@ -1039,7 +1053,7 @@ storage:
 
           if [ -z ${ETCD_INITIAL_CLUSTER} ]
           then
-              echo "${ETCD_INITIAL_CLUSTER} is empty"
+              echo '${ETCD_INITIAL_CLUSTER} is empty'
               exit 2
           fi
 
