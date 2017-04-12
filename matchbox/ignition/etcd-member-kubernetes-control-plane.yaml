@@ -547,11 +547,12 @@ systemd:
         [Service]
         EnvironmentFile=/etc/metadata.env
         Environment=MANIFESTS=/etc/kubernetes/manifests
+        Environment=ETCDCTL_API=3
         ExecStartPre=/bin/ls -l \
           /etc/vault.d/kubernetes/kubelet.certificate \
           /etc/vault.d/kubernetes/kubelet.private_key \
           /etc/vault.d/kubernetes/kubelet.issuing_ca
-        ExecStartPre=/opt/bin/etcdctl --no-sync --endpoints http://127.0.0.1:{{.kubernetes_etcd_client_port}} ls
+        ExecStartPre=/opt/bin/etcdctl --endpoints http://127.0.0.1:{{.kubernetes_etcd_client_port}} endpoint status
         ExecStartPre=/opt/rootfs/usr/bin/rkt fetch --pull-policy=update --insecure-options=all {{.hyperkube_image_url}}
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
         ExecStartPre=/bin/mkdir -pv $MANIFESTS
@@ -1230,7 +1231,6 @@ storage:
           test "${REQUEST_RAW_QUERY}" || exit 2
           test "${NETWORK_IP}" || exit 2
           export PATH=/opt/rootfs/usr/bin:/opt/bin/:${PATH}
-          export ETCDCTL_API=3
 
           set -o pipefail
 
@@ -1242,6 +1242,7 @@ storage:
             done
           }
 
+          export ETCDCTL_API=3
           retry etcdctl \
              --insecure-skip-tls-verify=true \
              --insecure-transport=false \
@@ -1259,12 +1260,26 @@ storage:
              --cacert=/etc/vault.d/etcd-fleet/client.issuing_ca \
              --endpoints http://127.0.0.1:{{.fleet_etcd_client_port}} endpoint status
 
+          unset ETCDCTL_API
+          retry etcdctl \
+             --cert-file /etc/vault.d/etcd-fleet/client.certificate \
+             --key-file /etc/vault.d/etcd-fleet/client.private_key \
+             --ca-file /etc/vault.d/etcd-fleet/client.issuing_ca \
+             --endpoints http://127.0.0.1:{{.fleet_etcd_client_port}} cluster-health
+
           retry kubectl get cs
 
           retry curl -fs http://127.0.0.1:10248/healthz
 
           retry fleetctl --endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} \
             --driver etcd list-machines \
+            --fields ip --no-legend | grep -c {{.network.ip}}
+
+          retry fleetctl \
+            --ca-file /etc/vault.d/etcd-fleet/client.issuing_ca \
+            --cert-file /etc/vault.d/etcd-fleet/client.certificate \
+            --key-file /etc/vault.d/etcd-fleet/client.private_key \
+            --driver etcd --endpoint {{.fleet_etcd_member_client_uri_list}} list-machines \
             --fields ip --no-legend | grep -c {{.network.ip}}
 
           retry kubectl uncordon {{.kubernetes_node_name}}
