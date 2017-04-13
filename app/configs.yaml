@@ -27,7 +27,7 @@ apply_deps_delay: 60
 #gunicorn_pid_file: '/opt/enjoliver/app/gunicorn.pid'
 #plan_pid_file: '/opt/enjoliver/app/plan.pid'
 
-gunicorn_worker_type: 'gevent'
+gunicorn_worker_type: 'sync'
 gunicorn_workers: 1
 gunicorn_bind: "0.0.0.0:5000"
 
@@ -58,7 +58,7 @@ kubernetes_etcd_servers: "http://127.0.0.1:2379"
 fleet_etcd_servers: "http://127.0.0.1:4001"
 
 kubernetes_service_cluster_ip_range: '172.30.0.0/24'
-kubernetes_apiserver_insecure_bind_address: '127.0.0.1'
+kubernetes_apiserver_insecure_bind_address: '0.0.0.0'
 
 skip_ips: 1
 range_nb_ips: 253
