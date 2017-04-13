@@ -20,7 +20,7 @@ index 91b5dfa..37ac3d1 100644
 +	for _, v := range pod.Spec.Volumes {
 +		if v.VolumeSource.HostPath != nil {
 +			err = os.MkdirAll(v.HostPath.Path, os.ModePerm)
-+			if err != nil && !os.IsExist(err) {
++			if err != nil && os.IsNotExist(err) {
 +				return err
 +			}
 +			glog.V(4).Infof("Created volume HostPath %q for Pod %q", v.HostPath.Path, format.Pod(pod))
