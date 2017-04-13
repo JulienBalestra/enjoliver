@@ -41,8 +41,14 @@ spec:
           - name: tmp-httpd1
             mountPath: /tmp/httpd/httpd1
 
+          - name: os-release
+            mountPath: /tmp/os-release
+
           - name: tmp-httpd2
             mountPath: /tmp/httpd/httpd2
+
+          - name: etc
+            mountPath: /tmp/etc
 
           #- name: tmp-cm
           #  mountPath: /tmp/cm
@@ -55,6 +61,14 @@ spec:
         - name: tmp-httpd2
           hostPath:
             path: /tmp/httpd/httpd2
+
+        - name: os-release
+          hostPath:
+            path: /etc/os-release
+
+        - name: etc
+          hostPath:
+            path: /etc
 
 
         #- name: tmp-cm
