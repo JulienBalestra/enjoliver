@@ -31,7 +31,7 @@ class TestKVMK8SFast0(TestKVMK8sFast):
     # @unittest.skip("just skip")
     def test_00(self):
         self.assertEqual(self.fetch_discovery_interfaces(), [])
-        nb_node = 1
+        nb_node = 3
         marker = "euid-%s-%s" % (TestKVMK8sFast.__name__.lower(), self.test_00.__name__)
         nodes = ["%s-%d" % (marker, i) for i in range(nb_node)]
         gen = generator.Generator(
@@ -97,19 +97,21 @@ class TestKVMK8SFast0(TestKVMK8sFast):
 
             self.etcd_member_len(sy.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb,
                                  self.ec.vault_etcd_client_port, verify=False)
-            self.etcd_endpoint_health(sy.kubernetes_control_plane_ip_list, self.ec.vault_etcd_client_port,
-                                      verify=False)
+            self.etcd_endpoint_health(sy.kubernetes_control_plane_ip_list, self.ec.vault_etcd_client_port, verify=False)
+
             self.vault_self_certs(sy.kubernetes_control_plane_ip_list[0], self.ec.vault_etcd_client_port)
-
-            # TODO next
+            self.vault_verifing_issuing_ca(sy.kubernetes_control_plane_ip_list[0], self.ec.vault_etcd_client_port)
+            self.vault_issue_app_certs(sy.kubernetes_control_plane_ip_list[0], self.ec.vault_etcd_client_port)
 
             self.etcd_member_len(sy.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb,
-                                 self.ec.kubernetes_etcd_client_port)
+                                 self.ec.kubernetes_etcd_client_port, certs_name="etcd-kubernetes_client")
             self.etcd_member_len(sy.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb,
-                                 self.ec.fleet_etcd_client_port)
-            self.etcd_endpoint_health(sy.kubernetes_control_plane_ip_list, self.ec.kubernetes_etcd_client_port)
+                                 self.ec.fleet_etcd_client_port, certs_name="etcd-fleet_client")
+
+            self.etcd_endpoint_health(sy.kubernetes_control_plane_ip_list, self.ec.kubernetes_etcd_client_port,
+                                      certs_name="etcd-kubernetes_client")
             self.etcd_endpoint_health(sy.kubernetes_control_plane_ip_list + sy.kubernetes_nodes_ip_list,
-                                      self.ec.fleet_etcd_client_port)
+                                      self.ec.fleet_etcd_client_port, certs_name="etcd-fleet_client")
             self.k8s_api_health(sy.kubernetes_control_plane_ip_list)
             self.k8s_node_nb(sy.kubernetes_control_plane_ip_list[0], nb_node)
             self.write_ending(marker)

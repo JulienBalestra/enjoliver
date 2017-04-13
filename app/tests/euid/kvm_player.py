@@ -94,6 +94,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     matchbox_bin = "%s/matchbox/matchbox" % runtime_path
     acserver_bin = "%s/acserver/acserver" % runtime_path
 
+    tests_certs = "%s/test_certs" % tests_path
     test_matchbox_path = "%s/test_matchbox" % tests_path
 
     matchbox_port = int(os.getenv("MATCHBOX_PORT", "8080"))
@@ -470,16 +471,19 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             time.sleep(self.testing_sleep_seconds)
         self.assertEqual(len(to_start), 0)
 
-    def etcd_endpoint_health(self, ips, port, tries=30, verify=True):
+    def etcd_endpoint_health(self, ips, port, tries=30, verify=True, certs_name=""):
         assert type(ips) is list
         assert len(ips) > 0
+        certs = tuple()
+        if certs_name:
+            verify, certs = self._get_certificates(certs_name)
         for t in range(tries):
             if len(ips) == 0:
                 break
             for i, ip in enumerate(ips):
                 try:
                     endpoint = "https://%s:%d/health" % (ip, port)
-                    request = requests.get(endpoint, verify=verify)
+                    request = requests.get(endpoint, verify=verify, cert=certs)
                     response_body = json.loads(request.content.decode())
                     request.close()
                     display("-> RESULT %s %s" % (endpoint, response_body))
@@ -519,7 +523,9 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     def vault_self_certs(self, ip, port, tries=30):
         vault_uri = self._get_vault_uri_by_initier(ip, port, tries)
         token_vault_server = self._get_vault_token(ip, port, "token/vault/server", tries)
-        self._vault_issue_certificate("%s/v1/pki/vault/issue/server" % vault_uri, token_vault_server, verify=False)
+        self._vault_issue_certificate(
+            "%s/v1/pki/vault/issue/server" % vault_uri, token_vault_server, verify=False, parent="vault",
+            component="server")
 
     def _get_vault_token(self, ip, port, etcd_key, tries=30):
         token_vault_server = ""
@@ -540,7 +546,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         self.assertGreater(len(token_vault_server), 0)
         return token_vault_server
 
-    def _vault_issue_certificate(self, url, token, verify, tries=30):
+    def _vault_issue_certificate(self, url, token, verify, parent, component, tries=30):
         certs = ["certificate", "issuing_ca", "private_key"]
         content = dict()
         for t in range(tries):
@@ -558,18 +564,71 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 break
             except Exception as e:
                 display(e)
+                time.sleep(self.testing_sleep_seconds * 2)
 
         for c in certs:
-            with open(os.path.join(self.tests_path, "test_certs", "vault.%s" % c), 'w') as f:
+            filename_ext = "%s_%s.%s" % (parent, component, c)
+            with open(os.path.join(self.tests_certs, filename_ext), 'w') as f:
                 f.write(content[c])
-                display("vault issue %s token: %s -> %s" % (url, token, c))
+                display("vault issue %s token: %s -> %s" % (url, token, filename_ext))
 
-    def etcd_member_len(self, ip, members_nb, port, tries=30, verify=True):
+    def vault_verifing_issuing_ca(self, ip, port):
+        vault_uri = self._get_vault_uri_by_initier(ip, port, tries=2)
+        r = requests.get("%s/v1/" % vault_uri,
+                         verify=os.path.join(self.tests_certs, "vault_server.issuing_ca"))
+        r.close()
+        self.assertEqual(404, r.status_code)
+        self.assertEqual({"errors": []}, json.loads(r.content.decode()))
+
+    def vault_issue_app_certs(self, ip, port, tries=30):
+        vault_uri = self._get_vault_uri_by_initier(ip, port, tries=2)
+        for vault_cert in [(parent, component) for parent, component in [
+            ("etcd-kubernetes", "client"),
+            ("etcd-fleet", "client"),
+            ("kubernetes", "kube-apiserver"),
+            ("kubernetes", "kubelet")
+        ]]:
+            for t in range(tries):
+                parent, component = vault_cert[0], vault_cert[1]
+                try:
+                    token = self._get_vault_token(ip, port, "token/%s/%s" % (parent, component))
+                    self._vault_issue_certificate(
+                        "%s/v1/pki/%s/issue/%s" % (vault_uri, parent, component),
+                        token,
+                        verify=os.path.join(self.tests_certs, "vault_server.issuing_ca"),
+                        parent=parent,
+                        component=component
+                    )
+                    break
+                except Exception as e:
+                    display(e)
+                display("-> %d/%d NOT READY %s/%s %s for %s" % (
+                    t, tries, parent, component, ip, self.vault_self_certs.__name__))
+                time.sleep(self.testing_sleep_seconds)
+
+    def _get_certificates(self, certs_name):
+        verify, certs = True, tuple()
+        if certs_name:
+            verify = os.path.join(self.tests_certs, "%s.issuing_ca" % certs_name)
+            certs = (
+                os.path.join(self.tests_certs, "%s.certificate" % certs_name),
+                os.path.join(self.tests_certs, "%s.private_key" % certs_name)
+            )
+            for c in certs:
+                self.assertTrue(os.path.exists(c))
+            self.assertTrue(os.path.exists(verify))
+        return verify, certs
+
+    def etcd_member_len(self, ip, members_nb, port, tries=30, verify=True, certs_name=""):
         result = {}
+        certs = tuple()
+        if certs_name:
+            verify, certs = self._get_certificates(certs_name)
+
         for t in range(tries):
             try:
                 endpoint = "https://%s:%d/v2/members" % (ip, port)
-                request = requests.get(endpoint, verify=verify)
+                request = requests.get(endpoint, verify=verify, cert=certs)
                 content = request.content
                 request.close()
                 result = json.loads(content.decode())
