@@ -1,14 +1,14 @@
+import datetime
 import json
 import multiprocessing
-import unittest
-
-import datetime
-import os
-import requests
 import shutil
 import socket
 import subprocess
 import sys
+import unittest
+
+import os
+import requests
 import time
 import yaml
 from kubernetes import client as kc
@@ -496,29 +496,40 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
         self.assertEqual(len(ips), 0)
 
-    def vault_self_certs(self, ip, port, tries=30):
-        vault_endpoint = ""
-        token_vault_server = ""
+    def _get_vault_uri_by_initier(self, ip, port, tries=30):
+        vault_uri = ""
         for t in range(tries):
             try:
                 endpoint = "https://%s:%d/v2/keys/initier" % (ip, port)
                 request = requests.get(endpoint, verify=False)
                 content = request.content
                 request.close()
-                vault_endpoint = json.loads(content.decode())["node"]["value"]
-                display("-> RESULT %s %s" % (endpoint, vault_endpoint))
+                vault_uri = json.loads(content.decode())["node"]["value"]
+                display("-> RESULT %s %s" % (endpoint, vault_uri))
                 sys.stdout.flush()
                 break
-
             except Exception as e:
                 display(e)
             display(
                 "-> %d/%d NOT READY initier %s for %s" % (t, tries, ip, self.vault_self_certs.__name__))
             time.sleep(self.testing_sleep_seconds * 2)
+        self.assertGreater(len(vault_uri), 0)
+        return vault_uri
 
+    def vault_self_certs(self, ip, port, tries=30):
+        vault_uri = self._get_vault_uri_by_initier(ip, port, tries)
+        token_vault_server = self._get_vault_token(ip, port, "token/vault/server", tries)
+        self._vault_issue_certificate("%s/v1/pki/vault/issue/server" % vault_uri, token_vault_server, verify=False)
+
+    def _get_vault_token(self, ip, port, etcd_key, tries=30):
+        token_vault_server = ""
         for t in range(tries):
             try:
-                token_vault_server = self._get_vault_token(ip, port, "token/vault/server")
+                endpoint = "https://%s:%d/v2/keys/%s" % (ip, port, etcd_key)
+                request = requests.get(endpoint, verify=False)
+                content = request.content
+                request.close()
+                token_vault_server = json.loads(content.decode())["node"]["value"].replace("\n", "")
                 break
 
             except Exception as e:
@@ -526,53 +537,32 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             display(
                 "-> %d/%d NOT READY token %s for %s" % (t, tries, ip, self.vault_self_certs.__name__))
             time.sleep(self.testing_sleep_seconds * 2)
-
-        self._vault_issue_certificate(
-            "%s/v1/pki/vault/issue/server" % vault_endpoint,
-            token_vault_server,
-            verify=False,
-        )
-        for vault_cert in [(parent, component) for parent, component in [
-            ("etcd-kubernetes", "client"),
-            ("etcd-fleet", "client"),
-            ("kubernetes", "kube-apiserver"),
-            ("kubernetes", "kubelet")
-        ]]:
-            for t in range(tries):
-                parent, component = vault_cert[0], vault_cert[1]
-                token = self._get_vault_token(ip, port, "%s/%s" % (parent, component))
-                self._vault_issue_certificate(
-                    "%s/v1/pki/%s/issue/%s" % (vault_endpoint, parent, component),
-                    token,
-                    verify=True,
-                )
-
-    def _get_vault_token(self, ip, port, etcd_key):
-        endpoint = "https://%s:%d/v2/keys/%s" % (ip, port, etcd_key)
-        request = requests.get(endpoint, verify=False)
-        content = request.content
-        request.close()
-        token_vault_server = json.loads(content.decode())["node"]["value"].replace("\n", "")
+        self.assertGreater(len(token_vault_server), 0)
         return token_vault_server
 
-    def _vault_issue_certificate(self, url, token, verify):
-        request = requests.post(
-            url,
-            headers={'X-Vault-Token': token},
-            verify=verify,
-            data=json.dumps({
-                "common_name": "%s" % self.api_ip,
-                "ttl": "17520h",
-                "ip_sans": "%s" % self.api_ip,
-            }))
-        try:
-            content = json.loads(request.content.decode())["data"]
-        except Exception as e:
-            display(request.content.decode())
-            raise
-        for c in ["certificate", "issuing_ca", "private_key"]:
+    def _vault_issue_certificate(self, url, token, verify, tries=30):
+        certs = ["certificate", "issuing_ca", "private_key"]
+        content = dict()
+        for t in range(tries):
+            try:
+                request = requests.post(
+                    url,
+                    headers={'X-Vault-Token': token},
+                    verify=verify,
+                    data=json.dumps({
+                        "common_name": "%s" % self.api_ip,
+                        "ttl": "17520h",
+                        "ip_sans": "%s" % self.api_ip,
+                    }))
+                content = json.loads(request.content.decode())["data"]
+                break
+            except Exception as e:
+                display(e)
+
+        for c in certs:
             with open(os.path.join(self.tests_path, "test_certs", "vault.%s" % c), 'w') as f:
                 f.write(content[c])
+                display("vault issue %s token: %s -> %s" % (url, token, c))
 
     def etcd_member_len(self, ip, members_nb, port, tries=30, verify=True):
         result = {}
