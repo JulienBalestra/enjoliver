@@ -37,19 +37,18 @@ Each node can reboot with iPXE to be re-installed and re-join the cluster.
 
 ### Upstream
 
-* etcd
-* cni
-* rkt
-* Kubernetes
-    * #PR: ~/aci/aci-hyperkube/patches
-* Consul
-* Vault
-* CoreOS - stable channel
-* dgr
+* [etcd](https://github.com/coreos/etcd/releases)	
+* [cni](https://github.com/containernetworking/cni/releases)
+* [rkt](https://github.com/rkt/rkt/releases)
+* [kubernetes](https://github.com/kubernetes/kubernetes/releases)
+    * PR: ~/aci/aci-hyperkube/patches
+* [vault](https://github.com/hashicorp/vault/releases)
+* [Container Linux](https://coreos.com/releases)
+* [dgr](https://github.com/blablacar/dgr/releases)
 
 ### Stick
 
-* fleet 1.0.0
+* [fleet](https://github.com/coreos/fleet/releases/tag/v1.0.0)
 
 
 ## Setups
