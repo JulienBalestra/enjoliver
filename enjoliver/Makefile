@@ -8,6 +8,7 @@ ACI=$(PROJECT)/aci
 DEBIAN=debian
 PYTHON=python
 BUILDER_HYPERKUBE=builder-hyperkube
+GO=go
 BUILDER_ENJOLIVER=builder-enjoliver
 ENJOLIVER=enjoliver
 
@@ -17,7 +18,11 @@ $(DEBIAN):
 	@echo ENV IMAGE=$(ACI)/aci-$(DEBIAN)
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) install
 
-$(BUILDER_HYPERKUBE): $(DEBIAN)
+$(GO): $(DEBIAN)
+	@echo ENV IMAGE=$(ACI)/aci-$(GO)
+	IMAGE=$(ACI)/aci-$(GO) make -C $(RUNTIME) install
+
+$(BUILDER_HYPERKUBE): $(GO)
 	@echo ENV IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE)
 	IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE) make -C $(RUNTIME) install
 
