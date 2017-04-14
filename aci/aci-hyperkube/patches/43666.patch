@@ -40,7 +40,7 @@ diff --git a/pkg/kubelet/kubelet_pods.go b/pkg/kubelet/kubelet_pods.go
 index c56f257..1e12d88 100644
 --- a/pkg/kubelet/kubelet_pods.go
 +++ b/pkg/kubelet/kubelet_pods.go
-@@ -522,6 +522,9 @@ func (kl *Kubelet) podFieldSelectorRuntimeValue(fs *api.ObjectFieldSelector, pod
+@@ -522,6 +522,9 @@ func (kl *Kubelet) podFieldSelectorRuntimeValue(fs *v1.ObjectFieldSelector, pod
  		return pod.Spec.ServiceAccountName, nil
  	case "status.podIP":
  		return podIP, nil

@@ -1,14 +1,33 @@
-From ed6a507c3def05c69e883864f085491e3d4dfb89 Mon Sep 17 00:00:00 2001
+From d76ddc900410cd7383a0ee0fc57373fcef21281f Mon Sep 17 00:00:00 2001
 From: JulienBalestra <julien.balestra@gmail.com>
 Date: Sun, 26 Mar 2017 21:18:47 +0200
 Subject: [PATCH] Add the support of volumes in Kubelet runonce
 
 ---
- pkg/kubelet/runonce.go | 6 ++++++
- 1 file changed, 6 insertions(+)
+ pkg/kubelet/cm/qos_container_manager_linux.go | 7 ++++++-
+ pkg/kubelet/runonce.go                        | 6 ++++++
+ 2 files changed, 12 insertions(+), 1 deletion(-)
 
+diff --git a/pkg/kubelet/cm/qos_container_manager_linux.go b/pkg/kubelet/cm/qos_container_manager_linux.go
+index fa99519..b1280a6 100644
+--- a/pkg/kubelet/cm/qos_container_manager_linux.go
++++ b/pkg/kubelet/cm/qos_container_manager_linux.go
+@@ -138,7 +138,12 @@ func (m *qosContainerManagerImpl) Start(getNodeAllocatable func() v1.ResourceLis
+ }
+ 
+ func (m *qosContainerManagerImpl) setCPUCgroupConfig(configs map[v1.PodQOSClass]*CgroupConfig) error {
+-	pods := m.activePods()
++	var pods []*v1.Pod
++	if m.activePods != nil {
++		pods = m.activePods()
++	} else {
++		glog.Warning("ActivePodsFunc is nil")
++	}
+ 	burstablePodCPURequest := int64(0)
+ 	for i := range pods {
+ 		pod := pods[i]
 diff --git a/pkg/kubelet/runonce.go b/pkg/kubelet/runonce.go
-index 9ad3c47..aea506f 100644
+index 3b73a9f..1dfc515 100644
 --- a/pkg/kubelet/runonce.go
 +++ b/pkg/kubelet/runonce.go
 @@ -54,6 +54,11 @@ func (kl *Kubelet) RunOnce(updates <-chan kubetypes.PodUpdate) ([]RunPodResult,
@@ -23,7 +42,7 @@ index 9ad3c47..aea506f 100644
  	select {
  	case u := <-updates:
  		glog.Infof("processing manifest with %d pods", len(u.Pods))
-@@ -125,6 +130,7 @@ func (kl *Kubelet) runPod(pod *api.Pod, retryDelay time.Duration) error {
+@@ -125,6 +130,7 @@ func (kl *Kubelet) runPod(pod *v1.Pod, retryDelay time.Duration) error {
  			glog.Errorf("Failed creating a mirror pod %q: %v", format.Pod(pod), err)
  		}
  		mirrorPod, _ := kl.podManager.GetMirrorPodByPod(pod)

@@ -13,6 +13,7 @@ class EnjoliverConfig(object):
     """
     Used to propagate easily the configuration inside the application
     """
+
     def config_override(self, key, default):
         """
         Each config attribute pass inside this method to allow override by
@@ -111,35 +112,32 @@ class EnjoliverConfig(object):
         self.kubernetes_api_server_port = int(self.config_override("kubernetes_api_server_port", 8080))
         self.kubernetes_service_cluster_ip_range = self.config_override("kubernetes_service_cluster_ip_range",
                                                                         "172.30.0.0/24")
+        self.kubernetes_apiserver_insecure_bind_address = self.config_override(
+            "kubernetes_apiserver_insecure_bind_address", "127.0.0.1")
 
         # Kubernetes Etcd
         self.kubernetes_etcd_data_dir = self.config_override("kubernetes_etcd_data_dir", "/var/lib/etcd3/kubernetes")
         self.kubernetes_etcd_client_port = int(self.config_override("kubernetes_etcd_client_port", 2379))
         self.kubernetes_etcd_peer_port = int(self.config_override("kubernetes_etcd_peer_port", 2380))
-        self.kubernetes_etcd_listen_client_urls = self.config_override(
-            "kubernetes_etcd_listen_client_urls", "http://0.0.0.0:%s" % self.kubernetes_etcd_client_port)
-
-        self.kubernetes_etcd_servers = self.config_override("kubernetes_etcd_servers",
-                                                            "http://127.0.0.1:%d" % self.kubernetes_etcd_client_port)
 
         # Fleet Etcd
         self.fleet_etcd_data_dir = self.config_override("fleet_etcd_data_dir", "/var/lib/etcd3/fleet")
         self.fleet_etcd_client_port = int(self.config_override("fleet_etcd_client_port", 4001))
         self.fleet_etcd_peer_port = int(self.config_override("fleet_etcd_peer_port", 7001))
-        self.fleet_etcd_listen_client_urls = self.config_override(
-            "fleet_etcd_listen_client_urls", "http://0.0.0.0:%s" % self.fleet_etcd_client_port)
 
-        self.fleet_etcd_servers = self.config_override("fleet_etcd_servers",
-                                                       "http://127.0.0.1:%d" % self.fleet_etcd_client_port)
+        # Vault Etcd
+        self.vault_etcd_data_dir = self.config_override("vault_etcd_data_dir", "/var/lib/etcd3/vault")
+        self.vault_etcd_client_port = int(self.config_override("vault_etcd_client_port", 4001))
+        self.vault_etcd_peer_port = int(self.config_override("vault_etcd_peer_port", 7001))
 
         # Use a real registry in production like:
         # enjoliver.local/hyperkube:latest
         self.lldp_image_url = self.config_override("lldp_image_url", "enjoliver.local/lldp:latest")
-        self.hyperkube_image_url = self.config_override("hyperkube_image_url", "enjoliver.local/hyperkube:1.5.5")
+        self.hyperkube_image_url = self.config_override("hyperkube_image_url", "enjoliver.local/hyperkube:1.6.1")
         self.rkt_image_url = self.config_override("rkt_image_url", "enjoliver.local/rkt:1.25.0")
-        self.etcd_image_url = self.config_override("etcd_image_url", "enjoliver.local/etcd:3.1.4")
+        self.etcd_image_url = self.config_override("etcd_image_url", "enjoliver.local/etcd:3.1.5")
         self.fleet_image_url = self.config_override("fleet_image_url", "enjoliver.local/fleet:1.0.0")
-        self.cni_image_url = self.config_override("cni_image_url", "enjoliver.local/cni:0.5.1")
+        self.cni_image_url = self.config_override("cni_image_url", "enjoliver.local/cni:0.5.2")
         self.consul_image_url = self.config_override("consul_image_url", 'enjoliver.local/consul:0.7.5')
         self.vault_image_url = self.config_override("vault_image_url", 'enjoliver.local/vault:0.7.0')
 

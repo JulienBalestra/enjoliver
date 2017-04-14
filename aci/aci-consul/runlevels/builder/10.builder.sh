@@ -15,3 +15,6 @@ unzip consul.zip
 
 mv -v consul ${ROOTFS}/usr/bin/
 mkdir -pv ${ROOTFS}/consul-data
+
+curl -Lf https://releases.hashicorp.com/consul-template/0.18.2/consul-template_0.18.2_linux_amd64.tgz | \
+    tar -xzvf - -C ${ROOTFS}/usr/bin
