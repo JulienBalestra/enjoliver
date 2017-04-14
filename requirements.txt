@@ -3,7 +3,6 @@ gunicorn==19.6.0
 gevent==1.2.1
 SQLAlchemy==1.1.6
 requests==2.9.1
-gevent==1.2.1
 boto3==1.4.4
 kubernetes==1.0.0b3
 prometheus-client==0.0.19
