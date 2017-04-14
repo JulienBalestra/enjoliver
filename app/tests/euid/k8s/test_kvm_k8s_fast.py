@@ -103,6 +103,9 @@ class TestKVMK8SFast0(TestKVMK8sFast):
             self.vault_verifing_issuing_ca(sy.kubernetes_control_plane_ip_list[0], self.ec.vault_etcd_client_port)
             self.vault_issue_app_certs(sy.kubernetes_control_plane_ip_list[0], self.ec.vault_etcd_client_port)
 
+            self.save_unseal_key(sy.kubernetes_control_plane_ip_list)
+            self.unseal_all_vaults(sy.kubernetes_control_plane_ip_list, self.ec.vault_etcd_client_port)
+
             self.etcd_member_len(sy.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb,
                                  self.ec.kubernetes_etcd_client_port, certs_name="etcd-kubernetes_client")
             self.etcd_member_len(sy.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb,

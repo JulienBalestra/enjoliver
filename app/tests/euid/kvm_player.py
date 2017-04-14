@@ -94,7 +94,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     matchbox_bin = "%s/matchbox/matchbox" % runtime_path
     acserver_bin = "%s/acserver/acserver" % runtime_path
 
-    tests_certs = "%s/test_certs" % tests_path
+    ssh_private_key = os.path.join(tests_path, "testing.id_rsa")
+    test_certs_path = "%s/test_certs" % tests_path
     test_matchbox_path = "%s/test_matchbox" % tests_path
 
     matchbox_port = int(os.getenv("MATCHBOX_PORT", "8080"))
@@ -292,6 +293,10 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     "- %s\n" % KernelVirtualMachinePlayer.matchbox_bin +
                     "- %s\n" % KernelVirtualMachinePlayer.acserver_bin)
             exit(2)
+        if os.path.isfile(cls.ssh_private_key) is False:
+            display("Call 'make testing.id_rsa' as user\n")
+            exit(3)
+
         display("PID -> %s" % os.getpid())
 
     @classmethod
@@ -522,12 +527,12 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     def vault_self_certs(self, ip, port, tries=30):
         vault_uri = self._get_vault_uri_by_initier(ip, port, tries)
-        token_vault_server = self._get_vault_token(ip, port, "token/vault/server", tries)
+        token_vault_server = self._get_vault_token_in_etcd(ip, port, "token/vault/server", tries)
         self._vault_issue_certificate(
             "%s/v1/pki/vault/issue/server" % vault_uri, token_vault_server, verify=False, parent="vault",
             component="server")
 
-    def _get_vault_token(self, ip, port, etcd_key, tries=30):
+    def _get_vault_token_in_etcd(self, ip, port, etcd_key, tries=30):
         token_vault_server = ""
         for t in range(tries):
             try:
@@ -568,14 +573,14 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
         for c in certs:
             filename_ext = "%s_%s.%s" % (parent, component, c)
-            with open(os.path.join(self.tests_certs, filename_ext), 'w') as f:
+            with open(os.path.join(self.test_certs_path, filename_ext), 'w') as f:
                 f.write(content[c])
                 display("vault issue %s token: %s -> %s" % (url, token, filename_ext))
 
     def vault_verifing_issuing_ca(self, ip, port):
         vault_uri = self._get_vault_uri_by_initier(ip, port, tries=2)
         r = requests.get("%s/v1/" % vault_uri,
-                         verify=os.path.join(self.tests_certs, "vault_server.issuing_ca"))
+                         verify=os.path.join(self.test_certs_path, "vault_server.issuing_ca"))
         r.close()
         self.assertEqual(404, r.status_code)
         self.assertEqual({"errors": []}, json.loads(r.content.decode()))
@@ -591,11 +596,11 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             for t in range(tries):
                 parent, component = vault_cert[0], vault_cert[1]
                 try:
-                    token = self._get_vault_token(ip, port, "token/%s/%s" % (parent, component))
+                    token = self._get_vault_token_in_etcd(ip, port, "token/%s/%s" % (parent, component))
                     self._vault_issue_certificate(
                         "%s/v1/pki/%s/issue/%s" % (vault_uri, parent, component),
                         token,
-                        verify=os.path.join(self.tests_certs, "vault_server.issuing_ca"),
+                        verify=os.path.join(self.test_certs_path, "vault_server.issuing_ca"),
                         parent=parent,
                         component=component
                     )
@@ -609,15 +614,58 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     def _get_certificates(self, certs_name):
         verify, certs = True, tuple()
         if certs_name:
-            verify = os.path.join(self.tests_certs, "%s.issuing_ca" % certs_name)
+            verify = os.path.join(self.test_certs_path, "%s.issuing_ca" % certs_name)
             certs = (
-                os.path.join(self.tests_certs, "%s.certificate" % certs_name),
-                os.path.join(self.tests_certs, "%s.private_key" % certs_name)
+                os.path.join(self.test_certs_path, "%s.certificate" % certs_name),
+                os.path.join(self.test_certs_path, "%s.private_key" % certs_name)
             )
             for c in certs:
                 self.assertTrue(os.path.exists(c))
             self.assertTrue(os.path.exists(verify))
         return verify, certs
+
+    def save_unseal_key(self, ips):
+        unseal_file = os.path.join(self.test_certs_path, "unseal.key")
+
+        for ip in ips:
+            stdout = subprocess.check_output([
+                "ssh", "-o", "StrictHostKeyChecking=no",
+                "-o", "UserKnownHostsFile=/dev/null",
+                "-o", "ConnectTimeout=1",
+                "-i", self.ssh_private_key,
+                "-lcore", ip, 'grep "Unseal Key 1:" /etc/vault.d/keys | cut -f4 -d \' \''
+            ]).decode().replace("\n", "")
+            if stdout:
+                with open(unseal_file, "w") as f:
+                    f.write(stdout)
+                break
+        self.assertTrue(os.path.isfile(unseal_file))
+
+    def unseal_all_vaults(self, ips, port, tries=30):
+        with open(os.path.join(self.test_certs_path, "unseal.key")) as f:
+            key = f.read()
+        self.assertGreater(len(key), 0)
+        for ip in ips:
+            token_vault_server = self._get_vault_token_in_etcd(ip, port, "token/vault/server", tries)
+            for t in range(tries):
+                url = "https://%s:8200/v1/sys/unseal" % ip
+                try:
+                    request = requests.post(
+                        url,
+                        headers={'X-Vault-Token': token_vault_server},
+                        verify=os.path.join(self.test_certs_path, "vault_server.issuing_ca"),
+                        data=json.dumps({
+                            "key": key,
+                        }))
+                    content = json.loads(request.content.decode())
+                    print(content)
+                    self.assertFalse(content["sealed"])
+                    break
+                except Exception as e:
+                    display(e)
+                display("-> NOT READY %d/%d %s %s" % (t, tries, url, self.unseal_all_vaults.__name__))
+                self.assertFalse(t == tries - 1)
+                time.sleep(self.testing_sleep_seconds * 2)
 
     def etcd_member_len(self, ip, members_nb, port, tries=30, verify=True, certs_name=""):
         result = {}

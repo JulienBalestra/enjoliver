@@ -160,6 +160,7 @@ systemd:
         After=install-rkt.service
 
         [Service]
+        LimitNOFILE=65826
         ExecStart=/opt/rootfs/usr/bin/rkt api-service
         Restart=always
         RestartSec=10

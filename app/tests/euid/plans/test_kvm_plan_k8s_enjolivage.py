@@ -54,7 +54,7 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
                     "--name",
                     "%s" % m,
                     "--network=bridge:rack0,model=virtio",
-                    "--memory=7168",
+                    "--memory=%d" % self.ram_kvm_node_memory_mb,
                     "--vcpus=%d" % self.get_optimized_cpu(nb_node),
                     "--pxe",
                     "--disk",
@@ -88,6 +88,9 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
             self.vault_verifing_issuing_ca(plan_k8s_2t.kubernetes_control_plane_ip_list[0],
                                            self.ec.vault_etcd_client_port)
             self.vault_issue_app_certs(plan_k8s_2t.kubernetes_control_plane_ip_list[0], self.ec.vault_etcd_client_port)
+
+            self.save_unseal_key(plan_k8s_2t.kubernetes_control_plane_ip_list)
+            self.unseal_all_vaults(plan_k8s_2t.kubernetes_control_plane_ip_list, self.ec.vault_etcd_client_port)
 
             self.etcd_member_len(plan_k8s_2t.kubernetes_control_plane_ip_list[0],
                                  plan_k8s_2t._sch_k8s_control_plane.expected_nb,

@@ -184,6 +184,7 @@ systemd:
         After=install-rkt.service
 
         [Service]
+        LimitNOFILE=65826
         ExecStart=/opt/rootfs/usr/bin/rkt api-service
         Restart=always
         RestartSec=10
@@ -1312,15 +1313,6 @@ storage:
 
           export VAULT_ADDR="http://127.0.0.1:8200"
           export PATH=/opt/bin:${PATH}
-
-          vault init -check && {
-            curl --insecure https://{{.network.ip}}:8200 || {
-              echo "vault already init but not running with TLS"
-              sleep 120
-              systemctl restart vault
-            }
-            exit 0
-          }
           function retry {
             until $@
             do
@@ -1329,14 +1321,24 @@ storage:
             done
           }
 
-          set -ex
+          vault init -check && {
+            curl --insecure https://{{.network.ip}}:8200 || {
+              echo "vault already init but not running with TLS"
+              retry ls -l /etc/vault.d/vault/server.certificate /etc/vault.d/vault/server.private_key
+              systemctl restart vault
+              echo "restarted vault"
+            }
+            exit 0
+          }
+
+          set -e
           set -o pipefail
 
           echo "vault init"
           vault init -key-shares=1 -key-threshold=1 > /etc/vault.d/keys
 
-          UNSEALKEY1=$(cat /etc/vault.d/keys | grep "Unseal Key 1:" | cut -f4 -d ' ')
-          ROOTTOKEN=$(cat /etc/vault.d/keys | grep "Initial Root Token:" | cut -f4 -d ' ')
+          UNSEALKEY1=$(grep "Unseal Key 1:" /etc/vault.d/keys | cut -f4 -d ' ')
+          ROOTTOKEN=$(grep "Initial Root Token:" /etc/vault.d/keys | cut -f4 -d ' ')
 
           retry vault unseal ${UNSEALKEY1}
           retry vault auth ${ROOTTOKEN} >> /etc/vault.d/vault.log
