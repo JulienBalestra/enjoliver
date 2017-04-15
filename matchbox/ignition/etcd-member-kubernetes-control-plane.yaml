@@ -916,7 +916,7 @@ storage:
         inline: |
           storage "etcd" {
             address  = "http://127.0.0.1:{{.vault_etcd_client_port}}"
-            etcd_api = "v2"
+            etcd_api = "v3"
             sync = "false"
           }
           listener "tcp" {
@@ -931,7 +931,7 @@ storage:
         inline: |
           storage "etcd" {
             address  = "http://127.0.0.1:{{.vault_etcd_client_port}}"
-            etcd_api = "v2"
+            etcd_api = "v3"
             ha_enabled = "true"
             redirect_addr = "https://{{.network.ip}}:8200"
             sync = "false"
