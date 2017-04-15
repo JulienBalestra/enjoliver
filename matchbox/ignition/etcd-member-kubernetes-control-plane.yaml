@@ -1280,8 +1280,8 @@ storage:
             --ca-file /etc/vault.d/etcd-fleet/client.issuing_ca \
             --cert-file /etc/vault.d/etcd-fleet/client.certificate \
             --key-file /etc/vault.d/etcd-fleet/client.private_key \
-            --driver etcd --endpoint {{.fleet_etcd_member_client_uri_list}} list-machines \
-            --fields ip --no-legend | grep -c {{.network.ip}}
+            --driver etcd --endpoint https://{{.network.ip}}:{{.fleet_etcd_client_port}},{{.fleet_etcd_member_client_uri_list}} \
+            list-machines --fields ip --no-legend | grep -c {{.network.ip}}
 
           retry kubectl uncordon {{.kubernetes_node_name}}
 
@@ -1494,7 +1494,7 @@ storage:
 
           while true
           do
-            for ve in $(echo -n {{ .vault_etcd_member_client_uri_list }} | tr ',' ' ')
+            for ve in $(echo -n {{ .vault_etcd_member_client_uri_list }} | tr ',' '\n' | shuf)
             do
               REQ="${ve}/v2/keys/token/${1}/${2}"
               echo ${REQ}
@@ -1545,7 +1545,7 @@ storage:
           # TODO consul-template or check if renew
           test -f /etc/vault.d/${1}/${2}-pki.json && exit 0
           test -f ${VAULT_CAPATH} || {
-          for ve in $(echo -n {{ .vault_ip_list }} | tr ',' ' ')
+          for ve in $(echo -n {{ .vault_ip_list }} | tr ',' '\n' | shuf)
           do
            curl -f --insecure https://${ve}:{{.vault_etcd_client_port}}/v2/keys/pki/vault/server.issuing_ca \
              | jq -re .node.value > ${VAULT_CAPATH} && {
@@ -1557,7 +1557,7 @@ storage:
 
           while true
           do
-            for ve in $(echo -n {{ .vault_ip_list }} | tr ',' ' ')
+            for ve in $(echo -n {{ .vault_ip_list }} | tr ',' '\n' | shuf)
             do
               curl https://${ve}:8200/v1/pki/${1}/issue/${2} \
                 --cacert ${VAULT_CAPATH} -Lf \
@@ -1606,7 +1606,7 @@ storage:
           # TODO consul-template or check if renew
           test -f /etc/vault.d/${1}/${2}-secret.json && exit 0
           test -f ${VAULT_CAPATH} || {
-          for ve in $(echo -n {{ .vault_ip_list }} | tr ',' ' ')
+          for ve in $(echo -n {{ .vault_ip_list }} | tr ',' '\n' | shuf)
           do
             curl -f --insecure https://${ve}:{{.vault_etcd_client_port}}/v2/keys/pki/vault/server.issuing_ca \
               | jq -re .node.value > ${VAULT_CAPATH} && {
@@ -1618,7 +1618,7 @@ storage:
 
           while true
           do
-            for ve in $(echo -n {{ .vault_ip_list }} | tr ',' ' ')
+            for ve in $(echo -n {{ .vault_ip_list }} | tr ',' '\n' | shuf)
             do
               REQ="https://${ve}:8200/v1/secret/${1}/${2}"
               echo ${REQ}

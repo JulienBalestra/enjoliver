@@ -98,8 +98,8 @@ class TestKVMK8sEnjolivageDisk0(TestKVMK8sEnjolivageDisk):
                                            self.ec.vault_etcd_client_port)
             self.vault_issue_app_certs(plan_k8s_2t.kubernetes_control_plane_ip_list[0], self.ec.vault_etcd_client_port)
 
-            self.save_unseal_key(sy.kubernetes_control_plane_ip_list)
-            self.unseal_all_vaults(sy.kubernetes_control_plane_ip_list, self.ec.vault_etcd_client_port)
+            self.save_unseal_key(plan_k8s_2t.kubernetes_control_plane_ip_list)
+            self.unseal_all_vaults(plan_k8s_2t.kubernetes_control_plane_ip_list, self.ec.vault_etcd_client_port)
 
             self.etcd_member_len(plan_k8s_2t.kubernetes_control_plane_ip_list[0],
                                  plan_k8s_2t._sch_k8s_control_plane.expected_nb,
@@ -214,8 +214,8 @@ class TestKVMK8sEnjolivageDisk1(TestKVMK8sEnjolivageDisk):
                                            self.ec.vault_etcd_client_port)
             self.vault_issue_app_certs(plan_k8s_2t.kubernetes_control_plane_ip_list[0], self.ec.vault_etcd_client_port)
 
-            self.save_unseal_key(sy.kubernetes_control_plane_ip_list)
-            self.unseal_all_vaults(sy.kubernetes_control_plane_ip_list, self.ec.vault_etcd_client_port)
+            self.save_unseal_key(plan_k8s_2t.kubernetes_control_plane_ip_list)
+            self.unseal_all_vaults(plan_k8s_2t.kubernetes_control_plane_ip_list, self.ec.vault_etcd_client_port)
 
             self.etcd_member_len(plan_k8s_2t.kubernetes_control_plane_ip_list[0],
                                  plan_k8s_2t._sch_k8s_control_plane.expected_nb,
