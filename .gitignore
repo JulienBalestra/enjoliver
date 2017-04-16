@@ -106,3 +106,4 @@ matchbox/assets/setup-network-environment/1.0.1/
 /app/tests/test_certs/*.certificate
 /app/tests/test_certs/*.issuing_ca
 /app/tests/test_certs/*.private_key
+/app/tests/test_certs/unseal.key

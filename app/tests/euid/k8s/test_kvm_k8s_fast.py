@@ -85,10 +85,10 @@ class TestKVMK8SFast0(TestKVMK8sFast):
             self.assertTrue(sch_cp.apply())
             sch_no = schedulerv2.KubernetesNode(self.api_uri, apply_dep=False)
             for i in range(60):
-                if sch_no.apply() == nb_node - 1:
+                if sch_no.apply() == nb_node - sch_cp.expected_nb:
                     break
                 time.sleep(self.testing_sleep_seconds)
-            self.assertEqual(nb_node - 1, sch_no.apply())
+            self.assertEqual(nb_node - sch_cp.expected_nb, sch_no.apply())
             sy.apply()
 
             to_start = copy.deepcopy(nodes)

@@ -169,8 +169,7 @@ systemd:
         RequiredBy=multi-user.target
 
     - name: systemd-timesyncd.service
-      mask: true
-      enable: false
+      enable: true
 
     - name: ntpd.service
       enable: true
@@ -324,7 +323,7 @@ systemd:
           --cert="/etc/vault.d/etcd-%i/client.certificate" \
           --key="/etc/vault.d/etcd-%i/client.private_key" \
           --cacert="/etc/vault.d/etcd-%i/client.issuing_ca"
-        RestartSec=20s
+        RestartSec=5s
         Restart=on-failure
         LimitNOFILE=65826
         [Install]
@@ -357,7 +356,7 @@ systemd:
           --peer-key-file /etc/vault.d/etcd-%i/peer.private_key \
           --peer-trusted-ca-file /etc/vault.d/etcd-%i/peer.issuing_ca \
           --peer-client-cert-auth
-        RestartSec=15s
+        RestartSec=5s
         Restart=on-failure
         LimitNOFILE=65826
         [Install]
@@ -490,6 +489,13 @@ systemd:
 
 storage:
   files:
+    - path: /etc/enjoliver
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          revision=1
+
     - path: /opt/rootfs/.keep
       filesystem: root
       mode: 0644
@@ -882,6 +888,34 @@ storage:
             sleep 5
           done
 
+    - path: /opt/bin/vault-fetch-ca
+      mode: 0544
+      filesystem: root
+      contents:
+        inline: |
+          #!/usr/bin/env bash
+
+          export PATH=/opt/bin:${PATH}
+          export VAULT_CAPATH=/etc/vault.d/vault/server.issuing_ca
+          set -o pipefail
+
+          # TODO consul-template or check if renew
+          test -f ${VAULT_CAPATH} || {
+          for ve in $(echo -n {{ .vault_ip_list }} | tr ',' '\n' | shuf)
+          do
+              REQ=https://${ve}:{{.vault_etcd_client_port}}/v2/keys/pki/vault/server.issuing_ca
+              echo "GET ${REQ}"
+              curl -fs --insecure ${REQ} \
+                | jq -re .node.value > ${VAULT_CAPATH} && {
+                  ln -svf ${VAULT_CAPATH} /etc/ssl/certs/vault
+                  ls -l ${VAULT_CAPATH} /etc/ssl/certs/vault
+                  exit $?
+              }
+              sleep 5
+          done
+          }
+          exit 2
+
     - path: /opt/bin/vault-pki-issue
       mode: 0544
       filesystem: root
@@ -909,22 +943,17 @@ storage:
           # TODO consul-template or check if renew
           test -f /etc/vault.d/${1}/${2}-pki.json && exit 0
           test -f ${VAULT_CAPATH} || {
-          for ve in $(echo -n {{ .vault_ip_list }} | tr ',' '\n' | shuf)
-          do
-           curl -f --insecure https://${ve}:{{.vault_etcd_client_port}}/v2/keys/pki/vault/server.issuing_ca \
-             | jq -re .node.value > ${VAULT_CAPATH} && {
-             ln -svf ${VAULT_CAPATH} /etc/ssl/certs/vault
-             break
-             }
-          done
+            /opt/bin/vault-fetch-ca || exit $?
           }
 
           while true
           do
             for ve in $(echo -n {{ .vault_ip_list }} | tr ',' '\n' | shuf)
             do
-              curl https://${ve}:8200/v1/pki/${1}/issue/${2} \
-                --cacert ${VAULT_CAPATH} -Lf \
+              REQ="https://${ve}:8200/v1/pki/${1}/issue/${2}"
+              echo "POST ${REQ}"
+              curl ${REQ} \
+                --cacert ${VAULT_CAPATH} -Lfs \
                 --header "X-Vault-Token: ${TOKEN}" \
                 -XPOST --data '{
                   "common_name": "{{.network.ip}}",
@@ -935,7 +964,7 @@ storage:
               then
                 for item in certificate issuing_ca private_key
                 do
-                  jq -re .data.${item} /etc/vault.d/${1}/${2}-pki.json > /etc/vault.d/${1}/${2}.${item}  || continue
+                  jq -re .data.${item} /etc/vault.d/${1}/${2}-pki.json > /etc/vault.d/${1}/${2}.${item} || exit 2
                 done
                 exit 0
               fi
@@ -970,14 +999,7 @@ storage:
           # TODO consul-template or check if renew
           test -f /etc/vault.d/${1}/${2}-secret.json && exit 0
           test -f ${VAULT_CAPATH} || {
-          for ve in $(echo -n {{ .vault_ip_list }} | tr ',' '\n' | shuf)
-          do
-            curl -f --insecure https://${ve}:{{.vault_etcd_client_port}}/v2/keys/pki/vault/server.issuing_ca \
-              | jq -re .node.value > ${VAULT_CAPATH} && {
-             ln -svf ${VAULT_CAPATH} /etc/ssl/certs/vault
-             break
-             }
-          done
+            /opt/bin/vault-fetch-ca || exit $?
           }
 
           while true
@@ -985,15 +1007,15 @@ storage:
             for ve in $(echo -n {{ .vault_ip_list }} | tr ',' '\n' | shuf)
             do
               REQ="https://${ve}:8200/v1/secret/${1}/${2}"
-              echo ${REQ}
-              curl ${REQ} -Lf \
+              echo "GET ${REQ}"
+              curl ${REQ} -Lfs \
                 --cacert ${VAULT_CAPATH} \
                 --header "X-Vault-Token: ${TOKEN}" > /etc/vault.d/${1}/${2}-secret.json
               if [ $? -eq 0 ]
               then
                 for item in key
                 do
-                  jq -re .data.${item} /etc/vault.d/${1}/${2}-secret.json > /etc/vault.d/${1}/${2}.${item} || continue
+                  jq -re .data.${item} /etc/vault.d/${1}/${2}-secret.json > /etc/vault.d/${1}/${2}.${item} || exit 2
                 done
                 exit 0
               fi

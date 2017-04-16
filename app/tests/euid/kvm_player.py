@@ -1,14 +1,14 @@
-import datetime
 import json
 import multiprocessing
+import unittest
+
+import datetime
+import os
+import requests
 import shutil
 import socket
 import subprocess
 import sys
-import unittest
-
-import os
-import requests
 import time
 import yaml
 from kubernetes import client as kc
@@ -500,7 +500,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
                 except Exception as e:
                     display(e)
-                display("-> %d/%d NOT READY %s for %s" % (t, tries, ip, self.etcd_endpoint_health.__name__))
+                display("-> %d/%d NOT READY %s%d for %s" % (t, tries, ip, port, self.etcd_endpoint_health.__name__))
                 time.sleep(self.testing_sleep_seconds * 2)
 
         self.assertEqual(len(ips), 0)
@@ -511,16 +511,16 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             try:
                 endpoint = "https://%s:%d/v2/keys/initier" % (ip, port)
                 request = requests.get(endpoint, verify=False)
-                content = request.content
                 request.close()
+                content = request.content
                 vault_uri = json.loads(content.decode())["node"]["value"]
-                display("-> RESULT %s %s" % (endpoint, vault_uri))
+                display("-> RESULT %s: %s" % (endpoint, vault_uri))
                 sys.stdout.flush()
                 break
             except Exception as e:
                 display(e)
             display(
-                "-> %d/%d NOT READY initier %s for %s" % (t, tries, ip, self.vault_self_certs.__name__))
+                "-> %d/%d NOT READY initier %s:%d for %s" % (t, tries, ip, port, self.vault_self_certs.__name__))
             time.sleep(self.testing_sleep_seconds * 2)
         self.assertGreater(len(vault_uri), 0)
         return vault_uri
@@ -545,8 +545,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
             except Exception as e:
                 display(e)
-            display(
-                "-> %d/%d NOT READY token %s for %s" % (t, tries, ip, self.vault_self_certs.__name__))
+            display("-> %d/%d NOT READY token %s %s:%d for %s" % (
+                t, tries, etcd_key, ip, port, self.vault_self_certs.__name__))
             time.sleep(self.testing_sleep_seconds * 2)
         self.assertGreater(len(token_vault_server), 0)
         return token_vault_server
@@ -565,6 +565,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                         "ttl": "17520h",
                         "ip_sans": "%s" % self.api_ip,
                     }))
+                request.close()
                 content = json.loads(request.content.decode())["data"]
                 break
             except Exception as e:
@@ -646,24 +647,32 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             key = f.read()
         self.assertGreater(len(key), 0)
         for ip in ips:
-            token_vault_server = self._get_vault_token_in_etcd(ip, port, "token/vault/server", tries)
             for t in range(tries):
                 url = "https://%s:8200/v1/sys/unseal" % ip
                 try:
                     request = requests.post(
                         url,
-                        headers={'X-Vault-Token': token_vault_server},
                         verify=os.path.join(self.test_certs_path, "vault_server.issuing_ca"),
                         data=json.dumps({
                             "key": key,
                         }))
                     content = json.loads(request.content.decode())
-                    print(content)
+                    request.close()
                     self.assertFalse(content["sealed"])
+                    request = requests.get(
+                        "https://%s:8200/v1/" % ip,
+                        verify=os.path.join(self.test_certs_path, "vault_server.issuing_ca"),
+                    )
+                    content = json.loads(request.content.decode())
+                    request.close()
+                    self.assertEqual([], content["errors"])
                     break
                 except Exception as e:
                     display(e)
-                display("-> NOT READY %d/%d %s %s" % (t, tries, url, self.unseal_all_vaults.__name__))
+                display("-> NOT READY %d/%d %s %s key:%s" % (
+                    t, tries, url, self.unseal_all_vaults.__name__, key))
+                # if t == tries - 1:
+                #     self.iteractive_usage()
                 self.assertFalse(t == tries - 1)
                 time.sleep(self.testing_sleep_seconds * 2)
 
