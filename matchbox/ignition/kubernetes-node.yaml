@@ -525,8 +525,10 @@ storage:
               - --tls-ca-file=/etc/secrets/kube-apiserver.issuing_ca
               - --tls-cert-file=/etc/secrets/kube-apiserver.certificate
               - --tls-private-key-file=/etc/secrets/kube-apiserver.private_key
-              - --runtime-config=rbac.authorization.k8s.io/v1alpha1
-              - --authorization-mode=RBAC
+              - --client-ca-file=/etc/secrets/kube-apiserver.issuing_ca
+              - --service-account-lookup=true
+              - --authorization-mode=AlwaysAllow
+              - --anonymous-auth=false
               resources:
                 requests:
                   cpu: 200m

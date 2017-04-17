@@ -712,7 +712,8 @@ storage:
               - --kubelet-preferred-address-types=InternalIP,LegacyHostIP,ExternalDNS,InternalDNS,Hostname
               - --service-account-key-file=/etc/secrets/service-accounts.key
               - --service-account-lookup=true
-              - --authorization-mode=RBAC
+              - --authorization-mode=AlwaysAllow
+              - --anonymous-auth=false
               resources:
                 requests:
                   cpu: 200m
@@ -1415,6 +1416,7 @@ storage:
             }
           EOF
 
+            echo "token create ${ETCD_ROLE}/peer" | tee -a /etc/vault.d/vault.log
             vault token-create -format=json \
               -display-name ${ETCD_ROLE}/peer \
               -ttl="8760h" -orphan -period="8760h" \
@@ -1422,6 +1424,7 @@ storage:
                 etcdctl --no-sync --endpoints http://127.0.0.1:{{.vault_etcd_client_port}} \
                   set token/${ETCD_ROLE}/peer >> /etc/vault.d/vault.log
 
+            echo "token create ${ETCD_ROLE}/client" | tee -a /etc/vault.d/vault.log
             vault token-create -format=json \
               -display-name ${ETCD_ROLE}/client \
               -ttl="8760h" -orphan -period="8760h" \
@@ -1462,6 +1465,7 @@ storage:
           }
           EOF
 
+          echo "token create kube-apiserver" | tee -a /etc/vault.d/vault.log
           vault token-create -format=json \
             -display-name kubernetes/kube-apiserver \
             -ttl="8760h" -orphan -period="8760h" \
@@ -1469,6 +1473,7 @@ storage:
               etcdctl --no-sync --endpoints http://127.0.0.1:{{.vault_etcd_client_port}} \
                 set token/kubernetes/kube-apiserver >> /etc/vault.d/vault.log
 
+          echo "token create kubelet" | tee -a /etc/vault.d/vault.log
           vault token-create -format=json \
             -display-name kubernetes/kubelet \
             -ttl="8760h" -orphan -period="8760h" \
@@ -1476,6 +1481,7 @@ storage:
               etcdctl --no-sync --endpoints http://127.0.0.1:{{.vault_etcd_client_port}} \
                 set token/kubernetes/kubelet >> /etc/vault.d/vault.log
 
+          echo "token create kubectl" | tee -a /etc/vault.d/vault.log
           vault token-create -format=json \
             -display-name kubernetes/kubectl \
             -ttl="8760h" -orphan -period="8760h" \
