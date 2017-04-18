@@ -246,7 +246,6 @@ class ConfigSyncSchedules(object):
             "etcd_image_url": EC.etcd_image_url,
             "fleet_image_url": EC.fleet_image_url,
             "cni_image_url": EC.cni_image_url,
-            "consul_image_url": EC.consul_image_url,
             "vault_image_url": EC.vault_image_url,
             # IPAM
             "cni": json.dumps(self.cni_ipam(m["cidrv4"], m["gateway"]), sort_keys=True),
