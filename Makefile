@@ -72,12 +72,12 @@ assets:
 
 clean: check_clean
 	make -C cni clean
-	make -C consul clean
 	make -C etcd clean
 	make -C fleet clean
 	make -C hyperkube clean
 	make -C lldp clean
 	make -C rkt clean
+	make -C vault clean
 
 clean_after_assets:
 	make -C discoveryC clean
