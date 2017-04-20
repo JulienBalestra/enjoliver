@@ -1,8 +1,9 @@
 import copy
-import os
 import sys
-import time
 import unittest
+
+import os
+import time
 
 from app.plans import k8s_2t
 
@@ -116,9 +117,11 @@ class TestKVMK8sEnjolivageDisk0(TestKVMK8sEnjolivageDisk):
 
             self.create_httpd_daemon_set(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
             self.create_httpd_deploy(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+            self.create_tiller_deploy(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
             ips = copy.deepcopy(plan_k8s_2t.kubernetes_control_plane_ip_list + plan_k8s_2t.kubernetes_nodes_ip_list)
             self.daemon_set_httpd_are_running(ips)
             self.pod_httpd_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+            self.pod_tiller_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
 
             self.write_ending(marker)
         finally:
@@ -235,9 +238,11 @@ class TestKVMK8sEnjolivageDisk1(TestKVMK8sEnjolivageDisk):
 
             self.create_httpd_daemon_set(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
             self.create_httpd_deploy(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+            self.create_tiller_deploy(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
             ips = copy.deepcopy(plan_k8s_2t.kubernetes_control_plane_ip_list + plan_k8s_2t.kubernetes_nodes_ip_list)
             self.daemon_set_httpd_are_running(ips)
             self.pod_httpd_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+            self.pod_tiller_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
 
             self.write_ending(marker)
         finally:

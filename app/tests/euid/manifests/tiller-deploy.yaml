@@ -29,3 +29,20 @@ spec:
 
         - name: KUBERNETES_SERVICE_PORT
           value: "6443"
+
+        livenessProbe:
+          httpGet:
+            path: /liveness
+            port: 44135
+          initialDelaySeconds: 1
+          timeoutSeconds: 10
+          periodSeconds: 1
+
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /liveness
+            port: 44135
+          initialDelaySeconds: 1
+          timeoutSeconds: 10
+          periodSeconds: 1

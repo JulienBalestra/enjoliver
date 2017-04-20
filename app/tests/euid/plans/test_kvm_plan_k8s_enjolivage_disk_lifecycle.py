@@ -124,10 +124,12 @@ class TestKVMK8SEnjolivageDiskLifecycleLifecycle0(TestKVMK8sEnjolivageDiskLifecy
                 if i == 0:
                     self.create_httpd_daemon_set(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
                     self.create_httpd_deploy(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+                    self.create_tiller_deploy(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
 
                 ips = copy.deepcopy(plan_k8s_2t.kubernetes_control_plane_ip_list + plan_k8s_2t.kubernetes_nodes_ip_list)
                 self.daemon_set_httpd_are_running(ips)
                 self.pod_httpd_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+                self.pod_tiller_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
 
                 machine_marker = "%s-%d" % (marker, i)
                 destroy, vol_delete, vol_create, start = \

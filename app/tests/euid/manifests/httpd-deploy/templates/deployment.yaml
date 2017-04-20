@@ -1,0 +1,43 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "fullname" . }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command:
+        - /dgr/bin/busybox
+        - httpd
+        - -fv
+        - -h
+        - /opt/configmap
+        livenessProbe:
+          httpGet:
+            path: /content
+            port: 80
+        readinessProbe:
+          httpGet:
+            path: /content
+            port: 80
+
+        volumeMounts:
+          - name: configmap
+            mountPath: /opt/configmap
+
+        resources:
+{{ toYaml .Values.resources | indent 12 }}
+
+      volumes:
+        - name: configmap
+          configMap:
+            name: {{ template "fullname" . }}

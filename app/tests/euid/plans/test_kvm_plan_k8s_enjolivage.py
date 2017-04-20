@@ -108,11 +108,8 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
             self.k8s_api_health(plan_k8s_2t.kubernetes_control_plane_ip_list)
             self.k8s_node_nb(plan_k8s_2t.etcd_member_ip_list[0], nb_node)
 
-            self.create_httpd_daemon_set(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
-            self.create_httpd_deploy(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
-            ips = copy.deepcopy(plan_k8s_2t.kubernetes_control_plane_ip_list + plan_k8s_2t.kubernetes_nodes_ip_list)
-            self.daemon_set_httpd_are_running(ips)
-            self.pod_httpd_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+            self.create_tiller_deploy(plan_k8s_2t.etcd_member_ip_list[0])
+            self.pod_tiller_is_running(plan_k8s_2t.etcd_member_ip_list[0])
 
             self.write_ending(marker)
         finally:

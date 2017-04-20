@@ -28,6 +28,15 @@ MATCHBOX_DIR=$(CWD)/matchbox
 MATCHBOX=$(MATCHBOX_DIR)/matchbox
 MATCHBOX_DOWNLOAD_TAR=$(MATCHBOX_DIR)/$(MATCHBOX_TAR)
 
+# HELM
+HELM_VERSION=v2.3.1
+HELM_GOOGLE_STORAGE_DOWNLOAD=https://storage.googleapis.com/kubernetes-helm
+HELM_TAR=helm-$(HELM_VERSION)-linux-amd64.tar.gz
+HELM_GOOGLE_STORAGE=$(HELM_GOOGLE_STORAGE_DOWNLOAD)/$(HELM_TAR)
+HELM_DIR=$(CWD)/helm
+HELM=$(HELM_DIR)/helm
+HELM_DOWNLOAD_TAR=$(HELM_DIR)/$(HELM_TAR)
+
 # ACSERVER
 ACSERVER_DIR=$(CWD)/acserver
 ACSERVER=$(ACSERVER_DIR)/acserver
@@ -44,6 +53,13 @@ $(ACSERVER):
 	cd $(ACSERVER_DIR) &&  GOPATH=$(ACSERVER_DIR) PATH=$(ACSERVER_DIR)/bin/:$(PATH) ./gomake || echo nevermind we continue
 	cd $(ACSERVER_DIR) && GOPATH=$(ACSERVER_DIR) go build
 	$(ACSERVER) -V
+
+$(HELM_DOWNLOAD_TAR):
+	mkdir -pv $(HELM_DIR)
+	curl -fL $(HELM_GOOGLE_STORAGE) -o $(HELM_DOWNLOAD_TAR)
+
+$(HELM): $(HELM_DOWNLOAD_TAR)
+	@test -x $(HELM) || tar -C $(HELM_DIR) -xzf $(HELM_DOWNLOAD_TAR) --strip-components=1
 
 $(MATCHBOX_DOWNLOAD_TAR):
 	mkdir -pv $(MATCHBOX_DIR)
@@ -69,7 +85,7 @@ $(RKT): $(RKT_DOWNLOAD_TAR)
 	mkdir -pv $(RKT_DATASTORE)
 	@ln -svf $(RKT_DATASTORE) $(CWD)/data || true
 
-dev_setup: $(MATCHBOX) $(RKT) $(DGR) $(ACSERVER)
+dev_setup: $(MATCHBOX) $(RKT) $(DGR) $(ACSERVER) $(HELM)
 
 gc:
 	$(RKT) --local-config=$(CWD) gc --grace-period=0s
@@ -117,4 +133,4 @@ fclean:
 	rm -Rf renders/*.render || true
 	rm -Rf target || true
 
-.PHONY: $(DGR) $(RKT) $(ACSERVER) setup build install clean fclean
+.PHONY: $(DGR) $(RKT) $(ACSERVER) $(HELM) setup build install clean fclean

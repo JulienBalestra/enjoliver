@@ -1,14 +1,14 @@
+import datetime
 import json
 import multiprocessing
-import unittest
-
-import datetime
-import os
-import requests
 import shutil
 import socket
 import subprocess
 import sys
+import unittest
+
+import os
+import requests
 import time
 import yaml
 from kubernetes import client as kc
@@ -748,19 +748,27 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     def create_httpd_deploy(self, api_server_ip):
         with open("%s/manifests/httpd-deploy.yaml" % self.euid_path) as f:
-            httpd = yaml.load(f)
+            manifest = yaml.load(f)
 
         c = kc.ApiClient(host="%s:8080" % api_server_ip)
         b = kc.ExtensionsV1beta1Api(c)
-        b.create_namespaced_deployment("default", httpd)
+        b.create_namespaced_deployment("default", manifest)
+
+    def create_tiller_deploy(self, api_server_ip):
+        with open("%s/manifests/tiller-deploy.yaml" % self.euid_path) as f:
+            manifest = yaml.load(f)
+
+        c = kc.ApiClient(host="%s:8080" % api_server_ip)
+        b = kc.ExtensionsV1beta1Api(c)
+        b.create_namespaced_deployment("kube-system", manifest)
 
     def create_httpd_daemon_set(self, api_server_ip):
         with open("%s/manifests/httpd-daemonset.yaml" % self.euid_path) as f:
-            httpd = yaml.load(f)
+            manifest = yaml.load(f)
 
         c = kc.ApiClient(host="%s:8080" % api_server_ip)
         b = kc.ExtensionsV1beta1Api(c)
-        b.create_namespaced_daemon_set("default", httpd)
+        b.create_namespaced_daemon_set("default", manifest)
 
     def pod_httpd_is_running(self, api_server_ip, tries=100):
         code = 0
@@ -788,6 +796,33 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
             time.sleep(self.testing_sleep_seconds)
         self.assertEqual(404, code)
+
+    def pod_tiller_is_running(self, api_server_ip, tries=100):
+        code = 0
+        c = kc.ApiClient(host="%s:8080" % api_server_ip)
+        core = kc.CoreV1Api(c)
+        for t in range(tries):
+            if code == 200:
+                break
+            try:
+                r = core.list_namespaced_pod("kube-system")
+                for p in r.items:
+                    ip = p.status.pod_ip
+                    try:
+                        g = requests.get("http://%s:44135/liveness" % ip)
+                        code = g.status_code
+                        g.close()
+                        display("-> RESULT %s %s" % (ip, code))
+                        sys.stdout.flush()
+                    except Exception as e:
+                        display("-> %d/%d NOT READY %s for %s %s" % (
+                            t + 1, tries, ip, self.pod_tiller_is_running.__name__, e))
+            except ValueError:
+                display("-> %d/%d NOT READY %s for %s" % (
+                    t + 1, tries, "ValueError", self.pod_tiller_is_running.__name__))
+
+            time.sleep(self.testing_sleep_seconds)
+        self.assertEqual(200, code)
 
     def daemon_set_httpd_are_running(self, ips, tries=200):
         assert type(ips) is list

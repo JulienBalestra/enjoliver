@@ -966,6 +966,9 @@ storage:
           etcd_cafile=/etc/vault.d/etcd-fleet/client.issuing_ca
           etcd_certfile=/etc/vault.d/etcd-fleet/client.certificate
           etcd_keyfile=/etc/vault.d/etcd-fleet/client.private_key
+          agent_ttl = 120s
+          engine_reconcile_interval = 1
+          etcd_request_timeout = 10
 
     - path: /etc/modprobe.d/bonding.conf
       mode: 0644
