@@ -3,11 +3,10 @@ kind: ConfigMap
 apiVersion: v1
 metadata:
   namespace: default
-  name: {{ template "fullname" . }}
+  name: {{ .Chart.Name }}
   labels:
     chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
 data:
   content: |
     Chart.Name: {{ .Chart.Name }}
-    fullname: {{ template "fullname" . }}
     version: {{ .Chart.Version }}

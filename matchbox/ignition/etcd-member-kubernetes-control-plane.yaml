@@ -694,23 +694,26 @@ storage:
               - apiserver
               - --advertise-address={{.network.ip}}
               - --insecure-bind-address={{.kubernetes_apiserver_insecure_bind_address}}
-              - --etcd-servers=http://127.0.0.1:{{.kubernetes_etcd_client_port}}
+              - --etcd-servers=http://127.0.0.1:{{.kubernetes_etcd_client_port}},{{.kubernetes_etcd_member_client_uri_list}}
+              - --etcd-cafile=/etc/secrets/etcd-kubernetes/client.issuing_ca
+              - --etcd-certfile=/etc/secrets/etcd-kubernetes/client.certificate
+              - --etcd-keyfile=/etc/secrets/etcd-kubernetes/client.private_key
               - --allow-privileged=true
               - --service-cluster-ip-range={{.kubernetes_service_cluster_ip_range}}
               - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota
               - --runtime-config=batch/v2alpha1
               - --apiserver-count={{.kubernetes_apiserver_count}}
               - --enable-swagger-ui=true
-              - --tls-ca-file=/etc/secrets/kube-apiserver.issuing_ca
-              - --tls-cert-file=/etc/secrets/kube-apiserver.certificate
-              - --tls-private-key-file=/etc/secrets/kube-apiserver.private_key
-              - --client-ca-file=/etc/secrets/kube-apiserver.issuing_ca
-              - --kubelet-certificate-authority=/etc/secrets/kube-apiserver.issuing_ca
-              - --kubelet-client-certificate=/etc/secrets/kube-apiserver.certificate
-              - --kubelet-client-key=/etc/secrets/kube-apiserver.private_key
+              - --tls-ca-file=/etc/secrets/kubernetes/kube-apiserver.issuing_ca
+              - --tls-cert-file=/etc/secrets/kubernetes/kube-apiserver.certificate
+              - --tls-private-key-file=/etc/secrets/kubernetes/kube-apiserver.private_key
+              - --client-ca-file=/etc/secrets/kubernetes/kube-apiserver.issuing_ca
+              - --kubelet-certificate-authority=/etc/secrets/kubernetes/kube-apiserver.issuing_ca
+              - --kubelet-client-certificate=/etc/secrets/kubernetes/kube-apiserver.certificate
+              - --kubelet-client-key=/etc/secrets/kubernetes/kube-apiserver.private_key
               - --kubelet-https=true
               - --kubelet-preferred-address-types=InternalIP,LegacyHostIP,ExternalDNS,InternalDNS,Hostname
-              - --service-account-key-file=/etc/secrets/service-accounts.key
+              - --service-account-key-file=/etc/secrets/kubernetes/service-accounts.key
               - --service-account-lookup=true
               - --authorization-mode=AlwaysAllow
               - --anonymous-auth=false
@@ -725,13 +728,19 @@ storage:
                 initialDelaySeconds: 15
                 timeoutSeconds: 15
               volumeMounts:
-              - name: secrets
-                mountPath: /etc/secrets
+              - name: secrets-kubernetes
+                mountPath: /etc/secrets/kubernetes
+                readOnly: true
+              - name: secrets-etcd-kubernetes
+                mountPath: /etc/secrets/etcd-kubernetes
                 readOnly: true
             volumes:
-            - name: secrets
+            - name: secrets-kubernetes
               hostPath:
                 path: /etc/vault.d/kubernetes
+            - name: secrets-etcd-kubernetes
+              hostPath:
+                path: /etc/vault.d/etcd-kubernetes
 
     - path: /etc/kubernetes/manifests/kube-controller-manager.yaml
       filesystem: root

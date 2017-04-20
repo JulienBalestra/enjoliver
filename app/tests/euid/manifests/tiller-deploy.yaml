@@ -46,3 +46,5 @@ spec:
           initialDelaySeconds: 1
           timeoutSeconds: 10
           periodSeconds: 1
+      nodeSelector:
+        control-plane: "true"
