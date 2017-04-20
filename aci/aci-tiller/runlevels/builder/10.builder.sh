@@ -10,12 +10,12 @@ export LC_ALL=C
 export GOPATH=/go
 export PATH=${GOPATH}/bin:/usr/local/go/bin:${PATH}
 
+HELM_VERSION="2.3.1" 
+
 mkdir -pv ${GOPATH}/src/k8s.io/helm
 cd ${GOPATH}/src/k8s.io/helm
 
-curl -L https://github.com/kubernetes/helm/archive/v${ACI_VERSION}.tar.gz -o helm.tar.gz
-
-tar -xzf helm.tar.gz --strip-components=1
+git clone https://github.com/kubernetes/helm.git . && git checkout v${HELM_VERSION}
 
 make bootstrap build
 
