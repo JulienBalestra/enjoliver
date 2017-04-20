@@ -61,6 +61,8 @@ acis: acserver
 	make -C lldp clean
 	make -C rkt || pkill acserver || exit 1
 	make -C rkt clean
+	make -C tiller || pkill acserver || exit 1
+	make -C tiller clean
 	make -C vault || pkill acserver || exit 1
 	make -C vault clean
 	# Find a better way to stop it

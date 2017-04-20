@@ -500,7 +500,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
                 except Exception as e:
                     display(e)
-                display("-> %d/%d NOT READY %s%d for %s" % (t, tries, ip, port, self.etcd_endpoint_health.__name__))
+                display("-> %d/%d NOT READY %s:%d for %s" % (t, tries, ip, port, self.etcd_endpoint_health.__name__))
                 time.sleep(self.testing_sleep_seconds * 2)
 
         self.assertEqual(len(ips), 0)

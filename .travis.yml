@@ -14,10 +14,10 @@ before_install:
   - sudo apt-get autoremove
 
 install:
-  - sudo make apt
+  - sudo -E make apt
 
 before_script:
-  - sudo MY_USER=travis make dev_setup
+  - sudo -E MY_USER=travis make dev_setup
 
 script:
   - make check
