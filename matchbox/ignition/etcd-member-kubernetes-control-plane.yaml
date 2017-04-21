@@ -1311,9 +1311,11 @@ storage:
           KEY="https://{{.network.ip}}:8200"
           ls -l /etc/vault.d/vault/server.certificate /etc/vault.d/vault/server.private_key || {
             curl -f "http://127.0.0.1:{{.vault_etcd_client_port}}/v2/keys/initier?prevExist=false" -XPUT -d "value=${KEY}" || \
-            curl -f "http://127.0.0.1:{{.vault_etcd_client_port}}/v2/keys/initier?prevValue=${KEY}" -XPUT -d "value=${KEY}" && \
-            cp -v /etc/vault.d/config.hcl.insecure /etc/vault.d/config.hcl
-            exit $?
+              curl -f "http://127.0.0.1:{{.vault_etcd_client_port}}/v2/keys/initier?prevValue=${KEY}" -XPUT -d "value=${KEY}" && {
+                cp -v /etc/vault.d/config.hcl.insecure /etc/vault.d/config.hcl
+                echo ${KEY} >> /etc/vault.d/initier
+            }
+            exit 0
           }
           cp -v /etc/vault.d/config.hcl.secure /etc/vault.d/config.hcl
 
@@ -1335,7 +1337,8 @@ storage:
           }
 
           vault init -check && {
-            curl --insecure https://{{.network.ip}}:8200 || {
+            echo "GET vault: https://{{.network.ip}}:8200/v1/"
+            curl --insecure https://{{.network.ip}}:8200/v1/ || {
               echo "vault already init but not running with TLS"
               retry ls -l /etc/vault.d/vault/server.certificate /etc/vault.d/vault/server.private_key
               systemctl restart vault
@@ -1344,14 +1347,26 @@ storage:
             exit 0
           }
 
+          ls -l /etc/vault.d/initier || {
+            echo "not eligible as initier"
+            exit 1
+          }
+
+          KEY=/etc/vault.d/keys
+          echo "${KEY} have to be NOT here"
+          ls -l ${KEY} && {
+            echo ${KEY} already here
+            exit 1
+          }
+
           set -e
           set -o pipefail
 
-          echo "vault init"
-          vault init -key-shares=1 -key-threshold=1 > /etc/vault.d/keys
+          echo "vault init with ${KEY}"
+          vault init -key-shares=1 -key-threshold=1 > ${KEY}
 
-          UNSEALKEY1=$(grep "Unseal Key 1:" /etc/vault.d/keys | cut -f4 -d ' ')
-          ROOTTOKEN=$(grep "Initial Root Token:" /etc/vault.d/keys | cut -f4 -d ' ')
+          UNSEALKEY1=$(grep "Unseal Key 1:" ${KEY} | cut -f4 -d ' ')
+          ROOTTOKEN=$(grep "Initial Root Token:" ${KEY} | cut -f4 -d ' ')
 
           retry vault unseal ${UNSEALKEY1}
           retry vault auth ${ROOTTOKEN} >> /etc/vault.d/vault.log
@@ -1488,6 +1503,8 @@ storage:
             -policy="kubernetes/kubectl" | jq -er .auth.client_token | \
               etcdctl --no-sync --endpoints http://127.0.0.1:{{.vault_etcd_client_port}} \
                 set token/kubernetes/kubectl >> /etc/vault.d/vault.log
+
+          echo "finished $0" | tee -a /etc/vault.d/vault.log
 
     - path: /opt/bin/vault-token
       mode: 0544
