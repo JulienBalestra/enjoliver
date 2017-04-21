@@ -17,19 +17,6 @@ systemd:
       enable: false
       mask: true
 
-    - name: clean-cni.service
-      enable: true
-      contents: |
-        [Unit]
-        ConditionDirectoryNotEmpty=/var/lib/cni/networks/bond0
-        RefuseManualStart=true
-        [Service]
-        Type=oneshot
-        ExecStart=/bin/rm -Rf /var/lib/cni/networks/bond0
-        RemainAfterExit=yes
-        [Install]
-        WantedBy=multi-user.target
-
     - name: install-etcd.service
       enable: true
       contents: |
@@ -384,6 +371,7 @@ systemd:
         ExecStartPre=/bin/mkdir -pv $MANIFESTS
         ExecStart=/opt/rootfs/hyperkube kubelet \
           \
+          --hairpin-mode=none \
           --network-plugin=cni \
           --cni-bin-dir=/opt/rootfs/usr/bin \
           --cni-conf-dir=/etc/rkt/net.d \
@@ -412,7 +400,7 @@ systemd:
         WantedBy=multi-user.target
 
     - name: kube-proxy.service
-      enable: true
+      enable: false
       contents: |
         [Unit]
         After=kubelet.service

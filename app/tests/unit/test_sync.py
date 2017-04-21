@@ -68,6 +68,7 @@ class TestConfigSyncSchedules(TestCase):
         )
         d = s.cni_ipam("172.20.0.10/19", "172.20.0.1")
         self.assertEqual(json.dumps({
+            "dataDir": "/run/cni-ipam",
             'gateway': '172.20.0.1',
             'rangeStart': '172.20.10.1',
             'rangeEnd': '172.20.10.254',
@@ -90,13 +91,14 @@ class TestConfigSyncSchedules(TestCase):
 
         d = s.cni_ipam("10.99.33.1/19", "10.99.64.254")
         self.assertEqual(json.dumps({
+            "dataDir": "/run/cni-ipam",
             "type": "host-local",
             "subnet": "10.99.32.0/19",
             "rangeStart": "10.99.33.2",
             "rangeEnd": "10.99.33.62",
             "gateway": "10.99.64.254",
             "routes": [{"dst": "0.0.0.0/0"}]
-        }, indent=2), json.dumps(d, indent=2))
+        }, indent=2, sort_keys=True), json.dumps(d, indent=2, sort_keys=True))
 
     def test_04_1(self):
         s = sync.ConfigSyncSchedules(
@@ -112,13 +114,14 @@ class TestConfigSyncSchedules(TestCase):
 
         d = s.cni_ipam("10.99.39.129/19", "10.99.64.254")
         self.assertEqual(json.dumps({
+            "dataDir": "/run/cni-ipam",
             "type": "host-local",
             "subnet": "10.99.32.0/19",
             "rangeStart": "10.99.39.130",
             "rangeEnd": "10.99.39.190",
             "gateway": "10.99.64.254",
             "routes": [{"dst": "0.0.0.0/0"}]
-        }, indent=2), json.dumps(d, indent=2))
+        }, indent=2, sort_keys=True), json.dumps(d, indent=2, sort_keys=True))
 
     def test_05(self):
         with self.assertRaises(IOError):
