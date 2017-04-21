@@ -1336,6 +1336,8 @@ storage:
             done
           }
 
+          retry etcdctl --no-sync --endpoint http://127.0.0.1:{{.vault_etcd_client_port}} cluster-health
+
           vault init -check && {
             echo "GET vault: https://{{.network.ip}}:8200/v1/"
             curl --insecure https://{{.network.ip}}:8200/v1/ || {
