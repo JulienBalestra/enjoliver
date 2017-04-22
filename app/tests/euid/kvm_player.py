@@ -669,10 +669,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     break
                 except Exception as e:
                     display(e)
-                display("-> NOT READY %d/%d %s %s key:%s" % (
+                display("-> NOT READY %d/%d %s %s key: %s" % (
                     t, tries, url, self.unseal_all_vaults.__name__, key))
-                # if t == tries - 1:
-                #     self.iteractive_usage()
                 self.assertFalse(t == tries - 1)
                 time.sleep(self.testing_sleep_seconds * 2)
 

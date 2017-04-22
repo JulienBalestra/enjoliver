@@ -617,7 +617,6 @@ systemd:
         After=etcd3@kubernetes.service
         After=kubelet.service
         [Service]
-        EnvironmentFile=/etc/metadata.env
         Type=oneshot
         ExecStart=/opt/bin/lifecycle-ready
         RemainAfterExit=yes
@@ -680,18 +679,14 @@ storage:
               command:
               - /hyperkube
               - apiserver
+              - --apiserver-count={{.kubernetes_apiserver_count}}
               - --advertise-address={{.network.ip}}
               - --insecure-bind-address={{.kubernetes_apiserver_insecure_bind_address}}
-              - --etcd-servers=http://127.0.0.1:{{.kubernetes_etcd_client_port}},{{.kubernetes_etcd_member_client_uri_list}}
-              - --etcd-cafile=/etc/secrets/etcd-kubernetes/client.issuing_ca
-              - --etcd-certfile=/etc/secrets/etcd-kubernetes/client.certificate
-              - --etcd-keyfile=/etc/secrets/etcd-kubernetes/client.private_key
+              - --etcd-servers=http://127.0.0.1:{{.kubernetes_etcd_client_port}}
               - --allow-privileged=true
               - --service-cluster-ip-range={{.kubernetes_service_cluster_ip_range}}
               - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota
               - --runtime-config=batch/v2alpha1
-              - --apiserver-count={{.kubernetes_apiserver_count}}
-              - --enable-swagger-ui=true
               - --tls-ca-file=/etc/secrets/kubernetes/kube-apiserver.issuing_ca
               - --tls-cert-file=/etc/secrets/kubernetes/kube-apiserver.certificate
               - --tls-private-key-file=/etc/secrets/kubernetes/kube-apiserver.private_key
@@ -719,16 +714,10 @@ storage:
               - name: secrets-kubernetes
                 mountPath: /etc/secrets/kubernetes
                 readOnly: true
-              - name: secrets-etcd-kubernetes
-                mountPath: /etc/secrets/etcd-kubernetes
-                readOnly: true
             volumes:
             - name: secrets-kubernetes
               hostPath:
                 path: /etc/vault.d/kubernetes
-            - name: secrets-etcd-kubernetes
-              hostPath:
-                path: /etc/vault.d/etcd-kubernetes
 
     - path: /etc/kubernetes/manifests/kube-controller-manager.yaml
       filesystem: root
@@ -1000,7 +989,7 @@ storage:
       contents:
         inline: |
           [Resolve]
-          DNS=8.8.8.8 8.8.4.4
+          DNS={{.nameservers}}
           LLMNR=false
 
     - path: /var/log/journal/.keep
@@ -1043,7 +1032,9 @@ storage:
           NETWORK_IP={{.network.ip}}
           ETCD_FLAGS="--cert=/etc/vault.d/etcd-kubernetes/client.certificate \
           --key=/etc/vault.d/etcd-kubernetes/client.private_key \
-          --cacert=/etc/vault.d/etcd-kubernetes/client.issuing_ca"
+          --cacert=/etc/vault.d/etcd-kubernetes/client.issuing_ca \
+          --insecure-skip-tls-verify=false \
+          --insecure-transport=false"
 
     - path: /etc/etcd-fleet
       mode: 0644
@@ -1063,8 +1054,9 @@ storage:
           NETWORK_IP={{.network.ip}}
           ETCD_FLAGS="--cert=/etc/vault.d/etcd-fleet/client.certificate \
           --key=/etc/vault.d/etcd-fleet/client.private_key \
-          --cacert=/etc/vault.d/etcd-fleet/client.issuing_ca"
-
+          --cacert=/etc/vault.d/etcd-fleet/client.issuing_ca \
+          --insecure-skip-tls-verify=false \
+          --insecure-transport=false"
 
     - path: /opt/bin/etcd-operator
       filesystem: root
@@ -1176,11 +1168,10 @@ storage:
 
           set -o pipefail
 
-          curl -f ${API_URI}/healthz
+          curl -f {{.api_uri}}/healthz
 
-          test ${REQUEST_RAW_QUERY}
 
-          STATUS=$(curl -f -XPOST ${API_URI}/lifecycle/ignition/${REQUEST_RAW_QUERY} \
+          STATUS=$(curl -f -XPOST "{{.api_uri}}/lifecycle/ignition/{{.request.raw_query}}" \
                 -d @/usr/share/oem/coreos-install.json \
                 -H "Content-Type: application/json" \
                 -w "%{http_code}" -o /dev/null)
@@ -1193,10 +1184,10 @@ storage:
 
           set -x
 
-          curl -f ${API_URI}/ignition?${REQUEST_RAW_QUERY} -o /tmp/coreos-install.json
+          curl -f "{{.api_uri}}/ignition?{{.request.raw_query}}" -o /tmp/coreos-install.json
           cat /tmp/coreos-install.json | jq -e . > /dev/null
 
-          STRATEGY=$(curl -f ${API_URI}/lifecycle/rolling/${REQUEST_RAW_QUERY} | jq -re .strategy ) || {
+          STRATEGY=$(curl -f "{{.api_uri}}/lifecycle/rolling/{{.request.raw_query}}" | jq -re .strategy ) || {
             exit 0
           }
 
@@ -1204,8 +1195,8 @@ storage:
 
           echo "locksmithctl operations..."
           locksmithctl -endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} status
-          locksmithctl -endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} unlock "${REQUEST_RAW_QUERY}" || true
-          locksmithctl -endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} lock "${REQUEST_RAW_QUERY}"
+          locksmithctl -endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} unlock "{{.request.raw_query}}" || true
+          locksmithctl -endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} lock "{{.request.raw_query}}"
 
           echo "stopping fleet..."
           systemctl stop fleet.service
@@ -1238,10 +1229,8 @@ storage:
       contents:
         inline: |
           #!/usr/bin/env bash
-
-          test "${REQUEST_RAW_QUERY}" || exit 2
-          test "${NETWORK_IP}" || exit 2
           export PATH=/opt/rootfs/usr/bin:/opt/bin/:${PATH}
+          export VAULT_ADDR=http://127.0.0.1:8200
 
           set -o pipefail
 
@@ -1258,6 +1247,8 @@ storage:
              --insecure-skip-tls-verify=true \
              --insecure-transport=false \
              --endpoints http://127.0.0.1:{{.vault_etcd_client_port}} endpoint status
+
+          retry vault status
 
           retry etcdctl \
              --cert=/etc/vault.d/etcd-kubernetes/client.certificate \
@@ -1298,7 +1289,7 @@ storage:
           set -e
 
           echo "remove the lock"
-          locksmithctl -endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} unlock "${REQUEST_RAW_QUERY}" || true
+          locksmithctl -endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} unlock "{{.request.raw_query}}" || true
           echo "$(hostname) {{.network.ip}} is ready"
 
     - path: /opt/bin/vault-config
@@ -1335,8 +1326,12 @@ storage:
               sleep 1
             done
           }
+          export ETCDCTL_API=3
+          retry etcdctl --endpoints http://127.0.0.1:{{.vault_etcd_client_port}} endpoint health
+          unset ETCDCTL_API
 
-          retry etcdctl --no-sync --endpoint http://127.0.0.1:{{.vault_etcd_client_port}} cluster-health
+          echo "Vault have to respond and may be sealed:"
+          curl http://127.0.0.1:8200/v1/ | jq -re .errors || exit 1
 
           vault init -check && {
             echo "GET vault: https://{{.network.ip}}:8200/v1/"
@@ -1355,10 +1350,11 @@ storage:
           }
 
           KEY=/etc/vault.d/keys
-          echo "${KEY} have to be NOT here"
+          echo "${KEY} may have to NOT be here"
           ls -l ${KEY} && {
-            echo ${KEY} already here
-            exit 1
+            echo "${KEY} already here, have to be empty"
+            wc -l ${KEY}
+            test -s ${KEY} && exit 1
           }
 
           set -e

@@ -258,6 +258,7 @@ class ConfigSyncSchedules(object):
             # host
             "hostname": dns_attr["shortname"],
             "dns_attr": dns_attr,
+            "nameservers": " ".join(EC.nameservers),
 
         }
         selector = {"mac": m["mac"]}

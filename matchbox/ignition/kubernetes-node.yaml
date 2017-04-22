@@ -443,7 +443,6 @@ systemd:
         After=etcd3@kubernetes.service
         After=kubelet.service
         [Service]
-        EnvironmentFile=/etc/metadata.env
         Type=oneshot
         ExecStart=/opt/bin/lifecycle-ready
         RemainAfterExit=yes
@@ -509,10 +508,7 @@ storage:
               - proxy
               - --advertise-address={{.network.ip}}
               - --insecure-bind-address=127.0.0.1
-              - --etcd-servers=http://127.0.0.1:{{.kubernetes_etcd_client_port}},{{.kubernetes_etcd_member_client_uri_list}}
-              - --etcd-cafile=/etc/secrets/etcd-kubernetes/client.issuing_ca
-              - --etcd-certfile=/etc/secrets/etcd-kubernetes/client.certificate
-              - --etcd-keyfile=/etc/secrets/etcd-kubernetes/client.private_key
+              - --etcd-servers=http://127.0.0.1:{{.kubernetes_etcd_client_port}}
               - --allow-privileged=true
               - --service-cluster-ip-range={{.kubernetes_service_cluster_ip_range}}
               - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota
@@ -527,6 +523,7 @@ storage:
               - --kubelet-https=true
               - --kubelet-preferred-address-types=InternalIP,LegacyHostIP,ExternalDNS,InternalDNS,Hostname
               - --service-account-key-file=/etc/secrets/kubernetes/service-accounts.key
+              - --service-account-lookup=false
               - --authorization-mode=AlwaysAllow
               - --anonymous-auth=false
               resources:
@@ -543,16 +540,10 @@ storage:
               - name: secrets-kubernetes
                 mountPath: /etc/secrets/kubernetes
                 readOnly: true
-              - name: secrets-etcd-kubernetes
-                mountPath: /etc/secrets/etcd-kubernetes
-                readOnly: true
             volumes:
             - name: secrets-kubernetes
               hostPath:
                 path: /etc/vault.d/kubernetes
-            - name: secrets-etcd-kubernetes
-              hostPath:
-                path: /etc/vault.d/etcd-kubernetes
 
     - path: /etc/metadata.env
       filesystem: root
@@ -693,7 +684,7 @@ storage:
       contents:
         inline: |
           [Resolve]
-          DNS=8.8.8.8 8.8.4.4
+          DNS={{.nameservers}}
           LLMNR=false
 
     - path: /var/log/journal/.keep
@@ -740,11 +731,10 @@ storage:
 
           set -o pipefail
 
-          curl -f ${API_URI}/healthz
+          curl -f {{.api_uri}}/healthz
 
-          test ${REQUEST_RAW_QUERY}
 
-          STATUS=$(curl -f -XPOST ${API_URI}/lifecycle/ignition/${REQUEST_RAW_QUERY} \
+          STATUS=$(curl -f -XPOST "{{.api_uri}}/lifecycle/ignition/{{.request.raw_query}}" \
                 -d @/usr/share/oem/coreos-install.json \
                 -H "Content-Type: application/json" \
                 -w "%{http_code}" -o /dev/null)
@@ -757,10 +747,10 @@ storage:
 
           set -x
 
-          curl -f ${API_URI}/ignition?${REQUEST_RAW_QUERY} -o /tmp/coreos-install.json
+          curl -f "{{.api_uri}}/ignition?{{.request.raw_query}}" -o /tmp/coreos-install.json
           cat /tmp/coreos-install.json | jq -e . > /dev/null
 
-          STRATEGY=$(curl -f ${API_URI}/lifecycle/rolling/${REQUEST_RAW_QUERY} | jq -re .strategy ) || {
+          STRATEGY=$(curl -f "{{.api_uri}}/lifecycle/rolling/{{.request.raw_query}}" | jq -re .strategy ) || {
             exit 0
           }
 
@@ -768,8 +758,8 @@ storage:
 
           echo "locksmithctl operations..."
           locksmithctl -endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} status
-          locksmithctl -endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} unlock "${REQUEST_RAW_QUERY}" || true
-          locksmithctl -endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} lock "${REQUEST_RAW_QUERY}"
+          locksmithctl -endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} unlock "{{.request.raw_query}}" || true
+          locksmithctl -endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} lock "{{.request.raw_query}}"
 
           echo "stopping fleet..."
           systemctl stop fleet.service
@@ -802,9 +792,6 @@ storage:
       contents:
         inline: |
           #!/usr/bin/env bash
-
-          test "${REQUEST_RAW_QUERY}" || exit 2
-          test "${NETWORK_IP}" || exit 2
           export PATH=/opt/rootfs/usr/bin:/opt/bin/:${PATH}
 
           set -o pipefail
@@ -851,7 +838,7 @@ storage:
           set -e
 
           echo "remove the lock"
-          locksmithctl -endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} unlock "${REQUEST_RAW_QUERY}" || true
+          locksmithctl -endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} unlock "{{.request.raw_query}}" || true
           echo "$(hostname) {{.network.ip}} is ready"
 
     - path: /opt/bin/vault-token
