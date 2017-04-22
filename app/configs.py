@@ -175,6 +175,9 @@ class EnjoliverConfig(object):
         self.coreos_install_lock_seconds = self.config_override("coreos_install_lock_seconds", 29)
 
         self.nameservers = self.config_override("nameservers", ["8.8.8.8", "8.8.4.4"])
+        self.ntp = self.config_override("ntp", ["0.arch.pool.ntp.org",
+                                                "1.arch.pool.ntp.org" "2.arch.pool.ntp.org" "3.arch.pool.ntp.org"])
+        self.fallbackntp = self.config_override("fallbackntp", ["0.pool.ntp.org" "1.pool.ntp.org" "0.fr.pool.ntp.org"])
 
         if self.logging_level.lower() == "debug":
             print("configs file: %s for %s" % (yaml_full_path, importer))

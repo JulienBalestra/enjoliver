@@ -259,6 +259,8 @@ class ConfigSyncSchedules(object):
             "hostname": dns_attr["shortname"],
             "dns_attr": dns_attr,
             "nameservers": " ".join(EC.nameservers),
+            "ntp": " ".join(EC.ntp),
+            "fallbackntp": " ".join(EC.fallbackntp),
 
         }
         selector = {"mac": m["mac"]}

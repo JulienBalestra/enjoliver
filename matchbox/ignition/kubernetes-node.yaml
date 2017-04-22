@@ -159,7 +159,7 @@ systemd:
       enable: true
 
     - name: ntpd.service
-      enable: true
+      enable: false
 
     - name: etcd.service
       mask: true
@@ -677,6 +677,15 @@ storage:
         inline: |
           GROUP=stable
           REBOOT_STRATEGY=off
+
+    - path: /etc/systemd/timesyncd.conf
+      mode: 0644
+      filesystem: root
+      contents:
+        inline: |
+          [Time]
+          NTP={{.ntp}}
+          FallbackNTP={{.fallbackntp}}
 
     - path: /etc/systemd/resolved.conf
       mode: 0644
