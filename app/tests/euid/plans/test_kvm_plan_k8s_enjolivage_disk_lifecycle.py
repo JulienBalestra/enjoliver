@@ -135,9 +135,8 @@ class TestKVMK8SEnjolivageDiskLifecycleLifecycle0(TestKVMK8sEnjolivageDiskLifecy
                     for etcd in ["vault", "kubernetes"]:
                         self.helm_etcd_backup(plan_k8s_2t.etcd_member_ip_list[0], etcd)
 
-                    for etcd in ["vault", "kubernetes"]:
-                        self.etcd_backup_done(plan_k8s_2t.etcd_member_ip_list[0], etcd)
-
+                for etcd in ["vault", "kubernetes"]:
+                    self.etcd_backup_done(plan_k8s_2t.etcd_member_ip_list[0], etcd)
 
                 machine_marker = "%s-%d" % (marker, i)
                 destroy, vol_delete, vol_create, start = \
