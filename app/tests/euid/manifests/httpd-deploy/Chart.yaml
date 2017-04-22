@@ -1,4 +1,0 @@
-apiVersion: v1
-description: Serve the content of a configmap over HTTP
-name: httpd-deploy-helm
-version: 0.1.0

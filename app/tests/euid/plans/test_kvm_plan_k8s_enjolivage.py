@@ -1,8 +1,9 @@
+import unittest
+
 import copy
 import os
 import sys
 import time
-import unittest
 
 from app.plans import k8s_2t
 
@@ -105,11 +106,17 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
                 plan_k8s_2t.kubernetes_control_plane_ip_list + plan_k8s_2t.kubernetes_nodes_ip_list,
                 self.ec.fleet_etcd_client_port, certs_name="etcd-fleet_client")
 
-            self.k8s_api_health(plan_k8s_2t.kubernetes_control_plane_ip_list)
-            self.k8s_node_nb(plan_k8s_2t.etcd_member_ip_list[0], nb_node)
+            self.kube_apiserver_health(plan_k8s_2t.kubernetes_control_plane_ip_list)
+            self.kubernetes_node_nb(plan_k8s_2t.etcd_member_ip_list[0], nb_node)
 
             self.create_tiller_deploy(plan_k8s_2t.etcd_member_ip_list[0])
             self.pod_tiller_is_running(plan_k8s_2t.etcd_member_ip_list[0])
+
+            for etcd in ["vault", "kubernetes"]:
+                self.helm_etcd_backup(plan_k8s_2t.etcd_member_ip_list[0], etcd)
+
+            for etcd in ["vault", "kubernetes"]:
+                self.etcd_backup_done(plan_k8s_2t.etcd_member_ip_list[0], etcd)
 
             self.write_ending(marker)
         finally:

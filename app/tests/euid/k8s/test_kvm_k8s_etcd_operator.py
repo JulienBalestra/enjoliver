@@ -116,8 +116,8 @@ class TestKVMK8SEtcdOperator0(TestKVMK8sEtcdOperator):
                 self.etcd_endpoint_health(sy.kubernetes_control_plane_ip_list + sy.kubernetes_nodes_ip_list,
                                           self.ec.fleet_etcd_client_port, certs_name="etcd-fleet_client")
 
-                self.k8s_api_health(sy.kubernetes_control_plane_ip_list)
-                self.k8s_node_nb(sy.kubernetes_control_plane_ip_list[0], nb_node)
+                self.kube_apiserver_health(sy.kubernetes_control_plane_ip_list)
+                self.kubernetes_node_nb(sy.kubernetes_control_plane_ip_list[0], nb_node)
                 m = "%s-%d" % (marker, i)
                 self.virsh(["virsh", "reset", m])
 

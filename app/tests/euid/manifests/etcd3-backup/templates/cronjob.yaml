@@ -1,0 +1,43 @@
+apiVersion: batch/v2alpha1
+kind: CronJob
+metadata:
+  name: "{{ .Chart.Name }}-{{ .Values.etcd.client }}"
+  labels:
+    chart: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
+  namespace: backup
+spec:
+  schedule: "{{ .Values.schedule }}"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            etcd: {{ .Values.etcd.client }}
+        spec:
+          nodeSelector:
+            control-plane: "true"
+          restartPolicy: Never
+          hostNetwork: true
+          containers:
+          - name: {{ .Chart.Name }}
+            image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+            imagePullPolicy: {{ .Values.image.pullPolicy }}
+            command:
+            - /usr/bin/etcdctl
+            - --endpoints
+            - "127.0.0.1:{{ .Values.etcd.port }}"
+            - snapshot
+            - save
+            - "/backup/{{ .Values.etcd.client }}.snap"
+            env:
+            - name: ETCDCTL_API
+              value: "3"
+
+            volumeMounts:
+              - name: backup
+                mountPath: /backup
+
+          volumes:
+            - name: backup
+              hostPath:
+                path: /var/lib/backup/etcd3

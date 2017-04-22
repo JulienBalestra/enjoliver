@@ -13,7 +13,7 @@ spec:
   template:
     metadata:
       labels:
-        run: tiller
+        app: tiller
     spec:
       containers:
       - name: tiller

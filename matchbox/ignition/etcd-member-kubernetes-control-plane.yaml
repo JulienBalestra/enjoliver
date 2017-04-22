@@ -1067,6 +1067,14 @@ storage:
           --insecure-skip-tls-verify=false \
           --insecure-transport=false"
 
+    - path: /opt/bin/etcdctl3
+      filesystem: root
+      mode: 0544
+      contents:
+        inline: |
+          #!/bin/bash
+          ETCDCTL_API=3 exec /opt/bin/etcdctl $@
+
     - path: /opt/bin/etcd-operator
       filesystem: root
       mode: 0544

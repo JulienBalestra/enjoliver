@@ -713,6 +713,14 @@ storage:
           ETCD_DATA_DIR={{.fleet_etcd_data_dir}}
           ETCD_LISTEN_CLIENT_URLS="http://127.0.0.1:{{.fleet_etcd_client_port}},https://{{.network.ip}}:{{.fleet_etcd_client_port}}"
 
+    - path: /opt/bin/etcdctl3
+      filesystem: root
+      mode: 0544
+      contents:
+        inline: |
+          #!/bin/bash
+          ETCDCTL_API=3 exec /opt/bin/etcdctl $@
+
     - path: /etc/profile.d/path.sh
       mode: 0755
       filesystem: root

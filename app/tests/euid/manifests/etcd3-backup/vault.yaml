@@ -1,0 +1,4 @@
+etcd:
+  port: 4002
+  client: vault
+

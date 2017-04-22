@@ -1,0 +1,6 @@
+schedule: "*/1 * * * *"
+image:
+  repository: enjoliver.local/etcd
+  tag: 3.1.6
+  pullPolicy: IfNotPresent
+

@@ -1,14 +1,14 @@
-import datetime
 import json
 import multiprocessing
+import unittest
+
+import datetime
+import os
+import requests
 import shutil
 import socket
 import subprocess
 import sys
-import unittest
-
-import os
-import requests
 import time
 import yaml
 from kubernetes import client as kc
@@ -91,6 +91,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     runtime_path = "%s/runtime" % project_path
     rkt_bin = "%s/rkt/rkt" % runtime_path
+    helm_bin = "%s/helm/helm" % runtime_path
     matchbox_bin = "%s/matchbox/matchbox" % runtime_path
     acserver_bin = "%s/acserver/acserver" % runtime_path
 
@@ -699,7 +700,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
         self.assertEqual(len(result["members"]), members_nb)
 
-    def k8s_node_nb(self, api_server_ip, nodes_nb, tries=200):
+    def kubernetes_node_nb(self, api_server_ip, nodes_nb, tries=200):
         c = kc.ApiClient(host="%s:8080" % api_server_ip)
         core = kc.CoreV1Api(c)
         items = []
@@ -713,12 +714,12 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             except Exception as e:
                 display(e)
             display("-> %d/%d NOT READY %s for %s %d/%d" % (
-                t, tries, api_server_ip, self.k8s_node_nb.__name__, len(items), nodes_nb))
+                t, tries, api_server_ip, self.kubernetes_node_nb.__name__, len(items), nodes_nb))
             time.sleep(self.testing_sleep_seconds)
 
         self.assertEqual(len(items), nodes_nb)
 
-    def k8s_api_health(self, ips, tries=200):
+    def kube_apiserver_health(self, ips, tries=200):
         assert type(ips) is list
         assert len(ips) > 0
         for t in range(tries):
@@ -731,16 +732,15 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     response_body = request.content
                     request.close()
                     display("-> RESULT %s %s" % (endpoint, response_body))
-                    sys.stdout.flush()
                     if response_body == b"ok":
                         display("## kubectl -s %s:8080 get cs" % ip)
                         ips.pop(i)
-                        display("-> REMAIN %s for %s" % (str(ips), self.k8s_api_health.__name__))
+                        display("-> REMAIN %s for %s" % (str(ips), self.kube_apiserver_health.__name__))
                         continue
 
                 except Exception as e:
                     display(e)
-                display("-> %d/%d NOT READY %s for %s" % (t + 1, tries, ip, self.k8s_api_health.__name__))
+                display("-> %d/%d NOT READY %s for %s" % (t + 1, tries, ip, self.kube_apiserver_health.__name__))
                 time.sleep(self.testing_sleep_seconds)
         self.assertEqual(len(ips), 0)
 
@@ -784,7 +784,6 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                         code = g.status_code
                         g.close()
                         display("-> RESULT %s %s" % (ip, code))
-                        sys.stdout.flush()
                     except Exception as e:
                         display("-> %d/%d NOT READY %s for %s %s" % (
                             t + 1, tries, ip, self.pod_httpd_is_running.__name__, e))
@@ -803,15 +802,14 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             if code == 200:
                 break
             try:
-                r = core.list_namespaced_pod("kube-system")
+                r = core.list_namespaced_pod("kube-system", label_selector="app=tiller")
                 for p in r.items:
                     ip = p.status.pod_ip
                     try:
                         g = requests.get("http://%s:44135/liveness" % ip)
                         code = g.status_code
                         g.close()
-                        display("-> RESULT %s %s" % (ip, code))
-                        sys.stdout.flush()
+                        display("-> RESULT %s %s for %s" % (ip, code, self.pod_tiller_is_running.__name__))
                     except Exception as e:
                         display("-> %d/%d NOT READY %s for %s %s" % (
                             t + 1, tries, ip, self.pod_tiller_is_running.__name__, e))
@@ -821,6 +819,71 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
             time.sleep(self.testing_sleep_seconds)
         self.assertEqual(200, code)
+
+    def _get_tiller_grpc_endpoint(self, api_server_ip):
+        c = kc.ApiClient(host="%s:8080" % api_server_ip)
+        core = kc.CoreV1Api(c)
+        r = core.list_namespaced_pod("kube-system", label_selector="app=tiller")
+        for p in r.items:
+            ip = p.status.pod_ip
+            try:
+                g = requests.get("http://%s:44135/liveness" % ip)
+                g.close()
+                self.assertEqual(200, g.status_code)
+                return "%s:44134" % ip
+            except Exception as e:
+                pass
+        raise AssertionError(self._get_tiller_grpc_endpoint.__name__)
+
+    def helm_etcd_backup(self, api_server_ip, etcd_app_name):
+        tiller = self._get_tiller_grpc_endpoint(api_server_ip)
+        c = kc.ApiClient(host="%s:8080" % api_server_ip)
+        core = kc.CoreV1Api(c)
+        try:
+            core.create_namespace(body={"kind": "Namespace", "apiVersion": "v1", "metadata": {"name": "backup"}})
+        except Exception as e:
+            self.assertEqual("Conflict", e.reason)
+
+        ret = subprocess.call([
+            self.helm_bin,
+            "--host",
+            tiller,
+            "install",
+            "-f",
+            "%s/manifests/etcd3-backup/%s.yaml" % (self.euid_path, etcd_app_name),
+            "%s/manifests/etcd3-backup/" % self.euid_path
+        ])
+        self.assertEqual(0, ret)
+
+    def _snapshot_status(self, core, etcd_app_name, tries):
+        for t in range(tries):
+            r = core.list_namespaced_pod("backup", label_selector="etcd=%s" % etcd_app_name)
+            for p in r.items:
+                ip = p.status.host_ip
+                if p.status.phase != "Succeeded":
+                    display("%d/%d pod %s status.phase: %s" % (t, tries, p.metadata.name, p.status.phase))
+                    continue
+                try:
+                    stdout = subprocess.check_output([
+                        "ssh", "-o", "StrictHostKeyChecking=no",
+                        "-o", "UserKnownHostsFile=/dev/null",
+                        "-o", "ConnectTimeout=1",
+                        "-i", self.ssh_private_key,
+                        "-lcore", ip,
+                        'sudo /opt/bin/etcdctl3 snapshot status /var/lib/backup/etcd3/%s.snap -w json' % etcd_app_name
+                    ])
+                    return json.loads(stdout.decode())
+                except Exception as e:
+                    display(e)
+
+            time.sleep(self.testing_sleep_seconds)
+
+    def etcd_backup_done(self, api_server_ip, etcd_app_name, tries=120):
+        c = kc.ApiClient(host="%s:8080" % api_server_ip)
+        core = kc.CoreV1Api(c)
+        summary = self._snapshot_status(core, etcd_app_name, tries)
+        for k in ["revision", "totalKey", "totalSize"]:
+            self.assertGreater(summary[k], 0)
 
     def daemon_set_httpd_are_running(self, ips, tries=200):
         assert type(ips) is list
@@ -834,7 +897,6 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     code = g.status_code
                     g.close()
                     display("-> RESULT %s %s" % (ip, code))
-                    sys.stdout.flush()
                     if code == 404:
                         ips.pop(i)
                         display("-> REMAIN %s for %s" % (str(ips), self.daemon_set_httpd_are_running.__name__))
@@ -904,7 +966,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             while os.path.isfile(stop) is True and os.stat(stop).st_size == 0:
                 if fns:
                     [fn() for fn in fns]
-                if int(time.time()) % 30 == 0:
+                if int(time.time()) % 60 == 0:
                     display("-> Stop with \"sudo rm -v\" %s or \"echo 1 > %s\"" % (stop, stop))
                 time.sleep(self.wait_setup_teardown)
             if api_server_uri and kp.is_alive():

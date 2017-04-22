@@ -1,0 +1,3 @@
+etcd:
+  port: 4003
+  client: kubernetes
