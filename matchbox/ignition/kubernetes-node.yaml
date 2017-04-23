@@ -349,34 +349,66 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
+    - name: kube-apiserver.service
+      enable: true
+      contents: |
+        [Unit]
+        After=etcd3@kubernetes.service
+        [Service]
+        Environment=ETCDCTL_API=3
+        ExecStartPre=/bin/ls -l \
+          /etc/vault.d/kubernetes/kube-apiserver.certificate \
+          /etc/vault.d/kubernetes/kube-apiserver.private_key \
+          /etc/vault.d/kubernetes/kube-apiserver.issuing_ca \
+          /etc/vault.d/kubernetes/kubelet.certificate \
+          /etc/vault.d/kubernetes/kubelet.private_key \
+          /etc/vault.d/kubernetes/kubelet.issuing_ca \
+          /etc/vault.d/kubernetes/service-accounts.key
+        ExecStartPre=/opt/bin/etcdctl --endpoints http://127.0.0.1:{{.kubernetes_etcd_client_port}} endpoint status
+        ExecStart=/opt/rootfs/hyperkube apiserver proxy \
+          --advertise-address={{.network.ip}} \
+          --insecure-bind-address=127.0.0.1 \
+          --etcd-servers=http://127.0.0.1:{{.kubernetes_etcd_client_port}} \
+          --allow-privileged=true \
+          --service-cluster-ip-range={{.kubernetes_service_cluster_ip_range}} \
+          --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota \
+          --runtime-config=batch/v2alpha1 \
+          --tls-ca-file=/etc/vault.d/kubernetes/kube-apiserver.issuing_ca \
+          --tls-cert-file=/etc/vault.d/kubernetes/kube-apiserver.certificate \
+          --tls-private-key-file=/etc/vault.d/kubernetes/kube-apiserver.private_key \
+          --client-ca-file=/etc/vault.d/kubernetes/kube-apiserver.issuing_ca \
+          --kubelet-certificate-authority=/etc/vault.d/kubernetes/kubelet.issuing_ca \
+          --kubelet-client-certificate=/etc/vault.d/kubernetes/kubelet.certificate \
+          --kubelet-client-key=/etc/vault.d/kubernetes/kubelet.private_key \
+          --kubelet-https=true \
+          --kubelet-preferred-address-types=InternalIP,LegacyHostIP,ExternalDNS,InternalDNS,Hostname \
+          --service-account-key-file=/etc/vault.d/kubernetes/service-accounts.key \
+          --service-account-lookup=false \
+          --authorization-mode=AlwaysAllow \
+          --anonymous-auth=false
+        Restart=always
+        RestartSec=5s
+        [Install]
+        WantedBy=multi-user.target
+
     - name: kubelet.service
       enable: true
       contents: |
         [Unit]
         After=rkt-api.service
-        After=etcd3@kubernetes.service
         Requires=rkt-api.service
-
+        After=kube-apiserver.service
         [Service]
-        EnvironmentFile=/etc/metadata.env
-        Environment=MANIFESTS=/etc/kubernetes/manifests/static
-        Environment=ETCDCTL_API=3
         ExecStartPre=/bin/ls -l \
           /etc/vault.d/kubernetes/kubelet.certificate \
           /etc/vault.d/kubernetes/kubelet.private_key \
           /etc/vault.d/kubernetes/kubelet.issuing_ca
-        ExecStartPre=/opt/bin/etcdctl --endpoints http://127.0.0.1:{{.kubernetes_etcd_client_port}} endpoint status
-        ExecStartPre=/opt/rootfs/usr/bin/rkt fetch --pull-policy=update --insecure-options=all {{.hyperkube_image_url}}
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
-        ExecStartPre=/bin/mkdir -pv $MANIFESTS
         ExecStart=/opt/rootfs/hyperkube kubelet \
-          \
           --hairpin-mode=none \
           --network-plugin=cni \
           --cni-bin-dir=/opt/rootfs/usr/bin \
           --cni-conf-dir=/etc/rkt/net.d \
-          \
-          --pod-manifest-path=${MANIFESTS} \
           --hostname-override={{.kubernetes_node_name}} \
           --node-ip={{.kubernetes_node_ip}} \
           --register-schedulable=false \
@@ -385,19 +417,15 @@ systemd:
           --api-servers=http://127.0.0.1:{{.kubernetes_api_server_port}} \
           --node-labels=node=true \
           --cloud-provider="" \
-          \
           --container-runtime=rkt \
           --rkt-path=/opt/rootfs/usr/bin/rkt \
           --v=2 \
           --enable-cri=false \
-          \
           --tls-cert-file=/etc/vault.d/kubernetes/kubelet.certificate \
           --tls-private-key-file=/etc/vault.d/kubernetes/kubelet.private_key \
           --client-ca-file=/etc/vault.d/kubernetes/kubelet.issuing_ca
-
         Restart=always
-        RestartSec=30s
-
+        RestartSec=5s
         [Install]
         WantedBy=multi-user.target
 
@@ -405,18 +433,15 @@ systemd:
       enable: false
       contents: |
         [Unit]
-        After=kubelet.service
-
+        After=kube-apiserver.service
         [Service]
-        EnvironmentFile=/etc/metadata.env
         ExecStart=/opt/rootfs/hyperkube proxy \
           --proxy-mode=iptables \
-          --hostname-override=${KUBERNETES_NODE_NAME} \
+          --hostname-override={{.kubernetes_node_name}} \
           --master=http://127.0.0.1:8080 \
           --v=2
         Restart=always
-        RestartSec=30
-
+        RestartSec=5
         [Install]
         WantedBy=multi-user.target
 
@@ -488,66 +513,6 @@ storage:
     - path: /opt/rootfs/.keep
       filesystem: root
       mode: 0644
-
-    - path: /etc/kubernetes/manifests/static/kube-apiserver.yaml
-      filesystem: root
-      contents:
-        inline: |
-          apiVersion: v1
-          kind: Pod
-          metadata:
-            labels:
-              app: kube-apiserver
-            name: kube-apiserver
-            namespace: kube-system
-          spec:
-            hostNetwork: true
-            containers:
-            - name: kube-apiserver
-              image: {{.hyperkube_image_url}}
-              imagePullPolicy: IfNotPresent
-              command:
-              - /hyperkube
-              - apiserver
-              - proxy
-              - --advertise-address={{.network.ip}}
-              - --insecure-bind-address=127.0.0.1
-              - --etcd-servers=http://127.0.0.1:{{.kubernetes_etcd_client_port}}
-              - --allow-privileged=true
-              - --service-cluster-ip-range={{.kubernetes_service_cluster_ip_range}}
-              - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota
-              - --runtime-config=batch/v2alpha1
-              - --tls-ca-file=/etc/secrets/kubernetes/kube-apiserver.issuing_ca
-              - --tls-cert-file=/etc/secrets/kubernetes/kube-apiserver.certificate
-              - --tls-private-key-file=/etc/secrets/kubernetes/kube-apiserver.private_key
-              - --client-ca-file=/etc/secrets/kubernetes/kube-apiserver.issuing_ca
-              - --kubelet-certificate-authority=/etc/secrets/kubernetes/kube-apiserver.issuing_ca
-              - --kubelet-client-certificate=/etc/secrets/kubernetes/kube-apiserver.certificate
-              - --kubelet-client-key=/etc/secrets/kubernetes/kube-apiserver.private_key
-              - --kubelet-https=true
-              - --kubelet-preferred-address-types=InternalIP,LegacyHostIP,ExternalDNS,InternalDNS,Hostname
-              - --service-account-key-file=/etc/secrets/kubernetes/service-accounts.key
-              - --service-account-lookup=false
-              - --authorization-mode=AlwaysAllow
-              - --anonymous-auth=false
-              resources:
-                requests:
-                  cpu: 200m
-              livenessProbe:
-                httpGet:
-                  host: 127.0.0.1
-                  port: 8080
-                  path: /healthz
-                initialDelaySeconds: 15
-                timeoutSeconds: 15
-              volumeMounts:
-              - name: secrets-kubernetes
-                mountPath: /etc/secrets/kubernetes
-                readOnly: true
-            volumes:
-            - name: secrets-kubernetes
-              hostPath:
-                path: /etc/vault.d/kubernetes
 
     - path: /etc/metadata.env
       filesystem: root
