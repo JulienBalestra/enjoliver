@@ -533,7 +533,7 @@ systemd:
 
         [Service]
         EnvironmentFile=/etc/metadata.env
-        Environment=MANIFESTS=/etc/kubernetes/manifests
+        Environment=MANIFESTS=/etc/kubernetes/manifests/static
         Environment=ETCDCTL_API=3
         ExecStartPre=/bin/ls -l \
           /etc/vault.d/kubernetes/kubelet.certificate \
@@ -551,8 +551,8 @@ systemd:
           --cni-conf-dir=/etc/rkt/net.d \
           \
           --pod-manifest-path=${MANIFESTS} \
-          --hostname-override=${KUBERNETES_NODE_NAME} \
-          --node-ip=${KUBERNETES_NODE_IP} \
+          --hostname-override={{.kubernetes_node_name}} \
+          --node-ip={{.kubernetes_node_ip}} \
           --register-schedulable=false \
           --allow-privileged=true \
           --enable-custom-metrics \
@@ -564,9 +564,11 @@ systemd:
           --rkt-path=/opt/rootfs/usr/bin/rkt \
           --v=2 \
           --enable-cri=false \
+          \
           --tls-cert-file=/etc/vault.d/kubernetes/kubelet.certificate \
           --tls-private-key-file=/etc/vault.d/kubernetes/kubelet.private_key \
           --client-ca-file=/etc/vault.d/kubernetes/kubelet.issuing_ca
+
         Restart=always
         RestartSec=30s
 
@@ -588,6 +590,21 @@ systemd:
           --v=2
         Restart=always
         RestartSec=30
+
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: kube-control-plane.service
+      enable: true
+      contents: |
+        [Unit]
+        After=kubelet.service
+
+        [Service]
+        ExecStartPre=/usr/bin/curl -f http://127.0.0.1:{{.kubernetes_api_server_port}}/healthz
+        ExecStart=/opt/bin/create-control-plane
+        Restart=on-failure
+        RestartSec=5
 
         [Install]
         WantedBy=multi-user.target
@@ -661,13 +678,15 @@ storage:
       filesystem: root
       mode: 0644
 
-    - path: /etc/kubernetes/manifests/kube-apiserver.yaml
+    - path: /etc/kubernetes/manifests/static/kube-apiserver.yaml
       filesystem: root
       contents:
         inline: |
           apiVersion: v1
           kind: Pod
           metadata:
+            labels:
+              app: kube-apiserver
             name: kube-apiserver
             namespace: kube-system
           spec:
@@ -724,11 +743,23 @@ storage:
       contents:
         inline: |
           apiVersion: v1
+          kind: ServiceAccount
+          metadata:
+            name: controller-manager
+            namespace: kube-system
+          automountServiceAccountToken: false
+          ---
+          apiVersion: v1
           kind: Pod
           metadata:
-            name: kube-controller-manager
+            labels:
+              app: kube-controller-manager
+            name: kube-controller-manager-{{.kubernetes_node_name}}
             namespace: kube-system
           spec:
+            serviceAccountName: controller-manager
+            automountServiceAccountToken: false
+            nodeName: "{{.kubernetes_node_name}}"
             hostNetwork: true
             containers:
             - name: kube-controller-manager
@@ -753,6 +784,15 @@ storage:
                   port: 10252
                 initialDelaySeconds: 15
                 timeoutSeconds: 15
+              readinessProbe:
+                failureThreshold: 3
+                httpGet:
+                  host: 127.0.0.1
+                  path: /healthz
+                  port: 10252
+                initialDelaySeconds: 5
+                timeoutSeconds: 10
+                periodSeconds: 1
               volumeMounts:
               - name: secrets
                 mountPath: /etc/secrets
@@ -766,32 +806,48 @@ storage:
       filesystem: root
       contents:
         inline: |
-          apiVersion: v1
-          kind: Pod
+          apiVersion: extensions/v1beta1
+          kind: DaemonSet
           metadata:
             name: kube-scheduler
             namespace: kube-system
           spec:
-            hostNetwork: true
-            containers:
-            - name: kube-scheduler
-              image: {{.hyperkube_image_url}}
-              imagePullPolicy: IfNotPresent
-              command:
-              - /hyperkube
-              - scheduler
-              - --master=http://127.0.0.1:{{.kubernetes_api_server_port}}
-              - --leader-elect=true
-              resources:
-                requests:
-                  cpu: 100m
-              livenessProbe:
-                httpGet:
-                  host: 127.0.0.1
-                  path: /healthz
-                  port: 10251
-                initialDelaySeconds: 15
-                timeoutSeconds: 15
+            template:
+              metadata:
+                labels:
+                  app: kube-scheduler
+              spec:
+                nodeSelector:
+                  control-plane: "true"
+                hostNetwork: true
+                containers:
+                - name: kube-scheduler
+                  image: {{.hyperkube_image_url}}
+                  imagePullPolicy: IfNotPresent
+                  command:
+                  - /hyperkube
+                  - scheduler
+                  - --master=http://127.0.0.1:{{.kubernetes_api_server_port}}
+                  - --leader-elect=true
+                  resources:
+                    requests:
+                      cpu: 100m
+                  livenessProbe:
+                    httpGet:
+                      host: 127.0.0.1
+                      path: /healthz
+                      port: 10251
+                    initialDelaySeconds: 15
+                    timeoutSeconds: 15
+                  readinessProbe:
+                    failureThreshold: 3
+                    httpGet:
+                      host: 127.0.0.1
+                      path: /healthz
+                      port: 10251
+                    initialDelaySeconds: 5
+                    timeoutSeconds: 10
+                    periodSeconds: 1
 
     - path: /etc/metadata.env
       filesystem: root
@@ -1157,12 +1213,13 @@ storage:
           ETCD_DATA_DIR=$ETCD_DATA_DIR
           EOF
 
-    - path: /etc/profile.d/path.sh
+    - path: /etc/profile.d/common.sh
       mode: 0755
       filesystem: root
       contents:
         inline: |
            export PATH=/opt/bin:$PATH
+           export PRIVATE_IPV4={{.network.ip}}
            export VAULT_ADDR=http://127.0.0.1:8200
 
     - path: /etc/modules-load.d/network.conf
@@ -1704,6 +1761,22 @@ storage:
     - path: /etc/vault.d/vault/.keep
       mode: 0600
       filesystem: root
+
+    - path: /opt/bin/create-control-plane
+      mode: 0544
+      filesystem: root
+      contents:
+        inline: |
+          #!/usr/bin/env bash
+
+          PATH=/opt/bin:${PATH}
+
+          MANIFESTS=/etc/kubernetes/manifests
+          for manifest in ${MANIFESTS}/kube-controller-manager.yaml ${MANIFESTS}/kube-scheduler.yaml
+          do
+            kubectl create -f ${manifest}
+            kubectl describe -f ${manifest} > /dev/null || exit 2
+          done
 
 networkd:
   units:

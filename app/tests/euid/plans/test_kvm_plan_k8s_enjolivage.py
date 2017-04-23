@@ -113,7 +113,7 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
             self.pod_tiller_is_running(plan_k8s_2t.etcd_member_ip_list[0])
 
             for etcd in ["vault", "kubernetes"]:
-                self.helm_etcd_backup(plan_k8s_2t.etcd_member_ip_list[0], etcd)
+                self.create_helm_etcd_backup(plan_k8s_2t.etcd_member_ip_list[0], etcd)
 
             for etcd in ["vault", "kubernetes"]:
                 self.etcd_backup_done(plan_k8s_2t.etcd_member_ip_list[0], etcd)

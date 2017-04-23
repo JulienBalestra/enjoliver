@@ -359,7 +359,7 @@ systemd:
 
         [Service]
         EnvironmentFile=/etc/metadata.env
-        Environment=MANIFESTS=/etc/kubernetes/manifests
+        Environment=MANIFESTS=/etc/kubernetes/manifests/static
         Environment=ETCDCTL_API=3
         ExecStartPre=/bin/ls -l \
           /etc/vault.d/kubernetes/kubelet.certificate \
@@ -377,8 +377,8 @@ systemd:
           --cni-conf-dir=/etc/rkt/net.d \
           \
           --pod-manifest-path=${MANIFESTS} \
-          --hostname-override=${KUBERNETES_NODE_NAME} \
-          --node-ip=${KUBERNETES_NODE_IP} \
+          --hostname-override={{.kubernetes_node_name}} \
+          --node-ip={{.kubernetes_node_ip}} \
           --register-schedulable=false \
           --allow-privileged=true \
           --enable-custom-metrics \
@@ -390,9 +390,11 @@ systemd:
           --rkt-path=/opt/rootfs/usr/bin/rkt \
           --v=2 \
           --enable-cri=false \
+          \
           --tls-cert-file=/etc/vault.d/kubernetes/kubelet.certificate \
           --tls-private-key-file=/etc/vault.d/kubernetes/kubelet.private_key \
           --client-ca-file=/etc/vault.d/kubernetes/kubelet.issuing_ca
+
         Restart=always
         RestartSec=30s
 
@@ -487,13 +489,15 @@ storage:
       filesystem: root
       mode: 0644
 
-    - path: /etc/kubernetes/manifests/kube-apiserver.yaml
+    - path: /etc/kubernetes/manifests/static/kube-apiserver.yaml
       filesystem: root
       contents:
         inline: |
           apiVersion: v1
           kind: Pod
           metadata:
+            labels:
+              app: kube-apiserver
             name: kube-apiserver
             namespace: kube-system
           spec:
@@ -721,12 +725,13 @@ storage:
           #!/bin/bash
           ETCDCTL_API=3 exec /opt/bin/etcdctl $@
 
-    - path: /etc/profile.d/path.sh
+    - path: /etc/profile.d/common.sh
       mode: 0755
       filesystem: root
       contents:
         inline: |
            export PATH=/opt/bin:$PATH
+           export PRIVATE_IPV4={{.network.ip}}
 
     - path: /etc/modules-load.d/network.conf
       mode: 0644

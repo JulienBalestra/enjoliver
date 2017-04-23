@@ -835,7 +835,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 pass
         raise AssertionError(self._get_tiller_grpc_endpoint.__name__)
 
-    def helm_etcd_backup(self, api_server_ip, etcd_app_name):
+    def create_helm_etcd_backup(self, api_server_ip, etcd_app_name):
         tiller = self._get_tiller_grpc_endpoint(api_server_ip)
         c = kc.ApiClient(host="%s:8080" % api_server_ip)
         core = kc.CoreV1Api(c)

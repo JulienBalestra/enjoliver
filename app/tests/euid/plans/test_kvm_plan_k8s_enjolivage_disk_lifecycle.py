@@ -86,29 +86,31 @@ class TestKVMK8SEnjolivageDiskLifecycleLifecycle0(TestKVMK8sEnjolivageDiskLifecy
             to_start = copy.deepcopy(nodes)
             self.kvm_restart_off_machines(to_start)
 
-            for i in range(nb_node + 1):
-                time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds * 10)
-                self.etcd_member_len(plan_k8s_2t.kubernetes_control_plane_ip_list[0],
+            for i in range(nb_node * 3 + 1):
+                time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds)
+
+                self.etcd_member_len(plan_k8s_2t.kubernetes_control_plane_ip_list[i % 3],
                                      plan_k8s_2t._sch_k8s_control_plane.expected_nb,
-                                     self.ec.vault_etcd_client_port, verify=False)
+                                     self.ec.vault_etcd_client_port, tries=60, verify=False)
                 self.etcd_endpoint_health(plan_k8s_2t.kubernetes_control_plane_ip_list, self.ec.vault_etcd_client_port,
-                                          verify=False)
+                                          verify=False, tries=60)
 
                 if i == 0:
-                    self.vault_self_certs(plan_k8s_2t.kubernetes_control_plane_ip_list[0], self.ec.vault_etcd_client_port)
-                    self.vault_verifing_issuing_ca(
-                    plan_k8s_2t.kubernetes_control_plane_ip_list[0], self.ec.vault_etcd_client_port)
-                    self.vault_issue_app_certs(
-                    plan_k8s_2t.kubernetes_control_plane_ip_list[0], self.ec.vault_etcd_client_port)
+                    self.vault_self_certs(plan_k8s_2t.kubernetes_control_plane_ip_list[i % 3],
+                                          self.ec.vault_etcd_client_port)
+                    self.vault_verifing_issuing_ca(plan_k8s_2t.kubernetes_control_plane_ip_list[i % 3],
+                                                   self.ec.vault_etcd_client_port)
+                    self.vault_issue_app_certs(plan_k8s_2t.kubernetes_control_plane_ip_list[i % 3],
+                                               self.ec.vault_etcd_client_port)
                     self.save_unseal_key(plan_k8s_2t.kubernetes_control_plane_ip_list)
 
                 self.unseal_all_vaults(plan_k8s_2t.kubernetes_control_plane_ip_list, self.ec.vault_etcd_client_port)
 
                 self.etcd_member_len(
-                    plan_k8s_2t.kubernetes_control_plane_ip_list[0], plan_k8s_2t._sch_k8s_control_plane.expected_nb,
+                    plan_k8s_2t.kubernetes_control_plane_ip_list[i % 3], plan_k8s_2t._sch_k8s_control_plane.expected_nb,
                     self.ec.kubernetes_etcd_client_port, certs_name="etcd-kubernetes_client")
                 self.etcd_member_len(
-                    plan_k8s_2t.kubernetes_control_plane_ip_list[0], plan_k8s_2t._sch_k8s_control_plane.expected_nb,
+                    plan_k8s_2t.kubernetes_control_plane_ip_list[i % 3], plan_k8s_2t._sch_k8s_control_plane.expected_nb,
                     self.ec.fleet_etcd_client_port, certs_name="etcd-fleet_client")
 
                 self.etcd_endpoint_health(
@@ -119,26 +121,24 @@ class TestKVMK8SEnjolivageDiskLifecycleLifecycle0(TestKVMK8sEnjolivageDiskLifecy
                     self.ec.fleet_etcd_client_port, certs_name="etcd-fleet_client")
 
                 self.kube_apiserver_health(plan_k8s_2t.kubernetes_control_plane_ip_list)
-                self.kubernetes_node_nb(plan_k8s_2t.etcd_member_ip_list[0], nb_node)
+                self.kubernetes_node_nb(plan_k8s_2t.etcd_member_ip_list[i % 3], nb_node)
 
                 if i == 0:
-                    self.create_httpd_daemon_set(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
-                    self.create_httpd_deploy(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
-                    self.create_tiller_deploy(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+                    self.create_httpd_daemon_set(plan_k8s_2t.kubernetes_control_plane_ip_list[i % 3])
+                    self.create_httpd_deploy(plan_k8s_2t.kubernetes_control_plane_ip_list[i % 3])
+                    self.create_tiller_deploy(plan_k8s_2t.kubernetes_control_plane_ip_list[i % 3])
 
                 ips = copy.deepcopy(plan_k8s_2t.kubernetes_control_plane_ip_list + plan_k8s_2t.kubernetes_nodes_ip_list)
                 self.daemon_set_httpd_are_running(ips)
-                self.pod_httpd_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
-                self.pod_tiller_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
-
-                if i == 0:
-                    for etcd in ["vault", "kubernetes"]:
-                        self.helm_etcd_backup(plan_k8s_2t.etcd_member_ip_list[0], etcd)
+                self.pod_httpd_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[i % 3])
+                self.pod_tiller_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[i % 3])
 
                 for etcd in ["vault", "kubernetes"]:
-                    self.etcd_backup_done(plan_k8s_2t.etcd_member_ip_list[0], etcd)
+                    if i == 0:
+                        self.create_helm_etcd_backup(plan_k8s_2t.etcd_member_ip_list[i % 3], etcd)
+                    self.etcd_backup_done(plan_k8s_2t.etcd_member_ip_list[i % 3], etcd)
 
-                machine_marker = "%s-%d" % (marker, i)
+                machine_marker = "%s-%d" % (marker, i % 3)
                 destroy, vol_delete, vol_create, start = \
                     ["virsh", "destroy", "%s" % machine_marker], \
                     ["virsh", "vol-delete", "%s.qcow2" % machine_marker, "--pool", "default"], \
@@ -148,8 +148,9 @@ class TestKVMK8SEnjolivageDiskLifecycleLifecycle0(TestKVMK8sEnjolivageDiskLifecy
 
                 self.virsh(destroy)
                 time.sleep(1)
-                self.virsh(vol_delete)
-                self.virsh(vol_create)
+                if i + 1 > nb_node * 2:
+                    self.virsh(vol_delete)
+                    self.virsh(vol_create)
                 self.virsh(start)
 
             self.write_ending(marker)
