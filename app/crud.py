@@ -3,9 +3,8 @@ Over the application Model, queries to the database
 """
 
 import datetime
-import socket
-
 import os
+import socket
 from sqlalchemy import func
 from sqlalchemy.orm import subqueryload
 
@@ -668,25 +667,28 @@ class FetchView(object):
 
     def get_machines(self):
         query = self.session.query(MachineInterface).filter(MachineInterface.as_boot == True)
-        result = [[
-            "Roles",
-            "FQDN",
-            "CIDR",
-            "MAC",
-            "Install",
-            "LastReport",
-            "LastUpdate",
-            "UpToDate",
-            "AutoUpdate",
-        ]]
+        data = {
+            "gridColumns": [
+                "Roles",
+                "FQDN",
+                "CIDR",
+                "MAC",
+                "Install",
+                "LastReport",
+                "LastUpdate",
+                "UpToDate",
+                "AutoUpdate",
+            ],
+            "gridData": []
+        }
         for interface in query:
 
             coreos_install, ignition_updated_date, ignition_last_change = None, None, None
             ignition_up_to_date, lifecycle_rolling = None, None
 
             if interface.lifecycle_coreos_install:
-                coreos_install = "Installed" if interface.lifecycle_coreos_install[
-                                                    0].success is True else "Error"
+                coreos_install = "Success" if interface.lifecycle_coreos_install[
+                                                    0].success is True else "Failed"
 
             if interface.lifecycle_ignition:
                 ignition_updated_date = interface.lifecycle_ignition[0].updated_date
@@ -697,17 +699,16 @@ class FetchView(object):
                 lifecycle_rolling = interface.lifecycle_rolling[0].strategy if interface.lifecycle_rolling[
                     0].enable else "Disable"
 
-            result.append(
-                [
-                    ",".join([r.role for r in interface.schedule]),
-                    interface.fqdn,
-                    interface.cidrv4,
-                    interface.mac,
-                    coreos_install,
-                    ignition_updated_date,
-                    ignition_last_change,
-                    ignition_up_to_date,
-                    lifecycle_rolling,
-                ]
-            )
-        return result
+            row = {
+                "Roles": ",".join([r.role for r in interface.schedule]),
+                "FQDN": interface.fqdn,
+                "CIDR": interface.cidrv4,
+                "MAC": interface.mac,
+                "Install": coreos_install,
+                "LastReport": ignition_updated_date,
+                "LastUpdate": ignition_last_change,
+                "UpToDate": ignition_up_to_date,
+                "AutoUpdate": lifecycle_rolling,
+            }
+            data["gridData"].append(row)
+        return data

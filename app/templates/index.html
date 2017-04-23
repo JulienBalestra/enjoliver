@@ -3,68 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <link rel="shortcut icon" href="static/media/favicon.ico">
-
     <link rel="stylesheet" href="static/css/index.css">
-
     <link rel="stylesheet" href="static/node_modules/bootstrap/dist/css/bootstrap-theme.min.css">
     <link rel="stylesheet" href="static/node_modules/bootstrap/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="static/node_modules/datatables.net-bs/css/dataTables.bootstrap.css">
-
+    <script src="static/node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="static/node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="static/node_modules/vue/dist/vue.js"></script>
+    <script src="static/node_modules/vue-resource/dist/vue-resource.min.js"></script>
     <title>Enjoliver</title>
 </head>
-
 <body>
 <nav class="navbar navbar-default" style="">
-
     <div class="row">
-
         <div class="col-md-4">
             <img style="display: inline-block;
             height: 50px; margin-top: 2px; margin-bottom: 2px; margin-left: 2px"
                  src="static/media/wheel.jpg">
         </div>
-        <div class="col-md-4">
-            <h3>The Enjoliver</h3>
+        <div class="col-md-8">
+            <h3>Enjoliver</h3>
         </div>
-        <div class="col-md-2">
-        </div>
-        <div class="col-md-2">
-
-            <div id="unhealthy">
-            </div>
-
-        </div>
-
 
     </div>
 </nav>
-<div class="container">
-    <div>
-
-        <!-- Nav tabs -->
-        <ul class="nav nav-tabs" role="tablist">
-            <li role="presentation" class="active">
-                <a href="#machine" aria-controls="machine" role="tab" data-toggle="tab">Machines <span class="badge" id="machine-nb">0</span></a>
-            </li>
-        </ul>
-
-        <!-- Tab panes -->
-        <div class="tab-content" style="margin-top: 10px">
-            <div role="tabpanel" class="tab-pane fade in active" id="machine">
-                <table class="table table-bordered table-hover table-striped" id="machine_table"></table>
+<div class="container" style="margin-left: 5%">
+    <div class="row">
+        <div class="col-md-12">
+            <div id="machine">
+                <form id="search" style="margin-bottom: 10px">
+                    Search <input name="query" v-model="searchQuery">
+                </form>
+                <machine-grid
+                        :data="gridData"
+                        :columns="gridColumns"
+                        :filter-key="searchQuery">
+                </machine-grid>
             </div>
         </div>
-
     </div>
 </div>
 </body>
-<footer>
-
-    <script src="static/node_modules/jquery/dist/jquery.min.js"></script>
-    <script src="static/node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
-    <script src="static/node_modules/datatables.net/js/jquery.dataTables.js"></script>
-    <script src="static/node_modules/datatables.net-bs/js/dataTables.bootstrap.js"></script>
-
-    <script src="static/js/ui.js"></script>
-</footer>
+<template id="grid-template">
+    <table class="table table-hover table-striped">
+        <thead>
+        <tr>
+            <th v-for="key in columns"
+                @click="sortBy(key)"
+                :class="{ active: sortKey == key }">
+                {{ key | capitalize }}
+                <span class="arrow" :class="sortOrders[key] > 0 ? 'asc' : 'dsc'"></span>
+            </th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr v-for="entry in filteredData">
+            <td v-for="key in columns">{{ entry[key] }}</td>
+        </tr>
+        </tbody>
+    </table>
+</template>
+<script src="static/js/ui.js"></script>
 </html>

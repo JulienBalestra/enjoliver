@@ -221,7 +221,7 @@ class LifecycleCoreosInstall(BASE):
 
     machine_interface = Column(Integer, ForeignKey('machine-interface.id'), nullable=False)
 
-    updated_date = Column(DateTime, default=None)
+    updated_date = Column(DateTime, default=datetime.datetime.utcnow)
     success = Column(Boolean)
 
 

@@ -1,34 +1,78 @@
-function createMachineTable() {
-    $.ajax({
-        url: "/ui/view/machine", success: function (response) {
-            if (response.length < 2) {
-                return
+Vue.component('machine-grid', {
+    template: '#grid-template',
+    props: {
+        data: Array,
+        columns: Array,
+        filterKey: String
+    },
+    data: function () {
+        var sortOrders = {};
+        this.columns.forEach(function (key) {
+            sortOrders[key] = 1
+        });
+        return {
+            sortKey: '',
+            sortOrders: sortOrders
+        }
+    },
+    computed: {
+        filteredData: function () {
+            var sortKey = this.sortKey;
+            var filterKey = this.filterKey && this.filterKey.toLowerCase();
+            var order = this.sortOrders[sortKey] || 1;
+            var data = this.data;
+            if (filterKey) {
+                data = data.filter(function (row) {
+                    return Object.keys(row).some(function (key) {
+                        return String(row[key]).toLowerCase().indexOf(filterKey) > -1
+                    })
+                })
             }
-            $("#machine-nb").text(response.length - 1);
-            var machine_table = $("#machine_table");
-            var thead, tbody, row;
-
-            thead = $("<thead>").appendTo(machine_table);
-            row = $("<tr>").appendTo(thead);
-
-            for (var i = 0; i < response[0].length; i++) {
-                $("<th>").appendTo(row).text(response[0][i]);
+            if (sortKey) {
+                data = data.slice().sort(function (a, b) {
+                    a = a[sortKey];
+                    b = b[sortKey];
+                    return (a === b ? 0 : a > b ? 1 : -1) * order
+                })
             }
+            return data
+        }
+    },
+    filters: {
+        capitalize: function (str) {
+            return str.charAt(0).toUpperCase() + str.slice(1)
+        }
+    },
+    methods: {
+        sortBy: function (key) {
+            this.sortKey = key;
+            this.sortOrders[key] = this.sortOrders[key] * -1
+        }
+    }
+});
 
-            tbody = $("<tbody>").appendTo(machine_table);
-            for (var j = 1; j < response.length; j++) {
-                row = $("<tr>").appendTo(tbody);
-                for (var k = 0; k < response[j].length; k++) {
-                    $("<td>").appendTo(row).text(response[j][k]);
-                }
-            }
-            machine_table.DataTable();
-        }, async: true
-    });
-}
-
-function main() {
-    createMachineTable();
-}
-
-main();
+var app = new Vue({
+    el: '#machine',
+    data: {
+        searchQuery: '',
+        gridColumns: [],
+        gridData: []
+    },
+    methods: {
+        fetchData: function () {
+            this.$http.get('ui/view/machine')
+                .then(function (response) {
+                    this.gridColumns = response.data.gridColumns;
+                    this.gridData = response.data.gridData;
+                }, function (err) {
+                    console.log(err);
+                });
+        }
+    },
+    mounted: function () {
+        this.fetchData();
+        setInterval(function () {
+            this.fetchData();
+        }.bind(this), 5000);
+    }
+});

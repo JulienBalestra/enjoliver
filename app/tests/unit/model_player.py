@@ -669,10 +669,10 @@ class TestModel(unittest.TestCase):
         with self.smart.new_session() as session:
             view = crud.FetchView(session)
             result = view.get_machines()
-        self.assertEqual(25, len(result))
+        self.assertEqual(24, len(result["gridData"]))
         # Roles
-        for i in result[1:]:
-            roles = i[0].split(",")
+        for i in result["gridData"]:
+            roles = i["Roles"].split(",")
             for r in roles:
                 self.assertIn(r, [
                     "",
@@ -681,8 +681,8 @@ class TestModel(unittest.TestCase):
                     model.ScheduleRoles.kubernetes_node
                 ])
         # CIDR
-        for i in result[1:]:
-            self.assertEqual(1, i[2].count("/"))
+        for i in result["gridData"]:
+            self.assertEqual(1, i["CIDR"].count("/"))
 
     def test_99_healthz(self):
         for i in range(10):
