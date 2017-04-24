@@ -1203,24 +1203,28 @@ storage:
           #!/usr/bin/env bash
 
           set -e
-
           set -o pipefail
 
           curl -f {{.api_uri}}/healthz
-
-
           STATUS=$(curl -f -XPOST "{{.api_uri}}/lifecycle/ignition/{{.request.raw_query}}" \
                 -d @/usr/share/oem/coreos-install.json \
                 -H "Content-Type: application/json" \
                 -w "%{http_code}" -o /dev/null)
 
+          set +e
           if [ ${STATUS} -ne 210 ]
           then
-              echo "Nothing to do: ${STATUS}"
-              exit 0
+              PRESET=/run/systemd-preset-all
+              echo "Checking if preset on hold"
+              grep -c "^Created symlink" ${PRESET}
+              if [ $? -ne 0 ]
+              then
+                echo "Nothing to do: ${STATUS}, no preset in ${PRESET}"
+                exit 0
+              fi
           fi
 
-          set -x
+          set -xe
 
           curl -f "{{.api_uri}}/ignition?{{.request.raw_query}}" -o /tmp/coreos-install.json
           cat /tmp/coreos-install.json | jq -e . > /dev/null
@@ -1323,6 +1327,8 @@ storage:
             list-machines --fields ip --no-legend | grep -c {{.network.ip}}
 
           retry kubectl uncordon {{.kubernetes_node_name}}
+
+          systemctl preset-all 2>&1 | tee -a /run/systemd-preset-all
 
           set -e
 
