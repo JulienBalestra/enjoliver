@@ -126,7 +126,7 @@ class TestKVMK8SEtcdOperator0(TestKVMK8sEtcdOperator):
             self.write_ending(marker)
         finally:
             if os.getenv("TEST"):
-                self.iteractive_usage(api_server_uri="http://%s:8080" % sy.kubernetes_control_plane_ip_list[0])
+                self.iteractive_usage(api_server_uri="https://%s:6443" % sy.kubernetes_control_plane_ip_list[0])
             for i in range(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \

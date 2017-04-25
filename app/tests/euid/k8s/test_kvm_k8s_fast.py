@@ -121,7 +121,7 @@ class TestKVMK8SFast0(TestKVMK8sFast):
         finally:
             if os.getenv("TEST"):
                 self.iteractive_usage(
-                    api_server_uri="http://%s:8080" % sy.kubernetes_control_plane_ip_list[0],
+                    api_server_uri="https://%s:6443" % sy.kubernetes_control_plane_ip_list[0],
                     # fns=[sch_cp.apply, sch_no.apply, sy.apply]
                 )
             for i in range(nb_node):

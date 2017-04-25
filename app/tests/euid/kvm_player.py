@@ -928,6 +928,12 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             cmd = [
                 "%s/hyperkube/hyperkube" % self.project_path,
                 "kubectl",
+                "--certificate-authority",
+                "%s/kubernetes_kube-apiserver.issuing_ca" % self.test_certs_path,
+                "--client-certificate",
+                "%s/kubernetes_kube-apiserver.certificate" % self.test_certs_path,
+                "--client-key",
+                "%s/kubernetes_kube-apiserver.private_key" % self.test_certs_path,
                 "-s",
                 "%s" % api_server_uri,
                 "proxy",
