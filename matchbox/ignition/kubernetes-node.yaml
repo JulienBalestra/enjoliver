@@ -429,22 +429,6 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
-    - name: kube-proxy.service
-      enable: false
-      contents: |
-        [Unit]
-        After=kube-apiserver.service
-        [Service]
-        ExecStart=/opt/rootfs/hyperkube proxy \
-          --proxy-mode=iptables \
-          --hostname-override={{.kubernetes_node_name}} \
-          --master=http://127.0.0.1:8080 \
-          --v=2
-        Restart=always
-        RestartSec=5
-        [Install]
-        WantedBy=multi-user.target
-
     - name: fleet.service
       enable: true
       dropins:
