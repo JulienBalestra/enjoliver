@@ -1035,7 +1035,29 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                         r = requests.get("http://127.0.0.1:%d/healthz" % proxy_port)
                         r.close()
                         if r.status_code == 200:
-                            display("## kubectl -s 127.0.0.1:%d get cs" % proxy_port)
+                            display(
+                                "\n#####################################\n"
+                                "mkdir -pv ~/.kube/config\n"
+                                "cat << EOF >> ~/.kube/config\n"
+                                "apiVersion: v1\n"
+                                "clusters:\n"
+                                "- cluster:\n"
+                                "    server: http://127.0.0.1:8001\n"
+                                "  name: enjoliver\n"
+                                "contexts:\n"
+                                "- context:\n"
+                                "    cluster: enjoliver\n"
+                                "    namespace: default\n"
+                                "    user: ""\n"
+                                "  name: e\n"
+                                "current-context: e\n"
+                                "kind: Config\n"
+                                "preferences:\n"
+                                "  colors: true\n"
+                                "EOF\n"
+                                "kubectl config use-context e\n"
+                                "#####################################\n"
+                            )
                             break
                     except Exception as e:
                         display("-> %d/%d %s" % (i + 1, maxi, e))
@@ -1049,7 +1071,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             while os.path.isfile(stop) is True and os.stat(stop).st_size == 0:
                 if fns:
                     [fn() for fn in fns]
-                if int(time.time()) % 60 == 0:
+                if int(time.time()) % 120 == 0:
                     display("-> Stop with \"sudo rm -v\" %s or \"echo 1 > %s\"" % (stop, stop))
                 time.sleep(self.wait_setup_teardown)
             if api_server_uri and kp.is_alive():

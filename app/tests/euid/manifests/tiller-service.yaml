@@ -1,7 +1,7 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: helm
+  name: tiller
   namespace: kube-system
 spec:
   selector:
