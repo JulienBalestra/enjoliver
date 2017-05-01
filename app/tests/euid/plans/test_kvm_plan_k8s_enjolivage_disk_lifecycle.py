@@ -87,6 +87,10 @@ class TestKVMK8SEnjolivageDiskLifecycleLifecycle0(TestKVMK8sEnjolivageDiskLifecy
             self.kvm_restart_off_machines(to_start)
 
             for i in range(nb_node * 3 + 1):
+                # 3 loops by node
+                # 1) setup
+                # 2) reboot
+                # 3) destroy -> setup
                 time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds)
 
                 self.etcd_member_len(plan_k8s_2t.kubernetes_control_plane_ip_list[i % 3],
@@ -141,7 +145,7 @@ class TestKVMK8SEnjolivageDiskLifecycleLifecycle0(TestKVMK8sEnjolivageDiskLifecy
                 # See https://github.com/kubernetes/kubernetes/issues/45149
                 self.tiller_can_restart(plan_k8s_2t.kubernetes_control_plane_ip_list[(i + 1) % 3])
 
-                # takes about one minute to run the cronjob
+                # takes about one minute to run the cronjob so we postpone this check after the tiller ops
                 for etcd in ["vault", "kubernetes"]:
                     self.etcd_backup_done(plan_k8s_2t.etcd_member_ip_list[i % 3], etcd)
 
