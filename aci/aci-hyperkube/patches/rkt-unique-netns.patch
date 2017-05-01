@@ -1,7 +1,7 @@
-From c304f3f3be4298b8fa983670fc8911d3172fb4b7 Mon Sep 17 00:00:00 2001
+From 7b76e81769fe92cb0dcff727bc2ce390f1ec877a Mon Sep 17 00:00:00 2001
 From: JulienBalestra <julien.balestra@gmail.com>
 Date: Sat, 29 Apr 2017 18:04:39 +0200
-Subject: [PATCH] Generate a new Network Namespace for each Pod.
+Subject: [PATCH 1/2] Generate a new Network Namespace for each Pod.
 
 ---
  pkg/kubelet/rkt/rkt.go | 236 ++++++++++++++++++++++++++++++++-----------------
@@ -493,6 +493,78 @@ index b2eeca0..2e7426b 100644
  		if err != nil {
  			glog.Warningf("rkt: %v", err)
  		} else if status != nil {
+-- 
+2.7.4
+
+
+From dc4c7974a7c9bdec34ebd4e6a047508a34166995 Mon Sep 17 00:00:00 2001
+From: JulienBalestra <julien.balestra@gmail.com>
+Date: Mon, 1 May 2017 22:49:27 +0200
+Subject: [PATCH 2/2] Use the rkt Pod ID instead to find the corresponding
+ systemd unit file
+
+---
+ pkg/kubelet/rkt/rkt.go | 31 ++++++-------------------------
+ 1 file changed, 6 insertions(+), 25 deletions(-)
+
+diff --git a/pkg/kubelet/rkt/rkt.go b/pkg/kubelet/rkt/rkt.go
+index 2e7426b..4209fde 100644
+--- a/pkg/kubelet/rkt/rkt.go
++++ b/pkg/kubelet/rkt/rkt.go
+@@ -2343,39 +2343,20 @@ func populateContainerStatus(pod rktapi.Pod, app rktapi.App, runtimeApp appcsche
+ 	}, nil
+ }
+ 
+-// Sort Systemd Services files by modification time.
+-type byFileModTime []os.FileInfo
+-
+-func (s byFileModTime) Len() int           { return len(s) }
+-func (s byFileModTime) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+-func (s byFileModTime) Less(i, j int) bool { return s[i].ModTime().Unix() > s[j].ModTime().Unix() }
+-
+ // from a running systemd unit, return the network namespace of a Pod dropped under the X-Kubernetes directive
+-func (r *Runtime) getNetworkNamespaceFromRunningUnitFiles(uid kubetypes.UID) (networkNamespace kubecontainer.ContainerID, err error) {
++func (r *Runtime) getNetworkNamespaceFromRunningUnitFiles(uid kubetypes.UID, rktPodID string) (networkNamespace kubecontainer.ContainerID, err error) {
+ 	serviceFiles, err := r.getPodSystemdServiceFiles()
+ 	if err != nil {
+ 		return networkNamespace, err
+ 	}
+-	container := kubecontainer.ContainerID{ID: string(uid)}
+ 
+-	// sort to get the latest systemd unit services first
+-	// they are more chance to still be running: avoid to open too much files
+-	sort.Sort(byFileModTime(serviceFiles))
+ 	for _, f := range serviceFiles {
+-		podService, err := podDetailsFromServiceFile(serviceFilePath(f.Name()))
+-		if err != nil {
+-			return networkNamespace, err
+-		}
+-		if container.ID == podService.id {
+-			// Check if its a running Pod
+-			podDir := r.runtimeHelper.GetPodDir(kubetypes.UID(podService.id))
+-			finishedMarker := podFinishedMarkerPath(podDir, getRktUUIDFromServiceFileName(f.Name()))
+-			_, err := os.Stat(finishedMarker)
++		if getRktUUIDFromServiceFileName(f.Name()) == rktPodID {
++			podService, err := podDetailsFromServiceFile(serviceFilePath(f.Name()))
+ 			if err != nil {
+-				glog.V(4).Infof("unit %q runs Pod %q inside netns %q", f.Name(), podService.id, podService.networkNamespace.ID)
+-				return podService.networkNamespace, nil
++				return networkNamespace, err
+ 			}
+-			glog.V(5).Infof("skip unit %q marked as finished for Pod %q inside netns %q", f.Name(), podService.id, podService.networkNamespace.ID)
++			return podService.networkNamespace, nil
+ 		}
+ 	}
+ 
+@@ -2446,7 +2427,7 @@ func (r *Runtime) GetPodStatus(uid kubetypes.UID, name, namespace string) (*kube
+ 			}
+ 		}
+ 	} else {
+-		networkNamespace, err := r.getNetworkNamespaceFromRunningUnitFiles(uid)
++		networkNamespace, err := r.getNetworkNamespaceFromRunningUnitFiles(uid, latestPod.Id)
+ 		if err != nil {
+ 			glog.Warningf("networkNamespace: %v", err)
+ 		}
 -- 
 2.7.4
 
