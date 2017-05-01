@@ -17,7 +17,7 @@ except ImportError:
 class TestKVMK8sFast(kvm_player.KernelVirtualMachinePlayer):
     @classmethod
     def setUpClass(cls):
-        cls.check_requirements()
+        cls.running_requirements()
         cls.set_acserver()
         cls.set_rack0()
         cls.set_api()
@@ -117,6 +117,11 @@ class TestKVMK8SFast0(TestKVMK8sFast):
                                       self.ec.fleet_etcd_client_port, certs_name="etcd-fleet_client")
             self.kube_apiserver_health(sy.kubernetes_control_plane_ip_list)
             self.kubernetes_node_nb(sy.kubernetes_control_plane_ip_list[0], nb_node)
+
+            self.create_tiller(sy.kubernetes_control_plane_ip_list[0])
+            self.pod_tiller_is_running(sy.kubernetes_control_plane_ip_list[0])
+            self.tiller_can_restart(sy.kubernetes_control_plane_ip_list[0])
+
             self.write_ending(marker)
         finally:
             if os.getenv("TEST"):

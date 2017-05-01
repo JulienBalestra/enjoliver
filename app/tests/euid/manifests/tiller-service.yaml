@@ -1,0 +1,12 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: helm
+  namespace: kube-system
+spec:
+  selector:
+    app: tiller
+  ports:
+  - port: 44134
+    protocol: TCP
+  clusterIP: "None"

@@ -1,14 +1,15 @@
+import datetime
 import json
 import multiprocessing
-import unittest
-
-import datetime
-import os
-import requests
 import shutil
 import socket
 import subprocess
 import sys
+import unittest
+import warnings
+
+import os
+import requests
 import time
 import yaml
 from kubernetes import client as kc
@@ -63,7 +64,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     Override the setUpClass by selecting your custom environment with the following catalog:
     >>> @classmethod
     >>> def setUpClass(cls):
-    >>>     cls.check_requirements()
+    >>>     cls.running_requirements()
     >>>     cls.set_acserver()
     >>>     cls.set_api()
     >>>     cls.set_matchbox()
@@ -279,10 +280,11 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         r.close()
 
     @classmethod
-    def check_requirements(cls):
+    def running_requirements(cls):
+        warnings.simplefilter("ignore", ResourceWarning)
         # TODO validate the assets in this method
         if os.geteuid() != 0:
-            raise RuntimeError("Need to be root EUID==%d" % os.geteuid())
+            raise RuntimeError("Need to be root EUID == %d" % os.geteuid())
 
         cls.clean_sandbox()
 
@@ -324,7 +326,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "/bin/true"]
         display("call %s" % " ".join(cmd))
         ret = subprocess.call(cmd)
-        display("Bridge w/ iptables creation exitcode:%d" % ret)
+        display("Bridge w/ iptables creation exit: %d" % ret)
         assert subprocess.call(["ip", "link", "show", "rack0"]) == 0
 
     @classmethod
@@ -752,13 +754,19 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         b = kc.ExtensionsV1beta1Api(c)
         b.create_namespaced_deployment("default", manifest)
 
-    def create_tiller_deploy(self, api_server_ip):
-        with open("%s/manifests/tiller-deploy.yaml" % self.euid_path) as f:
-            manifest = yaml.load(f)
-
+    def create_tiller(self, api_server_ip):
         c = kc.ApiClient(host="%s:8080" % api_server_ip)
-        b = kc.ExtensionsV1beta1Api(c)
-        b.create_namespaced_deployment("kube-system", manifest)
+
+        with open("%s/manifests/tiller-service.yaml" % self.euid_path) as f:
+            service_manifest = yaml.load(f)
+
+        with open("%s/manifests/tiller-deploy.yaml" % self.euid_path) as f:
+            deploy_manifest = yaml.load(f)
+
+        core, beta = kc.CoreV1Api(c), kc.ExtensionsV1beta1Api(c)
+
+        core.create_namespaced_service("kube-system", service_manifest)
+        beta.create_namespaced_deployment("kube-system", deploy_manifest)
 
     def create_httpd_daemon_set(self, api_server_ip):
         with open("%s/manifests/httpd-daemonset.yaml" % self.euid_path) as f:
@@ -820,10 +828,78 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             time.sleep(self.testing_sleep_seconds)
         self.assertEqual(200, code)
 
+    def _tiller_is_gc(self, node_ip):
+        output = subprocess.check_output([
+            "ssh", "-o", "StrictHostKeyChecking=no",
+            "-o", "UserKnownHostsFile=/dev/null",
+            "-o", "ConnectTimeout=1",
+            "-i", self.ssh_private_key,
+            "-lcore", node_ip,
+            'sudo bash -c "/opt/bin/rkt l --no-legend | grep -c tiller"'
+        ])
+        tiller_containers = int(output.decode().replace("\n", ""))
+        return tiller_containers == 1
+
+    def tiller_can_restart(self, api_server_ip):
+        c = kc.ApiClient(host="%s:8080" % api_server_ip)
+        core = kc.CoreV1Api(c)
+        r = core.list_namespaced_pod("kube-system", label_selector="app=tiller")
+        pod_ip, node_ip, req, tiller_endpoint = "", "", "", ""
+        for p in r.items:
+            pod_ip = p.status.pod_ip
+            node_ip = p.status.host_ip
+            try:
+                req = "http://%s:44135/liveness" % pod_ip
+                g = requests.get(req)
+                g.close()
+                self.assertEqual(200, g.status_code)
+                tiller_endpoint = "%s:44134" % pod_ip
+                display("-> tiller endpoint to kill: %s" % tiller_endpoint)
+                subprocess.check_output([
+                    "ssh", "-o", "StrictHostKeyChecking=no",
+                    "-o", "UserKnownHostsFile=/dev/null",
+                    "-o", "ConnectTimeout=1",
+                    "-i", self.ssh_private_key,
+                    "-lcore", node_ip,
+                    'sudo /usr/bin/pkill tiller'
+                ])
+                break
+            except Exception as e:
+                display(e)
+        with self.assertRaises(requests.ConnectionError):
+            g = requests.get(req)
+            g.close()
+
+        ts = time.time()
+        for i in range(10):
+            try:
+                new_tiller_endpoint = self._get_tiller_grpc_endpoint(api_server_ip=api_server_ip)
+                display("-> new tiller endpoint: %s" % new_tiller_endpoint)
+                break
+            except Exception as e:
+                display(e)
+                time.sleep(1)
+
+        new_tiller_endpoint = self._get_tiller_grpc_endpoint(api_server_ip=api_server_ip)
+        self.assertNotEqual(self._get_tiller_grpc_endpoint(api_server_ip=api_server_ip), tiller_endpoint)
+        display("-> polling tiller Pod %s during 70s or until its GC" % new_tiller_endpoint)
+        while time.time() < ts + 70:
+            try:
+                loop_tiller_endpoint = self._get_tiller_grpc_endpoint(api_server_ip=api_server_ip)
+            except RuntimeWarning:
+                time.sleep(1)
+                loop_tiller_endpoint = self._get_tiller_grpc_endpoint(api_server_ip=api_server_ip)
+            self.assertEqual(new_tiller_endpoint, loop_tiller_endpoint)
+            if self._tiller_is_gc(node_ip):
+                return
+            time.sleep(1)
+        raise AssertionError("tiller is not gc on node %s" % node_ip)
+
     def _get_tiller_grpc_endpoint(self, api_server_ip):
         c = kc.ApiClient(host="%s:8080" % api_server_ip)
         core = kc.CoreV1Api(c)
         r = core.list_namespaced_pod("kube-system", label_selector="app=tiller")
+        exception = None
         for p in r.items:
             ip = p.status.pod_ip
             try:
@@ -832,8 +908,9 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 self.assertEqual(200, g.status_code)
                 return "%s:44134" % ip
             except Exception as e:
-                pass
-        raise AssertionError(self._get_tiller_grpc_endpoint.__name__)
+                display(e)
+                exception = e
+        raise exception
 
     def create_helm_etcd_backup(self, api_server_ip, etcd_app_name):
         tiller = self._get_tiller_grpc_endpoint(api_server_ip)

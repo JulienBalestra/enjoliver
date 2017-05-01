@@ -17,7 +17,7 @@ except ImportError:
 class TestKVMK8sEnjolivage(kvm_player.KernelVirtualMachinePlayer):
     @classmethod
     def setUpClass(cls):
-        cls.check_requirements()
+        cls.running_requirements()
         cls.set_rack0()
         cls.set_api()
         cls.set_matchbox()
@@ -109,12 +109,17 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
             self.kube_apiserver_health(plan_k8s_2t.kubernetes_control_plane_ip_list)
             self.kubernetes_node_nb(plan_k8s_2t.etcd_member_ip_list[0], nb_node)
 
-            self.create_tiller_deploy(plan_k8s_2t.etcd_member_ip_list[0])
+            self.create_tiller(plan_k8s_2t.etcd_member_ip_list[0])
             self.pod_tiller_is_running(plan_k8s_2t.etcd_member_ip_list[0])
 
             for etcd in ["vault", "kubernetes"]:
                 self.create_helm_etcd_backup(plan_k8s_2t.etcd_member_ip_list[0], etcd)
 
+            # Resilient testing against rktnetes
+            # See https://github.com/kubernetes/kubernetes/issues/45149
+            self.tiller_can_restart(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+
+            # takes about one minute to run the cronjob
             for etcd in ["vault", "kubernetes"]:
                 self.etcd_backup_done(plan_k8s_2t.etcd_member_ip_list[0], etcd)
 

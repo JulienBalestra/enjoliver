@@ -18,7 +18,7 @@ except ImportError:
 class TestKVMK8sEnjolivageDisk(kvm_player.KernelVirtualMachinePlayer):
     @classmethod
     def setUpClass(cls):
-        cls.check_requirements()
+        cls.running_requirements()
         cls.set_rack0()
         cls.set_api()
         cls.set_matchbox()
@@ -120,7 +120,7 @@ class TestKVMK8sEnjolivageDisk0(TestKVMK8sEnjolivageDisk):
 
             self.create_httpd_daemon_set(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
             self.create_httpd_deploy(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
-            self.create_tiller_deploy(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+            self.create_tiller(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
             ips = copy.deepcopy(plan_k8s_2t.kubernetes_control_plane_ip_list + plan_k8s_2t.kubernetes_nodes_ip_list)
             self.daemon_set_httpd_are_running(ips)
             self.pod_httpd_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
@@ -248,7 +248,7 @@ class TestKVMK8sEnjolivageDisk1(TestKVMK8sEnjolivageDisk):
 
             self.create_httpd_daemon_set(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
             self.create_httpd_deploy(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
-            self.create_tiller_deploy(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+            self.create_tiller(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
             ips = copy.deepcopy(plan_k8s_2t.kubernetes_control_plane_ip_list + plan_k8s_2t.kubernetes_nodes_ip_list)
             self.daemon_set_httpd_are_running(ips)
             self.pod_httpd_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
@@ -257,6 +257,11 @@ class TestKVMK8sEnjolivageDisk1(TestKVMK8sEnjolivageDisk):
             for etcd in ["vault", "kubernetes"]:
                 self.create_helm_etcd_backup(plan_k8s_2t.etcd_member_ip_list[0], etcd)
 
+            # Resilient testing against rktnetes
+            # See https://github.com/kubernetes/kubernetes/issues/45149
+            self.tiller_can_restart(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+
+            # takes about one minute to run the cronjob
             for etcd in ["vault", "kubernetes"]:
                 self.etcd_backup_done(plan_k8s_2t.etcd_member_ip_list[0], etcd)
 
