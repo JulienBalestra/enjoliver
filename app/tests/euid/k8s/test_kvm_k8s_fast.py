@@ -116,11 +116,10 @@ class TestKVMK8SFast0(TestKVMK8sFast):
             self.etcd_endpoint_health(sy.kubernetes_control_plane_ip_list + sy.kubernetes_nodes_ip_list,
                                       self.ec.fleet_etcd_client_port, certs_name="etcd-fleet_client")
             self.kube_apiserver_health(sy.kubernetes_control_plane_ip_list)
+            self.create_tiller(sy.kubernetes_control_plane_ip_list[0])
             self.kubernetes_node_nb(sy.kubernetes_control_plane_ip_list[0], nb_node)
 
-            self.create_tiller(sy.kubernetes_control_plane_ip_list[0])
             self.pod_tiller_is_running(sy.kubernetes_control_plane_ip_list[0])
-            self.tiller_can_restart(sy.kubernetes_control_plane_ip_list[0])
 
             self.write_ending(marker)
         finally:
