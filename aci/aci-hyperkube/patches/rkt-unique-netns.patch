@@ -1,7 +1,7 @@
-From 7b76e81769fe92cb0dcff727bc2ce390f1ec877a Mon Sep 17 00:00:00 2001
+From e662b81653517a2f88c60362eb681f78144d661b Mon Sep 17 00:00:00 2001
 From: JulienBalestra <julien.balestra@gmail.com>
 Date: Sat, 29 Apr 2017 18:04:39 +0200
-Subject: [PATCH 1/2] Generate a new Network Namespace for each Pod.
+Subject: [PATCH 1/3] Generate a new Network Namespace for each Pod.
 
 ---
  pkg/kubelet/rkt/rkt.go | 236 ++++++++++++++++++++++++++++++++-----------------
@@ -497,10 +497,10 @@ index b2eeca0..2e7426b 100644
 2.7.4
 
 
-From dc4c7974a7c9bdec34ebd4e6a047508a34166995 Mon Sep 17 00:00:00 2001
+From e15303203a2804a67abb92d8d5d76121f8ef5da2 Mon Sep 17 00:00:00 2001
 From: JulienBalestra <julien.balestra@gmail.com>
 Date: Mon, 1 May 2017 22:49:27 +0200
-Subject: [PATCH 2/2] Use the rkt Pod ID instead to find the corresponding
+Subject: [PATCH 2/3] Use the rkt Pod ID instead to find the corresponding
  systemd unit file
 
 ---
@@ -508,7 +508,7 @@ Subject: [PATCH 2/2] Use the rkt Pod ID instead to find the corresponding
  1 file changed, 6 insertions(+), 25 deletions(-)
 
 diff --git a/pkg/kubelet/rkt/rkt.go b/pkg/kubelet/rkt/rkt.go
-index 2e7426b..4209fde 100644
+index 2e7426b..ba043d1 100644
 --- a/pkg/kubelet/rkt/rkt.go
 +++ b/pkg/kubelet/rkt/rkt.go
 @@ -2343,39 +2343,20 @@ func populateContainerStatus(pod rktapi.Pod, app rktapi.App, runtimeApp appcsche
@@ -565,6 +565,217 @@ index 2e7426b..4209fde 100644
  		if err != nil {
  			glog.Warningf("networkNamespace: %v", err)
  		}
+-- 
+2.7.4
+
+
+From 8622094834f0dd0231a9d56cab62cfde9be2df6f Mon Sep 17 00:00:00 2001
+From: Julien Balestra <julien.balestra@gmail.com>
+Date: Tue, 2 May 2017 17:15:09 +0200
+Subject: [PATCH 3/3] GetPodStatus don't call GetPodNetworkStatus if latestPod
+ is nil, start to fix the unit testing by adding more mock in the GC
+
+---
+ pkg/kubelet/rkt/fake_rkt_interface_test.go | 16 +++++++++
+ pkg/kubelet/rkt/rkt.go                     | 55 +++++++++++++++++++-----------
+ pkg/kubelet/rkt/rkt_test.go                |  9 +++++
+ 3 files changed, 60 insertions(+), 20 deletions(-)
+
+diff --git a/pkg/kubelet/rkt/fake_rkt_interface_test.go b/pkg/kubelet/rkt/fake_rkt_interface_test.go
+index 82801b7..de3f700 100644
+--- a/pkg/kubelet/rkt/fake_rkt_interface_test.go
++++ b/pkg/kubelet/rkt/fake_rkt_interface_test.go
+@@ -27,7 +27,9 @@ import (
+ 	"golang.org/x/net/context"
+ 	"google.golang.org/grpc"
+ 	"k8s.io/apimachinery/pkg/types"
++	kubetypes "k8s.io/apimachinery/pkg/types"
+ 	"k8s.io/kubernetes/pkg/api/v1"
++	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
+ )
+ 
+ // fakeRktInterface mocks the rktapi.PublicAPIClient interface for testing purpose.
+@@ -189,3 +191,17 @@ func (f fakePodGetter) GetPodByUID(uid types.UID) (*v1.Pod, bool) {
+ 	p, found := f.pods[uid]
+ 	return p, found
+ }
++
++type fakeNetNs struct {
++	networkNamespace kubecontainer.ContainerID
++}
++
++func newFakeNetNs() *fakeNetNs {
++	return &fakeNetNs{
++		networkNamespace: kubecontainer.ContainerID{},
++	}
++}
++
++func (f *fakeNetNs) fromRunningUnitFiles(uid kubetypes.UID, latestPod *rktapi.Pod) (kubecontainer.ContainerID, error) {
++	return kubecontainer.ContainerID{ID: "42"}, nil
++}
+diff --git a/pkg/kubelet/rkt/rkt.go b/pkg/kubelet/rkt/rkt.go
+index ba043d1..9685673 100644
+--- a/pkg/kubelet/rkt/rkt.go
++++ b/pkg/kubelet/rkt/rkt.go
+@@ -180,6 +180,8 @@ type Runtime struct {
+ 
+ 	// requestTimeout is the timeout of rkt requests.
+ 	requestTimeout time.Duration
++
++	netns netNsGetter
+ }
+ 
+ // Field of the X-Kubernetes directive of a systemd service file
+@@ -206,6 +208,11 @@ type cliInterface interface {
+ 	RunCommand(config *Config, args ...string) (result []string, err error)
+ }
+ 
++// netNsGetter wrapps the systemd open files for testing purpose
++type netNsGetter interface {
++	fromRunningUnitFiles(kubetypes.UID, *rktapi.Pod) (kubecontainer.ContainerID, error)
++}
++
+ // New creates the rkt container runtime which implements the container runtime interface.
+ // It will test if the rkt binary is in the $PATH, and whether we can get the
+ // version of it. If so, creates the rkt container runtime, otherwise returns an error.
+@@ -298,6 +305,7 @@ func New(
+ 	}
+ 
+ 	rkt.cli = rkt
++	rkt.netns = rkt
+ 
+ 	return rkt, nil
+ }
+@@ -2343,16 +2351,18 @@ func populateContainerStatus(pod rktapi.Pod, app rktapi.App, runtimeApp appcsche
+ 	}, nil
+ }
+ 
+-// from a running systemd unit, return the network namespace of a Pod dropped under the X-Kubernetes directive
+-func (r *Runtime) getNetworkNamespaceFromRunningUnitFiles(uid kubetypes.UID, rktPodID string) (networkNamespace kubecontainer.ContainerID, err error) {
++// from a running systemd unit, return the network namespace of a Pod
++// this field is inside the X-Kubernetes directive
++func (r *Runtime) fromRunningUnitFiles(uid kubetypes.UID, latestPod *rktapi.Pod) (networkNamespace kubecontainer.ContainerID, err error) {
+ 	serviceFiles, err := r.getPodSystemdServiceFiles()
+ 	if err != nil {
+ 		return networkNamespace, err
+ 	}
+ 
+ 	for _, f := range serviceFiles {
+-		if getRktUUIDFromServiceFileName(f.Name()) == rktPodID {
+-			podService, err := podDetailsFromServiceFile(serviceFilePath(f.Name()))
++		fileName := f.Name()
++		if latestPod.Id == getRktUUIDFromServiceFileName(fileName) {
++			podService, err := podDetailsFromServiceFile(serviceFilePath(fileName))
+ 			if err != nil {
+ 				return networkNamespace, err
+ 			}
+@@ -2360,7 +2370,7 @@ func (r *Runtime) getNetworkNamespaceFromRunningUnitFiles(uid kubetypes.UID, rkt
+ 		}
+ 	}
+ 
+-	return networkNamespace, fmt.Errorf("Pod %q haven't find a corresponding NetworkNamespace in %d systemd units", uid, len(serviceFiles))
++	return networkNamespace, fmt.Errorf("Pod %q containing rktPod %q haven't find a corresponding NetworkNamespace in %d systemd units", uid, latestPod.Id, len(serviceFiles))
+ }
+ 
+ // GetPodStatus returns the status for a pod specified by a given UID, name,
+@@ -2416,29 +2426,34 @@ func (r *Runtime) GetPodStatus(uid kubetypes.UID, name, namespace string) (*kube
+ 		}
+ 	}
+ 
+-	// If we are running no-op network plugin, then get the pod IP from the rkt pod status.
+-	if r.network.PluginName() == network.DefaultPluginName {
+-		if latestPod != nil {
++	if latestPod != nil {
++		// If we are running no-op network plugin, then get the pod IP from the rkt pod status.
++		if r.network.PluginName() == network.DefaultPluginName {
+ 			for _, n := range latestPod.Networks {
+ 				if n.Name == defaultNetworkName {
+ 					podStatus.IP = n.Ipv4
+ 					break
+ 				}
+ 			}
++		} else {
++			networkNamespace, err := r.netns.fromRunningUnitFiles(uid, latestPod)
++			if err != nil {
++				glog.Warningf("networkNamespace: %v", err)
++			}
++			fmt.Printf("networkNamespace: %s, uid: %s\n", networkNamespace.ID, uid)
++			status, err := r.network.GetPodNetworkStatus(namespace, name, networkNamespace)
++			if err != nil {
++				glog.Warningf("rkt: %v", err)
++				fmt.Printf("err: %s\n", err)
++			} else if status != nil {
++				// status can be nil when the pod is running on the host network,
++				// in which case the pod IP will be populated by the upper layer.
++				podStatus.IP = status.IP.String()
++				fmt.Printf("IP: %s\n", podStatus.IP)
++			}
+ 		}
+ 	} else {
+-		networkNamespace, err := r.getNetworkNamespaceFromRunningUnitFiles(uid, latestPod.Id)
+-		if err != nil {
+-			glog.Warningf("networkNamespace: %v", err)
+-		}
+-		status, err := r.network.GetPodNetworkStatus(namespace, name, networkNamespace)
+-		if err != nil {
+-			glog.Warningf("rkt: %v", err)
+-		} else if status != nil {
+-			// status can be nil when the pod is running on the host network, in which case the pod IP
+-			// will be populated by the upper layer.
+-			podStatus.IP = status.IP.String()
+-		}
++		glog.Warningf("No latestPod: rkt api-svc returns [%d]rktPods, cannot fill podStatus.IP", len(listResp.Pods))
+ 	}
+ 
+ 	return podStatus, nil
+diff --git a/pkg/kubelet/rkt/rkt_test.go b/pkg/kubelet/rkt/rkt_test.go
+index d38a48c..8cf049a 100644
+--- a/pkg/kubelet/rkt/rkt_test.go
++++ b/pkg/kubelet/rkt/rkt_test.go
+@@ -583,6 +583,7 @@ func TestGetPodStatus(t *testing.T) {
+ 	defer ctrl.Finish()
+ 	fr := newFakeRktInterface()
+ 	fs := newFakeSystemd()
++	fnet := newFakeNetNs()
+ 	fnp := nettest.NewMockNetworkPlugin(ctrl)
+ 	fos := &containertesting.FakeOS{}
+ 	frh := &containertesting.FakeRuntimeHelper{}
+@@ -592,6 +593,7 @@ func TestGetPodStatus(t *testing.T) {
+ 		runtimeHelper: frh,
+ 		os:            fos,
+ 		network:       network.NewPluginManager(fnp),
++		netns:         fnet,
+ 	}
+ 
+ 	ns := func(seconds int64) int64 {
+@@ -808,6 +810,8 @@ func TestGetPodStatus(t *testing.T) {
+ 			podTimes[podFinishedMarkerPath(r.runtimeHelper.GetPodDir(tt.result.ID), pod.Id)] = tt.result.ContainerStatuses[0].FinishedAt
+ 		}
+ 
++		ctrl := gomock.NewController(t)
++
+ 		r.os.(*containertesting.FakeOS).StatFn = func(name string) (os.FileInfo, error) {
+ 			podTime, ok := podTimes[name]
+ 			if !ok {
+@@ -838,6 +842,7 @@ func TestGetPodStatus(t *testing.T) {
+ 
+ 		assert.Equal(t, tt.result, status, testCaseHint)
+ 		assert.Equal(t, []string{"ListPods"}, fr.called, testCaseHint)
++		fnet.networkNamespace = kubecontainer.ContainerID{}
+ 		fr.CleanCalls()
+ 	}
+ }
+@@ -1794,6 +1799,10 @@ func TestGarbageCollect(t *testing.T) {
+ 
+ 			for _, name := range serviceFileNames {
+ 				mockFI := containertesting.NewMockFileInfo(ctrl)
++				// we need to specify two calls
++				// first: get all systemd units
++				// second: filter only the files with a k8s_ prefix
++				mockFI.EXPECT().Name().Return(name)
+ 				mockFI.EXPECT().Name().Return(name)
+ 				fileInfos = append(fileInfos, mockFI)
+ 			}
 -- 
 2.7.4
 
