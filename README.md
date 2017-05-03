@@ -14,16 +14,40 @@ Deploy and maintain an usable Kubernetes cluster.
 
 The Kubernetes Kubelet container runtime is `rkt`.
 
-Kubernetes Apiserver, controller, scheduler and Apiserver proxies are deployed as `Pod` with Kubelet.  
+During the lifecycle of the Kubernetes cluster, rolling updates are **fast** and fully controlled.
+* The rolling update of the configuration changes are granted by Enjoliver API `/lifecycle/rolling/mac=00:01:02:03:04:05`
+* The semaphore is managed by locksmith.
+* The Ignition is applied after a fast systemd-kexec or normal reboot
+
+Each node can be re-installed and re-join the cluster.
+
+**The project is divided in three main topics:**
+
+1) Configuration of Kubernetes cluster roles:
+    * control plane
+    * node
+2) Enjoliver Engine
+    * Discovery Topology
+    * Scheduling of Kubernetes roles
+    * Lifecycle management 
+3) Enjoliver e2e testing
+
+
+## 1. Kubernetes Cluster 
+
+![cp](docs/topology.jpg)
+
+Kubernetes controller manager is deployed as *Pod* on each nodes of the control plane.
+When the control plane runs the controller, the scheduler starts as a DaemonSet.  
 
 Vault, Kubernetes and Fleet have dedicated etcd clusters.
 
 Vault pki backend secure the following components:
 
-* etcd for fleet
+* etcd for fleet - API v2
     * peer
     * client
-* etcd for kubernetes
+* etcd for kubernetes - API v3
     * peer
     * client
 * kube-apiserver
@@ -37,24 +61,9 @@ Each etcd cluster supports automatic members replacement.
 
 The configuration of each host is managed by Ignition.
 
-During the lifecycle of the Kubernetes cluster, rolling updates are **fast** and fully controlled.
-* The rolling update of the configuration changes are granted by Enjoliver API `/lifecycle/rolling/mac=00:01:02:03:04:05`
-* The semaphore is managed by locksmith.
-* The Ignition is applied after a fast systemd-kexec or normal reboot
+### Current Stack
 
-Each node can be re-installed and re-join the cluster.
-
-## Cluster topology
-
-![cp](docs/topology.jpg)
-
-## Baremetal iPXE
-
-![machine-boot](docs/machine-boot.jpg)
-
-## Current Stack
-
-### Upstream
+#### Upstream
 
 * [etcd](https://github.com/coreos/etcd/releases)	
 * [cni](https://github.com/containernetworking/cni/releases)
@@ -64,13 +73,12 @@ Each node can be re-installed and re-join the cluster.
 * [vault](https://github.com/hashicorp/vault/releases)
 * [Container Linux](https://coreos.com/releases)
 
-### Stick
+#### Stick
 
 * [fleet](https://github.com/coreos/fleet/releases/tag/v1.0.0)
 
 
-## Enjoliver Architecture
-
+## 2. Enjoliver Engine
 
 ![enjoliver-archi](docs/enjoliver-architecture.jpg)
 
@@ -99,6 +107,10 @@ This profile has one associated group, with 2 metadata entries:
 
 1) api uri
 2) ssh-key
+
+How the discovery process works:
+
+![machine-boot](docs/machine-boot.jpg)
 
 ##### etcd-member-kubernetes-control-plane
 
@@ -230,23 +242,29 @@ The enjoliver API is available on `127.0.0.1:5000`, the user interface is behind
 At the end of the setup, a kubectl proxy is running on `127.0.0.1:8001`
  
  
+    Starting to serve on 127.0.0.1:8001
+    #####################################
+    mkdir -pv ~/.kube/config
+    cat << EOF >> ~/.kube/config
+    apiVersion: v1
+    clusters:
+    - cluster:
+        server: http://127.0.0.1:8001
+      name: enjoliver
+    contexts:
+    - context:
+        cluster: enjoliver
+        namespace: default
+        user: 
+      name: e
+    current-context: e
+    kind: Config
+    preferences:
+      colors: true
+    EOF
+    kubectl config use-context e
+    #####################################
 
-    ./hyperkube/hyperkube kubectl -s 127.0.0.1:8001 get cs
-    NAME                 STATUS    MESSAGE              ERROR
-    scheduler            Healthy   ok                   
-    controller-manager   Healthy   ok                   
-    etcd-0               Healthy   {"health": "true"}
-    
-    ./hyperkube/hyperkube kubectl -s 127.0.0.1:8001 get po --all-namespaces
-    NAMESPACE     NAME                                  READY     STATUS    RESTARTS   AGE
-    default       httpd-daemonset-265lc                 1/1       Running   0          2m
-    default       httpd-daemonset-3229856519-n3dqt      1/1       Running   0          2m
-    default       httpd-daemonset-55swx                 1/1       Running   0          2m
-    kube-system   kube-apiserver-172.20.0.30            1/1       Running   0          2m
-    kube-system   kube-apiserver-172.20.0.90            1/1       Running   0          3m
-    kube-system   kube-controller-manager-172.20.0.90   1/1       Running   0          3m
-    kube-system   kube-scheduler-172.20.0.90            1/1       Running   0          3m   
-    
 
 Connect inside with `ssh`:
 
