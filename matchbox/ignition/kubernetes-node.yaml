@@ -406,6 +406,7 @@ systemd:
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
         ExecStart=/opt/rootfs/hyperkube kubelet \
           --hairpin-mode=none \
+          --non-masquerade-cidr={{.network.subnet}} \
           --network-plugin=cni \
           --cni-bin-dir=/opt/rootfs/usr/bin \
           --cni-conf-dir=/etc/rkt/net.d \

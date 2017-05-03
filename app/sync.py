@@ -196,6 +196,7 @@ class ConfigSyncSchedules(object):
         fqdn = automatic_name if not fqdn else fqdn
 
         dns_attr = self.get_dns_attr(self.log, fqdn)
+        cni_attr = self.cni_ipam(m["cidrv4"], m["gateway"])
         extra_metadata = {
             "etc_hosts": EC.etc_hosts,
             # Etcd
@@ -249,11 +250,12 @@ class ConfigSyncSchedules(object):
             "cni_image_url": EC.cni_image_url,
             "vault_image_url": EC.vault_image_url,
             # IPAM
-            "cni": json.dumps(self.cni_ipam(m["cidrv4"], m["gateway"]), sort_keys=True),
+            "cni": json.dumps(cni_attr, sort_keys=True),
             "network": {
                 "cidrv4": m["cidrv4"],
                 "gateway": m["gateway"],
                 "ip": m["ipv4"],
+                "subnet": cni_attr["subnet"]
             },
             # host
             "hostname": dns_attr["shortname"],
