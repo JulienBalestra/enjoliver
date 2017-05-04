@@ -21,23 +21,23 @@ class SmartClient(object):
     lazy_engine = None
 
     @staticmethod
-    def parse_db_uri(db_uri):
+    def parse_db_uri(db_uri: str):
         if "cockroachdb://" in db_uri and db_uri.count(",") > 0:
             return _MultipleEndpoints
         return _SingleEndpoint
 
-    def __new__(cls, db_uri):
+    def __new__(cls, db_uri: str):
         o = object.__new__(cls.parse_db_uri(db_uri))
         return o
 
-    def __init__(self, db_uri):
+    def __init__(self, db_uri: str):
         self._create_engines(db_uri.split(","))
         if isinstance(self, _SingleEndpoint):
             self.new_session = self.lazy_session
         else:
             self.new_session = self.connected_cockroach_session
 
-    def _create_engines(self, uri_list):
+    def _create_engines(self, uri_list: list):
         for single_uri in uri_list:
             e = create_engine(single_uri)
             if "%s" % e.url not in self.engine_urls:

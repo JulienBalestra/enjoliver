@@ -12,7 +12,7 @@ from sqlalchemy.orm import relationship, validates
 BASE = declarative_base()
 
 
-def compile_regex(regex):
+def compile_regex(regex: str):
     """
     Compile the regex for the module constants
     :param regex:

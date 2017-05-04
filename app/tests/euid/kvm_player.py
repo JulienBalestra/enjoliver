@@ -450,7 +450,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         disco_data = json.loads(response_body.decode())
         return disco_data
 
-    def fetch_discovery_ignition_journal(self, uuid):
+    def fetch_discovery_ignition_journal(self, uuid: str):
         request = requests.get("%s/discovery/ignition-journal/%s" % (self.api_uri, uuid))
         response_body = request.content
         request.close()
@@ -458,7 +458,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         disco_data = json.loads(response_body.decode())
         return disco_data
 
-    def kvm_restart_off_machines(self, to_start, tries=120):
+    def kvm_restart_off_machines(self, to_start: list, tries=120):
         assert type(to_start) is list
         assert len(to_start) > 0
         for j in range(tries):
@@ -479,7 +479,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             time.sleep(self.testing_sleep_seconds)
         self.assertEqual(len(to_start), 0)
 
-    def etcd_endpoint_health(self, ips, port, tries=30, verify=True, certs_name=""):
+    def etcd_endpoint_health(self, ips: list, port: int, tries=30, verify=True, certs_name=""):
         assert type(ips) is list
         assert len(ips) > 0
         certs = tuple()
@@ -508,7 +508,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
         self.assertEqual(len(ips), 0)
 
-    def _get_vault_uri_by_initier(self, ip, port, tries=30):
+    def _get_vault_uri_by_initier(self, ip: str, port: int, tries=30):
         vault_uri = ""
         for t in range(tries):
             try:
@@ -535,7 +535,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "%s/v1/pki/vault/issue/server" % vault_uri, token_vault_server, verify=False, parent="vault",
             component="server")
 
-    def _get_vault_token_in_etcd(self, ip, port, etcd_key, tries=30):
+    def _get_vault_token_in_etcd(self, ip: str, port: int, etcd_key: str, tries=30):
         token_vault_server = ""
         for t in range(tries):
             try:
@@ -554,7 +554,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         self.assertGreater(len(token_vault_server), 0)
         return token_vault_server
 
-    def _vault_issue_certificate(self, url, token, verify, parent, component, tries=30):
+    def _vault_issue_certificate(self, url: str, token: str, verify: bool, parent: str, component: str, tries=30):
         certs = ["certificate", "issuing_ca", "private_key"]
         content = dict()
         for t in range(tries):
@@ -581,7 +581,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 f.write(content[c])
                 display("vault issue %s token: %s -> %s" % (url, token, filename_ext))
 
-    def vault_verifing_issuing_ca(self, ip, port):
+    def vault_verifing_issuing_ca(self, ip: str, port: int):
         vault_uri = self._get_vault_uri_by_initier(ip, port, tries=2)
         r = requests.get("%s/v1/" % vault_uri,
                          verify=os.path.join(self.test_certs_path, "vault_server.issuing_ca"))
@@ -589,7 +589,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         self.assertEqual(404, r.status_code)
         self.assertEqual({"errors": []}, json.loads(r.content.decode()))
 
-    def vault_issue_app_certs(self, ip, port, tries=30):
+    def vault_issue_app_certs(self, ip: str, port: int, tries=30):
         vault_uri = self._get_vault_uri_by_initier(ip, port, tries=2)
         for vault_cert in [(parent, component) for parent, component in [
             ("etcd-kubernetes", "client"),
@@ -615,7 +615,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     t, tries, parent, component, ip, self.vault_self_certs.__name__))
                 time.sleep(self.testing_sleep_seconds)
 
-    def _get_certificates(self, certs_name):
+    def _get_certificates(self, certs_name: str):
         verify, certs = True, tuple()
         if certs_name:
             verify = os.path.join(self.test_certs_path, "%s.issuing_ca" % certs_name)
@@ -628,7 +628,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             self.assertTrue(os.path.exists(verify))
         return verify, certs
 
-    def save_unseal_key(self, ips):
+    def save_unseal_key(self, ips: list):
         unseal_file = os.path.join(self.test_certs_path, "unseal.key")
 
         for ip in ips:
@@ -637,7 +637,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 "-o", "UserKnownHostsFile=/dev/null",
                 "-o", "ConnectTimeout=1",
                 "-i", self.ssh_private_key,
-                "-lcore", ip, 'grep "Unseal Key 1:" /etc/vault.d/keys | cut -f4 -d \' \''
+                "-lcore", ip, 'sudo grep "Unseal Key 1:" /etc/vault.d/keys | cut -f4 -d \' \''
             ]).decode().replace("\n", "")
             if stdout:
                 with open(unseal_file, "w") as f:
@@ -645,7 +645,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 break
         self.assertTrue(os.path.isfile(unseal_file))
 
-    def unseal_all_vaults(self, ips, port, tries=30):
+    def unseal_all_vaults(self, ips: list, tries=30):
         with open(os.path.join(self.test_certs_path, "unseal.key")) as f:
             key = f.read()
         self.assertGreater(len(key), 0)
@@ -677,7 +677,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 self.assertFalse(t == tries - 1)
                 time.sleep(self.testing_sleep_seconds * 2)
 
-    def etcd_member_len(self, ip, members_nb, port, tries=30, verify=True, certs_name=""):
+    def etcd_member_len(self, ip: str, members_nb: int, port: int, tries=30, verify=True, certs_name=""):
         result = {}
         certs = tuple()
         if certs_name:
@@ -702,7 +702,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
         self.assertEqual(len(result["members"]), members_nb)
 
-    def kubernetes_node_nb(self, api_server_ip, nodes_nb, tries=200):
+    def kubernetes_node_nb(self, api_server_ip: str, nodes_nb: int, tries=200):
         c = kc.ApiClient(host="%s:8080" % api_server_ip)
         core = kc.CoreV1Api(c)
         items = []
@@ -721,7 +721,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
         self.assertEqual(len(items), nodes_nb)
 
-    def kube_apiserver_health(self, ips, tries=200):
+    def kube_apiserver_health(self, ips: list, tries=200):
         assert type(ips) is list
         assert len(ips) > 0
         for t in range(tries):
@@ -746,7 +746,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 time.sleep(self.testing_sleep_seconds)
         self.assertEqual(len(ips), 0)
 
-    def create_httpd_deploy(self, api_server_ip):
+    def create_httpd_deploy(self, api_server_ip: str):
         with open("%s/manifests/httpd-deploy.yaml" % self.euid_path) as f:
             manifest = yaml.load(f)
 
@@ -754,7 +754,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         b = kc.ExtensionsV1beta1Api(c)
         b.create_namespaced_deployment("default", manifest)
 
-    def create_tiller(self, api_server_ip):
+    def create_tiller(self, api_server_ip: str):
         c = kc.ApiClient(host="%s:8080" % api_server_ip)
 
         with open("%s/manifests/tiller-service.yaml" % self.euid_path) as f:
@@ -776,7 +776,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         b = kc.ExtensionsV1beta1Api(c)
         b.create_namespaced_daemon_set("default", manifest)
 
-    def pod_httpd_is_running(self, api_server_ip, tries=100):
+    def pod_httpd_is_running(self, api_server_ip: str, tries=100):
         code = 0
         c = kc.ApiClient(host="%s:8080" % api_server_ip)
         core = kc.CoreV1Api(c)
@@ -802,7 +802,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             time.sleep(self.testing_sleep_seconds)
         self.assertEqual(404, code)
 
-    def pod_tiller_is_running(self, api_server_ip, tries=100):
+    def pod_tiller_is_running(self, api_server_ip: str, tries=100):
         code = 0
         c = kc.ApiClient(host="%s:8080" % api_server_ip)
         core = kc.CoreV1Api(c)
@@ -840,7 +840,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         tiller_containers = int(output.decode().replace("\n", ""))
         return tiller_containers == 1
 
-    def tiller_can_restart(self, api_server_ip):
+    def tiller_can_restart(self, api_server_ip: str):
         c = kc.ApiClient(host="%s:8080" % api_server_ip)
         core = kc.CoreV1Api(c)
         r = core.list_namespaced_pod("kube-system", label_selector="app=tiller")
@@ -895,7 +895,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             time.sleep(1)
         raise AssertionError("tiller is not gc on node %s" % node_ip)
 
-    def _get_tiller_grpc_endpoint(self, api_server_ip):
+    def _get_tiller_grpc_endpoint(self, api_server_ip: str):
         c = kc.ApiClient(host="%s:8080" % api_server_ip)
         core = kc.CoreV1Api(c)
         r = core.list_namespaced_pod("kube-system", label_selector="app=tiller")
@@ -912,7 +912,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 exception = e
         raise exception
 
-    def create_helm_etcd_backup(self, api_server_ip, etcd_app_name):
+    def create_helm_etcd_backup(self, api_server_ip: str, etcd_app_name: str):
         tiller = self._get_tiller_grpc_endpoint(api_server_ip)
         c = kc.ApiClient(host="%s:8080" % api_server_ip)
         core = kc.CoreV1Api(c)
@@ -932,7 +932,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         ])
         self.assertEqual(0, ret)
 
-    def _snapshot_status(self, core, etcd_app_name, tries):
+    def _snapshot_status(self, core: kc.CoreV1Api, etcd_app_name: str, tries: int):
         for t in range(tries):
             r = core.list_namespaced_pod("backup", label_selector="etcd=%s" % etcd_app_name)
             for p in r.items:
@@ -955,14 +955,14 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
             time.sleep(self.testing_sleep_seconds)
 
-    def etcd_backup_done(self, api_server_ip, etcd_app_name, tries=120):
+    def etcd_backup_done(self, api_server_ip: str, etcd_app_name: str, tries=120):
         c = kc.ApiClient(host="%s:8080" % api_server_ip)
         core = kc.CoreV1Api(c)
         summary = self._snapshot_status(core, etcd_app_name, tries)
         for k in ["revision", "totalKey", "totalSize"]:
             self.assertGreater(summary[k], 0)
 
-    def daemon_set_httpd_are_running(self, ips, tries=200):
+    def daemon_set_httpd_are_running(self, ips: list, tries=200):
         assert type(ips) is list
         assert len(ips) > 0
         for t in range(tries):
@@ -988,19 +988,19 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         self.assertEqual(len(ips), 0)
 
     @staticmethod
-    def get_optimized_memory(nb_nodes):
+    def get_optimized_memory(nb_nodes: int):
         mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
         mem_gib = mem_bytes / (1024. ** 3)
         usable_mem_gib = mem_gib * (1.3 if mem_gib > 10 else 1.1)
         return (usable_mem_gib // nb_nodes) * 1024
 
     @staticmethod
-    def get_optimized_cpu(nb_nodes):
+    def get_optimized_cpu(nb_nodes: int):
         cpu = float(multiprocessing.cpu_count())
         cores = cpu / nb_nodes
         return int(round(cores))
 
-    def kubectl_proxy(self, api_server_uri, proxy_port):
+    def kubectl_proxy(self, api_server_uri: str, proxy_port: int):
         def run():
             cmd = [
                 "%s/hyperkube/hyperkube" % self.project_path,

@@ -26,7 +26,7 @@ class CommonScheduler(object):
     apply_deps_delay = EC.apply_deps_delay
 
     @staticmethod
-    def fetch_available(api_uri):
+    def fetch_available(api_uri: str):
         """
         HTTP Get to the <api_uri>/scheduler/available
         :param api_uri: str
@@ -65,7 +65,7 @@ class CommonScheduler(object):
         raise RuntimeError("timeout after %d" % (
             self.apply_deps_delay * self.apply_deps_tries))
 
-    def _affect(self, available):
+    def _affect(self, available: dict):
         mac = available["mac"]
         r = requests.post("%s/scheduler" % self.api_uri, data=json.dumps(
             {
@@ -127,7 +127,7 @@ class CommonScheduler(object):
             self.log.error("ConnectionError %s" % url)
             return 0
 
-    def _apply_with_retry(self, apply_fn, nb_try, seconds_sleep):
+    def _apply_with_retry(self, apply_fn, nb_try: int, seconds_sleep: int):
         for i in range(nb_try):
             try:
                 return apply_fn()
@@ -147,7 +147,7 @@ class EtcdMemberKubernetesControlPlane(CommonScheduler):
     __name__ = "".join(roles)
 
     def __init__(self,
-                 api_uri):
+                 api_uri: str):
         self.log.info("with api_uri %s" % api_uri)
         self.api_uri = api_uri
 
@@ -161,7 +161,7 @@ class KubernetesNode(CommonScheduler):
     __name__ = "".join(roles)
 
     def __init__(self,
-                 api_uri,
+                 api_uri: str,
                  apply_dep):
         self.log.info("with api_uri %s" % api_uri)
         self.api_uri = api_uri

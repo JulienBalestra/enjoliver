@@ -26,7 +26,7 @@ class ConfigSyncSchedules(object):
     range_nb_ips = EC.range_nb_ips
     skip_ips = EC.skip_ips
 
-    def __init__(self, api_uri, matchbox_path, ignition_dict, extra_selector_dict=None):
+    def __init__(self, api_uri: str, matchbox_path: str, ignition_dict: dict, extra_selector_dict=None):
         """
         :param api_uri: http://1.1.1.1:5000
         :param matchbox_path: /var/lib/matchbox
@@ -49,7 +49,7 @@ class ConfigSyncSchedules(object):
             self.log.info("%s:%s -> %s is here" % (k, v, f))
 
     @staticmethod
-    def get_dns_attr(log, fqdn):
+    def get_dns_attr(log, fqdn: str):
         """
         TODO: Use LLDP to avoid vendor specific usage
         :param fqdn: e.g: r13-srv3.dc-1.foo.bar.cr
@@ -79,7 +79,7 @@ class ConfigSyncSchedules(object):
         return d
 
     @staticmethod
-    def cni_ipam(host_cidrv4, host_gateway):
+    def cni_ipam(host_cidrv4: str, host_gateway: str):
         """
         With the class variables provide a way to generate a static host-local ipam
         :param host_cidrv4:
@@ -105,7 +105,7 @@ class ConfigSyncSchedules(object):
         }
         return ipam
 
-    def get_extra_selectors(self, extra_selectors):
+    def get_extra_selectors(self, extra_selectors: dict):
         """
         Extra selectors are passed to Matchbox
         :param extra_selectors: dict
@@ -135,13 +135,13 @@ class ConfigSyncSchedules(object):
         return self._query_ip_list(schedulerv2.ScheduleRoles.kubernetes_node)
 
     @staticmethod
-    def order_http_uri(ips, ec_value, secure=False):
+    def order_http_uri(ips: list, ec_value: int, secure=False):
         ips.sort()
         e = ["http{}://%s:%d".format("s" if secure else "") % (k, ec_value) for k in ips]
         return e
 
     @staticmethod
-    def order_etcd_named(ips, ec_value, secure=False):
+    def order_etcd_named(ips: list, ec_value: int, secure=False):
         ips.sort()
         e = ["%s=http{}://%s:%d".format("s" if secure else "") % (k, k, ec_value) for k in ips]
         return ",".join(e)

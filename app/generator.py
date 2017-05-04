@@ -17,11 +17,11 @@ class Generator(object):
     """
 
     def __init__(self,
-                 api_uri,
-                 profile_id,
-                 name,
-                 ignition_id,
-                 matchbox_path,
+                 api_uri: str,
+                 profile_id: str,
+                 name: str,
+                 ignition_id: str,
+                 matchbox_path: str,
                  selector=None,
                  group_id=None,
                  extra_metadata=None):
@@ -113,10 +113,11 @@ class GenerateProfile(GenerateCommon):
         return "GenProfile-%s" % self._target_data["id"]
 
     def __init__(self,
-                 api_uri,
-                 _id, name,
-                 ignition_id,
-                 matchbox_path):
+                 api_uri: str,
+                 _id: str,
+                 name: str,
+                 ignition_id: str,
+                 matchbox_path: str):
 
         self.api_uri = api_uri
         self.ensure_directory(matchbox_path)
@@ -164,10 +165,11 @@ class GenerateGroup(GenerateCommon):
         return "GenGroup[%s]" % self._target_data["id"]
 
     def __init__(self,
-                 api_uri,
-                 _id, name,
-                 profile,
-                 matchbox_path,
+                 api_uri: str,
+                 _id: str,
+                 name: str,
+                 profile: str,
+                 matchbox_path: str,
                  selector=None,
                  metadata=None,
                  ):

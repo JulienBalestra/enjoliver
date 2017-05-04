@@ -14,7 +14,7 @@ class EnjoliverConfig(object):
     Used to propagate easily the configuration inside the application
     """
 
-    def config_override(self, key, default):
+    def config_override(self, key: str, default):
         """
         Each config attribute pass inside this method to allow override by
         1) Environment

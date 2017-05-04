@@ -1414,6 +1414,7 @@ storage:
           set -o pipefail
 
           echo "vault init with ${KEY}"
+          umask 077
           vault init -key-shares=1 -key-threshold=1 > ${KEY}
 
           UNSEALKEY1=$(grep "Unseal Key 1:" ${KEY} | cut -f4 -d ' ')
