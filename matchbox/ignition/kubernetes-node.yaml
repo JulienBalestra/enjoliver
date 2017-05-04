@@ -485,6 +485,26 @@ systemd:
         [Install]
         WantedBy=default.target
 
+    - name: rkt-image-gc.service
+      contents: |
+        [Unit]
+        Description=Garbage Collection for rkt image
+        [Service]
+        Environment=GRACE_PERIOD=0s
+        Type=oneshot
+        ExecStart=/usr/bin/rkt image gc --grace-period=${GRACE_PERIOD}
+
+    - name: rkt-image-gc.timer
+      enable: true
+      contents: |
+        [Unit]
+        Description=Periodic Garbage Collection for rkt image
+        [Timer]
+        OnActiveSec=0s
+        OnUnitActiveSec=24h
+        [Install]
+        WantedBy=default.target
+
 
 storage:
   files:
@@ -719,6 +739,10 @@ storage:
                 echo "Nothing to do: ${STATUS}, no preset in ${PRESET}"
                 exit 0
               fi
+              cat ${PRESET} || {
+                echo "Nothing to do: ${STATUS}, no file preset ${PRESET}"
+                exit 0
+              }
           fi
 
           set -xe
