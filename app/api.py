@@ -577,6 +577,7 @@ def scheduler_post():
             inject = crud.InjectSchedule(session, data=req)
             inject.apply_roles()
             inject.commit()
+
     op()
     CACHE.delete(request.path)
     return jsonify(req)
@@ -624,6 +625,50 @@ def discovery_interfaces():
         interfaces = fetch.get_all_interfaces()
 
     return jsonify(interfaces)
+
+
+@APPLICATION.route('/ignition/version', methods=['GET'])
+def get_ignition_versions():
+    """
+    Ignition version
+    List the current ignition behind matchbox
+    ---
+    tags:
+      - matchbox
+    responses:
+      200:
+        description: Ignition version
+        schema:
+            type: list
+    """
+    return jsonify(CACHE.get("ignition-version"))
+
+
+@APPLICATION.route('/ignition/version/<string:filename>', methods=['POST'])
+def report_ignition_version(filename):
+    """
+    Ignition version
+    Report the current ignition behind matchbox
+    ---
+    tags:
+      - matchbox
+    responses:
+      200:
+        description: Status of the recorded entry
+        schema:
+            type: dict
+    """
+    versions = CACHE.get("ignition-version")
+    if not versions:
+        versions = dict()
+
+    data = json.loads(request.data)
+    new_entry = True
+    if filename in versions.keys():
+        new_entry = False
+    versions.update({filename: data[filename]})
+    CACHE.set("ignition-version", versions, timeout=0)
+    return jsonify({"new": new_entry, "total": len(versions)})
 
 
 @APPLICATION.route('/discovery/ignition-journal/<string:uuid>/<string:boot_id>', methods=['GET'])

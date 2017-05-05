@@ -36,17 +36,26 @@ class ConfigSyncSchedules(object):
         os.environ["API_URI"] = self.api_uri
         self.matchbox_path = matchbox_path
         self.ignition_dict = ignition_dict
-        self._ensure_ignition_are_here()
+        self._reporting_ignitions()
         self.extra_selector = extra_selector_dict if extra_selector_dict else {}
 
-    def _ensure_ignition_are_here(self):
+    def _reporting_ignitions(self):
         for k, v in self.ignition_dict.items():
             f = "%s/ignition/%s.yaml" % (self.matchbox_path, v)
             if os.path.isfile(f) is False:
                 self.log.error("%s:%s -> %s is not here" % (k, v, f))
                 raise IOError(f)
-
-            self.log.info("%s:%s -> %s is here" % (k, v, f))
+            with open(f, 'r') as ignition_file:
+                blob = ignition_file.read()
+            data = {v: blob}
+            url = "%s/ignition/version/%s" % (self.api_uri, v)
+            try:
+                req = requests.post(url, data=json.dumps(data))
+                req.close()
+                response = json.loads(req.content.decode())
+                self.log.info("%s:%s -> %s is here content reported: %s" % (k, v, f, response))
+            except requests.exceptions.ConnectionError as e:
+                self.log.error("%s:%s -> %s is here content NOT reported: %s" % (k, v, f, e))
 
     @staticmethod
     def get_dns_attr(log, fqdn: str):
