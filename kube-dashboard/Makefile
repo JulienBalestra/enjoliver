@@ -43,7 +43,7 @@ install: prepare
 
 test: install
 	@echo ENV IMAGE=$(ACI)/aci-$(DASHBOARD)
-	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) push
+	IMAGE=$(ACI)/aci-$(DASHBOARD) make -C $(RUNTIME) push
 
 push: test
 	@echo ENV IMAGE=$(ACI)/aci-$(DASHBOARD)

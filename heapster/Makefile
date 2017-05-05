@@ -33,22 +33,22 @@ prepare: $(GO) $(BUILDER_HYPERKUBE)
 
 install: prepare
 	@echo ENV IMAGE=$(ACI)/aci-$(HEAPSTER)
-	IMAGE=$(ACI)/aci-$(HEAPSTER) make -C $(RUNTIME) @^
+	IMAGE=$(ACI)/aci-$(HEAPSTER) make -C $(RUNTIME) install
 
 test: install
 	@echo ENV IMAGE=$(ACI)/aci-$(HEAPSTER)
-	IMAGE=$(ACI)/aci-$(HEAPSTER) make -C $(RUNTIME) @^
+	IMAGE=$(ACI)/aci-$(HEAPSTER) make -C $(RUNTIME) test
 
 push: test
 	@echo ENV IMAGE=$(ACI)/aci-$(HEAPSTER)
-	IMAGE=$(ACI)/aci-$(HEAPSTER) make -C $(RUNTIME) @^
+	IMAGE=$(ACI)/aci-$(HEAPSTER) make -C $(RUNTIME) push
 
 gc:
-	$(RKT) --local-config=$(RUNTIME) @^ --grace-period=0s
-	$(RKT) --local-config=$(RUNTIME) image @^ --grace-period=0s
+	$(RKT) --local-config=$(RUNTIME) gc --grace-period=0s
+	$(RKT) --local-config=$(RUNTIME) image gc --grace-period=0s
 
 clean: gc
-	IMAGE=$(ACI)/aci-$(HEAPSTER) make -C $(RUNTIME) @^
+	IMAGE=$(ACI)/aci-$(HEAPSTER) make -C $(RUNTIME) gc
 
 fclean: clean
 	IMAGE=$(ACI)/aci-$(GO) make -C $(RUNTIME) clean

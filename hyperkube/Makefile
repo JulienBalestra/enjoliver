@@ -38,22 +38,22 @@ prepare: $(GO) $(BUILDER_HYPERKUBE)
 
 install: prepare
 	@echo ENV IMAGE=$(ACI)/aci-$(HYPERKUBE)
-	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) @^
+	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) install
 
 test: install
 	@echo ENV IMAGE=$(ACI)/aci-$(HYPERKUBE)
-	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) @^
+	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) test
 
 push: test
 	@echo ENV IMAGE=$(ACI)/aci-$(HYPERKUBE)
-	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) @^
+	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) push
 
 gc:
-	$(RKT) --local-config=$(RUNTIME) @^ --grace-period=0s
-	$(RKT) --local-config=$(RUNTIME) image @^ --grace-period=0s
+	$(RKT) --local-config=$(RUNTIME) gc --grace-period=0s
+	$(RKT) --local-config=$(RUNTIME) image gc --grace-period=0s
 
 clean: gc
-	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) @^
+	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) gc
 
 fclean: clean
 	rm -v $(HYPERKUBE_BIN) || true

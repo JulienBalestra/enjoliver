@@ -16,8 +16,6 @@ spec:
         app: {{ .Chart.Name }}
     spec:
       serviceAccount: {{ .Chart.Name }}
-      nodeSelector:
-        control-plane: "true"
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
