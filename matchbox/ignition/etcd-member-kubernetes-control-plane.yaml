@@ -711,10 +711,23 @@ storage:
       filesystem: root
       contents:
         inline: |
+          kind: Service
+          apiVersion: v1
+          metadata:
+            name: kube-controller-manager
+            namespace: kube-system
+          spec:
+            selector:
+              app: kube-controller-manager
+            ports:
+            - port: 10252
+              protocol: TCP
+            clusterIP: "None"
+          ---
           apiVersion: v1
           kind: ServiceAccount
           metadata:
-            name: controller-manager
+            name: kube-controller-manager
             namespace: kube-system
           automountServiceAccountToken: false
           ---
@@ -726,7 +739,7 @@ storage:
             name: kube-controller-manager-{{.kubernetes_node_name}}
             namespace: kube-system
           spec:
-            serviceAccountName: controller-manager
+            serviceAccountName: kube-controller-manager
             automountServiceAccountToken: false
             nodeName: "{{.kubernetes_node_name}}"
             hostNetwork: true
@@ -775,6 +788,19 @@ storage:
       filesystem: root
       contents:
         inline: |
+          kind: Service
+          apiVersion: v1
+          metadata:
+            name: kube-scheduler
+            namespace: kube-system
+          spec:
+            selector:
+              app: kube-scheduler
+            ports:
+            - port: 10251
+              protocol: TCP
+            clusterIP: "None"
+          ---
           apiVersion: extensions/v1beta1
           kind: DaemonSet
           metadata:
