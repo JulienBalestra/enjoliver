@@ -1,0 +1,9 @@
+name: enjoliver.local/heapster:1.3.0
+
+builder:
+  dependencies:
+    - enjoliver.local/builder-hyperkube:latest
+
+aci:
+  dependencies:
+    - enjoliver.local/debian:latest

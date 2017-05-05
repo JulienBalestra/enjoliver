@@ -4,7 +4,7 @@ metadata:
   name: "{{ .Chart.Name }}-{{ .Values.etcd.client }}"
   labels:
     chart: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
-  namespace: backup
+  namespace: {{ .Values.namespace }}
 spec:
   schedule: "{{ .Values.schedule }}"
   jobTemplate:
