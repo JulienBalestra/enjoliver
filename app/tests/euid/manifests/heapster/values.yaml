@@ -1,0 +1,5 @@
+image:
+  repository: enjoliver.local/heapster
+  tag: 1.3.0
+  pullPolicy: IfNotPresent
+namespace: kube-system

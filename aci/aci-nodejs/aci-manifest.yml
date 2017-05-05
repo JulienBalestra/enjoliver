@@ -1,0 +1,14 @@
+name: enjoliver.local/nodejs:7.10.0
+aci:
+  dependencies:
+    - enjoliver.local/debian:latest
+
+
+builder:
+  dependencies:
+    - enjoliver.local/debian:latest
+
+tester:
+  aci:
+    dependencies:
+      - enjoliver.local/nodejs:7.10.0

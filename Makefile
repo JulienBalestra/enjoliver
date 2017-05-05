@@ -55,6 +55,8 @@ acis: acserver
 	make -C etcd clean
 	make -C fleet || pkill acserver || exit 1
 	make -C fleet clean
+	make -C heapster || pkill acserver || exit 1
+	make -C heapster clean
 	make -C hyperkube || pkill acserver || exit 1
 	make -C hyperkube clean
 	make -C lldp || pkill acserver || exit 1

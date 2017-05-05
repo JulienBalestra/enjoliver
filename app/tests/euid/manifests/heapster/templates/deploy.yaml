@@ -1,0 +1,54 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ .Chart.Name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: {{ .Chart.Name }}
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+    spec:
+      serviceAccount: "heapster"
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command:
+        - /usr/bin/heapster
+        - --bind-address=0.0.0.0
+        - --profiling=false
+        - "--source=kubernetes:https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT}?useServiceAccount=true"
+        env:
+        - name: KUBERNETES_SERVICE_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+
+        - name: KUBERNETES_SERVICE_PORT
+          value: "6443"
+
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8082
+          initialDelaySeconds: 30
+          timeoutSeconds: 10
+          periodSeconds: 1
+
+        readinessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /healthz
+            port: 8082
+          initialDelaySeconds: 10
+          timeoutSeconds: 10
+          periodSeconds: 2
