@@ -429,6 +429,30 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         self.clean_sandbox()
         self.api_healthz()
 
+    def create_virtual_machine(self, name: str, nb_node: int, disk_gb=0):
+        if disk_gb == 0:
+            disk_opt = "none"
+        else:
+            disk_opt = "size=%d" % disk_gb
+        virt_install = [
+            "virt-install",
+            "--name",
+            "%s" % name,
+            "--network=bridge:rack0,model=virtio",
+            "--memory=%d" % self.get_optimized_memory(nb_node),
+            "--vcpus=%d" % self.get_optimized_cpu(nb_node),
+            "--cpu",
+            "host",
+            "--pxe",
+            "--disk",
+            disk_opt,
+            "--os-type=linux",
+            "--os-variant=generic",
+            "--noautoconsole",
+            "--boot=network" if disk_gb == 0 else "--boot=hd,network"
+        ]
+        return virt_install
+
     def virsh(self, cmd, assertion=False, v=None):
         ret = subprocess.call(cmd, stdout=v, stderr=v)
         if assertion is True and ret != 0:
@@ -883,7 +907,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         new_tiller_endpoint = self._get_tiller_grpc_endpoint(api_server_ip=api_server_ip)
         self.assertNotEqual(self._get_tiller_grpc_endpoint(api_server_ip=api_server_ip), tiller_endpoint)
         display("-> polling tiller Pod %s during 70s or until its GC" % new_tiller_endpoint)
-        while time.time() < ts + 70:
+        while time.time() < ts + 120:
             try:
                 loop_tiller_endpoint = self._get_tiller_grpc_endpoint(api_server_ip=api_server_ip)
             except RuntimeWarning:
@@ -987,12 +1011,11 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
         self.assertEqual(len(ips), 0)
 
-    @staticmethod
-    def get_optimized_memory(nb_nodes: int):
+    def get_optimized_memory(self, nb_nodes: int):
         mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
         mem_gib = mem_bytes / (1024. ** 3)
-        usable_mem_gib = mem_gib * (1.3 if mem_gib > 10 else 1.1)
-        return (usable_mem_gib // nb_nodes) * 1024
+        node_memory = (mem_gib // nb_nodes) * 1024
+        return node_memory * 1.1 if node_memory > self.ram_kvm_node_memory_mb else self.ram_kvm_node_memory_mb
 
     @staticmethod
     def get_optimized_cpu(nb_nodes: int):

@@ -50,21 +50,7 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
             self.virsh(destroy, v=self.dev_null), self.virsh(undefine, v=self.dev_null)
         try:
             for i, m in enumerate(nodes):
-                virt_install = [
-                    "virt-install",
-                    "--name",
-                    "%s" % m,
-                    "--network=bridge:rack0,model=virtio",
-                    "--memory=%d" % self.ram_kvm_node_memory_mb,
-                    "--vcpus=%d" % self.get_optimized_cpu(nb_node),
-                    "--pxe",
-                    "--disk",
-                    "none",
-                    "--os-type=linux",
-                    "--os-variant=generic",
-                    "--noautoconsole",
-                    "--boot=network"
-                ]
+                virt_install = self.create_virtual_machine(m, nb_node)
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
                 time.sleep(self.testing_sleep_seconds)
 

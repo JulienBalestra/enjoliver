@@ -57,21 +57,7 @@ class TestKVMK8sEnjolivageDisk0(TestKVMK8sEnjolivageDisk):
             self.virsh(vol_del)
         try:
             for i, m in enumerate(nodes):
-                virt_install = [
-                    "virt-install",
-                    "--name",
-                    "%s" % m,
-                    "--network=bridge:rack0,model=virtio",
-                    "--memory=%d" % self.get_optimized_memory(nb_node),
-                    "--vcpus=%d" % self.get_optimized_cpu(nb_node),
-                    "--pxe",
-                    "--disk",
-                    "size=10",  # HERE State machine
-                    "--os-type=linux",
-                    "--os-variant=generic",
-                    "--noautoconsole",
-                    "--boot=hd,network",  # Boot on disk if here
-                ]
+                virt_install = self.create_virtual_machine(m, nb_node, disk_gb=10)
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
                 time.sleep(self.testing_sleep_seconds)
 
@@ -185,21 +171,7 @@ class TestKVMK8sEnjolivageDisk1(TestKVMK8sEnjolivageDisk):
             self.virsh(vol_del)
         try:
             for i, m in enumerate(nodes):
-                virt_install = [
-                    "virt-install",
-                    "--name",
-                    "%s" % m,
-                    "--network=bridge:rack0,model=virtio",
-                    "--memory=%d" % self.get_optimized_memory(nb_node),
-                    "--vcpus=%d" % self.get_optimized_cpu(nb_node),
-                    "--pxe",
-                    "--disk",
-                    "size=10",  # HERE State machine
-                    "--os-type=linux",
-                    "--os-variant=generic",
-                    "--noautoconsole",
-                    "--boot=hd,network",  # Boot on disk if here
-                ]
+                virt_install = self.create_virtual_machine(m, nb_node, disk_gb=10)
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
                 time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds)
 

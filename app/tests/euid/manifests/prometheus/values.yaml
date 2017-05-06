@@ -1,0 +1,6 @@
+image:
+  repository: enjoliver.local/prometheus
+  tag: 1.6.1
+  pullPolicy: IfNotPresent
+namespace: kube-system
+

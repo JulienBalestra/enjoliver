@@ -1,0 +1,10 @@
+name: enjoliver.local/prometheus:1.6.1
+
+builder:
+  dependencies:
+    - enjoliver.local/debian:latest
+
+
+aci:
+  dependencies:
+    - enjoliver.local/debian:latest

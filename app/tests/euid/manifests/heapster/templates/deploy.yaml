@@ -16,6 +16,9 @@ spec:
         app: {{ .Chart.Name }}
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "8082"
     spec:
       serviceAccount: {{ .Chart.Name }}
       containers:

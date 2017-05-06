@@ -481,7 +481,8 @@ systemd:
           --peer-cert-file /etc/vault.d/etcd-%i/peer.certificate \
           --peer-key-file /etc/vault.d/etcd-%i/peer.private_key \
           --peer-trusted-ca-file /etc/vault.d/etcd-%i/peer.issuing_ca \
-          --peer-client-cert-auth
+          --peer-client-cert-auth \
+          --auto-compaction-retention=2
         RestartSec=20s
         Restart=on-failure
         LimitNOFILE=65826
@@ -738,6 +739,11 @@ storage:
               app: kube-controller-manager
             name: kube-controller-manager-{{.kubernetes_node_name}}
             namespace: kube-system
+            annotations:
+              scheduler.alpha.kubernetes.io/critical-pod: ''
+              prometheus.io/scrape: "true"
+              prometheus.io/path: "/metrics"
+              prometheus.io/port: "10252"
           spec:
             serviceAccountName: kube-controller-manager
             automountServiceAccountToken: false
@@ -811,6 +817,11 @@ storage:
               metadata:
                 labels:
                   app: kube-scheduler
+                annotations:
+                  scheduler.alpha.kubernetes.io/critical-pod: ''
+                  prometheus.io/scrape: "true"
+                  prometheus.io/path: "/metrics"
+                  prometheus.io/port: "10251"
               spec:
                 nodeSelector:
                   control-plane: "true"
