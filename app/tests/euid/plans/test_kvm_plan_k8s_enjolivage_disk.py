@@ -104,22 +104,20 @@ class TestKVMK8sEnjolivageDisk0(TestKVMK8sEnjolivageDisk):
             self.kube_apiserver_health(plan_k8s_2t.kubernetes_control_plane_ip_list)
             self.kubernetes_node_nb(plan_k8s_2t.etcd_member_ip_list[0], nb_node)
 
-            self.create_httpd_daemon_set(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
-            self.create_httpd_deploy(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
             self.create_tiller(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
-            ips = copy.deepcopy(plan_k8s_2t.kubernetes_control_plane_ip_list + plan_k8s_2t.kubernetes_nodes_ip_list)
-            self.daemon_set_httpd_are_running(ips)
-            self.pod_httpd_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
             self.pod_tiller_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
 
             for etcd in ["vault", "kubernetes"]:
                 self.create_helm_etcd_backup(plan_k8s_2t.etcd_member_ip_list[0], etcd)
 
-            for etcd in ["vault", "kubernetes"]:
-                self.etcd_backup_done(plan_k8s_2t.etcd_member_ip_list[0], etcd)
-
             for chart in ["heapster", "node-exporter", "prometheus"]:
                 self.create_helm_by_name(plan_k8s_2t.etcd_member_ip_list[0], chart)
+
+            ips = copy.deepcopy(plan_k8s_2t.kubernetes_control_plane_ip_list + plan_k8s_2t.kubernetes_nodes_ip_list)
+            self.daemonset_node_exporter_are_running(ips)
+
+            for etcd in ["vault", "kubernetes"]:
+                self.etcd_backup_done(plan_k8s_2t.etcd_member_ip_list[0], etcd)
 
             self.write_ending(marker)
         finally:
@@ -220,23 +218,17 @@ class TestKVMK8sEnjolivageDisk1(TestKVMK8sEnjolivageDisk):
             self.kube_apiserver_health(plan_k8s_2t.kubernetes_control_plane_ip_list)
             self.kubernetes_node_nb(plan_k8s_2t.etcd_member_ip_list[0], nb_node)
 
-            self.create_httpd_daemon_set(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
-            self.create_httpd_deploy(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
             self.create_tiller(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
-            ips = copy.deepcopy(plan_k8s_2t.kubernetes_control_plane_ip_list + plan_k8s_2t.kubernetes_nodes_ip_list)
-            self.daemon_set_httpd_are_running(ips)
-            self.pod_httpd_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
             self.pod_tiller_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
-
-            for chart in ["heapster", "node-exporter", "prometheus"]:
-                self.create_helm_by_name(plan_k8s_2t.etcd_member_ip_list[0], chart)
 
             for etcd in ["vault", "kubernetes"]:
                 self.create_helm_etcd_backup(plan_k8s_2t.etcd_member_ip_list[0], etcd)
 
-            # Resilient testing against rktnetes
-            # See https://github.com/kubernetes/kubernetes/issues/45149
-            self.tiller_can_restart(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+            for chart in ["heapster", "node-exporter", "prometheus"]:
+                self.create_helm_by_name(plan_k8s_2t.etcd_member_ip_list[0], chart)
+
+            ips = copy.deepcopy(plan_k8s_2t.kubernetes_control_plane_ip_list + plan_k8s_2t.kubernetes_nodes_ip_list)
+            self.daemonset_node_exporter_are_running(ips)
 
             # takes about one minute to run the cronjob
             for etcd in ["vault", "kubernetes"]:

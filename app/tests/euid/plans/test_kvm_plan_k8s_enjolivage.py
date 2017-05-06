@@ -101,6 +101,9 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
             for etcd in ["vault", "kubernetes"]:
                 self.create_helm_etcd_backup(plan_k8s_2t.etcd_member_ip_list[0], etcd)
 
+            for chart in ["heapster", "node-exporter", "prometheus"]:
+                self.create_helm_by_name(plan_k8s_2t.etcd_member_ip_list[0], chart)
+
             # Resilient testing against rktnetes
             # See https://github.com/kubernetes/kubernetes/issues/45149
             self.tiller_can_restart(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
@@ -108,10 +111,6 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
             # takes about one minute to run the cronjob
             for etcd in ["vault", "kubernetes"]:
                 self.etcd_backup_done(plan_k8s_2t.etcd_member_ip_list[0], etcd)
-
-            for chart in ["heapster", "node-exporter", "prometheus"]:
-                self.create_helm_by_name(plan_k8s_2t.etcd_member_ip_list[0], chart)
-
             self.write_ending(marker)
         finally:
             if os.getenv("TEST"):
