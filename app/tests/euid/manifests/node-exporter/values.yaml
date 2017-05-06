@@ -1,0 +1,5 @@
+image:
+  repository: enjoliver.local/node-exporter
+  tag: 0.14.0
+  pullPolicy: IfNotPresent
+namespace: kube-system

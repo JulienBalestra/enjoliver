@@ -106,6 +106,8 @@ class TestKVMK8SFast0(TestKVMK8sFast):
             self.kubernetes_node_nb(sy.kubernetes_control_plane_ip_list[0], nb_node)
 
             self.pod_tiller_is_running(sy.kubernetes_control_plane_ip_list[0])
+            for chart in ["heapster", "node-exporter", "prometheus"]:
+                self.create_helm_by_name(sy.kubernetes_control_plane_ip_list[0], chart)
 
             self.write_ending(marker)
         finally:

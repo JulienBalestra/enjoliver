@@ -1,0 +1,12 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ .Chart.Name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: {{ .Chart.Name }}
+  ports:
+  - port: 9100
+    protocol: TCP
+  clusterIP: "None"

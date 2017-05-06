@@ -956,6 +956,17 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         ])
         self.assertEqual(0, ret)
 
+    def create_helm_by_name(self, api_server_ip: str, name: str):
+        tiller = self._get_tiller_grpc_endpoint(api_server_ip)
+        ret = subprocess.call([
+            self.helm_bin,
+            "--host",
+            tiller,
+            "install",
+            "%s/manifests/%s" % (self.euid_path, name)
+        ])
+        self.assertEqual(0, ret)
+
     def _snapshot_status(self, core: kc.CoreV1Api, etcd_app_name: str, tries: int):
         for t in range(tries):
             r = core.list_namespaced_pod("backup", label_selector="etcd=%s" % etcd_app_name)

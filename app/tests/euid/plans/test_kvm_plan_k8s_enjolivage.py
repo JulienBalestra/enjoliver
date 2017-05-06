@@ -109,6 +109,9 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
             for etcd in ["vault", "kubernetes"]:
                 self.etcd_backup_done(plan_k8s_2t.etcd_member_ip_list[0], etcd)
 
+            for chart in ["heapster", "node-exporter", "prometheus"]:
+                self.create_helm_by_name(plan_k8s_2t.etcd_member_ip_list[0], chart)
+
             self.write_ending(marker)
         finally:
             if os.getenv("TEST"):

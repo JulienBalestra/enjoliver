@@ -1,0 +1,4 @@
+apiVersion: v1
+description: Prometheus node exporter
+name: node-exporter
+version: 0.14.0-r1

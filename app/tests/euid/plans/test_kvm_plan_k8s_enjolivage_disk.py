@@ -118,6 +118,8 @@ class TestKVMK8sEnjolivageDisk0(TestKVMK8sEnjolivageDisk):
             for etcd in ["vault", "kubernetes"]:
                 self.etcd_backup_done(plan_k8s_2t.etcd_member_ip_list[0], etcd)
 
+            for chart in ["heapster", "node-exporter", "prometheus"]:
+                self.create_helm_by_name(plan_k8s_2t.etcd_member_ip_list[0], chart)
 
             self.write_ending(marker)
         finally:
@@ -225,6 +227,9 @@ class TestKVMK8sEnjolivageDisk1(TestKVMK8sEnjolivageDisk):
             self.daemon_set_httpd_are_running(ips)
             self.pod_httpd_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
             self.pod_tiller_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+
+            for chart in ["heapster", "node-exporter", "prometheus"]:
+                self.create_helm_by_name(plan_k8s_2t.etcd_member_ip_list[0], chart)
 
             for etcd in ["vault", "kubernetes"]:
                 self.create_helm_etcd_backup(plan_k8s_2t.etcd_member_ip_list[0], etcd)

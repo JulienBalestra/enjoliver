@@ -126,6 +126,8 @@ class TestKVMK8SEnjolivageDiskLifecycleLifecycle0(TestKVMK8sEnjolivageDiskLifecy
                 for etcd in ["vault", "kubernetes"]:
                     if i == 0:
                         self.create_helm_etcd_backup(plan_k8s_2t.etcd_member_ip_list[i % 3], etcd)
+                    for chart in ["heapster", "node-exporter", "prometheus"]:
+                        self.create_helm_by_name(plan_k8s_2t.etcd_member_ip_list[0], chart)
 
                 # Resilient testing against rktnetes
                 # See https://github.com/kubernetes/kubernetes/issues/45149
