@@ -37,7 +37,25 @@ spec:
           - name: config
             mountPath: /etc/prometheus
 
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 9090
+          initialDelaySeconds: 30
+          timeoutSeconds: 10
+          periodSeconds: 1
+
+        readinessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /
+            port: 9090
+          initialDelaySeconds: 10
+          timeoutSeconds: 10
+          periodSeconds: 2
+
       volumes:
         - name: config
           configMap:
             name: {{ .Chart.Name }}
+

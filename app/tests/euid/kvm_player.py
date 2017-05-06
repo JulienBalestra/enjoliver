@@ -770,14 +770,6 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 time.sleep(self.testing_sleep_seconds)
         self.assertEqual(len(ips), 0)
 
-    def create_httpd_deploy(self, api_server_ip: str):
-        with open("%s/manifests/httpd-deploy.yaml" % self.euid_path) as f:
-            manifest = yaml.load(f)
-
-        c = kc.ApiClient(host="%s:8080" % api_server_ip)
-        b = kc.ExtensionsV1beta1Api(c)
-        b.create_namespaced_deployment("default", manifest)
-
     def create_tiller(self, api_server_ip: str):
         c = kc.ApiClient(host="%s:8080" % api_server_ip)
 
@@ -791,40 +783,6 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
         core.create_namespaced_service("kube-system", service_manifest)
         beta.create_namespaced_deployment("kube-system", deploy_manifest)
-
-    def create_httpd_daemon_set(self, api_server_ip):
-        with open("%s/manifests/httpd-daemonset.yaml" % self.euid_path) as f:
-            manifest = yaml.load(f)
-
-        c = kc.ApiClient(host="%s:8080" % api_server_ip)
-        b = kc.ExtensionsV1beta1Api(c)
-        b.create_namespaced_daemon_set("default", manifest)
-
-    def pod_httpd_is_running(self, api_server_ip: str, tries=100):
-        code = 0
-        c = kc.ApiClient(host="%s:8080" % api_server_ip)
-        core = kc.CoreV1Api(c)
-        for t in range(tries):
-            if code == 404:
-                break
-            try:
-                r = core.list_namespaced_pod("default")
-                for p in r.items:
-                    ip = p.status.pod_ip
-                    try:
-                        g = requests.get("http://%s" % ip)
-                        code = g.status_code
-                        g.close()
-                        display("-> RESULT %s %s" % (ip, code))
-                    except Exception as e:
-                        display("-> %d/%d NOT READY %s for %s %s" % (
-                            t + 1, tries, ip, self.pod_httpd_is_running.__name__, e))
-            except ValueError:
-                display("-> %d/%d NOT READY %s for %s" % (
-                    t + 1, tries, "ValueError", self.pod_httpd_is_running.__name__))
-
-            time.sleep(self.testing_sleep_seconds)
-        self.assertEqual(404, code)
 
     def pod_tiller_is_running(self, api_server_ip: str, tries=100):
         code = 0
@@ -997,7 +955,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         for k in ["revision", "totalKey", "totalSize"]:
             self.assertGreater(summary[k], 0)
 
-    def daemon_set_httpd_are_running(self, ips: list, tries=200):
+    def daemonset_node_exporter_are_running(self, ips: list, tries=200):
         assert type(ips) is list
         assert len(ips) > 0
         for t in range(tries):
@@ -1005,19 +963,19 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 break
             for i, ip in enumerate(ips):
                 try:
-                    g = requests.get("http://%s" % ip)
+                    g = requests.get("http://%s:9100" % ip)
                     code = g.status_code
                     g.close()
                     display("-> RESULT %s %s" % (ip, code))
-                    if code == 404:
+                    if code == 200:
                         ips.pop(i)
-                        display("-> REMAIN %s for %s" % (str(ips), self.daemon_set_httpd_are_running.__name__))
+                        display("-> REMAIN %s for %s" % (str(ips), self.daemonset_node_exporter_are_running.__name__))
                         continue
 
                 except Exception as e:
                     display(e)
                 display("-> %d/%d NOT READY %s for %s" % (
-                    t + 1, tries, ip, self.daemon_set_httpd_are_running.__name__))
+                    t + 1, tries, ip, self.daemonset_node_exporter_are_running.__name__))
                 time.sleep(self.testing_sleep_seconds)
 
         self.assertEqual(len(ips), 0)

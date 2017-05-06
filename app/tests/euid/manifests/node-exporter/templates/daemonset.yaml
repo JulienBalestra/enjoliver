@@ -36,6 +36,23 @@ spec:
           - name: dbus
             mountPath: /run/dbus/system_bus_socket
 
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: 9100
+          initialDelaySeconds: 30
+          timeoutSeconds: 10
+          periodSeconds: 1
+
+        readinessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /metrics
+            port: 9100
+          initialDelaySeconds: 10
+          timeoutSeconds: 10
+          periodSeconds: 2
+
       volumes:
         - name: proc
           hostPath:
