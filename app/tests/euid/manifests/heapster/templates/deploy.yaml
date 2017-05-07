@@ -4,12 +4,13 @@ metadata:
   name: {{ .Chart.Name }}
   namespace: {{ .Values.namespace }}
 spec:
-  replicas: 1
+  replicas: 2
   revisionHistoryLimit: 3
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
+      maxUnavailable: 0
   template:
     metadata:
       labels:
@@ -43,15 +44,23 @@ spec:
           httpGet:
             path: /healthz
             port: 8082
-          initialDelaySeconds: 30
+          initialDelaySeconds: 60
           timeoutSeconds: 10
-          periodSeconds: 1
+          periodSeconds: 3
 
         readinessProbe:
           failureThreshold: 5
           httpGet:
             path: /healthz
             port: 8082
-          initialDelaySeconds: 10
+          initialDelaySeconds: 30
           timeoutSeconds: 10
           periodSeconds: 2
+
+        resources:
+          limits:
+            cpu: 300m
+            memory: 200Mi
+          requests:
+            cpu: 200m
+            memory: 100Mi

@@ -383,7 +383,7 @@ systemd:
           --kubelet-https=true \
           --kubelet-preferred-address-types=InternalIP,LegacyHostIP,ExternalDNS,InternalDNS,Hostname \
           --service-account-key-file=/etc/vault.d/kubernetes/service-accounts.key \
-          --service-account-lookup=false \
+          --service-account-lookup=true \
           --authorization-mode=AlwaysAllow \
           --anonymous-auth=false
         Restart=always

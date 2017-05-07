@@ -3,13 +3,16 @@ kind: Deployment
 metadata:
   name: tiller
   namespace: kube-system
+  labels:
+    app: tiller
 spec:
-  replicas: 1
+  replicas: 2
   revisionHistoryLimit: 3
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
+      maxUnavailable: 0
   template:
     metadata:
       labels:
@@ -48,3 +51,11 @@ spec:
           initialDelaySeconds: 1
           timeoutSeconds: 10
           periodSeconds: 1
+
+        resources:
+          limits:
+            cpu: 300m
+            memory: 200Mi
+          requests:
+            cpu: 200m
+            memory: 100Mi

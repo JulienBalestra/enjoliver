@@ -3,6 +3,8 @@ apiVersion: v1
 metadata:
   name: tiller
   namespace: kube-system
+  labels:
+    app: tiller
 spec:
   selector:
     app: tiller
