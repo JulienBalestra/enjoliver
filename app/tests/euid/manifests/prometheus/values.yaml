@@ -3,4 +3,4 @@ image:
   tag: 1.6.1
   pullPolicy: IfNotPresent
 namespace: kube-system
-
+hostPathData: /var/lib/prometheus
