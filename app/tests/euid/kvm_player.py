@@ -119,7 +119,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     ec = configs.EnjoliverConfig(importer=__file__)
 
     # Memory needed for RAM nodes
-    ram_kvm_node_memory_mb = 8192
+    ram_kvm_node_memory_mb = 9216
 
     @staticmethod
     def pause(t=600):

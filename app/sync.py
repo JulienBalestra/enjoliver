@@ -251,6 +251,7 @@ class ConfigSyncSchedules(object):
             "vault_ip_list": ",".join(self.etcd_member_ip_list),
 
             "etcd_member_kubernetes_control_plane_ip_list": ",".join(self.etcd_member_ip_list),
+            "etcd_member_kubernetes_control_plane_ip": self.etcd_member_ip_list,
 
             "hyperkube_image_url": EC.hyperkube_image_url,
             "rkt_image_url": EC.rkt_image_url,

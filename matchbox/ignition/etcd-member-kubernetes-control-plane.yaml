@@ -482,7 +482,7 @@ systemd:
           --peer-key-file /etc/vault.d/etcd-%i/peer.private_key \
           --peer-trusted-ca-file /etc/vault.d/etcd-%i/peer.issuing_ca \
           --peer-client-cert-auth \
-          --auto-compaction-retention=2
+          --auto-compaction-retention=12
         RestartSec=20s
         Restart=on-failure
         LimitNOFILE=65826
@@ -707,6 +707,140 @@ storage:
     - path: /opt/rootfs/.keep
       filesystem: root
       mode: 0644
+
+    - path: /etc/kubernetes/manifests/vault.yaml
+      filesystem: root
+      contents:
+        inline: |
+          kind: Service
+          apiVersion: v1
+          metadata:
+            name: vault
+            namespace: kube-system
+            labels:
+              app: vault
+          spec:
+            ports:
+            - port: 8200
+              protocol: TCP
+            clusterIP: "None"
+          ---
+          kind: Endpoints
+          apiVersion: v1
+          metadata:
+            name: vault
+            namespace: kube-system
+            labels:
+              app: vault
+          subsets:
+            - addresses:
+              {{ range $element := .etcd_member_kubernetes_control_plane_ip }}
+                - ip: {{$element}}
+              {{end}}
+              ports:
+                - port: 8200
+
+    - path: /etc/kubernetes/manifests/etcd-vault.yaml
+      filesystem: root
+      contents:
+        inline: |
+          kind: Service
+          apiVersion: v1
+          metadata:
+            name: etcd-vault
+            namespace: kube-system
+            labels:
+              db: etcd
+              etcd: vault
+          spec:
+            ports:
+            - port: {{.vault_etcd_client_port}}
+              protocol: TCP
+            clusterIP: "None"
+          ---
+          kind: Endpoints
+          apiVersion: v1
+          metadata:
+            name: etcd-vault
+            namespace: kube-system
+            labels:
+              db: etcd
+              etcd: vault
+          subsets:
+            - addresses:
+              {{ range $element := .etcd_member_kubernetes_control_plane_ip }}
+                - ip: {{$element}}
+              {{end}}
+              ports:
+                - port: {{.vault_etcd_client_port}}
+
+    - path: /etc/kubernetes/manifests/etcd-kubernetes.yaml
+      filesystem: root
+      contents:
+        inline: |
+          kind: Service
+          apiVersion: v1
+          metadata:
+            name: etcd-kubernetes
+            namespace: kube-system
+            labels:
+              db: etcd
+              etcd: kubernetes
+          spec:
+            ports:
+            - port: {{.kubernetes_etcd_client_port}}
+              protocol: TCP
+            clusterIP: "None"
+          ---
+          kind: Endpoints
+          apiVersion: v1
+          metadata:
+            name: etcd-kubernetes
+            namespace: kube-system
+            labels:
+              db: etcd
+              etcd: kubernetes
+          subsets:
+            - addresses:
+              {{ range $element := .etcd_member_kubernetes_control_plane_ip }}
+                - ip: {{$element}}
+              {{end}}
+              ports:
+                - port: {{.kubernetes_etcd_client_port}}
+
+    - path: /etc/kubernetes/manifests/etcd-fleet.yaml
+      filesystem: root
+      contents:
+        inline: |
+          kind: Service
+          apiVersion: v1
+          metadata:
+            name: etcd-fleet
+            namespace: kube-system
+            labels:
+              db: etcd
+              etcd: fleet
+          spec:
+            ports:
+            - port: {{.fleet_etcd_client_port}}
+              protocol: TCP
+            clusterIP: "None"
+          ---
+          kind: Endpoints
+          apiVersion: v1
+          metadata:
+            name: etcd-fleet
+            namespace: kube-system
+            labels:
+              db: etcd
+              etcd: fleet
+          subsets:
+            - addresses:
+              {{ range $element := .etcd_member_kubernetes_control_plane_ip }}
+                - ip: {{$element}}
+              {{end}}
+              ports:
+                - port: {{.fleet_etcd_client_port}}
 
     - path: /etc/kubernetes/manifests/kube-controller-manager.yaml
       filesystem: root
@@ -1784,16 +1918,9 @@ storage:
       filesystem: root
       contents:
         inline: |
-          #!/usr/bin/env bash
-
+          #!/bin/bash
           PATH=/opt/bin:${PATH}
-
-          MANIFESTS=/etc/kubernetes/manifests
-          for manifest in ${MANIFESTS}/kube-controller-manager.yaml ${MANIFESTS}/kube-scheduler.yaml
-          do
-            kubectl create -f ${manifest}
-            kubectl describe -f ${manifest} > /dev/null || exit 2
-          done
+          exec kubectl create -f /etc/kubernetes/manifests
 
 networkd:
   units:
