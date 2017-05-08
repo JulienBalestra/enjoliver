@@ -439,7 +439,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "--name",
             "%s" % name,
             "--network=bridge:rack0,model=virtio",
-            "--memory=%d" % self.get_optimized_memory(nb_node),
+            "--memory=%d" % self.get_optimized_memory(nb_node, disk_gb),
             "--vcpus=%d" % self.get_optimized_cpu(nb_node),
             "--cpu",
             "host",
@@ -980,11 +980,12 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
         self.assertEqual(len(ips), 0)
 
-    def get_optimized_memory(self, nb_nodes: int):
+    def get_optimized_memory(self, nb_nodes: int, disk: int):
         mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
         mem_gib = mem_bytes / (1024. ** 3)
         node_memory = (mem_gib // nb_nodes) * 1024
-        return node_memory * 1.1 if node_memory > self.ram_kvm_node_memory_mb else self.ram_kvm_node_memory_mb
+        default_memory = self.ram_kvm_node_memory_mb * 0.8 if disk else self.ram_kvm_node_memory_mb
+        return node_memory * 1.1 if node_memory > default_memory else default_memory
 
     @staticmethod
     def get_optimized_cpu(nb_nodes: int):

@@ -273,6 +273,7 @@ class ConfigSyncSchedules(object):
             "nameservers": " ".join(EC.nameservers),
             "ntp": " ".join(EC.ntp),
             "fallbackntp": " ".join(EC.fallbackntp),
+            "vault_polling_sec": EC.vault_polling_sec
 
         }
         selector = {"mac": m["mac"]}

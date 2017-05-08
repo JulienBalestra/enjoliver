@@ -174,7 +174,7 @@ systemd:
         LimitNOFILE=65826
         ExecStart=/opt/rootfs/usr/bin/rkt api-service
         Restart=always
-        RestartSec=10
+        RestartSec=2
 
         [Install]
         RequiredBy=multi-user.target
@@ -283,7 +283,7 @@ systemd:
         [Service]
         ExecStartPre=/opt/bin/vault version
         ExecStart=/opt/bin/vault-init
-        RestartSec=10
+        RestartSec=15
         Restart=on-failure
         [Install]
         WantedBy=multi-user.target
@@ -294,8 +294,8 @@ systemd:
         [Service]
         ExecStartPre=/bin/mkdir -pv /etc/vault.d/%i
         ExecStart=/opt/bin/vault-token %i server
-        RestartSec=60
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -305,8 +305,8 @@ systemd:
         [Service]
         ExecStartPre=/bin/mkdir -pv /etc/vault.d/%i
         ExecStart=/opt/bin/vault-token %i peer
-        RestartSec=60
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -316,8 +316,8 @@ systemd:
         [Service]
         ExecStartPre=/bin/mkdir -pv /etc/vault.d/%i
         ExecStart=/opt/bin/vault-token %i client
-        RestartSec=60
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -327,8 +327,8 @@ systemd:
         [Service]
         ExecStartPre=/bin/mkdir -pv /etc/vault.d/%i
         ExecStart=/opt/bin/vault-token %i kubelet
-        RestartSec=60
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -338,8 +338,8 @@ systemd:
         [Service]
         ExecStartPre=/bin/mkdir -pv /etc/vault.d/%i
         ExecStart=/opt/bin/vault-token %i kube-apiserver
-        RestartSec=60
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -349,8 +349,8 @@ systemd:
         [Service]
         ExecStartPre=/bin/mkdir -pv /etc/vault.d/%i
         ExecStart=/opt/bin/vault-token %i peer
-        RestartSec=60
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -360,8 +360,8 @@ systemd:
         [Service]
         ExecStartPre=/bin/mkdir -pv /etc/vault.d/%i
         ExecStart=/opt/bin/vault-token %i client
-        RestartSec=60
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -371,8 +371,8 @@ systemd:
         [Service]
         EnvironmentFile=/etc/vault.d/%i/server.token
         ExecStart=/opt/bin/vault-pki-issue %i server
-        RestartSec=5
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -382,8 +382,8 @@ systemd:
         [Service]
         EnvironmentFile=/etc/vault.d/%i/peer.token
         ExecStart=/opt/bin/vault-pki-issue %i peer
-        RestartSec=5
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -393,8 +393,8 @@ systemd:
         [Service]
         EnvironmentFile=/etc/vault.d/%i/client.token
         ExecStart=/opt/bin/vault-pki-issue %i client
-        RestartSec=5
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -404,8 +404,8 @@ systemd:
         [Service]
         EnvironmentFile=/etc/vault.d/%i/kubelet.token
         ExecStart=/opt/bin/vault-pki-issue %i kubelet
-        RestartSec=5
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -415,8 +415,8 @@ systemd:
         [Service]
         EnvironmentFile=/etc/vault.d/%i/kube-apiserver.token
         ExecStart=/opt/bin/vault-pki-issue %i kube-apiserver
-        RestartSec=5
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -426,8 +426,8 @@ systemd:
         [Service]
         EnvironmentFile=/etc/vault.d/%i/kube-apiserver.token
         ExecStart=/opt/bin/vault-secret %i service-accounts
-        RestartSec=5
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -437,8 +437,8 @@ systemd:
         [Service]
         EnvironmentFile=/etc/vault.d/%i/peer.token
         ExecStart=/opt/bin/vault-pki-issue %i peer
-        RestartSec=5
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -448,8 +448,8 @@ systemd:
         [Service]
         EnvironmentFile=/etc/vault.d/%i/client.token
         ExecStart=/opt/bin/vault-pki-issue %i client
-        RestartSec=5
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
