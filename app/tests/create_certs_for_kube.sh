@@ -32,8 +32,7 @@ while IFS= read -r cp_name &&
       IFS= read -r cp_username
 do
     echo "Getting certs for '${cp_name}' at ${cp_ip}..."
-#    SSH_OUTPUT=$(ssh ${cp_username}@${SRV_IP} "bash -s -l" < generate_json_certs.sh $1)
-    SSH_OUTPUT=$(ssh -i testing.id_rsa ${cp_username}@${cp_ip} "bash -s -l" < create_certs_for_kube_remote.sh $1)
+    SSH_OUTPUT=$(ssh ${cp_username}@${cp_ip} "bash -s -l" < create_certs_for_kube_remote.sh $1)
 
     if [ $? -ne 0 ]
     then
