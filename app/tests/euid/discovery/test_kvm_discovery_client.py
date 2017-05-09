@@ -46,21 +46,7 @@ class TestKVMDiscoveryClient00(TestKVMDiscoveryClient):
         self.virsh(destroy, v=self.dev_null), self.virsh(undefine, v=self.dev_null)
         interfaces = {}
         try:
-            virt_install = [
-                "virt-install",
-                "--name",
-                "%s" % marker,
-                "--network=bridge:rack0,model=virtio",
-                "--memory=1024",
-                "--vcpus=%d" % self.get_optimized_cpu(1),
-                "--pxe",
-                "--disk",
-                "none",
-                "--os-type=linux",
-                "--os-variant=generic",
-                "--noautoconsole",
-                "--boot=network"
-            ]
+            virt_install = self.create_virtual_machine(marker, 1)
             self.virsh(virt_install, assertion=True, v=self.dev_null)
 
             for i in range(60):

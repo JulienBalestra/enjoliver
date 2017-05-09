@@ -50,21 +50,7 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
             self.virsh(destroy, v=self.dev_null), self.virsh(undefine, v=self.dev_null)
         try:
             for i, m in enumerate(nodes):
-                virt_install = [
-                    "virt-install",
-                    "--name",
-                    "%s" % m,
-                    "--network=bridge:rack0,model=virtio",
-                    "--memory=%d" % self.ram_kvm_node_memory_mb,
-                    "--vcpus=%d" % self.get_optimized_cpu(nb_node),
-                    "--pxe",
-                    "--disk",
-                    "none",
-                    "--os-type=linux",
-                    "--os-variant=generic",
-                    "--noautoconsole",
-                    "--boot=network"
-                ]
+                virt_install = self.create_virtual_machine(m, nb_node)
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
                 time.sleep(self.testing_sleep_seconds)
 
@@ -115,6 +101,9 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
             for etcd in ["vault", "kubernetes"]:
                 self.create_helm_etcd_backup(plan_k8s_2t.etcd_member_ip_list[0], etcd)
 
+            for chart in ["heapster", "node-exporter", "prometheus"]:
+                self.create_helm_by_name(plan_k8s_2t.etcd_member_ip_list[0], chart)
+
             # Resilient testing against rktnetes
             # See https://github.com/kubernetes/kubernetes/issues/45149
             self.tiller_can_restart(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
@@ -122,7 +111,6 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
             # takes about one minute to run the cronjob
             for etcd in ["vault", "kubernetes"]:
                 self.etcd_backup_done(plan_k8s_2t.etcd_member_ip_list[0], etcd)
-
             self.write_ending(marker)
         finally:
             if os.getenv("TEST"):

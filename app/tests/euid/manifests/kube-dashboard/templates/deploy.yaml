@@ -10,14 +10,13 @@ spec:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
+      maxUnavailable: 0
   template:
     metadata:
       labels:
         app: {{ .Chart.Name }}
     spec:
       serviceAccount: {{ .Chart.Name }}
-      nodeSelector:
-        control-plane: "true"
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -32,3 +31,11 @@ spec:
 
         - name: KUBERNETES_SERVICE_PORT
           value: "6443"
+
+        resources:
+          limits:
+            cpu: 300m
+            memory: 200Mi
+          requests:
+            cpu: 200m
+            memory: 100Mi

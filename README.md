@@ -21,17 +21,25 @@ During the lifecycle of the Kubernetes cluster, rolling updates are **fast** and
 
 Each node can be re-installed and re-join the cluster.
 
-**The project is divided in three main topics:**
+**The project is divided in 4 main topics:**
 
 1) Configuration of Kubernetes cluster roles:
     * control plane
     * node
+
 2) Enjoliver Engine
     * Discovery Topology
     * Scheduling of Kubernetes roles
-    * Lifecycle management 
-3) Enjoliver e2e testing
+    * Lifecycle management
 
+3) Enjoliver e2e testing
+    * follow any associated releases
+    * features, bug fix testing in cluster
+
+4) Kubernetes cluster for development usage, ready to use with:
+    * Helm / Tiller
+    * Heapster
+    * Kubernetes Dashboard
 
 ## 1. Kubernetes Cluster 
 

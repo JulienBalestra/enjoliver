@@ -119,7 +119,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     ec = configs.EnjoliverConfig(importer=__file__)
 
     # Memory needed for RAM nodes
-    ram_kvm_node_memory_mb = 8192
+    ram_kvm_node_memory_mb = 9216
 
     @staticmethod
     def pause(t=600):
@@ -428,6 +428,30 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         subprocess.call(["reset", "-q"])
         self.clean_sandbox()
         self.api_healthz()
+
+    def create_virtual_machine(self, name: str, nb_node: int, disk_gb=0):
+        if disk_gb == 0:
+            disk_opt = "none"
+        else:
+            disk_opt = "size=%d" % disk_gb
+        virt_install = [
+            "virt-install",
+            "--name",
+            "%s" % name,
+            "--network=bridge:rack0,model=virtio",
+            "--memory=%d" % self.get_optimized_memory(nb_node, disk_gb),
+            "--vcpus=%d" % self.get_optimized_cpu(nb_node),
+            "--cpu",
+            "host",
+            "--pxe",
+            "--disk",
+            disk_opt,
+            "--os-type=linux",
+            "--os-variant=generic",
+            "--noautoconsole",
+            "--boot=network" if disk_gb == 0 else "--boot=hd,network"
+        ]
+        return virt_install
 
     def virsh(self, cmd, assertion=False, v=None):
         ret = subprocess.call(cmd, stdout=v, stderr=v)
@@ -746,14 +770,6 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 time.sleep(self.testing_sleep_seconds)
         self.assertEqual(len(ips), 0)
 
-    def create_httpd_deploy(self, api_server_ip: str):
-        with open("%s/manifests/httpd-deploy.yaml" % self.euid_path) as f:
-            manifest = yaml.load(f)
-
-        c = kc.ApiClient(host="%s:8080" % api_server_ip)
-        b = kc.ExtensionsV1beta1Api(c)
-        b.create_namespaced_deployment("default", manifest)
-
     def create_tiller(self, api_server_ip: str):
         c = kc.ApiClient(host="%s:8080" % api_server_ip)
 
@@ -767,40 +783,6 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
         core.create_namespaced_service("kube-system", service_manifest)
         beta.create_namespaced_deployment("kube-system", deploy_manifest)
-
-    def create_httpd_daemon_set(self, api_server_ip):
-        with open("%s/manifests/httpd-daemonset.yaml" % self.euid_path) as f:
-            manifest = yaml.load(f)
-
-        c = kc.ApiClient(host="%s:8080" % api_server_ip)
-        b = kc.ExtensionsV1beta1Api(c)
-        b.create_namespaced_daemon_set("default", manifest)
-
-    def pod_httpd_is_running(self, api_server_ip: str, tries=100):
-        code = 0
-        c = kc.ApiClient(host="%s:8080" % api_server_ip)
-        core = kc.CoreV1Api(c)
-        for t in range(tries):
-            if code == 404:
-                break
-            try:
-                r = core.list_namespaced_pod("default")
-                for p in r.items:
-                    ip = p.status.pod_ip
-                    try:
-                        g = requests.get("http://%s" % ip)
-                        code = g.status_code
-                        g.close()
-                        display("-> RESULT %s %s" % (ip, code))
-                    except Exception as e:
-                        display("-> %d/%d NOT READY %s for %s %s" % (
-                            t + 1, tries, ip, self.pod_httpd_is_running.__name__, e))
-            except ValueError:
-                display("-> %d/%d NOT READY %s for %s" % (
-                    t + 1, tries, "ValueError", self.pod_httpd_is_running.__name__))
-
-            time.sleep(self.testing_sleep_seconds)
-        self.assertEqual(404, code)
 
     def pod_tiller_is_running(self, api_server_ip: str, tries=100):
         code = 0
@@ -883,7 +865,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         new_tiller_endpoint = self._get_tiller_grpc_endpoint(api_server_ip=api_server_ip)
         self.assertNotEqual(self._get_tiller_grpc_endpoint(api_server_ip=api_server_ip), tiller_endpoint)
         display("-> polling tiller Pod %s during 70s or until its GC" % new_tiller_endpoint)
-        while time.time() < ts + 70:
+        while time.time() < ts + 120:
             try:
                 loop_tiller_endpoint = self._get_tiller_grpc_endpoint(api_server_ip=api_server_ip)
             except RuntimeWarning:
@@ -932,6 +914,17 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         ])
         self.assertEqual(0, ret)
 
+    def create_helm_by_name(self, api_server_ip: str, name: str):
+        tiller = self._get_tiller_grpc_endpoint(api_server_ip)
+        ret = subprocess.call([
+            self.helm_bin,
+            "--host",
+            tiller,
+            "install",
+            "%s/manifests/%s" % (self.euid_path, name)
+        ])
+        self.assertEqual(0, ret)
+
     def _snapshot_status(self, core: kc.CoreV1Api, etcd_app_name: str, tries: int):
         for t in range(tries):
             r = core.list_namespaced_pod("backup", label_selector="etcd=%s" % etcd_app_name)
@@ -962,7 +955,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         for k in ["revision", "totalKey", "totalSize"]:
             self.assertGreater(summary[k], 0)
 
-    def daemon_set_httpd_are_running(self, ips: list, tries=200):
+    def daemonset_node_exporter_are_running(self, ips: list, tries=200):
         assert type(ips) is list
         assert len(ips) > 0
         for t in range(tries):
@@ -970,29 +963,29 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 break
             for i, ip in enumerate(ips):
                 try:
-                    g = requests.get("http://%s" % ip)
+                    g = requests.get("http://%s:9100" % ip)
                     code = g.status_code
                     g.close()
                     display("-> RESULT %s %s" % (ip, code))
-                    if code == 404:
+                    if code == 200:
                         ips.pop(i)
-                        display("-> REMAIN %s for %s" % (str(ips), self.daemon_set_httpd_are_running.__name__))
+                        display("-> REMAIN %s for %s" % (str(ips), self.daemonset_node_exporter_are_running.__name__))
                         continue
 
                 except Exception as e:
                     display(e)
                 display("-> %d/%d NOT READY %s for %s" % (
-                    t + 1, tries, ip, self.daemon_set_httpd_are_running.__name__))
+                    t + 1, tries, ip, self.daemonset_node_exporter_are_running.__name__))
                 time.sleep(self.testing_sleep_seconds)
 
         self.assertEqual(len(ips), 0)
 
-    @staticmethod
-    def get_optimized_memory(nb_nodes: int):
+    def get_optimized_memory(self, nb_nodes: int, disk: int):
         mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
         mem_gib = mem_bytes / (1024. ** 3)
-        usable_mem_gib = mem_gib * (1.3 if mem_gib > 10 else 1.1)
-        return (usable_mem_gib // nb_nodes) * 1024
+        node_memory = (mem_gib // nb_nodes) * 1024
+        default_memory = self.ram_kvm_node_memory_mb * 0.8 if disk else self.ram_kvm_node_memory_mb
+        return node_memory * 1.1 if node_memory > default_memory else default_memory
 
     @staticmethod
     def get_optimized_cpu(nb_nodes: int):

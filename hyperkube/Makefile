@@ -42,7 +42,7 @@ install: prepare
 
 test: install
 	@echo ENV IMAGE=$(ACI)/aci-$(HYPERKUBE)
-	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) push
+	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) test
 
 push: test
 	@echo ENV IMAGE=$(ACI)/aci-$(HYPERKUBE)
@@ -53,7 +53,7 @@ gc:
 	$(RKT) --local-config=$(RUNTIME) image gc --grace-period=0s
 
 clean: gc
-	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) clean
+	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) gc
 
 fclean: clean
 	rm -v $(HYPERKUBE_BIN) || true

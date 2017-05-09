@@ -174,7 +174,7 @@ systemd:
         LimitNOFILE=65826
         ExecStart=/opt/rootfs/usr/bin/rkt api-service
         Restart=always
-        RestartSec=10
+        RestartSec=2
 
         [Install]
         RequiredBy=multi-user.target
@@ -283,7 +283,7 @@ systemd:
         [Service]
         ExecStartPre=/opt/bin/vault version
         ExecStart=/opt/bin/vault-init
-        RestartSec=10
+        RestartSec=15
         Restart=on-failure
         [Install]
         WantedBy=multi-user.target
@@ -294,8 +294,8 @@ systemd:
         [Service]
         ExecStartPre=/bin/mkdir -pv /etc/vault.d/%i
         ExecStart=/opt/bin/vault-token %i server
-        RestartSec=60
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -305,8 +305,8 @@ systemd:
         [Service]
         ExecStartPre=/bin/mkdir -pv /etc/vault.d/%i
         ExecStart=/opt/bin/vault-token %i peer
-        RestartSec=60
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -316,8 +316,8 @@ systemd:
         [Service]
         ExecStartPre=/bin/mkdir -pv /etc/vault.d/%i
         ExecStart=/opt/bin/vault-token %i client
-        RestartSec=60
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -327,8 +327,8 @@ systemd:
         [Service]
         ExecStartPre=/bin/mkdir -pv /etc/vault.d/%i
         ExecStart=/opt/bin/vault-token %i kubelet
-        RestartSec=60
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -338,8 +338,8 @@ systemd:
         [Service]
         ExecStartPre=/bin/mkdir -pv /etc/vault.d/%i
         ExecStart=/opt/bin/vault-token %i kube-apiserver
-        RestartSec=60
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -349,8 +349,8 @@ systemd:
         [Service]
         ExecStartPre=/bin/mkdir -pv /etc/vault.d/%i
         ExecStart=/opt/bin/vault-token %i peer
-        RestartSec=60
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -360,8 +360,8 @@ systemd:
         [Service]
         ExecStartPre=/bin/mkdir -pv /etc/vault.d/%i
         ExecStart=/opt/bin/vault-token %i client
-        RestartSec=60
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -371,8 +371,8 @@ systemd:
         [Service]
         EnvironmentFile=/etc/vault.d/%i/server.token
         ExecStart=/opt/bin/vault-pki-issue %i server
-        RestartSec=5
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -382,8 +382,8 @@ systemd:
         [Service]
         EnvironmentFile=/etc/vault.d/%i/peer.token
         ExecStart=/opt/bin/vault-pki-issue %i peer
-        RestartSec=5
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -393,8 +393,8 @@ systemd:
         [Service]
         EnvironmentFile=/etc/vault.d/%i/client.token
         ExecStart=/opt/bin/vault-pki-issue %i client
-        RestartSec=5
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -404,8 +404,8 @@ systemd:
         [Service]
         EnvironmentFile=/etc/vault.d/%i/kubelet.token
         ExecStart=/opt/bin/vault-pki-issue %i kubelet
-        RestartSec=5
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -415,8 +415,8 @@ systemd:
         [Service]
         EnvironmentFile=/etc/vault.d/%i/kube-apiserver.token
         ExecStart=/opt/bin/vault-pki-issue %i kube-apiserver
-        RestartSec=5
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -426,8 +426,8 @@ systemd:
         [Service]
         EnvironmentFile=/etc/vault.d/%i/kube-apiserver.token
         ExecStart=/opt/bin/vault-secret %i service-accounts
-        RestartSec=5
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -437,8 +437,8 @@ systemd:
         [Service]
         EnvironmentFile=/etc/vault.d/%i/peer.token
         ExecStart=/opt/bin/vault-pki-issue %i peer
-        RestartSec=5
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -448,8 +448,8 @@ systemd:
         [Service]
         EnvironmentFile=/etc/vault.d/%i/client.token
         ExecStart=/opt/bin/vault-pki-issue %i client
-        RestartSec=5
-        Restart=always
+        RestartSec={{.vault_polling_sec}}
+        Restart=on-failure
         [Install]
         WantedBy=multi-user.target
 
@@ -481,7 +481,8 @@ systemd:
           --peer-cert-file /etc/vault.d/etcd-%i/peer.certificate \
           --peer-key-file /etc/vault.d/etcd-%i/peer.private_key \
           --peer-trusted-ca-file /etc/vault.d/etcd-%i/peer.issuing_ca \
-          --peer-client-cert-auth
+          --peer-client-cert-auth \
+          --auto-compaction-retention=12
         RestartSec=20s
         Restart=on-failure
         LimitNOFILE=65826
@@ -707,14 +708,161 @@ storage:
       filesystem: root
       mode: 0644
 
+    - path: /etc/kubernetes/manifests/vault.yaml
+      filesystem: root
+      contents:
+        inline: |
+          kind: Service
+          apiVersion: v1
+          metadata:
+            name: vault
+            namespace: kube-system
+            labels:
+              app: vault
+          spec:
+            ports:
+            - port: 8200
+              protocol: TCP
+            clusterIP: "None"
+          ---
+          kind: Endpoints
+          apiVersion: v1
+          metadata:
+            name: vault
+            namespace: kube-system
+            labels:
+              app: vault
+          subsets:
+            - addresses:
+              {{ range $element := .etcd_member_kubernetes_control_plane_ip }}
+                - ip: {{$element}}
+              {{end}}
+              ports:
+                - port: 8200
+
+    - path: /etc/kubernetes/manifests/etcd-vault.yaml
+      filesystem: root
+      contents:
+        inline: |
+          kind: Service
+          apiVersion: v1
+          metadata:
+            name: etcd-vault
+            namespace: kube-system
+            labels:
+              db: etcd
+              etcd: vault
+          spec:
+            ports:
+            - port: {{.vault_etcd_client_port}}
+              protocol: TCP
+            clusterIP: "None"
+          ---
+          kind: Endpoints
+          apiVersion: v1
+          metadata:
+            name: etcd-vault
+            namespace: kube-system
+            labels:
+              db: etcd
+              etcd: vault
+          subsets:
+            - addresses:
+              {{ range $element := .etcd_member_kubernetes_control_plane_ip }}
+                - ip: {{$element}}
+              {{end}}
+              ports:
+                - port: {{.vault_etcd_client_port}}
+
+    - path: /etc/kubernetes/manifests/etcd-kubernetes.yaml
+      filesystem: root
+      contents:
+        inline: |
+          kind: Service
+          apiVersion: v1
+          metadata:
+            name: etcd-kubernetes
+            namespace: kube-system
+            labels:
+              db: etcd
+              etcd: kubernetes
+          spec:
+            ports:
+            - port: {{.kubernetes_etcd_client_port}}
+              protocol: TCP
+            clusterIP: "None"
+          ---
+          kind: Endpoints
+          apiVersion: v1
+          metadata:
+            name: etcd-kubernetes
+            namespace: kube-system
+            labels:
+              db: etcd
+              etcd: kubernetes
+          subsets:
+            - addresses:
+              {{ range $element := .etcd_member_kubernetes_control_plane_ip }}
+                - ip: {{$element}}
+              {{end}}
+              ports:
+                - port: {{.kubernetes_etcd_client_port}}
+
+    - path: /etc/kubernetes/manifests/etcd-fleet.yaml
+      filesystem: root
+      contents:
+        inline: |
+          kind: Service
+          apiVersion: v1
+          metadata:
+            name: etcd-fleet
+            namespace: kube-system
+            labels:
+              db: etcd
+              etcd: fleet
+          spec:
+            ports:
+            - port: {{.fleet_etcd_client_port}}
+              protocol: TCP
+            clusterIP: "None"
+          ---
+          kind: Endpoints
+          apiVersion: v1
+          metadata:
+            name: etcd-fleet
+            namespace: kube-system
+            labels:
+              db: etcd
+              etcd: fleet
+          subsets:
+            - addresses:
+              {{ range $element := .etcd_member_kubernetes_control_plane_ip }}
+                - ip: {{$element}}
+              {{end}}
+              ports:
+                - port: {{.fleet_etcd_client_port}}
+
     - path: /etc/kubernetes/manifests/kube-controller-manager.yaml
       filesystem: root
       contents:
         inline: |
+          kind: Service
+          apiVersion: v1
+          metadata:
+            name: kube-controller-manager
+            namespace: kube-system
+          spec:
+            selector:
+              app: kube-controller-manager
+            ports:
+            - port: 10252
+              protocol: TCP
+            clusterIP: "None"
+          ---
           apiVersion: v1
           kind: ServiceAccount
           metadata:
-            name: controller-manager
+            name: kube-controller-manager
             namespace: kube-system
           automountServiceAccountToken: false
           ---
@@ -725,8 +873,13 @@ storage:
               app: kube-controller-manager
             name: kube-controller-manager-{{.kubernetes_node_name}}
             namespace: kube-system
+            annotations:
+              scheduler.alpha.kubernetes.io/critical-pod: ''
+              prometheus.io/scrape: "true"
+              prometheus.io/path: "/metrics"
+              prometheus.io/port: "10252"
           spec:
-            serviceAccountName: controller-manager
+            serviceAccountName: kube-controller-manager
             automountServiceAccountToken: false
             nodeName: "{{.kubernetes_node_name}}"
             hostNetwork: true
@@ -775,6 +928,19 @@ storage:
       filesystem: root
       contents:
         inline: |
+          kind: Service
+          apiVersion: v1
+          metadata:
+            name: kube-scheduler
+            namespace: kube-system
+          spec:
+            selector:
+              app: kube-scheduler
+            ports:
+            - port: 10251
+              protocol: TCP
+            clusterIP: "None"
+          ---
           apiVersion: extensions/v1beta1
           kind: DaemonSet
           metadata:
@@ -785,6 +951,11 @@ storage:
               metadata:
                 labels:
                   app: kube-scheduler
+                annotations:
+                  scheduler.alpha.kubernetes.io/critical-pod: ''
+                  prometheus.io/scrape: "true"
+                  prometheus.io/path: "/metrics"
+                  prometheus.io/port: "10251"
               spec:
                 nodeSelector:
                   control-plane: "true"
@@ -1747,16 +1918,9 @@ storage:
       filesystem: root
       contents:
         inline: |
-          #!/usr/bin/env bash
-
+          #!/bin/bash
           PATH=/opt/bin:${PATH}
-
-          MANIFESTS=/etc/kubernetes/manifests
-          for manifest in ${MANIFESTS}/kube-controller-manager.yaml ${MANIFESTS}/kube-scheduler.yaml
-          do
-            kubectl create -f ${manifest}
-            kubectl describe -f ${manifest} > /dev/null || exit 2
-          done
+          exec kubectl create -f /etc/kubernetes/manifests
 
 networkd:
   units:

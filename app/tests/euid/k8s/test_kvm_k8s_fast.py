@@ -31,7 +31,7 @@ class TestKVMK8SFast0(TestKVMK8sFast):
     # @unittest.skip("just skip")
     def test_00(self):
         self.assertEqual(self.fetch_discovery_interfaces(), [])
-        nb_node = 3
+        nb_node = 2
         marker = "euid-%s-%s" % (TestKVMK8sFast.__name__.lower(), self.test_00.__name__)
         nodes = ["%s-%d" % (marker, i) for i in range(nb_node)]
         gen = generator.Generator(
@@ -56,21 +56,7 @@ class TestKVMK8SFast0(TestKVMK8sFast):
             self.virsh(destroy, v=self.dev_null), self.virsh(undefine, v=self.dev_null)
         try:
             for i, m in enumerate(nodes):
-                virt_install = [
-                    "virt-install",
-                    "--name",
-                    "%s" % m,
-                    "--network=bridge:rack0,model=virtio",
-                    "--memory=%d" % self.ram_kvm_node_memory_mb,
-                    "--vcpus=%d" % self.get_optimized_cpu(nb_node),
-                    "--pxe",
-                    "--disk",
-                    "none",
-                    "--os-type=linux",
-                    "--os-variant=generic",
-                    "--noautoconsole",
-                    "--boot=network"
-                ]
+                virt_install = self.create_virtual_machine(m, nb_node)
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
                 time.sleep(self.testing_sleep_seconds)
 
@@ -120,6 +106,8 @@ class TestKVMK8SFast0(TestKVMK8sFast):
             self.kubernetes_node_nb(sy.kubernetes_control_plane_ip_list[0], nb_node)
 
             self.pod_tiller_is_running(sy.kubernetes_control_plane_ip_list[0])
+            for chart in ["heapster", "node-exporter", "prometheus"]:
+                self.create_helm_by_name(sy.kubernetes_control_plane_ip_list[0], chart)
 
             self.write_ending(marker)
         finally:

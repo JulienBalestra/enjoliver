@@ -179,6 +179,8 @@ class EnjoliverConfig(object):
                                                 "1.arch.pool.ntp.org" "2.arch.pool.ntp.org" "3.arch.pool.ntp.org"])
         self.fallbackntp = self.config_override("fallbackntp", ["0.pool.ntp.org" "1.pool.ntp.org" "0.fr.pool.ntp.org"])
 
+        self.vault_polling_sec = self.config_override("vault_polling_sec", 30)
+
         if self.logging_level.lower() == "debug":
             print("configs file: %s for %s" % (yaml_full_path, importer))
 

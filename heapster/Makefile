@@ -29,7 +29,7 @@ $(BUILDER_HYPERKUBE): $(GO)
 	IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE) make -C $(RUNTIME) install
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) push
 
-prepare: $(GO) $(BUILDER_HYPERKUBE) $(NODEJS)
+prepare: $(GO) $(BUILDER_HYPERKUBE)
 
 install: prepare
 	@echo ENV IMAGE=$(ACI)/aci-$(HEAPSTER)
@@ -37,7 +37,7 @@ install: prepare
 
 test: install
 	@echo ENV IMAGE=$(ACI)/aci-$(HEAPSTER)
-	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) push
+	IMAGE=$(ACI)/aci-$(HEAPSTER) make -C $(RUNTIME) test
 
 push: test
 	@echo ENV IMAGE=$(ACI)/aci-$(HEAPSTER)
@@ -48,7 +48,7 @@ gc:
 	$(RKT) --local-config=$(RUNTIME) image gc --grace-period=0s
 
 clean: gc
-	IMAGE=$(ACI)/aci-$(HEAPSTER) make -C $(RUNTIME) clean
+	IMAGE=$(ACI)/aci-$(HEAPSTER) make -C $(RUNTIME) gc
 
 fclean: clean
 	IMAGE=$(ACI)/aci-$(GO) make -C $(RUNTIME) clean
