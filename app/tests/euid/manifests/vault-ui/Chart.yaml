@@ -1,0 +1,4 @@
+apiVersion: v1
+description: Vault User Interface
+name: vault-ui
+version: latest-r1

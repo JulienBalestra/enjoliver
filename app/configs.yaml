@@ -64,7 +64,7 @@ range_nb_ips: 253
 sub_ips: 256
 
 lldp_image_url: 'enjoliver.local/lldp:latest'
-hyperkube_image_url: 'enjoliver.local/hyperkube:1.6.2'
+hyperkube_image_url: 'enjoliver.local/hyperkube:1.6.3'
 rkt_image_url: 'enjoliver.local/rkt:1.25.0'
 etcd_image_url: 'enjoliver.local/etcd:3.1.6'
 fleet_image_url: 'enjoliver.local/fleet:1.0.0'

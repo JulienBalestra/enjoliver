@@ -1,13 +1,13 @@
-From 8608870ea8cadc335cc0694be7b3264e922afe8e Mon Sep 17 00:00:00 2001
+From ce74d894adb7fa66dc60cd37ebfae581f9c89eeb Mon Sep 17 00:00:00 2001
 From: JulienBalestra <julien.balestra@gmail.com>
 Date: Sat, 29 Apr 2017 18:04:39 +0200
 Subject: [PATCH] Generate a new Network Namespace for each Pod.
 
 ---
  pkg/kubelet/rkt/fake_rkt_interface_test.go |  16 ++
- pkg/kubelet/rkt/rkt.go                     | 251 ++++++++++++++++++-----------
+ pkg/kubelet/rkt/rkt.go                     | 261 ++++++++++++++++++-----------
  pkg/kubelet/rkt/rkt_test.go                |  68 +++++++-
- 3 files changed, 241 insertions(+), 94 deletions(-)
+ 3 files changed, 247 insertions(+), 98 deletions(-)
 
 diff --git a/pkg/kubelet/rkt/fake_rkt_interface_test.go b/pkg/kubelet/rkt/fake_rkt_interface_test.go
 index 82801b7..de3f700 100644
@@ -42,7 +42,7 @@ index 82801b7..de3f700 100644
 +	return kubecontainer.ContainerID{ID: "42"}, nil
 +}
 diff --git a/pkg/kubelet/rkt/rkt.go b/pkg/kubelet/rkt/rkt.go
-index b2eeca0..a617d38 100644
+index b2eeca0..bb146c6 100644
 --- a/pkg/kubelet/rkt/rkt.go
 +++ b/pkg/kubelet/rkt/rkt.go
 @@ -80,12 +80,13 @@ const (
@@ -311,7 +311,7 @@ index b2eeca0..a617d38 100644
 -	// but a pod id. This is because it knows too much about the infra container.
 -	// We pretend the pod.UID is an infra container ID.
 -	// This deception is only possible because we played the same trick in
-+	// Currently the containerID is an UUID for a network namespace
++	// Currently the containerID is a UUID for a network namespace
 +	// This hack is a way to create an unique network namespace for each new starting/restarting Pod
 +	// We can do this because we played the same trick in
  	// `networkPlugin.SetUpPod` and `networkPlugin.TearDownPod`.
@@ -522,37 +522,30 @@ index b2eeca0..a617d38 100644
  // GetPodStatus returns the status for a pod specified by a given UID, name,
  // and namespace.  It will attempt to find pod's information via a request to
  // the rkt api server.
-@@ -2364,26 +2426,31 @@ func (r *Runtime) GetPodStatus(uid kubetypes.UID, name, namespace string) (*kube
+@@ -2364,26 +2426,33 @@ func (r *Runtime) GetPodStatus(uid kubetypes.UID, name, namespace string) (*kube
  		}
  	}
  
--	// If we are running no-op network plugin, then get the pod IP from the rkt pod status.
--	if r.network.PluginName() == network.DefaultPluginName {
++	if latestPod == nil {
++		glog.Warningf("No latestPod: rkt api-svc returns [%d]rktPods, cannot fill podStatus.IP", len(listResp.Pods))
++		return podStatus, nil
++	}
++
+ 	// If we are running no-op network plugin, then get the pod IP from the rkt pod status.
+ 	if r.network.PluginName() == network.DefaultPluginName {
 -		if latestPod != nil {
-+	if latestPod != nil {
-+		// If we are running no-op network plugin, then get the pod IP from the rkt pod status.
-+		if r.network.PluginName() == network.DefaultPluginName {
- 			for _, n := range latestPod.Networks {
- 				if n.Name == defaultNetworkName {
- 					podStatus.IP = n.Ipv4
- 					break
- 				}
+-			for _, n := range latestPod.Networks {
+-				if n.Name == defaultNetworkName {
+-					podStatus.IP = n.Ipv4
+-					break
+-				}
++		for _, n := range latestPod.Networks {
++			if n.Name == defaultNetworkName {
++				podStatus.IP = n.Ipv4
++				break
  			}
-+		} else {
-+			networkNamespace, err := r.netns.fromRunningUnitFiles(uid, latestPod)
-+			if err != nil {
-+				glog.Warningf("networkNamespace: %v", err)
-+			}
-+			status, err := r.network.GetPodNetworkStatus(namespace, name, networkNamespace)
-+			if err != nil {
-+				glog.Warningf("rkt: %v", err)
-+			} else if status != nil {
-+				// status can be nil when the pod is running on the host network,
-+				// in which case the pod IP will be populated by the upper layer.
-+				podStatus.IP = status.IP.String()
-+			}
  		}
- 	} else {
+-	} else {
 -		containerID := kubecontainer.ContainerID{ID: string(uid)}
 -		status, err := r.network.GetPodNetworkStatus(namespace, name, containerID)
 -		if err != nil {
@@ -562,7 +555,20 @@ index b2eeca0..a617d38 100644
 -			// will be populated by the upper layer.
 -			podStatus.IP = status.IP.String()
 -		}
-+		glog.Warningf("No latestPod: rkt api-svc returns [%d]rktPods, cannot fill podStatus.IP", len(listResp.Pods))
++		return podStatus, nil
++	}
++
++	networkNamespace, err := r.netns.fromRunningUnitFiles(uid, latestPod)
++	if err != nil {
++		glog.Warningf("networkNamespace: %v", err)
++	}
++	status, err := r.network.GetPodNetworkStatus(namespace, name, networkNamespace)
++	if err != nil {
++		glog.Warningf("rkt: %v", err)
++	} else if status != nil {
++		// status can be nil when the pod is running on the host network,
++		// in which case the pod IP will be populated by the upper layer.
++		podStatus.IP = status.IP.String()
  	}
  
  	return podStatus, nil

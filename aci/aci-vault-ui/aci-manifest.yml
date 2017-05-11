@@ -1,0 +1,13 @@
+name: enjoliver.local/vault-ui:latest
+
+builder:
+  dependencies:
+    - enjoliver.local/builder-hyperkube:latest
+    - enjoliver.local/nodejs:7.10.0
+
+aci:
+  dependencies:
+    - enjoliver.local/nodejs:7.10.0
+  app:
+    workingDirectory: "/opt/vault-ui"
+    exec: ["/usr/bin/yarn", "run", "serve"]

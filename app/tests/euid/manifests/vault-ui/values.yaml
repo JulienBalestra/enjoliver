@@ -1,0 +1,5 @@
+image:
+  repository: enjoliver.local/vault-ui
+  tag: latest
+  pullPolicy: IfNotPresent
+namespace: kube-system
