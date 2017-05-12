@@ -196,18 +196,19 @@ class ConfigSyncSchedules(object):
         return self.order_http_uri(self.kubernetes_control_plane_ip_list, EC.kubernetes_api_server_port)
 
     def produce_matchbox_data(self, marker, i, m, automatic_name, update_extra_metadata=None):
-        fqdn = None
+        fqdn = automatic_name
         try:
-            fqdn = m["fqdn"]
+            if m["fqdn"]:
+                fqdn = m["fqdn"]
         except KeyError as e:
             self.log.warning("%s for %s" % (e, m["mac"]))
 
-        fqdn = automatic_name if not fqdn else fqdn
-
+        etc_hosts = [k for k in EC.etc_hosts]
         dns_attr = self.get_dns_attr(self.log, fqdn)
+        etc_hosts.append("127.0.1.1 %s %s" % (fqdn, dns_attr["shortname"]))
         cni_attr = self.cni_ipam(m["cidrv4"], m["gateway"])
         extra_metadata = {
-            "etc_hosts": EC.etc_hosts,
+            "etc_hosts": etc_hosts,
             # Etcd
             "etcd_name": m["ipv4"],
 

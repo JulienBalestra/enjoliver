@@ -1030,7 +1030,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                         if r.status_code == 200:
                             display(
                                 "\n#####################################\n"
-                                "mkdir -pv ~/.kube/config\n"
+                                "mkdir -pv ~/.kube\n"
                                 "cat << EOF >> ~/.kube/config\n"
                                 "apiVersion: v1\n"
                                 "clusters:\n"

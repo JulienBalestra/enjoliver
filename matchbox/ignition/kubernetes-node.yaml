@@ -505,6 +505,23 @@ systemd:
         [Install]
         WantedBy=default.target
 
+    - name: rkt-gc.service
+      enable: true
+      dropins:
+        - name: 10-rkt.conf
+          contents: |
+            [Service]
+            ExecStart=
+            ExecStart=/opt/rootfs/usr/bin/rkt gc --grace-period=0s
+
+    - name: rkt-gc.timer
+      enable: true
+      dropins:
+        - name: 10-rkt.conf
+          contents: |
+            [Service]
+            OnUnitActiveSec=
+            OnUnitActiveSec=10min
 
 storage:
   files:
@@ -767,12 +784,21 @@ storage:
           echo "draining node..."
           /opt/bin/kubectl drain {{.kubernetes_node_name}} --force --ignore-daemonsets --delete-local-data
 
+          set +e
+          for service in kubelet kube-apiserver etcd3@kubernetes etcd3@fleet
+          do
+            systemctl stop ${service}.service
+          done
+
+          /opt/bin/rkt gc --grace-period=0s
+          /opt/bin/rkt image gc --grace-period=0s
+          rm -Rf /opt/rootfs/*
+          set -e
+
           DEVICE=/dev/sda
           DISK_GUID="00000000-0000-0000-0000-000000000001"
           sgdisk --disk-guid=${DISK_GUID} ${DEVICE}
           cgpt show -v ${DEVICE} | grep -c ${DISK_GUID}
-
-          rm -Rf /opt/rootfs/* || true
 
           if [ ${STRATEGY} == "kexec" ]
           then
