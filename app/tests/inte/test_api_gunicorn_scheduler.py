@@ -39,6 +39,7 @@ class TestAPIGunicornScheduler(unittest.TestCase):
         os.environ["ENJOLIVER_MATCHBOX_PATH"] = TestAPIGunicornScheduler.test_matchbox_path
         os.environ["ENJOLIVER_MATCHBOX_ASSETS"] = TestAPIGunicornScheduler.assets_path
         cmd = [
+            "%s" % sys.executable,
             "%s/manage.py" % TestAPIGunicornScheduler.project_path,
             "matchbox"
         ]
@@ -61,6 +62,7 @@ class TestAPIGunicornScheduler(unittest.TestCase):
     @staticmethod
     def process_target_api():
         cmd = [
+            "%s" % sys.executable,
             "%s/manage.py" % TestAPIGunicornScheduler.project_path,
             "gunicorn"
         ]

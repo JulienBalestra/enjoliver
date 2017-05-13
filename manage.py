@@ -1,18 +1,19 @@
-#!/usr/bin/env python3.5
+#!/usr/bin/env python3
 import argparse
-import os
-
 import sys
 
+import os
 import time
 
-project_path = os.path.dirname(os.path.abspath(__file__))
-app_path = os.path.join(project_path, "app")
-python = os.path.join(project_path, "env/bin/python")
-site_packages_path = os.path.join(project_path, "env/local/lib/python3.5/site-packages")
+PROJECT_PATH = os.path.dirname(os.path.abspath(__file__))
+APP_PATH = os.path.join(PROJECT_PATH, "app")
+PYTHON = os.path.join(PROJECT_PATH, "env/bin/python3")
+sys.path.append(APP_PATH)
 
-sys.path.append(app_path)
-sys.path.append(site_packages_path)
+for p in os.listdir(os.path.join(PROJECT_PATH, "env/lib/")):
+    PYTHON_LIB = os.path.join(PROJECT_PATH, "env/lib/%s/site-packages" % p)
+    sys.path.append(PYTHON_LIB)
+
 
 from app import (
     configs,
@@ -46,9 +47,9 @@ def init_journal_dir(ec):
 
 def gunicorn(ec):
     cmd = [
-        "%s/env/bin/gunicorn" % project_path,
+        "%s/env/bin/gunicorn" % PROJECT_PATH,
         "--chdir",
-        app_path,
+        APP_PATH,
         "api:APP",
         "--worker-class",
         ec.gunicorn_worker_type,
@@ -67,7 +68,7 @@ def gunicorn(ec):
 
 def matchbox(ec):
     cmd = [
-        "%s/runtime/matchbox/matchbox" % project_path,
+        "%s/runtime/matchbox/matchbox" % PROJECT_PATH,
         "-address",
         ec.matchbox_uri.replace("https://", "").replace("http://", ""),
         "-assets-path",
@@ -85,8 +86,8 @@ def matchbox(ec):
 
 def plan(ec):
     cmd = [
-        python,
-        "%s/plans/k8s_2t.py" % app_path,
+        PYTHON,
+        "%s/plans/k8s_2t.py" % APP_PATH,
     ]
     print("exec[%s] -> %s\n" % (os.getpid(), " ".join(cmd)))
     with open(ec.plan_pid_file, "w") as f:
@@ -96,8 +97,8 @@ def plan(ec):
 
 def validate():
     cmd = [
-        python,
-        "%s/validate.py" % project_path,
+        PYTHON,
+        "%s/validate.py" % PROJECT_PATH,
     ]
     print("exec[%s] -> %s\n" % (os.getpid(), " ".join(cmd)))
     os.execve(cmd[0], cmd, os.environ)
@@ -112,7 +113,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='Enjoliver')
     parser.add_argument('task', type=str, choices=["gunicorn", "plan", "matchbox", "show-configs", "validate"],
                         help="Choose the task to run")
-    parser.add_argument('--configs', type=str, default="%s/configs.yaml" % app_path,
+    parser.add_argument('--configs', type=str, default="%s/configs.yaml" % APP_PATH,
                         help="Choose the yaml config file")
     task = parser.parse_args().task
     f = parser.parse_args().configs

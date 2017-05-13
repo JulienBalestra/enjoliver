@@ -33,6 +33,7 @@ class TestAPIGunicorn(unittest.TestCase):
         os.environ["ENJOLIVER_MATCHBOX_PATH"] = TestAPIGunicorn.test_matchbox_path
         os.environ["ENJOLIVER_MATCHBOX_ASSETS"] = TestAPIGunicorn.assets_path
         cmd = [
+            "%s" % sys.executable,
             "%s/manage.py" % TestAPIGunicorn.project_path,
             "matchbox"
         ]
@@ -46,6 +47,7 @@ class TestAPIGunicorn(unittest.TestCase):
     def process_target_api():
         os.environ["ENJOLIVER_API_URI"] = ec.api_uri
         cmd = [
+            "%s" % sys.executable,
             "%s/manage.py" % TestAPIGunicorn.project_path,
             "gunicorn",
         ]

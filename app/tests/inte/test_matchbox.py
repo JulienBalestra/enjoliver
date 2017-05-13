@@ -50,6 +50,7 @@ class TestBootConfigCommon(TestCase):
         os.environ["ENJOLIVER_MATCHBOX_PATH"] = TestBootConfigCommon.test_matchbox_path
         os.environ["ENJOLIVER_MATCHBOX_ASSETS"] = TestBootConfigCommon.assets_path
         cmd = [
+            "%s" % sys.executable,
             "%s/manage.py" % TestBootConfigCommon.project_path,
             "matchbox"
         ]

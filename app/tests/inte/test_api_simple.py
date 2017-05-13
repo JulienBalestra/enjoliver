@@ -34,6 +34,7 @@ class TestAPI(unittest.TestCase):
         os.environ["ENJOLIVER_MATCHBOX_PATH"] = TestAPI.test_matchbox_path
         os.environ["ENJOLIVER_MATCHBOX_ASSETS"] = TestAPI.assets_path
         cmd = [
+            "%s" % sys.executable,
             "%s/manage.py" % TestAPI.project_path,
             "matchbox",
         ]

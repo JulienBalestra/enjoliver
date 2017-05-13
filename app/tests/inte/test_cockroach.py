@@ -14,6 +14,7 @@ Manual test suite for CockroachDB integration
     --exec /usr/bin/cockroach -- sql
 """
 import os
+import sys
 import time
 import unittest
 from multiprocessing import Process
@@ -89,6 +90,7 @@ class TestEnjoliverCockroach(unittest.TestCase):
         os.environ["ENJOLIVER_MATCHBOX_ASSETS"] = TestEnjoliverCockroach.assets_path
 
         cmd = [
+            "%s" % sys.executable,
             "%s/manage.py" % TestEnjoliverCockroach.project_path,
             "matchbox"
         ]

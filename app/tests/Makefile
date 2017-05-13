@@ -15,7 +15,7 @@ RUNTIME=$(PROJECT)/runtime
 RKT=$(RUNTIME)/rkt/rkt
 
 ENV_NAME=env
-PYTHON=$(PROJECT)/$(ENV_NAME)/bin/python
+PYTHON=$(PROJECT)/$(ENV_NAME)/bin/python3
 
 TESTING_RSA=testing.id_rsa
 
@@ -28,8 +28,8 @@ $(PYTHON):
 	@echo Run as USER
 	test $(ROOT)
 	ls $(PROJECT)/$(ENV_NAME) || \
-		virtualenv2 --python=python2.7 $(PROJECT)/$(ENV_NAME) || \
-		virtualenv --python=python2.7 $(PROJECT)/$(ENV_NAME)
+		virtualenv2 --python=python3 $(PROJECT)/$(ENV_NAME) || \
+		virtualenv --python=python3 $(PROJECT)/$(ENV_NAME)
 	$(PROJECT)/$(ENV_NAME)/bin/pip install -r $(PROJECT)/requirements.txt
 	$(PYTHON) --version
 

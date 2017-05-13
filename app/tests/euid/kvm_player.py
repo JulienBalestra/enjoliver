@@ -140,6 +140,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     def process_target_matchbox():
         os.environ["MATCHBOX_PATH"] = KernelVirtualMachinePlayer.test_matchbox_path
         cmd = [
+            "%s" % sys.executable,
             "%s/manage.py" % KernelVirtualMachinePlayer.project_path,
             "matchbox",
         ]
@@ -183,6 +184,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             pass
 
         cmd = [
+            "%s" % sys.executable,
             "%s/manage.py" % KernelVirtualMachinePlayer.project_path,
             "gunicorn",
         ]
