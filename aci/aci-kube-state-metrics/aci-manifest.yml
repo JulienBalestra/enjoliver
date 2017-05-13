@@ -1,0 +1,9 @@
+name: enjoliver.local/kube-state-metrics:0.5.0
+
+builder:
+  dependencies:
+    - enjoliver.local/builder-hyperkube:latest
+
+aci:
+  dependencies:
+    - enjoliver.local/debian:latest

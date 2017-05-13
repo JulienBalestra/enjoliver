@@ -11,7 +11,7 @@ spec:
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/path: "/metrics"
-        prometheus.io/port: "9100"
+        prometheus.io/port: "{{ .Values.appPort }}"
     spec:
       serviceAccount: {{ .Chart.Name }}
       hostNetwork: true
@@ -39,7 +39,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /metrics
-            port: 9100
+            port: {{ .Values.appPort }}
           initialDelaySeconds: 30
           timeoutSeconds: 10
           periodSeconds: 1
@@ -48,18 +48,18 @@ spec:
           failureThreshold: 5
           httpGet:
             path: /metrics
-            port: 9100
+            port: {{ .Values.appPort }}
           initialDelaySeconds: 10
           timeoutSeconds: 10
           periodSeconds: 2
 
         resources:
           limits:
-            cpu: 300m
-            memory: 200Mi
-          requests:
             cpu: 200m
             memory: 100Mi
+          requests:
+            cpu: 100m
+            memory: 50Mi
 
       volumes:
         - name: proc

@@ -1,0 +1,6 @@
+image:
+  repository: enjoliver.local/kube-state-metrics
+  tag: 0.5.0
+  pullPolicy: IfNotPresent
+namespace: kube-system
+appPort: 80

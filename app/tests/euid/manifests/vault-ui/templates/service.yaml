@@ -7,6 +7,6 @@ spec:
   selector:
     app: {{ .Chart.Name }}
   ports:
-  - port: 8000
+  - port: {{ Values.appPort }}
     protocol: TCP
   clusterIP: "None"

@@ -3,3 +3,4 @@ image:
   tag: 0.14.0
   pullPolicy: IfNotPresent
 namespace: kube-system
+appPort: 9100

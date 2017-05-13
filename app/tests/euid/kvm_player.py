@@ -775,10 +775,10 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     def create_tiller(self, api_server_ip: str):
         c = kc.ApiClient(host="%s:8080" % api_server_ip)
 
-        with open("%s/manifests/tiller-service.yaml" % self.euid_path) as f:
+        with open("%s/manifests/tiller/tiller-service.yaml" % self.euid_path) as f:
             service_manifest = yaml.load(f)
 
-        with open("%s/manifests/tiller-deploy.yaml" % self.euid_path) as f:
+        with open("%s/manifests/tiller/tiller-deploy.yaml" % self.euid_path) as f:
             deploy_manifest = yaml.load(f)
 
         core, beta = kc.CoreV1Api(c), kc.ExtensionsV1beta1Api(c)

@@ -30,7 +30,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /
-            port: 8000
+            port: {{ Values.appPort }}
           initialDelaySeconds: 5
           timeoutSeconds: 2
           periodSeconds: 3
@@ -39,7 +39,7 @@ spec:
           failureThreshold: 5
           httpGet:
             path: /
-            port: 8000
+            port: {{ Values.appPort }}
           initialDelaySeconds: 2
           timeoutSeconds: 2
           periodSeconds: 1

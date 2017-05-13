@@ -1,22 +1,14 @@
 apiVersion: extensions/v1beta1
-kind: Deployment
+kind: DaemonSet
 metadata:
   name: {{ .Chart.Name }}
   namespace: {{ .Values.namespace }}
 spec:
-  replicas: 2
-  revisionHistoryLimit: 3
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
   template:
     metadata:
       labels:
         app: {{ .Chart.Name }}
       annotations:
-        scheduler.alpha.kubernetes.io/critical-pod: ''
         prometheus.io/scrape: "true"
         prometheus.io/path: "/metrics"
         prometheus.io/port: "{{ .Values.appPort }}"
@@ -27,10 +19,8 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         command:
-        - /usr/bin/heapster
-        - --bind-address=0.0.0.0
-        - --profiling=false
-        - "--source=kubernetes:https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT}?useServiceAccount=true"
+        - /usr/bin/kube-state-metrics
+
         env:
         - name: KUBERNETES_SERVICE_HOST
           valueFrom:
@@ -42,25 +32,25 @@ spec:
 
         livenessProbe:
           httpGet:
-            path: /healthz
+            path: /metrics
             port: {{ .Values.appPort }}
-          initialDelaySeconds: 60
+          initialDelaySeconds: 30
           timeoutSeconds: 10
-          periodSeconds: 3
+          periodSeconds: 1
 
         readinessProbe:
           failureThreshold: 5
           httpGet:
-            path: /healthz
+            path: /metrics
             port: {{ .Values.appPort }}
-          initialDelaySeconds: 30
+          initialDelaySeconds: 10
           timeoutSeconds: 10
           periodSeconds: 2
 
         resources:
           limits:
-            cpu: 300m
-            memory: 200Mi
-          requests:
-            cpu: 200m
+            cpu: 50m
             memory: 100Mi
+          requests:
+            cpu: 25m
+            memory: 50Mi
