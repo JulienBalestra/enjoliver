@@ -117,7 +117,7 @@ dev_setup:
 	su - $(MY_USER) -c "make -C $(CWD) dev_setup_runtime"
 	su - $(MY_USER) -c "make -C $(CWD) front"
 	su - $(MY_USER) -c "make -C $(CWD) pip"
-	make -C $(CWD) acis
+	make -C $(CWD) aci
 	su - $(MY_USER) -c "make -C $(CWD) assets"
 	su - $(MY_USER) -c "make -C $(CWD)/matchbox/assets/coreos"
 	su - $(MY_USER) -c "make -C $(CWD)/matchbox/assets/coreos serve"

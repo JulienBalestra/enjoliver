@@ -4,7 +4,7 @@ metadata:
   name: {{ .Chart.Name }}
   namespace: {{ .Values.namespace }}
 spec:
-  replicas: 1
+  replicas: 2
   revisionHistoryLimit:
   strategy:
     type: RollingUpdate

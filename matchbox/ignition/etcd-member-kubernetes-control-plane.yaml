@@ -1518,7 +1518,7 @@ storage:
              --ca-file /etc/vault.d/etcd-fleet/client.issuing_ca \
              --endpoints http://127.0.0.1:{{.fleet_etcd_client_port}} cluster-health
 
-          retry kubectl get cs
+          retry kubectl cluster-info
 
           retry curl -fs http://127.0.0.1:10248/healthz
 
@@ -1699,7 +1699,7 @@ storage:
           done
 
           echo "task for kubernetes"
-          openssl genrsa 4096 > /etc/vault.d/service-accounts.rsa
+          openssl genrsa 2048 > /etc/vault.d/service-accounts.rsa
           vault write secret/kubernetes/service-accounts key=@/etc/vault.d/service-accounts.rsa
 
           vault mount -path pki/kubernetes pki
@@ -1871,7 +1871,7 @@ storage:
                 -XPOST --data '{
                   "common_name": "{{.network.ip}}",
                   "ttl": "17520h",
-                  "ip_sans": "{{.network.ip}}"
+                  "ip_sans": "{{.network.ip}},127.0.0.1"
                 }' > /etc/vault.d/${1}/${2}-pki.json
               if [ $? -eq 0 ]
               then

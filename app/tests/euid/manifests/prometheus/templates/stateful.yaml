@@ -57,10 +57,10 @@ spec:
         resources:
           limits:
             cpu: 400m
-            memory: 400Mi
+            memory: 600Mi
           requests:
             cpu: 200m
-            memory: 200Mi
+            memory: 300Mi
 
       volumes:
         - name: config

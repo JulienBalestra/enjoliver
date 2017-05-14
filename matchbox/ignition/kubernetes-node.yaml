@@ -300,17 +300,13 @@ systemd:
         [Service]
         Type=notify
         ExecStartPre=/bin/ls -l \
-          /etc/vault.d/etcd-%i/client.certificate \
-          /etc/vault.d/etcd-%i/client.private_key \
           /etc/vault.d/etcd-%i/client.issuing_ca
         ExecStart=/opt/rootfs/usr/bin/etcd \
-          grpc-proxy start \
+          gateway start \
           --endpoints={{ .kubernetes_etcd_member_client_uri_list }} \
           --listen-addr="127.0.0.1:{{.kubernetes_etcd_client_port}}" \
-          --cert="/etc/vault.d/etcd-%i/client.certificate" \
-          --key="/etc/vault.d/etcd-%i/client.private_key" \
-          --cacert="/etc/vault.d/etcd-%i/client.issuing_ca"
-        RestartSec=5s
+          --trusted-ca-file="/etc/vault.d/etcd-%i/client.issuing_ca"
+        RestartSec=10s
         Restart=on-failure
         LimitNOFILE=65826
         [Install]
@@ -363,12 +359,18 @@ systemd:
           /etc/vault.d/kubernetes/kubelet.certificate \
           /etc/vault.d/kubernetes/kubelet.private_key \
           /etc/vault.d/kubernetes/kubelet.issuing_ca \
-          /etc/vault.d/kubernetes/service-accounts.key
-        ExecStartPre=/opt/bin/etcdctl --endpoints http://127.0.0.1:{{.kubernetes_etcd_client_port}} endpoint status
+          /etc/vault.d/kubernetes/service-accounts.key \
+          /etc/vault.d/etcd-kubernetes/client.certificate \
+          /etc/vault.d/etcd-kubernetes/client.private_key \
+          /etc/vault.d/etcd-kubernetes/client.issuing_ca
+        ExecStartPre=/opt/bin/etcdctl3 --endpoints https://127.0.0.1:{{.kubernetes_etcd_client_port}} \
+          --cacert=/etc/vault.d/etcd-kubernetes/client.issuing_ca \
+          --cert=/etc/vault.d/etcd-kubernetes/client.certificate \
+          --key=/etc/vault.d/etcd-kubernetes/client.private_key \
+          endpoint status
         ExecStart=/opt/rootfs/hyperkube apiserver proxy \
           --advertise-address={{.network.ip}} \
           --insecure-bind-address=127.0.0.1 \
-          --etcd-servers=http://127.0.0.1:{{.kubernetes_etcd_client_port}} \
           --allow-privileged=true \
           --service-cluster-ip-range={{.kubernetes_service_cluster_ip_range}} \
           --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota \
@@ -385,7 +387,11 @@ systemd:
           --service-account-key-file=/etc/vault.d/kubernetes/service-accounts.key \
           --service-account-lookup=true \
           --authorization-mode=AlwaysAllow \
-          --anonymous-auth=false
+          --anonymous-auth=false \
+          --etcd-servers=https://127.0.0.1:{{.kubernetes_etcd_client_port}} \
+          --etcd-cafile=/etc/vault.d/etcd-kubernetes/client.issuing_ca \
+          --etcd-certfile=/etc/vault.d/etcd-kubernetes/client.certificate \
+          --etcd-keyfile=/etc/vault.d/etcd-kubernetes/client.private_key
         Restart=always
         RestartSec=5s
         [Install]
@@ -490,9 +496,8 @@ systemd:
         [Unit]
         Description=Garbage Collection for rkt image
         [Service]
-        Environment=GRACE_PERIOD=0s
         Type=oneshot
-        ExecStart=/usr/bin/rkt image gc --grace-period=${GRACE_PERIOD}
+        ExecStart=/usr/bin/rkt image gc --grace-period=0s
 
     - name: rkt-image-gc.timer
       enable: true
@@ -500,8 +505,8 @@ systemd:
         [Unit]
         Description=Periodic Garbage Collection for rkt image
         [Timer]
-        OnActiveSec=0s
-        OnUnitActiveSec=24h
+        OnActiveSec=5min
+        OnUnitActiveSec=1h
         [Install]
         WantedBy=default.target
 
@@ -520,6 +525,8 @@ systemd:
         - name: 10-rkt.conf
           contents: |
             [Service]
+            OnActiveSec=
+            OnActiveSec=5min
             OnUnitActiveSec=
             OnUnitActiveSec=10min
 
@@ -830,13 +837,11 @@ storage:
             done
           }
 
-          export ETCDCTL_API=3
-          retry etcdctl \
+          retry etcdctl3 \
              --cert=/etc/vault.d/etcd-kubernetes/client.certificate \
              --key=/etc/vault.d/etcd-kubernetes/client.private_key \
              --cacert=/etc/vault.d/etcd-kubernetes/client.issuing_ca \
-             --endpoints http://127.0.0.1:{{.kubernetes_etcd_client_port}} endpoint status
-           unset ETCDCTL_API
+             --endpoints https://127.0.0.1:{{.kubernetes_etcd_client_port}} endpoint status
 
           retry etcdctl \
              --cert-file /etc/vault.d/etcd-fleet/client.certificate \
@@ -844,7 +849,7 @@ storage:
              --ca-file /etc/vault.d/etcd-fleet/client.issuing_ca \
              --endpoints http://127.0.0.1:{{.fleet_etcd_client_port}} cluster-health
 
-          retry kubectl get cs
+          retry kubectl cluster-info
 
           retry curl -fs http://127.0.0.1:10248/healthz
 
@@ -984,7 +989,7 @@ storage:
                 -XPOST --data '{
                   "common_name": "{{.network.ip}}",
                   "ttl": "17520h",
-                  "ip_sans": "{{.network.ip}}"
+                  "ip_sans": "{{.network.ip}},127.0.0.1"
                 }' > /etc/vault.d/${1}/${2}-pki.json
               if [ $? -eq 0 ]
               then
