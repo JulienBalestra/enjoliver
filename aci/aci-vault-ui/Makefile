@@ -1,6 +1,6 @@
 CWD=$(shell pwd)
 
-PROJECT=$(CWD)/..
+PROJECT=$(CWD)/../..
 RUNTIME=$(PROJECT)/runtime
 RKT=$(RUNTIME)/rkt/rkt
 ACI=$(PROJECT)/aci
@@ -8,8 +8,9 @@ ACI=$(PROJECT)/aci
 
 DEBIAN=debian
 GO=go
+NODEJS=nodejs
 BUILDER_HYPERKUBE=builder-hyperkube
-HYPERKUBE=hyperkube
+VAULT_UI=vault-ui
 
 
 default: push
@@ -24,45 +25,44 @@ $(GO): $(DEBIAN)
 	IMAGE=$(ACI)/aci-$(GO) make -C $(RUNTIME) install
 	IMAGE=$(ACI)/aci-$(GO) make -C $(RUNTIME) push
 
+$(NODEJS): $(DEBIAN)
+	@echo ENV IMAGE=$(ACI)/aci-$(GO)
+	IMAGE=$(ACI)/aci-$(NODEJS) make -C $(RUNTIME) install
+	IMAGE=$(ACI)/aci-$(NODEJS) make -C $(RUNTIME) push
+
 $(BUILDER_HYPERKUBE): $(GO)
 	@echo ENV IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE)
 	IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE) make -C $(RUNTIME) install
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) push
 
-hyperkube_bin: $(BUILDER_HYPERKUBE)
-	@echo ENV IMAGE=$(ACI)/aci-$(HYPERKUBE)
-	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) build
-	ls -lh $(HYPERKUBE_BIN)
-
-prepare: $(GO) $(BUILDER_HYPERKUBE)
+prepare: $(GO) $(BUILDER_HYPERKUBE) $(NODEJS)
 
 install: prepare
-	@echo ENV IMAGE=$(ACI)/aci-$(HYPERKUBE)
-	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) install
+	@echo ENV IMAGE=$(ACI)/aci-$(VAULT_UI)
+	IMAGE=$(ACI)/aci-$(VAULT_UI) make -C $(RUNTIME) install
 
 test: install
-	@echo ENV IMAGE=$(ACI)/aci-$(HYPERKUBE)
-	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) test
+	@echo ENV IMAGE=$(ACI)/aci-$(VAULT_UI)
+	IMAGE=$(ACI)/aci-$(VAULT_UI) make -C $(RUNTIME) push
 
 push: test
-	@echo ENV IMAGE=$(ACI)/aci-$(HYPERKUBE)
-	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) push
+	@echo ENV IMAGE=$(ACI)/aci-$(VAULT_UI)
+	IMAGE=$(ACI)/aci-$(VAULT_UI) make -C $(RUNTIME) push
 
 gc:
 	$(RKT) --local-config=$(RUNTIME) gc --grace-period=0s
 	$(RKT) --local-config=$(RUNTIME) image gc --grace-period=0s
 
 clean: gc
-	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) gc
+	IMAGE=$(ACI)/aci-$(VAULT_UI) make -C $(RUNTIME) clean
 
 fclean: clean
-	rm -v $(HYPERKUBE_BIN) || true
 	IMAGE=$(ACI)/aci-$(GO) make -C $(RUNTIME) clean
 	IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE) make -C $(RUNTIME) clean
 
 re: clean default
 
 re_quick:
-	@echo ENV IMAGE=$(ACI)/aci-$(HYPERKUBE)
-	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) build
-	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) push
+	@echo ENV IMAGE=$(ACI)/aci-$(VAULT_UI)
+	IMAGE=$(ACI)/aci-$(VAULT_UI) make -C $(RUNTIME) build
+	IMAGE=$(ACI)/aci-$(VAULT_UI) make -C $(RUNTIME) push

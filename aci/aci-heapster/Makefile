@@ -1,6 +1,6 @@
 CWD=$(shell pwd)
 
-PROJECT=$(CWD)/..
+PROJECT=$(CWD)/../../
 RUNTIME=$(PROJECT)/runtime
 RKT=$(RUNTIME)/rkt/rkt
 ACI=$(PROJECT)/aci
@@ -9,7 +9,7 @@ ACI=$(PROJECT)/aci
 DEBIAN=debian
 GO=go
 BUILDER_HYPERKUBE=builder-hyperkube
-TILLER=tiller
+HEAPSTER=heapster
 
 
 default: push
@@ -32,27 +32,31 @@ $(BUILDER_HYPERKUBE): $(GO)
 prepare: $(GO) $(BUILDER_HYPERKUBE)
 
 install: prepare
-	@echo ENV IMAGE=$(ACI)/aci-$(TILLER)
-	IMAGE=$(ACI)/aci-$(TILLER) make -C $(RUNTIME) install
+	@echo ENV IMAGE=$(ACI)/aci-$(HEAPSTER)
+	IMAGE=$(ACI)/aci-$(HEAPSTER) make -C $(RUNTIME) install
 
 test: install
-	@echo ENV IMAGE=$(ACI)/aci-$(TILLER)
-	IMAGE=$(ACI)/aci-$(TILLER) make -C $(RUNTIME) push
+	@echo ENV IMAGE=$(ACI)/aci-$(HEAPSTER)
+	IMAGE=$(ACI)/aci-$(HEAPSTER) make -C $(RUNTIME) test
 
 push: test
-	@echo ENV IMAGE=$(ACI)/aci-$(TILLER)
-	IMAGE=$(ACI)/aci-$(TILLER) make -C $(RUNTIME) push
+	@echo ENV IMAGE=$(ACI)/aci-$(HEAPSTER)
+	IMAGE=$(ACI)/aci-$(HEAPSTER) make -C $(RUNTIME) push
 
 gc:
 	$(RKT) --local-config=$(RUNTIME) gc --grace-period=0s
 	$(RKT) --local-config=$(RUNTIME) image gc --grace-period=0s
 
 clean: gc
-	IMAGE=$(ACI)/aci-$(TILLER) make -C $(RUNTIME) clean
+	IMAGE=$(ACI)/aci-$(HEAPSTER) make -C $(RUNTIME) gc
 
 fclean: clean
-	rm -v $(HYPERKUBE_BIN) || true
 	IMAGE=$(ACI)/aci-$(GO) make -C $(RUNTIME) clean
 	IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE) make -C $(RUNTIME) clean
 
 re: clean default
+
+re_quick:
+	@echo ENV IMAGE=$(ACI)/aci-$(HEAPSTER)
+	IMAGE=$(ACI)/aci-$(HEAPSTER) make -C $(RUNTIME) build
+	IMAGE=$(ACI)/aci-$(HEAPSTER) make -C $(RUNTIME) push

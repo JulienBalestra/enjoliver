@@ -1,0 +1,4 @@
+name: enjoliver.local/dnsmasq:latest
+aci:
+  dependencies:
+    - enjoliver.local/debian:latest

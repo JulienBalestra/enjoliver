@@ -48,27 +48,8 @@ acserver:
 	curl 127.0.0.1 && exit 1 || true
 	./runtime/runtime.acserver &
 
-acis: acserver
-	make -C cni || pkill acserver || exit 1
-	make -C cni clean
-	make -C etcd || pkill acserver || exit 1
-	make -C etcd clean
-	make -C fleet || pkill acserver || exit 1
-	make -C fleet clean
-	make -C heapster || pkill acserver || exit 1
-	make -C heapster clean
-	make -C prometheus || pkill acserver || exit 1
-	make -C prometheus clean
-	make -C hyperkube || pkill acserver || exit 1
-	make -C hyperkube clean
-	make -C lldp || pkill acserver || exit 1
-	make -C lldp clean
-	make -C rkt || pkill acserver || exit 1
-	make -C rkt clean
-	make -C tiller || pkill acserver || exit 1
-	make -C tiller clean
-	make -C vault || pkill acserver || exit 1
-	make -C vault clean
+aci: acserver
+	make -C aci kube_deps
 	# Find a better way to stop it
 	pkill acserver
 
@@ -119,11 +100,6 @@ dev_setup_runtime: submodules
 
 prod_setup_runtime:
 	make -C runtime prod_setup
-
-aci_enjoliver: acserver
-	make -C enjoliver test || pkill acserver || exit 1
-	# Find a better way to stop it
-	pkill acserver
 
 front:
 	make -C app/static
