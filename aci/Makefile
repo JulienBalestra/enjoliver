@@ -16,7 +16,7 @@ kube: $(KUBE)
 kube_deps: core $(KUBE)
 
 extra: $(EXTRA)
-extra_deps: kube $(EXTRA)
+extra_deps: kube_deps $(EXTRA)
 
 $(CORE):
 	IMAGE=aci-$@ make -C aci-$@
