@@ -1,7 +1,7 @@
 CWD=$(shell pwd)
 
 # DGR
-DGR_VERSION=v81
+DGR_VERSION=v82
 DGR_GITHUB_DOWNLOAD=https://github.com/blablacar/dgr/releases/download
 DGR_TAR=dgr-$(DGR_VERSION)-linux-amd64.tar.gz
 DGR_GITHUB=$(DGR_GITHUB_DOWNLOAD)/$(DGR_VERSION)/$(DGR_TAR)
@@ -66,7 +66,7 @@ $(MATCHBOX_DOWNLOAD_TAR):
 	curl -fL $(MATCHBOX_GITHUB) -o $(MATCHBOX_DOWNLOAD_TAR)
 
 $(MATCHBOX): $(MATCHBOX_DOWNLOAD_TAR)
-	@$(MATCHBOX) --version || tar -C $(MATCHBOX_DIR) -xzvf $(MATCHBOX_DIR)/$(MATCHBOX_TAR) --strip-components=1
+	@$(MATCHBOX) --version || tar -C $(MATCHBOX_DIR) -xzf $(MATCHBOX_DIR)/$(MATCHBOX_TAR) --strip-components=1
 
 $(DGR_DOWNLOAD_TAR):
 	mkdir -pv $(DGR_DIR)
@@ -98,7 +98,7 @@ build: $(DGR) $(RKT)
 	test $(IMAGE)
 	$(DGR) -H $(CWD) config
 	$(DGR) -H $(CWD) build -W $(IMAGE) -k -c
-	$(RKT) --local-config=$(CWD) gc --grace-period=24h
+	$(RKT) --local-config=$(CWD) gc --grace-period=0s
 
 install: $(DGR) $(RKT)
 	@echo ENV eg: IMAGE=$(CWD)/../aci/debian

@@ -12,11 +12,17 @@ tester:
     dependencies:
       - enjoliver.local/builder-enjoliver:latest
 
+    app:
+      environment:
+        - { name: "PATH", value: "/opt/enjoliver/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" }
+
 aci:
   dependencies:
     - enjoliver.local/python:3.5.3
 
   app:
+    environment:
+      - { name: "PATH", value: "/opt/enjoliver/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" }
     mountPoints:
       - name: matchbox-groups
         path: /var/lib/matchbox/groups

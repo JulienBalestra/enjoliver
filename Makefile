@@ -35,7 +35,7 @@ apt:
 	DEBIAN_FRONTEND=noninteractive INSTALL="-y" ./apt.sh
 
 $(ENV):
-	virtualenv $(ENV) --no-site-packages --system-site-packages -p $(shell which python3)
+	./virtualenv.sh
 
 pip: $(ENV)
 	$(ENV)/bin/pip3 install -U setuptools

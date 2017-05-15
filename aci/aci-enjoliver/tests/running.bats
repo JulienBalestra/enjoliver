@@ -2,6 +2,7 @@
 
 
 @test "Tests are OK" {
+  make -C /opt/enjoliver/app/tests testing.id_rsa
   make -C /opt/enjoliver/app/tests check
   [ $? -eq 0 ]
 }

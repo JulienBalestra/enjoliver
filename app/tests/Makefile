@@ -19,37 +19,14 @@ PYTHON=$(PROJECT)/$(ENV_NAME)/bin/python3
 
 TESTING_RSA=testing.id_rsa
 
-default: validate $(PYTHON) $(TESTING_RSA)
 
-validate:
-	make -C $(PROJECT) validate
+check:
+	PATH=$(PROJECT)/env/bin:$(PATH) PYTHONPATH=$(PROJECT) $(PYTHON) -m unittest discover ./
 
-$(PYTHON):
-	@echo Run as USER
-	test $(ROOT)
-	ls $(PROJECT)/$(ENV_NAME) || \
-		virtualenv2 --python=python3 $(PROJECT)/$(ENV_NAME) || \
-		virtualenv --python=python3 $(PROJECT)/$(ENV_NAME)
-	$(PROJECT)/$(ENV_NAME)/bin/pip install -r $(PROJECT)/requirements.txt
-	$(PYTHON) --version
 
 runtime: $(TESTING_RSA)
 	$(CWD)/config.py
 
-
-dnsmasq:
-	@file $(RKT)
-	@cat $(CWD)/dnsmasq-rack0.conf
-	$(RKT) \
-		--interactive \
-		--mount volume=config,target=/etc/dnsmasq.conf \
-		--mount volume=resolv,target=/etc/resolv.conf \
-		--local-config=$(CWD) \
-		run --insecure-options=all \
-		quay.io/coreos/dnsmasq:v0.3.0 \
-		--net=host \
-		--volume config,kind=host,source=$(CWD)/dnsmasq-rack0.conf \
-		--volume resolv,kind=host,source=/etc/resolv.conf
 
 create_rack0:
 	@file $(RKT)
@@ -87,9 +64,6 @@ clean:
 	rm -Rfv unit/dbs || true
 
 fclean: clean gci gc
-
-check: default $(PYTHON)
-	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover ./
 
 check_euid_fail_fast: $(PYTHON) runtime
 	PYTHONPATH=$(shell pwd)/../.. $(PYTHON) -m unittest discover euid/ -f
