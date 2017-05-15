@@ -1,7 +1,7 @@
 CWD=$(shell pwd)
 
 # DGR
-DGR_VERSION=v82
+DGR_VERSION=v81
 DGR_GITHUB_DOWNLOAD=https://github.com/blablacar/dgr/releases/download
 DGR_TAR=dgr-$(DGR_VERSION)-linux-amd64.tar.gz
 DGR_GITHUB=$(DGR_GITHUB_DOWNLOAD)/$(DGR_VERSION)/$(DGR_TAR)
