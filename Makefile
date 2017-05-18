@@ -3,6 +3,7 @@ CHECK=check
 CHECK_EUID=check_euid
 CHECK_EUID_KVM_PLAYER=check_euid_kvm_player
 ENV=$(CWD)/env
+MY_USER=${SUDO_USER}
 
 default: help
 

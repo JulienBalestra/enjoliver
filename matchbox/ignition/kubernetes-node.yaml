@@ -709,7 +709,7 @@ storage:
           ETCD_ADVERTISE_CLIENT_URLS=https://{{.network.ip}}:{{.fleet_etcd_client_port}}
           ETCD_MEMBER_CLIENT_URI_LIST={{.fleet_etcd_member_client_uri_list}}
           ETCD_DATA_DIR={{.fleet_etcd_data_dir}}
-          ETCD_LISTEN_CLIENT_URLS="http://127.0.0.1:{{.fleet_etcd_client_port}},https://{{.network.ip}}:{{.fleet_etcd_client_port}}"
+          ETCD_LISTEN_CLIENT_URLS="http://127.0.0.1:{{.fleet_etcd_client_port}},https://{{.network.ip}}:{{.fleet_etcd_client_port}},http://{{.network.ip}}:2379"
 
     - path: /opt/bin/etcdctl3
       filesystem: root

@@ -237,8 +237,6 @@ All in one dev setup:
     
 Start an interactive Kubernetes deployment of 2 nodes:
 
-    # Generate ssh keys
-    make -C app/tests testing.id_rsa
     
     # Start the deployment
     sudo make -C app/tests check_euid_it_plans_enjolivage_disk_2_nodes
@@ -252,7 +250,7 @@ At the end of the setup, a kubectl proxy is running on `127.0.0.1:8001`
  
     Starting to serve on 127.0.0.1:8001
     #####################################
-    mkdir -pv ~/.kube/config
+    mkdir -pv ~/.kube
     cat << EOF >> ~/.kube/config
     apiVersion: v1
     clusters:
