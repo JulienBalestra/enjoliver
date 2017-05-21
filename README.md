@@ -143,6 +143,32 @@ This role is a standard worker (Kubernetes node)
 
 All additional nodes over the wanted **etcd-member-kubernetes-control-plane** requirements will become **kubernetes-node**
 
+#### Rolling Update
+
+Each minute, every machine reports the content of `/usr/share/oem/coreos-install.json` to the enjoliver API `lifecycle/ignition/`
+Enjoliver will query matchbox and compare the content of the current ignition report and the desired ignition provided by matchbox.
+The result will be stored in the database and returned to the machine.
+
+If the state is outdated, the machine will ask its rollingUpdate strategy:
+* disable : unset
+* kexec
+* reboot
+* poweroff
+
+If a strategy is returned, the machine try to takes a lock in locksmith and proceed to tear down the machine.
+The tear down proceed to drain the kubernetes node. Its disable the scheduling of the node.
+
+When the machine goes back, the ready process starts:
+* check etcd-vault
+* check etcd-kubernetes
+* check etcd-fleet
+* check kubernetes cluster trough the local kube-apiserver
+* check the kubelet
+* check if the node is registered in fleet machines
+    * trough local etcd-fleet
+    * over remotes etcd-fleet
+* uncordon the kubernetes node
+* release the lock in locksmith
 
 ### Enjoliver API
 
