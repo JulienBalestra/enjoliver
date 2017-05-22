@@ -1,0 +1,17 @@
+[
+    {
+      "name":"dc-1",
+      "ip": "172.20.0.13",
+      "username": "core"
+    },
+    {
+      "name":"dc-2",
+      "ip": "172.20.0.13",
+      "username": "core"
+    },
+    {
+      "name":"dc-3",
+      "ip": "172.20.0.13",
+      "username": "core"
+    }
+]
