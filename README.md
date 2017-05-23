@@ -36,10 +36,15 @@ Each node can be re-installed and re-join the cluster.
     * follow any associated releases
     * features, bug fix testing in cluster
 
-4) Kubernetes cluster for development usage, ready to use with:
+4) Kubernetes cluster for development usage, ready to use with sample:
     * Helm / Tiller
     * Heapster
     * Kubernetes Dashboard
+    * Kubernetes state metrics
+    * Node exporter for Prometheus
+    * Prometheus
+    * Vault UI
+    * CronJobs for etcd3 backups
 
 ## 1. Kubernetes Cluster 
 

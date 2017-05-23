@@ -987,7 +987,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         mem_gib = mem_bytes / (1024. ** 3)
         node_memory = (mem_gib // nb_nodes) * 1024
         default_memory = self.ram_kvm_node_memory_mb * 0.8 if disk else self.ram_kvm_node_memory_mb
-        return node_memory * 1.1 if node_memory > default_memory else default_memory
+        return default_memory * 1.2 if node_memory > default_memory else default_memory
 
     @staticmethod
     def get_optimized_cpu(nb_nodes: int):
