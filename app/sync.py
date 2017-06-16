@@ -45,9 +45,9 @@ class ConfigSyncSchedules(object):
             if os.path.isfile(f) is False:
                 self.log.error("%s:%s -> %s is not here" % (k, v, f))
                 raise IOError(f)
-            with open(f, 'r') as ignition_file:
+            with open(f, 'rb') as ignition_file:
                 blob = ignition_file.read()
-            data = {v: blob}
+            data = {v: blob.decode()}
             url = "%s/ignition/version/%s" % (self.api_uri, v)
             try:
                 req = requests.post(url, data=json.dumps(data))
@@ -274,7 +274,8 @@ class ConfigSyncSchedules(object):
             "nameservers": " ".join(EC.nameservers),
             "ntp": " ".join(EC.ntp),
             "fallbackntp": " ".join(EC.fallbackntp),
-            "vault_polling_sec": EC.vault_polling_sec
+            "vault_polling_sec": EC.vault_polling_sec,
+            "lifecycle_update_polling_sec": EC.lifecycle_update_polling_sec,
 
         }
         selector = {"mac": m["mac"]}

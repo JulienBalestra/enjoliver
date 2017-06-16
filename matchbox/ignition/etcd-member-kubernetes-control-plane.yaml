@@ -547,7 +547,7 @@ systemd:
           --etcd-servers=http://127.0.0.1:{{.kubernetes_etcd_client_port}} \
           --allow-privileged=true \
           --service-cluster-ip-range={{.kubernetes_service_cluster_ip_range}} \
-          --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota \
+          --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota,PodPreset \
           --runtime-config=batch/v2alpha1 \
           --tls-ca-file=/etc/vault.d/kubernetes/kube-apiserver.issuing_ca \
           --tls-cert-file=/etc/vault.d/kubernetes/kube-apiserver.certificate \
@@ -651,47 +651,47 @@ systemd:
         WantedBy=multi-user.target
 
     - name: lifecycle-update.service
+      enable: true
       contents: |
         [Unit]
+        After=etcd3@vault.service
+        After=etcd3@fleet.service
         After=etcd3@kubernetes.service
         After=kubelet.service
         After=lifecycle-ready.service
         [Service]
         EnvironmentFile=/etc/metadata.env
-        Type=oneshot
         ExecStart=/opt/bin/lifecycle-update
+        Restart=always
+        RestartSec={{.lifecycle_update_polling_sec}}
+        [Install]
+        WantedBy=multi-user.target
 
-    - name: lifecycle-update.timer
+    - name: run-netns.mount
+      enable: false
+      contents: |
+        [Unit]
+        Description=Netns Directory
+        DefaultDependencies=no
+        Conflicts=umount.target
+        Before=local-fs.target umount.target
+        [Mount]
+        What=tmpfs
+        Where=/run/netns
+        Type=tmpfs
+        Options=rw,nosuid,nodev,seclabel,mode=755
+        [Install]
+        WantedBy=local-fs.target
+
+    - name: run-netns.automount
       enable: true
       contents: |
         [Unit]
-        After=etcd3@kubernetes.service
-        After=kubelet.service
-        After=lifecycle-ready.service
-        [Timer]
-        OnActiveSec=0s
-        OnUnitActiveSec=1m
+        Description=Netns Directory Automount
+        [Automount]
+        Where=/run/netns
         [Install]
-        WantedBy=default.target
-
-    - name: rkt-image-gc.service
-      contents: |
-        [Unit]
-        Description=Garbage Collection for rkt image
-        [Service]
-        Type=oneshot
-        ExecStart=/usr/bin/rkt image gc --grace-period=0s
-
-    - name: rkt-image-gc.timer
-      enable: true
-      contents: |
-        [Unit]
-        Description=Periodic Garbage Collection for rkt image
-        [Timer]
-        OnActiveSec=5min
-        OnUnitActiveSec=1h
-        [Install]
-        WantedBy=default.target
+        WantedBy=local-fs.target
 
     - name: rkt-gc.service
       enable: true
@@ -700,6 +700,7 @@ systemd:
           contents: |
             [Service]
             ExecStart=
+            ExecStartPre=-/opt/rootfs/usr/bin/rkt image gc --grace-period=1h
             ExecStart=/opt/rootfs/usr/bin/rkt gc --grace-period=0s
 
     - name: rkt-gc.timer
@@ -1813,7 +1814,7 @@ storage:
           set -o pipefail
 
           # TODO consul-template or check if renew
-          test -f ${VAULT_CAPATH} || {
+          test -s ${VAULT_CAPATH} || {
           for ve in $(echo -n {{ .vault_ip_list }} | tr ',' '\n' | shuf)
           do
               REQ=https://${ve}:{{.vault_etcd_client_port}}/v2/keys/pki/vault/server.issuing_ca
@@ -1854,8 +1855,8 @@ storage:
           }
 
           # TODO consul-template or check if renew
-          test -f /etc/vault.d/${1}/${2}-pki.json && exit 0
-          test -f ${VAULT_CAPATH} || {
+          test -s /etc/vault.d/${1}/${2}-pki.json && exit 0
+          test -s ${VAULT_CAPATH} || {
             /opt/bin/vault-fetch-ca || exit $?
           }
 
@@ -1910,8 +1911,8 @@ storage:
           }
 
           # TODO consul-template or check if renew
-          test -f /etc/vault.d/${1}/${2}-secret.json && exit 0
-          test -f ${VAULT_CAPATH} || {
+          test -s /etc/vault.d/${1}/${2}-secret.json && exit 0
+          test -s ${VAULT_CAPATH} || {
             /opt/bin/vault-fetch-ca || exit $?
           }
 
@@ -1948,6 +1949,18 @@ storage:
           #!/bin/bash
           PATH=/opt/bin:${PATH}
           exec kubectl create -f /etc/kubernetes/manifests
+
+    - path: /etc/profile.d/alias.sh
+      mode: 0755
+      filesystem: root
+      contents:
+        inline: |
+          if [[ $- != *i* ]] ; then
+                   return
+          fi
+          alias ls='ls --color=auto'
+          alias la='ls -la'
+          alias ll='ls -ll'
 
 networkd:
   units:

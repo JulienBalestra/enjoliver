@@ -134,8 +134,8 @@ class EnjoliverConfig(object):
         # enjoliver.local/hyperkube:latest
         self.lldp_image_url = self.config_override("lldp_image_url", "enjoliver.local/lldp:latest")
         self.hyperkube_image_url = self.config_override("hyperkube_image_url", "enjoliver.local/hyperkube:1.6.3")
-        self.rkt_image_url = self.config_override("rkt_image_url", "enjoliver.local/rkt:1.25.0")
-        self.etcd_image_url = self.config_override("etcd_image_url", "enjoliver.local/etcd:3.1.6")
+        self.rkt_image_url = self.config_override("rkt_image_url", "enjoliver.local/rkt:1.26.0")
+        self.etcd_image_url = self.config_override("etcd_image_url", "enjoliver.local/etcd:3.2.0")
         self.fleet_image_url = self.config_override("fleet_image_url", "enjoliver.local/fleet:1.0.0")
         self.cni_image_url = self.config_override("cni_image_url", "enjoliver.local/cni:0.5.2")
         self.vault_image_url = self.config_override("vault_image_url", 'enjoliver.local/vault:0.7.0')
@@ -180,6 +180,7 @@ class EnjoliverConfig(object):
         self.fallbackntp = self.config_override("fallbackntp", ["0.pool.ntp.org" "1.pool.ntp.org" "0.fr.pool.ntp.org"])
 
         self.vault_polling_sec = self.config_override("vault_polling_sec", 30)
+        self.lifecycle_update_polling_sec = self.config_override("lifecycle_update_polling_sec", 30)
 
         if self.logging_level.lower() == "debug":
             print("configs file: %s for %s" % (yaml_full_path, importer))
