@@ -133,8 +133,8 @@ class EnjoliverConfig(object):
         # Use a real registry in production like:
         # enjoliver.local/hyperkube:latest
         self.lldp_image_url = self.config_override("lldp_image_url", "enjoliver.local/lldp:latest")
-        self.hyperkube_image_url = self.config_override("hyperkube_image_url", "enjoliver.local/hyperkube:1.6.3")
-        self.rkt_image_url = self.config_override("rkt_image_url", "enjoliver.local/rkt:1.26.0")
+        self.hyperkube_image_url = self.config_override("hyperkube_image_url", "enjoliver.local/hyperkube:1.6.6")
+        self.rkt_image_url = self.config_override("rkt_image_url", "enjoliver.local/rkt:1.27.0")
         self.etcd_image_url = self.config_override("etcd_image_url", "enjoliver.local/etcd:3.2.0")
         self.fleet_image_url = self.config_override("fleet_image_url", "enjoliver.local/fleet:1.0.0")
         self.cni_image_url = self.config_override("cni_image_url", "enjoliver.local/cni:0.5.2")
