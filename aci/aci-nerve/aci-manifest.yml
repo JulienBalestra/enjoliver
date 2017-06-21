@@ -1,0 +1,9 @@
+name: enjoliver.local/nerve:18
+
+builder:
+  dependencies:
+    - enjoliver.local/debian:latest
+
+aci:
+  dependencies:
+    - enjoliver.local/debian:latest
