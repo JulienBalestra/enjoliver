@@ -130,7 +130,7 @@ def healthz(application, smart: smartdb.SmartClient, request):
 
     try:
         with smart.new_session(snap=True) as session:
-            crud.health_check_purge(session, time.time() - 30)
+            crud.health_check_purge(session, int(round(time.time() - 30)))
     except Exception as e:
         LOGGER.debug("health check purge: %s" % e)
 

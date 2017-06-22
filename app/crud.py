@@ -149,8 +149,9 @@ def health_check(session, ts: int, who: str):
 
 
 def health_check_purge(session, ts: int):
-    session.query(Healthz).filter(Healthz.ts < ts).delete()
-    session.commit()
+    if ts % 10 == 0:
+        session.query(Healthz).filter(Healthz.ts < ts).delete()
+        session.commit()
 
 
 class InjectDiscovery(object):
