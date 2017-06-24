@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="static/css/index.css">
     <link rel="stylesheet" href="static/node_modules/bootstrap/dist/css/bootstrap-theme.min.css">
     <link rel="stylesheet" href="static/node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
     <script src="static/node_modules/jquery/dist/jquery.min.js"></script>
     <script src="static/node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
     <script src="static/node_modules/vue/dist/vue.js"></script>
@@ -51,7 +52,7 @@
                 @click="sortBy(key)"
                 :class="{ active: sortKey == key }">
                 {{ key | capitalize }}
-                <span class="arrow" :class="sortOrders[key] > 0 ? 'asc' : 'dsc'"></span>
+                <i class="fa" :class="sortOrders[key] > 0 ? 'fa-arrow-up' : 'fa-arrow-down'"></i>
             </th>
         </tr>
         </thead>
