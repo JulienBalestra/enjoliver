@@ -669,15 +669,15 @@ class FetchView(object):
         query = self.session.query(MachineInterface).filter(MachineInterface.as_boot == True)
         data = {
             "gridColumns": [
-                "Roles",
-                "FQDN",
-                "CIDR",
                 "MAC",
-                "Install",
-                "LastReport",
-                "LastUpdate",
+                "CIDR",
+                "FQDN",
+                "Roles",
+                "Installation",
+                "Update Strategy",
                 "UpToDate",
-                "AutoUpdate",
+                "Last Report",
+                "Last Change",
             ],
             "gridData": []
         }
