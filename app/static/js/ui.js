@@ -15,6 +15,16 @@ Vue.component('machine-grid', {
             sortOrders: sortOrders
         }
     },
+    watch: {
+        columns: function () {
+            var vm = this;
+            this.columns.forEach(function (key) {
+                if (!(key in vm.sortOrders)) {
+                    vm.$set(vm.sortOrders, key, 1);
+                }
+            });
+        }
+    },
     computed: {
         filteredData: function () {
             var sortKey = this.sortKey;
