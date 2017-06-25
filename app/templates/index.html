@@ -6,7 +6,7 @@
     <link rel="stylesheet" href="static/css/index.css">
     <link rel="stylesheet" href="static/node_modules/bootstrap/dist/css/bootstrap-theme.min.css">
     <link rel="stylesheet" href="static/node_modules/bootstrap/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="static/node_modules/font-awesome/css/font-awesome.min.css">
     <script src="static/node_modules/jquery/dist/jquery.min.js"></script>
     <script src="static/node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
     <script src="static/node_modules/vue/dist/vue.js"></script>
@@ -32,7 +32,8 @@
         <div class="col-md-12">
             <div id="machine">
                 <form id="search" style="margin-bottom: 10px">
-                    Search <input name="query" v-model="searchQuery">
+                    <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                    <input name="query" v-model="searchQuery">
                 </form>
                 <machine-grid
                         :data="gridData"
