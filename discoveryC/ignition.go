@@ -6,14 +6,13 @@ import (
 	"strings"
 )
 
-func GetIgnitionJournal() []string {
-	content, e := ioutil.ReadFile(CONF.IgnitionFile)
+func (c *Config) GetIgnitionJournal() (filterLines []string, err error) {
+	content, e := ioutil.ReadFile(c.IgnitionFile)
 	var lines []string
-	var filter_lines []string
 
 	if e != nil {
 		log.Print(e)
-		return lines
+		return lines, err
 	}
 	lines = strings.Split(string(content), "\n")
 
@@ -22,7 +21,7 @@ func GetIgnitionJournal() []string {
 			// skip == true: useless to iterate over an empty string
 			continue
 		}
-		filter_lines = append(filter_lines, line)
+		filterLines = append(filterLines, line)
 	}
-	return filter_lines
+	return filterLines, nil
 }

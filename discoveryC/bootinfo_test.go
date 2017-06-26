@@ -11,14 +11,14 @@ func Test0ParseCommandLine(t *testing.T) {
 	var discoAddress = "http://127.0.0.1:5000"
 
 	os.Setenv("DISCOVERY_ADDRESS", discoAddress)
-	CONF, err = CreateConfig()
+	c, err := CreateConfig()
 	if err != nil {
 		t.Fail()
 	}
-	CONF.ProcCmdline = "tests" + CONF.ProcCmdline + "0"
-	CONF.ProcBootId = "tests" + CONF.ProcBootId
+	c.ProcCmdline = "tests" + c.ProcCmdline + "0"
+	c.ProcBootId = "tests" + c.ProcBootId
 
-	bi, err := ParseCommandLine()
+	bi, err := c.ParseCommandLine()
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -39,13 +39,13 @@ func Test1ParseCommandLine(t *testing.T) {
 	var discoAddress = "http://127.0.0.1:5000"
 
 	os.Setenv("DISCOVERY_ADDRESS", discoAddress)
-	CONF, err = CreateConfig()
+	c, err := CreateConfig()
 	if err != nil {
 		t.Fail()
 	}
-	CONF.ProcCmdline = "tests" + CONF.ProcCmdline + "1"
+	c.ProcCmdline = "tests" + c.ProcCmdline + "1"
 
-	bi, err := ParseCommandLine()
+	bi, err := c.ParseCommandLine()
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -63,13 +63,13 @@ func Test2ParseCommandLine(t *testing.T) {
 	var discoAddress = "http://127.0.0.1:5000"
 
 	os.Setenv("DISCOVERY_ADDRESS", discoAddress)
-	CONF, err = CreateConfig()
+	c, err := CreateConfig()
 	if err != nil {
 		t.Fail()
 	}
-	CONF.ProcCmdline = "tests" + CONF.ProcCmdline + "2"
+	c.ProcCmdline = "tests" + c.ProcCmdline + "2"
 
-	bi, err := ParseCommandLine()
+	bi, err := c.ParseCommandLine()
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -87,13 +87,13 @@ func Test3ParseMetadata(t *testing.T) {
 	var discoAddress = "http://127.0.0.1:5000"
 
 	os.Setenv("DISCOVERY_ADDRESS", discoAddress)
-	CONF, err = CreateConfig()
+	c, err := CreateConfig()
 	if err != nil {
 		t.Fail()
 	}
-	CONF.EnjoliverMetadata = "tests" + CONF.EnjoliverMetadata + "0"
+	c.EnjoliverMetadata = "tests" + c.EnjoliverMetadata + "0"
 
-	bi, err := ParseMetadata()
+	bi, err := c.ParseMetadata()
 	if bi.Mac != "52:54:00:74:17:9d" {
 		t.Error(bi.Mac)
 	}

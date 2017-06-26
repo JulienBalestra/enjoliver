@@ -16,12 +16,12 @@ type Config struct {
 	IgnitionFile      string
 }
 
-func CreateConfig() (Config, error) {
+func CreateConfig() (*Config, error) {
 	var c Config
 
 	c.DiscoveryAddress = os.Getenv("DISCOVERY_ADDRESS")
 	if c.DiscoveryAddress == "" {
-		return c, errors.New("Environment DISCOVERY_ADDRESS is nil")
+		return nil, errors.New("Environment DISCOVERY_ADDRESS is nil")
 	}
 
 	LLDPFileDefault := "/run/lldp/lldp.xml"
@@ -58,5 +58,5 @@ func CreateConfig() (Config, error) {
 		log.Printf("Environment PROC_BOOT_ID is nil setting default: %s", BootIdDefault)
 		c.ProcBootId = BootIdDefault
 	}
-	return c, nil
+	return &c, nil
 }

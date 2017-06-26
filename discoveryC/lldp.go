@@ -41,10 +41,10 @@ func extractXMLLinkLayerDiscovery(b []byte) XLLDP {
 	return l
 }
 
-func ParseLLDPFile() LLDPData {
+func (c *Config) ParseLLDPFile() LLDPData {
 	var lldp LLDPData
 
-	b, err := ioutil.ReadFile(CONF.LLDPFile)
+	b, err := ioutil.ReadFile(c.LLDPFile)
 
 	if err != nil {
 		// no file no LLDP

@@ -1,5 +1,6 @@
 package main
 
+
 type DiscoveryData struct {
 	Interfaces      []Iface  `json:"interfaces"`
 	BootInfo        BootInfo `json:"boot-info"`
@@ -7,16 +8,19 @@ type DiscoveryData struct {
 	IgnitionJournal []string `json:"ignition-journal"`
 }
 
-func CollectData() DiscoveryData {
-	var err error
-
-	data := DiscoveryData{}
-	data.Interfaces = LocalIfaces()
-	data.BootInfo, err = ParseCommandLine()
+func (c *Config) CollectData() (data DiscoveryData, err error) {
+	data.Interfaces, err = LocalIfaces()
+	data.BootInfo, err = c.ParseCommandLine()
 	if err != nil {
-		data.BootInfo, _ = ParseMetadata()
+		data.BootInfo, err = c.ParseMetadata()
+		if err != nil {
+			return data, err
+		}
 	}
-	data.LLDPInfo = ParseLLDPFile()
-	data.IgnitionJournal = GetIgnitionJournal()
-	return data
+	data.LLDPInfo = c.ParseLLDPFile()
+	data.IgnitionJournal, err = c.GetIgnitionJournal()
+	if err != nil {
+		return data, err
+	}
+	return data, nil
 }

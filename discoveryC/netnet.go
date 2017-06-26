@@ -18,6 +18,8 @@ type Iface struct {
 	Fqdn    []string `json:"fqdn"`
 }
 
+const externalRoute  = "8.8.8.8"
+
 func IsCIDRv4(cidr string) bool {
 	i, _, err := net.ParseCIDR(cidr)
 	if err != nil {
@@ -37,13 +39,14 @@ func GetIPv4Netmask(cidr string) (ip string, mask int) {
 	return
 }
 
-func LocalIfaces() []Iface {
-	var ifaces []Iface
+func LocalIfaces() (ifaces []Iface, err error) {
 	var iface Iface
 	var addrs []net.Addr
-	var err error
 
-	interfaces, _ := net.Interfaces()
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return ifaces, err
+	}
 
 	for _, i := range interfaces {
 
@@ -58,8 +61,10 @@ func LocalIfaces() []Iface {
 				iface.CIDRv4 = a.String()
 				iface.IPv4, iface.Netmask =
 					GetIPv4Netmask(a.String())
-				// TODO Fix this later
-				route, _ := netlink.RouteGet(net.ParseIP("8.8.8.8"))
+				route, err := netlink.RouteGet(net.ParseIP(externalRoute))
+				if err != nil {
+					log.Printf("fail to get route for %s", externalRoute)
+				}
 				iface.Gateway = route[0].Gw.String()
 				iface.Fqdn, err = net.LookupAddr(iface.IPv4)
 				if err != nil {
@@ -69,5 +74,5 @@ func LocalIfaces() []Iface {
 		}
 		ifaces = append(ifaces, iface)
 	}
-	return ifaces
+	return ifaces, nil
 }

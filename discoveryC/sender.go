@@ -7,10 +7,13 @@ import (
 	"net/http"
 )
 
-func PostToDiscovery(i interface{}) (err error) {
-	b, _ := json.Marshal(&i)
+func (c *Config) PostToDiscovery(i interface{}) (err error) {
+	b, err := json.Marshal(&i)
+	if err != nil {
+		return err
+	}
 	data := bytes.NewBuffer(b)
 	log.Println(data)
-	_, err = http.Post(CONF.DiscoveryAddress, "application/json", data)
-	return
+	_, err = http.Post(c.DiscoveryAddress, "application/json", data)
+	return err
 }

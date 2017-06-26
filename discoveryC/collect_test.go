@@ -5,10 +5,17 @@ import (
 )
 
 func TestCollectData(t *testing.T) {
-	CONF.IgnitionFile = "tests/run/ignition.journal0"
-	CONF.ProcCmdline = "tests/proc/cmdline0"
-	CONF.LLDPFile = "tests/run/lldp/output2.xml"
-	data := CollectData()
+	c, err := CreateConfig()
+	if err != nil {
+		t.Error(err)
+	}
+	c.IgnitionFile = "tests/run/ignition.journal0"
+	c.ProcCmdline = "tests/proc/cmdline0"
+	c.LLDPFile = "tests/run/lldp/output2.xml"
+	data, err := c.CollectData()
+	if err != nil {
+		t.Error(err)
+	}
 	if len(data.Interfaces) < 1 {
 		t.Error("len(data.Interfaces) < 1")
 	}

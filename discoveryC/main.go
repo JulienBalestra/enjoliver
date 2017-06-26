@@ -4,19 +4,23 @@ import (
 	"log"
 )
 
-var CONF Config
 
 func main() {
-	var err error
-	CONF, err = CreateConfig()
+	c, err := CreateConfig()
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
-	data := CollectData()
-	err = PostToDiscovery(data)
+
+	data, err := c.CollectData()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	err = c.PostToDiscovery(data)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return
 }

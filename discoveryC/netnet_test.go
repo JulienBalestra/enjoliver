@@ -25,7 +25,10 @@ func TestGetIPv4Netmask(t *testing.T) {
 
 func TestLocalIfaces(t *testing.T) {
 	var ok bool = false
-	ips := LocalIfaces()
+	ips, err := LocalIfaces()
+	if err != nil {
+		t.Error(err)
+	}
 	for _, i := range ips {
 		if i.CIDRv4 == "127.0.0.1/8" {
 			ok = true
