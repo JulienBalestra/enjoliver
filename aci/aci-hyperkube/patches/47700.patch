@@ -1,18 +1,18 @@
-From 34751794e4a26ede5805d6c3506c4b1d73506df3 Mon Sep 17 00:00:00 2001
+From 5c2773cfd39003b458817a6bb6257f4f04ba91f1 Mon Sep 17 00:00:00 2001
 From: JulienBalestra <julien.balestra@gmail.com>
 Date: Sat, 17 Jun 2017 12:43:15 +0200
 Subject: [PATCH] Provide a way to setup the limit NO files for rkt Pods
 
 ---
- pkg/kubelet/rkt/rkt.go      |  25 +++++++++++
- pkg/kubelet/rkt/rkt_test.go | 103 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 128 insertions(+)
+ pkg/kubelet/rkt/rkt.go      | 24 +++++++++++++++++++++
+ pkg/kubelet/rkt/rkt_test.go | 51 +++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 75 insertions(+)
 
 diff --git a/pkg/kubelet/rkt/rkt.go b/pkg/kubelet/rkt/rkt.go
-index 2d9817f..ea0ac19 100644
+index d16c92d..35f3fc0 100644
 --- a/pkg/kubelet/rkt/rkt.go
 +++ b/pkg/kubelet/rkt/rkt.go
-@@ -93,6 +93,8 @@ const (
+@@ -95,6 +95,8 @@ const (
  	k8sRktRestartCountAnno           = "rkt.kubernetes.io/restart-count"
  	k8sRktTerminationMessagePathAnno = "rkt.kubernetes.io/termination-message-path"
  
@@ -21,36 +21,35 @@ index 2d9817f..ea0ac19 100644
  	// TODO(euank): This has significant security concerns as a stage1 image is
  	// effectively root.
  	// Furthermore, this (using an annotation) is a hack to pass an extra
-@@ -1128,6 +1130,24 @@ func constructSyslogIdentifier(generateName string, podName string) string {
+@@ -1148,6 +1150,23 @@ func constructSyslogIdentifier(generateName string, podName string) string {
  	return podName
  }
  
 +// Setup additional systemd field specified in the Pod Annotation
-+func setupSystemdCustomFields(annotations map[string]string, unitOptionArray *[]*unit.UnitOption) error {
-+
++func setupSystemdCustomFields(annotations map[string]string, unitOptionArray []*unit.UnitOption) ([]*unit.UnitOption, error) {
 +	// LimitNOFILE
 +	if strSize := annotations[k8sRktLimitNoFileAnno]; strSize != "" {
 +		size, err := strconv.Atoi(strSize)
 +		if err != nil {
-+			return err
++			return unitOptionArray, err
 +		}
 +		if size < 1 {
-+			return fmt.Errorf("invalid value for %s: %s", k8sRktLimitNoFileAnno, strSize)
++			return unitOptionArray, fmt.Errorf("invalid value for %s: %s", k8sRktLimitNoFileAnno, strSize)
 +		}
-+		*unitOptionArray = append(*unitOptionArray, newUnitOption("Service", "LimitNOFILE", strSize))
++		unitOptionArray = append(unitOptionArray, newUnitOption("Service", "LimitNOFILE", strSize))
 +	}
 +
-+	return nil
++	return unitOptionArray, nil
 +}
 +
  // preparePod will:
  //
  // 1. Invoke 'rkt prepare' to prepare the pod, and get the rkt pod uuid.
-@@ -1214,6 +1234,11 @@ func (r *Runtime) preparePod(pod *v1.Pod, podIP string, pullSecrets []v1.Secret,
+@@ -1235,6 +1254,11 @@ func (r *Runtime) preparePod(pod *v1.Pod, podIP string, pullSecrets []v1.Secret,
  		units = append(units, newUnitOption("Service", "SELinuxContext", selinuxContext))
  	}
  
-+	err = setupSystemdCustomFields(pod.Annotations, &units)
++	units, err = setupSystemdCustomFields(pod.Annotations, units)
 +	if err != nil {
 +		glog.Warningf("fail to add custom systemd fields provided by pod Annotations: %q", err)
 +	}
@@ -59,7 +58,7 @@ index 2d9817f..ea0ac19 100644
  	glog.V(4).Infof("rkt: Creating service file %q for pod %q", serviceName, format.Pod(pod))
  	serviceFile, err := r.os.Create(serviceFilePath(serviceName))
 diff --git a/pkg/kubelet/rkt/rkt_test.go b/pkg/kubelet/rkt/rkt_test.go
-index d38a48c..eded9ed 100644
+index 4614052..aadd724 100644
 --- a/pkg/kubelet/rkt/rkt_test.go
 +++ b/pkg/kubelet/rkt/rkt_test.go
 @@ -28,6 +28,7 @@ import (
@@ -70,63 +69,12 @@ index d38a48c..eded9ed 100644
  	rktapi "github.com/coreos/rkt/api/v1alpha"
  	"github.com/golang/mock/gomock"
  	"github.com/stretchr/testify/assert"
-@@ -1996,3 +1997,105 @@ func TestConstructSyslogIdentifier(t *testing.T) {
- 		assert.Equal(t, testCase.identifier, identifier, fmt.Sprintf("Test case #%d", i))
+@@ -2075,3 +2076,53 @@ func TestGetPodSystemdServiceFiles(t *testing.T) {
+ 		}
  	}
  }
 +
-+func TestGetPodSystemdServiceFiles(t *testing.T) {
-+	fs := kubetesting.NewFakeOS()
-+	r := &Runtime{os: fs}
-+
-+	testCases := []struct {
-+		serviceFilesOnDisk []string
-+		expected           []string
-+	}{
-+		{
-+			[]string{"one.service", "two.service", "k8s_513ce947-8f6e-4d27-8c03-99f97b78d680.service", "k8s_184482df-8630-4d41-b84f-302684871758.service", "k8s_f4a244d8-5ec2-4f59-b7dd-c9e130d6e7a3.service", "k8s_f5aad446-5598-488f-93a4-5a27e03e7fcb.service"},
-+			[]string{"k8s_513ce947-8f6e-4d27-8c03-99f97b78d680.service", "k8s_184482df-8630-4d41-b84f-302684871758.service", "k8s_f4a244d8-5ec2-4f59-b7dd-c9e130d6e7a3.service", "k8s_f5aad446-5598-488f-93a4-5a27e03e7fcb.service"},
-+		},
-+		{
-+			[]string{"one.service", "two.service"},
-+			[]string{},
-+		},
-+		{
-+			[]string{"one.service", "k8s_513ce947-8f6e-4d27-8c03-99f97b78d680.service"},
-+			[]string{"k8s_513ce947-8f6e-4d27-8c03-99f97b78d680.service"},
-+		},
-+	}
-+	for i, tt := range testCases {
-+		ctrl := gomock.NewController(t)
-+
-+		fs.ReadDirFn = func(dirname string) ([]os.FileInfo, error) {
-+			serviceFileNames := tt.serviceFilesOnDisk
-+			var fileInfos []os.FileInfo
-+
-+			for _, name := range serviceFileNames {
-+				mockFI := containertesting.NewMockFileInfo(ctrl)
-+				// we need to specify two calls
-+				// first: get all systemd units
-+				// second: filter only the files with a k8s_ prefix
-+				mockFI.EXPECT().Name().Return(name)
-+				mockFI.EXPECT().Name().Return(name)
-+				fileInfos = append(fileInfos, mockFI)
-+			}
-+			return fileInfos, nil
-+		}
-+		serviceFiles, err := r.getPodSystemdServiceFiles()
-+		if err != nil {
-+			t.Errorf("%v", err)
-+		}
-+		for _, f := range serviceFiles {
-+			assert.Contains(t, tt.expected, f.Name(), fmt.Sprintf("Test case #%d", i))
-+
-+		}
-+	}
-+}
-+
 +func TestSetupSystemdCustomFields(t *testing.T) {
-+
 +	testCases := []struct {
 +		unitOpts       []*unit.UnitOption
 +		podAnnotations map[string]string
@@ -164,18 +112,17 @@ index d38a48c..eded9ed 100644
 +
 +	for i, tt := range testCases {
 +		raiseErr := false
-+		err := setupSystemdCustomFields(tt.podAnnotations, &tt.unitOpts)
++		newUnitsOpts, err := setupSystemdCustomFields(tt.podAnnotations, tt.unitOpts)
 +		if err != nil {
 +			raiseErr = true
 +		}
 +		assert.Equal(t, tt.raiseErr, raiseErr, fmt.Sprintf("Test case #%d", i))
-+		for _, opt := range tt.unitOpts {
++		for _, opt := range newUnitsOpts {
 +			assert.Equal(t, "Service", opt.Section, fmt.Sprintf("Test case #%d", i))
 +			assert.Contains(t, tt.expectedValues, opt.Value, fmt.Sprintf("Test case #%d", i))
 +		}
 +	}
 +}
-+>>>>>>> f12abc6... Provide a way to setup the limit NO files for rkt Pods
 -- 
 2.7.4
 
