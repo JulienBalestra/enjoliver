@@ -14,7 +14,10 @@ func TestIsIPv4(t *testing.T) {
 }
 
 func TestGetIPv4Netmask(t *testing.T) {
-	ip, mask := GetIPv4Netmask("192.168.1.1/24")
+	ip, mask, err := GetIPv4Netmask("192.168.1.1/24")
+	if err != nil {
+		t.Fail()
+	}
 	if ip != "192.168.1.1" {
 		t.Fail()
 	}

@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"io/ioutil"
-	"log"
+	"github.com/golang/glog"
 	"strings"
 	"fmt"
 )
@@ -23,11 +23,12 @@ const (
 
 // in the /proc/cmdline parse the line to get the coreos config url
 func getCoreosConfigUrl(b []byte) (string, error) {
-	str := string(b)
-	fields := strings.Fields(str)
-	for _, word := range fields {
+	cmdline := string(b)
+	glog.V(4).Infof("get %s in %q", coreosConfigUrl, cmdline)
+	for i, word := range strings.Fields(cmdline) {
 		if strings.Contains(word, coreosConfigUrl) {
 			line := strings.Split(word, coreosConfigUrl)[1]
+			glog.V(4).Infof("found %q at word %d", coreosConfigUrl, i)
 			return line, nil
 		}
 	}
@@ -38,12 +39,13 @@ func getCoreosConfigUrl(b []byte) (string, error) {
 func (c *Config) getRandomId() (string, error) {
 	b, err := ioutil.ReadFile(c.ProcBootId)
 	if err != nil {
-		log.Println(err)
+		glog.Errorf("fail to open %s: %q", c.ProcBootId, err)
 		return "", err
 	}
-	str := string(b)
-	str = strings.Trim(str, "\n")
-	return str, nil
+	randomId := string(b)
+	randomId = strings.Trim(randomId, "\n")
+	glog.V(4).Infof("RandomId: %q", randomId)
+	return randomId, nil
 
 }
 
@@ -56,30 +58,32 @@ func (c *Config) getBootInfoFromUrl(url string) (bootInfo BootInfo, err error) {
 	for _, arg := range args {
 		if strings.Contains(arg, uuidField) {
 			bootInfo.Uuid = strings.Split(arg, uuidField)[1]
+			glog.V(4).Infof("uuid: %q", bootInfo.Uuid)
 		}
 		if strings.Contains(arg, macField) {
 			bootInfo.Mac = strings.Split(arg, macField)[1]
 			bootInfo.Mac = strings.Replace(bootInfo.Mac, "-", ":", -1)
+			glog.V(4).Infof("mac: %q", bootInfo.Mac)
 		}
 	}
 	bootInfo.RandomId, err = c.getRandomId()
 	if err != nil {
+		glog.Errorf("fail to get RandomId: %s", err)
 		return bootInfo, err
 	}
 	return bootInfo, nil
 }
 
-func (c *Config) ParseCommandLine() (BootInfo, error) {
-	var bi BootInfo
+func (c *Config) ParseCommandLine() (bootInfo BootInfo, err error) {
 	b, err := ioutil.ReadFile(c.ProcCmdline)
 	if err != nil {
-		log.Println(err)
-		return bi, err
+		glog.Errorf("fail to read %s", err)
+		return bootInfo, err
 	}
 	url, err := getCoreosConfigUrl(b)
 	if err != nil {
-		log.Println(err)
-		return bi, err
+		glog.Errorf("fail to get CoreOS Config Url %s", err)
+		return bootInfo, err
 	}
 	return c.getBootInfoFromUrl(url)
 }
@@ -99,23 +103,30 @@ func (c *Config) getBootInfoFromMetadata(b []byte) (bootInfo BootInfo, err error
 				kv := strings.Split(selector, "=")
 				if kv[0] == "uuid" {
 					bootInfo.Uuid = kv[1]
+					glog.V(4).Infof("Metadata uuid: %s", bootInfo.Uuid)
 				} else if kv[0] == "mac" {
 					bootInfo.Mac = strings.Replace(kv[1], "-", ":", -1)
+					glog.V(4).Infof("Metadata mac: %s", bootInfo.Mac)
 				}
 			}
 			bootInfo.RandomId, err = c.getRandomId()
 			if err != nil {
+				glog.Errorf("fail to get randomId: %s", err)
 				return bootInfo, err
 			}
 			return bootInfo, nil
 		}
 	}
-	return bootInfo, errors.New("No REQUEST_RAW_QUERY")
+	msg := "Cannot find REQUEST_RAW_QUERY in metadata file"
+	glog.Errorf(msg)
+	return bootInfo, fmt.Errorf(msg)
 }
 
 func (c *Config) ParseMetadata() (bootInfo BootInfo, err error) {
+	glog.V(4).Infof("Finding BootInfo from metadata file: %q", c.EnjoliverMetadata)
 	b, err := ioutil.ReadFile(c.EnjoliverMetadata)
 	if err != nil {
+		glog.Errorf("fail to read %s: %s", c.EnjoliverMetadata, err)
 		return bootInfo, err
 	}
 	return c.getBootInfoFromMetadata(b)

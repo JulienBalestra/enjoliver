@@ -2,16 +2,16 @@ package main
 
 import (
 	"io/ioutil"
-	"log"
 	"strings"
+	"github.com/golang/glog"
 )
 
 func (c *Config) GetIgnitionJournal() (filterLines []string, err error) {
-	content, e := ioutil.ReadFile(c.IgnitionFile)
 	var lines []string
 
+	content, e := ioutil.ReadFile(c.IgnitionFile)
 	if e != nil {
-		log.Print(e)
+		glog.Errorf("fail to read %s: %s", c.IgnitionFile, err)
 		return lines, err
 	}
 	lines = strings.Split(string(content), "\n")
@@ -23,5 +23,6 @@ func (c *Config) GetIgnitionJournal() (filterLines []string, err error) {
 		}
 		filterLines = append(filterLines, line)
 	}
+	glog.V(4).Infof("ignition journal have %d lines", len(filterLines))
 	return filterLines, nil
 }

@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/xml"
 	"io/ioutil"
-	"log"
+	"github.com/golang/glog"
 )
 
 type LLDPData struct {
@@ -30,15 +30,15 @@ type XChassis struct {
 	Name string `xml:"name" json:"name"`
 }
 
-func extractXMLLinkLayerDiscovery(b []byte) XLLDP {
+func extractXMLLinkLayerDiscovery(b []byte) (XLLDP, error) {
 	var l XLLDP
 
-	e := xml.Unmarshal(b, &l)
-	if e != nil {
-		log.Println(e)
-		return l
+	err := xml.Unmarshal(b, &l)
+	if err != nil {
+		glog.Errorf("fail to unmarshal %s: %s", string(b), err)
+		return l, err
 	}
-	return l
+	return l, nil
 }
 
 func (c *Config) ParseLLDPFile() LLDPData {
@@ -49,10 +49,14 @@ func (c *Config) ParseLLDPFile() LLDPData {
 	if err != nil {
 		// no file no LLDP
 		lldp.IsFile = false
-		log.Println(err)
+		glog.Warningf("fail to open LLDP file: ignoring", c.LLDPFile)
 		return lldp
 	}
 	lldp.IsFile = true
-	lldp.Data = extractXMLLinkLayerDiscovery(b)
+	lldp.Data, err = extractXMLLinkLayerDiscovery(b)
+	if err != nil {
+		glog.Warningf("fail to extract data from LLDP file %s: ignoring", c.LLDPFile)
+		lldp.IsFile = false
+	}
 	return lldp
 }
