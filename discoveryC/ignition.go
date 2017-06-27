@@ -1,9 +1,9 @@
 package main
 
 import (
+	"github.com/golang/glog"
 	"io/ioutil"
 	"strings"
-	"github.com/golang/glog"
 )
 
 func (c *Config) GetIgnitionJournal() (filterLines []string, err error) {
@@ -23,6 +23,6 @@ func (c *Config) GetIgnitionJournal() (filterLines []string, err error) {
 		}
 		filterLines = append(filterLines, line)
 	}
-	glog.V(4).Infof("ignition journal have %d lines", len(filterLines))
+	glog.V(2).Infof("ignition journal have %d lines", len(filterLines))
 	return filterLines, nil
 }

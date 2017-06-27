@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/xml"
-	"io/ioutil"
 	"github.com/golang/glog"
+	"io/ioutil"
 )
 
 type LLDPData struct {

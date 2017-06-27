@@ -1,14 +1,15 @@
 package main
 
 import (
-	"github.com/golang/glog"
 	"flag"
+	"github.com/golang/glog"
 )
 
-
 func main() {
-	glog.V(2).Infof("starting discovery Client")
 	flag.Parse()
+	flag.Lookup("alsologtostderr").Value.Set("true")
+
+	glog.V(2).Infof("starting discovery Client")
 
 	c, err := CreateConfig()
 	if err != nil {
@@ -26,5 +27,6 @@ func main() {
 	if err != nil {
 		glog.Errorf("fail to send data: %s", err)
 	}
+	glog.Flush()
 	return
 }

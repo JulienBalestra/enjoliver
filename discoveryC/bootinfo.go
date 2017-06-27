@@ -2,10 +2,10 @@ package main
 
 import (
 	"errors"
-	"io/ioutil"
-	"github.com/golang/glog"
-	"strings"
 	"fmt"
+	"github.com/golang/glog"
+	"io/ioutil"
+	"strings"
 )
 
 type BootInfo struct {
@@ -16,19 +16,19 @@ type BootInfo struct {
 
 const (
 	coreosConfigUrl = "coreos.config.url="
-	uuidField = "uuid="
-	macField = "mac="
+	uuidField       = "uuid="
+	macField        = "mac="
 	rawQueryPrefix  = "REQUEST_RAW_QUERY="
 )
 
 // in the /proc/cmdline parse the line to get the coreos config url
 func getCoreosConfigUrl(b []byte) (string, error) {
 	cmdline := string(b)
-	glog.V(4).Infof("get %s in %q", coreosConfigUrl, cmdline)
+	glog.V(2).Infof("get %s in %q", coreosConfigUrl, cmdline)
 	for i, word := range strings.Fields(cmdline) {
 		if strings.Contains(word, coreosConfigUrl) {
 			line := strings.Split(word, coreosConfigUrl)[1]
-			glog.V(4).Infof("found %q at word %d", coreosConfigUrl, i)
+			glog.V(2).Infof("found %q at word %d", coreosConfigUrl, i)
 			return line, nil
 		}
 	}
@@ -44,7 +44,7 @@ func (c *Config) getRandomId() (string, error) {
 	}
 	randomId := string(b)
 	randomId = strings.Trim(randomId, "\n")
-	glog.V(4).Infof("RandomId: %q", randomId)
+	glog.V(2).Infof("RandomId: %q", randomId)
 	return randomId, nil
 
 }
@@ -58,12 +58,12 @@ func (c *Config) getBootInfoFromUrl(url string) (bootInfo BootInfo, err error) {
 	for _, arg := range args {
 		if strings.Contains(arg, uuidField) {
 			bootInfo.Uuid = strings.Split(arg, uuidField)[1]
-			glog.V(4).Infof("uuid: %q", bootInfo.Uuid)
+			glog.V(2).Infof("uuid: %q", bootInfo.Uuid)
 		}
 		if strings.Contains(arg, macField) {
 			bootInfo.Mac = strings.Split(arg, macField)[1]
 			bootInfo.Mac = strings.Replace(bootInfo.Mac, "-", ":", -1)
-			glog.V(4).Infof("mac: %q", bootInfo.Mac)
+			glog.V(2).Infof("mac: %q", bootInfo.Mac)
 		}
 	}
 	bootInfo.RandomId, err = c.getRandomId()
@@ -103,10 +103,10 @@ func (c *Config) getBootInfoFromMetadata(b []byte) (bootInfo BootInfo, err error
 				kv := strings.Split(selector, "=")
 				if kv[0] == "uuid" {
 					bootInfo.Uuid = kv[1]
-					glog.V(4).Infof("Metadata uuid: %s", bootInfo.Uuid)
+					glog.V(2).Infof("Metadata uuid: %s", bootInfo.Uuid)
 				} else if kv[0] == "mac" {
 					bootInfo.Mac = strings.Replace(kv[1], "-", ":", -1)
-					glog.V(4).Infof("Metadata mac: %s", bootInfo.Mac)
+					glog.V(2).Infof("Metadata mac: %s", bootInfo.Mac)
 				}
 			}
 			bootInfo.RandomId, err = c.getRandomId()
@@ -123,7 +123,7 @@ func (c *Config) getBootInfoFromMetadata(b []byte) (bootInfo BootInfo, err error
 }
 
 func (c *Config) ParseMetadata() (bootInfo BootInfo, err error) {
-	glog.V(4).Infof("Finding BootInfo from metadata file: %q", c.EnjoliverMetadata)
+	glog.V(2).Infof("Finding BootInfo from metadata file: %q", c.EnjoliverMetadata)
 	b, err := ioutil.ReadFile(c.EnjoliverMetadata)
 	if err != nil {
 		glog.Errorf("fail to read %s: %s", c.EnjoliverMetadata, err)

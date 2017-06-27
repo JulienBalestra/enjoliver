@@ -3,11 +3,11 @@ package main
 import "github.com/golang/glog"
 
 type DiscoveryData struct {
-	Interfaces      []Iface  `json:"interfaces"`
-	Disks      []DiskProperties  `json:"disks"`
-	BootInfo        BootInfo `json:"boot-info"`
-	LLDPInfo        LLDPData `json:"lldp"`
-	IgnitionJournal []string `json:"ignition-journal"`
+	Interfaces      []Iface          `json:"interfaces"`
+	Disks           []DiskProperties `json:"disks"`
+	BootInfo        BootInfo         `json:"boot-info"`
+	LLDPInfo        LLDPData         `json:"lldp"`
+	IgnitionJournal []string         `json:"ignition-journal"`
 }
 
 func (c *Config) CollectData() (data DiscoveryData, err error) {

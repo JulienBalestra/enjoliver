@@ -1,9 +1,9 @@
 package main
 
 import (
-	"os"
-	"github.com/golang/glog"
 	"fmt"
+	"github.com/golang/glog"
+	"os"
 )
 
 type Config struct {

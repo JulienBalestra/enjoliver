@@ -1,11 +1,11 @@
 package main
 
 import (
+	"github.com/golang/glog"
 	"github.com/vishvananda/netlink"
 	"net"
 	"strconv"
 	"strings"
-	"github.com/golang/glog"
 )
 
 type Iface struct {
@@ -77,7 +77,7 @@ func LocalIfaces() (ifaces []Iface, err error) {
 			}
 		}
 		ifaces = append(ifaces, iface)
-		glog.V(4).Infof("adding interface %s in %d interfaces", iface.Name, len(ifaces))
+		glog.V(2).Infof("adding interface %s in %d interfaces", iface.Name, len(ifaces))
 	}
 	return ifaces, nil
 }

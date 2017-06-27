@@ -3,8 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"net/http"
 	"github.com/golang/glog"
+	"net/http"
 )
 
 func (c *Config) PostToDiscovery(i interface{}) (err error) {
@@ -14,7 +14,7 @@ func (c *Config) PostToDiscovery(i interface{}) (err error) {
 		return err
 	}
 	data := bytes.NewBuffer(b)
-	glog.V(4).Infof("Data to send: %q", data)
+	glog.V(2).Infof("Data to send: %q", data)
 	_, err = http.Post(c.DiscoveryAddress, "application/json", data)
 	if err != nil {
 		glog.Errorf("fail to send data to %s", c.DiscoveryAddress)
