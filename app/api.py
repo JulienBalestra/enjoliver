@@ -396,7 +396,7 @@ def discovery():
             type: dict
     """
     LOGGER.info("%s %s" % (request.method, request.url))
-    err = jsonify({u'boot-info': {}, u'lldp': {}, u'interfaces': []}), 406
+    err = jsonify({u'boot-info': {}, u'lldp': {}, u'interfaces': [], u"disks": []}), 406
     try:
         req = json.loads(request.get_data())
     except (KeyError, TypeError, ValueError):
@@ -489,7 +489,7 @@ def get_schedule_by_role(role):
     with SMART.new_session() as session:
         fetch = crud.FetchSchedule(session)
         multi = role.split("&")
-        data = fetch.get_roles(*multi)
+        data = fetch.get_machines_by_roles(*multi)
 
     return jsonify(data)
 

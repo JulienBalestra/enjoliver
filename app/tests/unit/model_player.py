@@ -1,6 +1,7 @@
 import datetime
-import time
 import unittest
+
+import time
 
 from app import configs
 from app import crud
@@ -227,6 +228,7 @@ class TestModel(unittest.TestCase):
                     u'interfaces': None
                 }, u'is_file': True
             },
+            'disks': [{'size-bytes': 21474836480, 'path': '/dev/sda'}],
             u'interfaces': [
                 {u'name': u'lo', u'netmask': 8, u'mac': u'', u'ipv4': u'127.0.0.1', u'cidrv4': u'127.0.0.1/8',
                  u'gateway': u'10.99.63.254'},
@@ -460,7 +462,7 @@ class TestModel(unittest.TestCase):
     def test_21(self):
         with self.smart.new_session() as session:
             f = crud.FetchSchedule(session)
-            r = f.get_role("etcd-member")
+            r = f.get_machines_by_role("etcd-member")
             self.assertEqual(4, len(r))
             for i in r:
                 self.assertTrue(i["as_boot"])
@@ -470,13 +472,13 @@ class TestModel(unittest.TestCase):
                 self.assertEqual(str, type(i["gateway"]))
                 self.assertEqual(str, type(i["name"]))
                 self.assertEqual(21, int(i["netmask"]))
-                self.assertEqual(str, type(i["role"]))
+                self.assertEqual(str, type(i["roles"]))
                 self.assertEqual(datetime.datetime, type(i["created_date"]))
 
     def test_22(self):
         with self.smart.new_session() as session:
             f = crud.FetchSchedule(session)
-            r = f.get_role("kubernetes-node")
+            r = f.get_machines_by_role("kubernetes-node")
         self.assertEqual(3, len(r))
         for i in r:
             self.assertTrue(i["as_boot"])
@@ -486,13 +488,20 @@ class TestModel(unittest.TestCase):
             self.assertEqual(str, type(i["gateway"]))
             self.assertEqual(str, type(i["name"]))
             self.assertEqual(21, int(i["netmask"]))
-            self.assertEqual(str, type(i["role"]))
+            self.assertEqual(str, type(i["roles"]))
             self.assertEqual(datetime.datetime, type(i["created_date"]))
 
-    def test_23(self):
+            with self.smart.new_session() as session:
+                fetch = crud.FetchSchedule(session)
+                self.assertEqual(["kubernetes-node"], fetch.get_roles_by_mac_selector(i["mac"]))
+                r = fetch.get_machines_by_roles(
+                    model.ScheduleRoles.etcd_member, model.ScheduleRoles.kubernetes_node)
+                self.assertEqual(1, len(r))
+
+    def test_23a(self):
         with self.smart.new_session() as session:
             f = crud.FetchSchedule(session)
-            r = f.get_role("kubernetes-control-plane")
+            r = f.get_machines_by_role("kubernetes-control-plane")
         self.assertEqual(1, len(r))
         for i in r:
             self.assertTrue(i["as_boot"])
@@ -502,7 +511,22 @@ class TestModel(unittest.TestCase):
             self.assertEqual(str, type(i["gateway"]))
             self.assertEqual(str, type(i["name"]))
             self.assertEqual(21, int(i["netmask"]))
-            self.assertEqual(str, type(i["role"]))
+            self.assertEqual(str, type(i["roles"]))
+            self.assertEqual(datetime.datetime, type(i["created_date"]))
+
+    def test_23b(self):
+        with self.smart.new_session() as session:
+            f = crud.FetchSchedule(session)
+            r = f.get_machines_by_roles("kubernetes-control-plane")
+        self.assertEqual(1, len(r))
+        for i in r:
+            self.assertTrue(i["as_boot"])
+            self.assertEqual(str, type(i["mac"]))
+            self.assertEqual(str, type(i["ipv4"]))
+            self.assertEqual(str, type(i["cidrv4"]))
+            self.assertEqual(str, type(i["gateway"]))
+            self.assertEqual(str, type(i["name"]))
+            self.assertEqual(21, int(i["netmask"]))
             self.assertEqual(datetime.datetime, type(i["created_date"]))
 
     def test_24(self):
@@ -545,8 +569,9 @@ class TestModel(unittest.TestCase):
         with self.smart.new_session() as session:
             fetch = crud.FetchSchedule(session)
             self.assertEqual(["kubernetes-control-plane", "etcd-member"], fetch.get_roles_by_mac_selector(mac))
-            self.assertEqual(2, len(fetch.get_roles(model.ScheduleRoles.etcd_member,
-                                                    model.ScheduleRoles.kubernetes_control_plane)))
+            r = fetch.get_machines_by_roles(
+                model.ScheduleRoles.etcd_member, model.ScheduleRoles.kubernetes_control_plane)
+            self.assertEqual(2, len(r))
 
     def test_28(self):
         with self.smart.new_session() as session:
