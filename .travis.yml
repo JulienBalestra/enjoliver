@@ -1,8 +1,7 @@
-language: python
+language: go
 
-python:
-  - "3.5"
-  - "3.6"
+go:
+  - 1.7.5
 
 os:
   - linux

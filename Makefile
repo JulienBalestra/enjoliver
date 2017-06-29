@@ -119,12 +119,12 @@ dev_setup:
 	su - $(MY_USER) -c "make -C $(CWD)/app/tests testing.id_rsa"
 	su - $(MY_USER) -c "make -C $(CWD) front"
 	su - $(MY_USER) -c "make -C $(CWD) pip"
-	make -C $(CWD) aci
 	su - $(MY_USER) -c "make -C $(CWD) assets"
 	su - $(MY_USER) -c "make -C $(CWD)/matchbox/assets/coreos"
 	su - $(MY_USER) -c "make -C $(CWD)/matchbox/assets/coreos serve"
 	su - $(MY_USER) -c "make -C $(CWD) validate"
 	su - $(MY_USER) -c "make -C $(CWD) config"
+	make -C $(CWD) aci
 	chown -R $(MY_USER): $(CWD)
 
 prod_setup:
