@@ -195,7 +195,23 @@ class ConfigSyncSchedules(object):
     def kubernetes_control_plane(self):
         return self.order_http_uri(self.kubernetes_control_plane_ip_list, EC.kubernetes_api_server_port)
 
-    def produce_matchbox_data(self, marker, i, m, automatic_name, update_extra_metadata=None):
+    @staticmethod
+    def compute_disks_size(disks: list):
+        total_size_gb = 0
+        if not disks:
+            return "inMemory"
+
+        for d in disks:
+            total_size_gb += d["size-bytes"] >> 30
+        ladder = list(EC.disks_ladder_gb.items())
+        ladder.sort(key=lambda x: x[1])
+        for k, v in ladder:
+            if total_size_gb < v:
+                return k
+
+        return ladder[-1][0]
+
+    def produce_matchbox_data(self, marker: str, i: int, m: dict, automatic_name: str, update_extra_metadata=None):
         fqdn = automatic_name
         try:
             if m["fqdn"]:
@@ -276,6 +292,7 @@ class ConfigSyncSchedules(object):
             "fallbackntp": " ".join(EC.fallbackntp),
             "vault_polling_sec": EC.vault_polling_sec,
             "lifecycle_update_polling_sec": EC.lifecycle_update_polling_sec,
+            "disk_profile": self.compute_disks_size(m["disks"]),
 
         }
         selector = {"mac": m["mac"]}

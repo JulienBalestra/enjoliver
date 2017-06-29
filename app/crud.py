@@ -10,6 +10,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import subqueryload, Session
 
 import logger
+import sync
 from model import ChassisPort, Chassis, MachineInterface, Machine, MachineDisk, \
     Healthz, Schedule, ScheduleRoles, LifecycleIgnition, LifecycleCoreosInstall, LifecycleRolling
 
@@ -696,18 +697,19 @@ class FetchView(object):
                 "MAC",
                 "CIDR",
                 "FQDN",
+                "DiskProfile",
                 "Roles",
                 "Installation",
-                "Update Strategy",
+                "UpdateStrategy",
                 "UpToDate",
-                "Last Report",
-                "Last Change",
+                "LastReport",
+                "LastChange",
             ],
             "gridData": []
         }
         for machine in self.session.query(Machine).outerjoin(
                 MachineInterface).outerjoin(LifecycleCoreosInstall).outerjoin(LifecycleIgnition).outerjoin(
-            Schedule).filter(MachineInterface.as_boot == True):
+            Schedule).outerjoin(MachineDisk).filter(MachineInterface.as_boot == True):
 
             coreos_install, ignition_updated_date, ignition_last_change = None, None, None
             ignition_up_to_date, lifecycle_rolling = None, None
@@ -725,16 +727,25 @@ class FetchView(object):
                 lifecycle_rolling = machine.lifecycle_rolling[0].strategy if machine.lifecycle_rolling[
                     0].enable else "Disable"
 
+            disks = []
+            if machine.disks:
+                for disk in machine.disks:
+                    disks.append({
+                        "path": disk.path,
+                        "size-bytes": disk.size
+                    })
             row = {
                 "Roles": ",".join([r.role for r in machine.schedules]),
                 "FQDN": machine.interfaces[0].fqdn,
                 "CIDR": machine.interfaces[0].cidrv4,
                 "MAC": machine.interfaces[0].mac,
-                "Install": coreos_install,
+                "Installation": coreos_install,
                 "LastReport": ignition_updated_date,
-                "LastUpdate": ignition_last_change,
+                "LastChange": ignition_last_change,
                 "UpToDate": ignition_up_to_date,
-                "AutoUpdate": lifecycle_rolling,
+                "UpdateStrategy": lifecycle_rolling,
+                "DiskProfile": sync.ConfigSyncSchedules.compute_disks_size(disks)
             }
+
             data["gridData"].append(row)
         return data

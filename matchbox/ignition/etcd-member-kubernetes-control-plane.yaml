@@ -1163,7 +1163,7 @@ storage:
       contents:
         inline: |
           etcd_servers = [ http://127.0.0.1:{{.fleet_etcd_client_port}},{{ .fleet_etcd_member_client_uri_list }} ]
-          metadata = "name={{.dns_attr.shortname}}"
+          metadata = "name={{.dns_attr.shortname}},diskProfile={{.disk_profile}}"
           etcd_cafile=/etc/vault.d/etcd-fleet/client.issuing_ca
           etcd_certfile=/etc/vault.d/etcd-fleet/client.certificate
           etcd_keyfile=/etc/vault.d/etcd-fleet/client.private_key

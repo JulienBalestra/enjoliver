@@ -182,6 +182,8 @@ class EnjoliverConfig(object):
         self.vault_polling_sec = self.config_override("vault_polling_sec", 30)
         self.lifecycle_update_polling_sec = self.config_override("lifecycle_update_polling_sec", 30)
 
+        self.disks_ladder_gb = self.config_override("disks_ladder_gb", {"S": 10, "M": 20, "L": 30})
+
         if self.logging_level.lower() == "debug":
             print("configs file: %s for %s" % (yaml_full_path, importer))
 
