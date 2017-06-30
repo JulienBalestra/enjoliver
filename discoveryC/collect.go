@@ -13,12 +13,6 @@ type DiscoveryData struct {
 func (c *Config) CollectData() (data DiscoveryData, err error) {
 	glog.V(2).Infof("starting collecting data")
 
-	data.Disks, err = GetDisks()
-	if err != nil {
-		glog.Errorf("fail to get storage: %s", err)
-		return data, err
-	}
-
 	data.Interfaces, err = LocalIfaces()
 	if err != nil {
 		glog.Errorf("fail to get interfaces: %s", err)
@@ -41,6 +35,12 @@ func (c *Config) CollectData() (data DiscoveryData, err error) {
 	data.IgnitionJournal, err = c.GetIgnitionJournal()
 	if err != nil {
 		glog.Errorf("fail to get ignition journal: %s", err)
+		return data, err
+	}
+
+	data.Disks, err = GetDisks()
+	if err != nil {
+		glog.Errorf("fail to get storage: %s", err)
 		return data, err
 	}
 
