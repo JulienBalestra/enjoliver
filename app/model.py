@@ -42,10 +42,16 @@ class Machine(BASE):
     id = Column(Integer, primary_key=True, autoincrement=True)
 
     uuid = Column(String(36), nullable=False)
-
-    interfaces = relationship("MachineInterface", lazy="joined")
     created_date = Column(DateTime, default=datetime.datetime.utcnow)
     updated_date = Column(DateTime, default=None)
+
+    interfaces = relationship("MachineInterface", lazy="joined")
+    disks = relationship("MachineDisk", lazy="joined")
+    schedules = relationship("Schedule", lazy="joined")
+
+    lifecycle_rolling = relationship("LifecycleRolling")
+    lifecycle_coreos_install = relationship("LifecycleCoreosInstall")
+    lifecycle_ignition = relationship("LifecycleIgnition")
 
     @validates('uuid')
     def validate_uuid_field(self, key, uuid):
@@ -74,6 +80,20 @@ class Healthz(BASE):
     host = Column(String, nullable=True)
 
 
+class MachineDisk(BASE):
+    """
+    The disk of each Machine
+    Common disk is /dev/sda
+    """
+    __tablename__ = 'machine-disk'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    path = Column(String, nullable=False)
+    size = Column(Integer, nullable=False)
+
+    machine_id = Column(Integer, ForeignKey('machine.id'))
+
+
 class MachineInterface(BASE):
     """
     The interface of each Machine
@@ -93,11 +113,6 @@ class MachineInterface(BASE):
 
     machine_id = Column(Integer, ForeignKey('machine.id'))
     chassis_port = relationship("ChassisPort")
-
-    schedule = relationship("Schedule", backref="interface")
-    lifecycle_rolling = relationship("LifecycleRolling", backref="interface")
-    lifecycle_coreos_install = relationship("LifecycleCoreosInstall", backref="interface")
-    lifecycle_ignition = relationship("LifecycleIgnition", backref="interface")
 
     @validates('mac')
     def validate_mac(self, key, mac):
@@ -182,7 +197,7 @@ class Schedule(BASE):
     id = Column(Integer, primary_key=True, autoincrement=True)
     created_date = Column(DateTime, default=datetime.datetime.utcnow)
 
-    machine_interface = Column(Integer, ForeignKey('machine-interface.id'), nullable=False)
+    machine_id = Column(Integer, ForeignKey('machine.id'))
 
     role = Column(String(len(max(ScheduleRoles.roles, key=len))), nullable=False)
 
@@ -203,7 +218,7 @@ class LifecycleIgnition(BASE):
     id = Column(Integer, primary_key=True, autoincrement=True)
     created_date = Column(DateTime, default=datetime.datetime.utcnow)
 
-    machine_interface = Column(Integer, ForeignKey('machine-interface.id'), nullable=False)
+    machine_id = Column(Integer, ForeignKey('machine.id'), nullable=False)
 
     updated_date = Column(DateTime, default=None)
     last_change_date = Column(DateTime, default=None)
@@ -219,7 +234,7 @@ class LifecycleCoreosInstall(BASE):
     id = Column(Integer, primary_key=True, autoincrement=True)
     created_date = Column(DateTime, default=datetime.datetime.utcnow)
 
-    machine_interface = Column(Integer, ForeignKey('machine-interface.id'), nullable=False)
+    machine_id = Column(Integer, ForeignKey('machine.id'), nullable=False)
 
     updated_date = Column(DateTime, default=datetime.datetime.utcnow)
     success = Column(Boolean)
@@ -236,7 +251,7 @@ class LifecycleRolling(BASE):
     id = Column(Integer, primary_key=True, autoincrement=True)
     created_date = Column(DateTime, default=datetime.datetime.utcnow)
 
-    machine_interface = Column(Integer, ForeignKey('machine-interface.id'), nullable=False)
+    machine_id = Column(Integer, ForeignKey('machine.id'), nullable=False)
     updated_date = Column(DateTime, default=None)
     enable = Column(Boolean, default=False)
     strategy = Column(String, default="kexec")

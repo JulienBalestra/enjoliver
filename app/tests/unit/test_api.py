@@ -113,7 +113,8 @@ class TestAPI(unittest.TestCase):
         result = self.app.post('/discovery', data=json.dumps(discovery_data),
                                content_type='application/json')
         self.assertEqual(result.status_code, 406)
-        self.assertEqual(json.loads(result.data.decode()), {u'boot-info': {}, u'interfaces': [], u'lldp': {}})
+        self.assertEqual(json.loads(result.data.decode()),
+                         {u'boot-info': {}, u'interfaces': [], u'lldp': {}, "disks": []})
 
     def test_discovery_02(self):
         for i in range(5):
@@ -247,8 +248,6 @@ class TestAPI(unittest.TestCase):
         r = self.app.get("/scheduler/available")
         l = json.loads(r.data.decode())
         self.assertEqual(1, len(l))
-        for m in l:
-            self.assertEqual([], m["roles"])
 
     def test_lifecycle_01(self):
         r = self.app.get("/lifecycle/coreos-install")

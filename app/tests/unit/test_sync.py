@@ -131,3 +131,31 @@ class TestConfigSyncSchedules(TestCase):
                 ignition_dict={"etcd-member": "no-here"},
                 extra_selector_dict=None,
             )
+
+    def test_06(self):
+        sync.EC.disks_ladder_gb = {"S": 10, "M": 20, "L": 30}
+        r = sync.ConfigSyncSchedules.compute_disks_size([
+            {
+                "path": "/dev/sda",
+                "size-bytes": 10737418240
+            },
+            {
+                "path": "/dev/sdb",
+                "size-bytes": 21474836480
+            },
+        ])
+        self.assertEqual("L", r)
+        r = sync.ConfigSyncSchedules.compute_disks_size([
+            {
+                "path": "/dev/sda",
+                "size-bytes": 10737418240
+            },
+        ])
+        self.assertEqual("M", r)
+        r = sync.ConfigSyncSchedules.compute_disks_size([
+            {
+                "path": "/dev/sda",
+                "size-bytes": 9737418240
+            },
+        ])
+        self.assertEqual("S", r)

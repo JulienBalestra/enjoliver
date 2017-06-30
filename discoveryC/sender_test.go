@@ -11,6 +11,10 @@ import (
 func TestPostToDiscovery(t *testing.T) {
 	var data DiscoveryData
 
+	c, err := CreateConfig()
+	if err != nil {
+		t.Error(err)
+	}
 	i := Iface{
 		IPv4:    "192.168.1.1",
 		CIDRv4:  "192.168.1.1/24",
@@ -25,7 +29,7 @@ func TestPostToDiscovery(t *testing.T) {
 	data.LLDPInfo.IsFile = true
 	data.LLDPInfo.Data.Interfaces = []XInterface{}
 
-	CONF.DiscoveryAddress = "http://127.0.0.1:8888"
+	c.DiscoveryAddress = "http://127.0.0.1:8888"
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		var bodyBytes []byte
 		bodyBytes, _ = ioutil.ReadAll(r.Body)
@@ -43,10 +47,9 @@ func TestPostToDiscovery(t *testing.T) {
 			t.Fail()
 		}
 	}()
-	var err error
 	// wait or not the http server go routine
 	for i := 0; i < 10; i++ {
-		err := PostToDiscovery(data)
+		err := c.PostToDiscovery(data)
 		if err == nil {
 			break
 		} else {

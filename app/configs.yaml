@@ -81,3 +81,4 @@ ntp: ["0.arch.pool.ntp.org", "1.arch.pool.ntp.org", "2.arch.pool.ntp.org", "3.ar
 fallbackntp: ["0.pool.ntp.org", "1.pool.ntp.org", "0.fr.pool.ntp.org"]
 
 vault_polling_sec: 30
+disks_ladder_gb: {S: 10, M: 20, L: 30}

@@ -3,13 +3,15 @@ Over the application Model, queries to the database
 """
 
 import datetime
-import os
 import socket
+
+import os
 from sqlalchemy import func
-from sqlalchemy.orm import subqueryload
+from sqlalchemy.orm import subqueryload, Session
 
 import logger
-from model import ChassisPort, Chassis, MachineInterface, Machine, \
+import sync
+from model import ChassisPort, Chassis, MachineInterface, Machine, MachineDisk, \
     Healthz, Schedule, ScheduleRoles, LifecycleIgnition, LifecycleCoreosInstall, LifecycleRolling
 
 LOGGER = logger.get_logger(__file__)
@@ -176,7 +178,8 @@ class InjectDiscovery(object):
         step = "machine"
         try:
             self.machine, step = self._machine(), "interfaces"
-            self.interfaces, step = self._machine_interfaces(), "chassis"
+            self.interfaces, step = self._machine_interfaces(), "disks"
+            self.disks, step = self._machine_disk(), "chassis"
 
             self.chassis, step = self._chassis(), "chassis_port"
             self.chassis_port, step = self._chassis_port(), "ignition_journal"
@@ -259,6 +262,27 @@ class InjectDiscovery(object):
                 self.adds += 1
 
         return m_interfaces
+
+    def _machine_disk(self):
+        m_disks = self.machine.disks
+
+        if not self.discovery["disks"]:
+            self.log.error("machineID: %s haven't any disk" % self.machine.id)
+            return m_disks
+
+        for disk in self.discovery["disks"]:
+            if self.session.query(MachineDisk).filter(MachineDisk.machine_id == self.machine.id).filter(
+                            MachineDisk.path == disk["path"]).count() == 0:
+                m_disks.append(
+                    MachineDisk(
+                        id=self.machine.id,
+                        path=disk["path"],
+                        size=disk["size-bytes"]
+                    )
+                )
+                self.adds += 1
+
+        return m_disks
 
     def _chassis(self):
         chassis_list = []
@@ -347,87 +371,89 @@ class FetchSchedule(object):
     Retrieve the information about schedules
     """
 
-    def __init__(self, session):
+    def __init__(self, session: Session):
         self.session = session
 
     def get_schedules(self):
         r = {}
-        for interface in self.session.query(Schedule, MachineInterface).join(
-                MachineInterface):
-            try:
-                r[interface[1].mac] += [interface[0].role]
-            except KeyError:
-                r[interface[1].mac] = [interface[0].role]
+        for machine in self.session.query(Machine).join(
+                Schedule).filter(MachineInterface.as_boot == True):
+            r[machine.interfaces[0].mac] = [k.role for k in machine.schedules]
 
         return r
 
     def get_roles_by_mac_selector(self, mac: str):
-        s = self.session.query(Schedule).join(MachineInterface).filter(MachineInterface.mac == mac).all()
-        r = [k.role for k in s]
+        r = []
+        for s in self.session.query(Schedule).join(Machine).join(MachineInterface).filter(MachineInterface.mac == mac):
+            r.append(s.role)
         return r
 
     def get_available_machines(self):
         available_machines = []
-        for i in self.session.query(MachineInterface).outerjoin(
-                Schedule, MachineInterface.id == Schedule.machine_interface).filter(
-                    MachineInterface.as_boot == True).filter(Schedule.machine_interface == None):
-            available_machines.append(
-                {
-                    "mac": i.mac,
-                    "ipv4": i.ipv4,
-                    "cidrv4": i.cidrv4,
-                    "gateway": i.gateway,
-                    "as_boot": i.as_boot,
-                    "name": i.name,
-                    "netmask": i.netmask,
-                    "roles": [k.role for k in i.schedule],
-                    "fqdn": i.fqdn
-                }
-            )
+        for machine in self.session.query(Machine).outerjoin(Schedule).filter(Machine.schedules == None):
+            available_machines.append({
+                "mac": machine.interfaces[0].mac,
+                "ipv4": machine.interfaces[0].ipv4,
+                "cidrv4": machine.interfaces[0].cidrv4,
+                "gateway": machine.interfaces[0].gateway,
+                "as_boot": machine.interfaces[0].as_boot,
+                "name": machine.interfaces[0].name,
+                "netmask": machine.interfaces[0].netmask,
+                "created_date": machine.created_date,
+                "fqdn": machine.interfaces[0].fqdn,
+                "disks": [{"path": k.path, "size-bytes": k.size} for k in machine.disks],
+            })
         return available_machines
 
-    def get_role(self, role: str):
-        all_roles = []
-        for i in self.session.query(Schedule).filter(Schedule.role == role):
-            all_roles.append({
-                "mac": i.interface.mac,
-                "ipv4": i.interface.ipv4,
-                "cidrv4": i.interface.cidrv4,
-                "gateway": i.interface.gateway,
-                "as_boot": i.interface.as_boot,
-                "name": i.interface.name,
-                "netmask": i.interface.netmask,
-                "role": i.role,
-                "created_date": i.created_date,
-                "fqdn": i.interface.fqdn
+    def get_machines_by_role(self, role: str):
+        machines = []
+        for machine in self.session.query(Machine).join(Schedule).filter(Schedule.role == role):
+            machines.append({
+                "mac": machine.interfaces[0].mac,
+                "ipv4": machine.interfaces[0].ipv4,
+                "cidrv4": machine.interfaces[0].cidrv4,
+                "gateway": machine.interfaces[0].gateway,
+                "as_boot": machine.interfaces[0].as_boot,
+                "name": machine.interfaces[0].name,
+                "netmask": machine.interfaces[0].netmask,
+                "roles": role,
+                "created_date": machine.created_date,
+                "fqdn": machine.interfaces[0].fqdn,
+                "disks": [{"path": k.path, "size-bytes": k.size} for k in machine.disks],
             })
 
-        return all_roles
+        return machines
 
-    def get_roles(self, *args):
-        roles = []
-        for i in self.session.query(MachineInterface).join(Schedule).filter(
-                Schedule.role.in_(args)
-        ).group_by(MachineInterface).having(func.count(MachineInterface.id) == len(args)):
-            roles.append(
-                {
-                    "mac": i.mac,
-                    "ipv4": i.ipv4,
-                    "cidrv4": i.cidrv4,
-                    "gateway": i.gateway,
-                    "as_boot": i.as_boot,
-                    "name": i.name,
-                    "netmask": i.netmask,
-                    "fqdn": i.fqdn,
-                    "roles": [k.role for k in i.schedule]
-                }
-            )
-        return roles
+    def get_machines_by_roles(self, *args):
+        machines = []
+        if len(args) > 1:
+            for machine in self.session.query(Machine).join(Schedule).filter(
+                    Schedule.role.in_(args)).group_by(Schedule).having(func.count(Schedule.id) == len(args)):
+                machines.append({
+                    "mac": machine.interfaces[0].mac,
+                    "ipv4": machine.interfaces[0].ipv4,
+                    "cidrv4": machine.interfaces[0].cidrv4,
+                    "gateway": machine.interfaces[0].gateway,
+                    "as_boot": machine.interfaces[0].as_boot,
+                    "name": machine.interfaces[0].name,
+                    "netmask": machine.interfaces[0].netmask,
+                    "roles": [k.role for k in machine.schedules],
+                    "created_date": machine.created_date,
+                    "fqdn": machine.interfaces[0].fqdn,
+                    "disks": [{"path": k.path, "size-bytes": k.size} for k in machine.disks],
+                })
+            return machines
+
+        return self.get_machines_by_role(*args)
 
     def get_role_ip_list(self, role: str):
-        query = self.session.query(Schedule).filter(Schedule.role == role)
-
-        return [k.interface.ipv4 for k in query]
+        ips = []
+        for machine in self.session.query(Machine).join(MachineInterface).join(Schedule).filter(
+                        Schedule.role == role, MachineInterface.as_boot == True):
+            ips.append(
+                machine.interfaces[0].ipv4
+            )
+        return ips
 
 
 class InjectSchedule(object):
@@ -454,13 +480,13 @@ class InjectSchedule(object):
     def apply_roles(self):
         for role in self.data["roles"]:
             r = self.session.query(Schedule).filter(
-                Schedule.machine_interface == self.interface.id).filter(Schedule.role == role).first()
+                Schedule.machine_id == self.interface.machine_id).filter(Schedule.role == role).first()
             if r:
                 self.log.info("mac %s already scheduled as %s" % (self.mac, role))
                 continue
 
             new = Schedule(
-                machine_interface=self.interface.id,
+                machine_id=self.interface.machine_id,
                 role=role
             )
             self.session.add(new)
@@ -504,8 +530,9 @@ class InjectLifecycle(object):
 
         self.mac = self.get_mac_from_raw_query(request_raw_query)
 
-        self.interface = self.session.query(MachineInterface).filter(MachineInterface.mac == self.mac).first()
-        if not self.interface:
+        self.machine = self.session.query(Machine).join(MachineInterface).filter(
+            MachineInterface.mac == self.mac).first()
+        if not self.machine:
             m = "InjectLifecycle mac: '%s' unknown in db" % self.mac
             self.log.error(m)
             raise AttributeError(m)
@@ -524,10 +551,10 @@ class InjectLifecycle(object):
 
     def refresh_lifecycle_ignition(self, up_to_date: bool):
         lifecycle = self.session.query(LifecycleIgnition).filter(
-            LifecycleIgnition.machine_interface == self.interface.id).first()
+            LifecycleIgnition.machine_id == self.machine.id).first()
         if not lifecycle:
             lifecycle = LifecycleIgnition(
-                machine_interface=self.interface.id,
+                machine_id=self.machine.id,
                 up_to_date=up_to_date
             )
             self.session.add(lifecycle)
@@ -542,10 +569,10 @@ class InjectLifecycle(object):
 
     def refresh_lifecycle_coreos_install(self, success: bool):
         lifecycle = self.session.query(LifecycleCoreosInstall).filter(
-            LifecycleCoreosInstall.machine_interface == self.interface.id).first()
+            LifecycleCoreosInstall.machine_id == self.machine.id).first()
         if not lifecycle:
             lifecycle = LifecycleCoreosInstall(
-                machine_interface=self.interface.id,
+                machine_id=self.machine.id,
                 success=success
             )
             self.session.add(lifecycle)
@@ -557,10 +584,10 @@ class InjectLifecycle(object):
 
     def apply_lifecycle_rolling(self, enable: bool, strategy="kexec"):
         lifecycle = self.session.query(LifecycleRolling).filter(
-            LifecycleRolling.machine_interface == self.interface.id).first()
+            LifecycleRolling.machine_id == self.machine.id).first()
         if not lifecycle:
             lifecycle = LifecycleRolling(
-                machine_interface=self.interface.id,
+                machine_id=self.machine.id,
                 enable=enable,
                 strategy=strategy,
             )
@@ -579,62 +606,60 @@ class FetchLifecycle(object):
     """
     log = logger.get_logger(__file__)
 
-    def __init__(self, session):
+    def __init__(self, session: Session):
         self.session = session
 
     def get_ignition_uptodate_status(self, mac: str):
         interface = self.session.query(MachineInterface).filter(MachineInterface.mac == mac).first()
         if interface:
             lifecycle = self.session.query(LifecycleIgnition).filter(
-                LifecycleIgnition.machine_interface == interface.id).first()
+                LifecycleIgnition.machine_id == interface.id).first()
             return lifecycle.up_to_date if lifecycle else None
         return None
 
     def get_all_updated_status(self):
-        l = []
-        for s in self.session.query(LifecycleIgnition):
-            l.append(
-                {
-                    "up-to-date": s.up_to_date,
-                    "fqdn": s.interface.fqdn,
-                    "mac": s.interface.mac,
-                    "cidrv4": s.interface.cidrv4,
-                    "created_date": s.created_date,
-                    "updated_date": s.updated_date,
-                    "last_change_date": s.last_change_date,
-                }
-            )
-        return l
+        status = []
+        for machine in self.session.query(Machine).join(LifecycleIgnition).join(
+                MachineInterface).filter(MachineInterface.as_boot == True):
+            status.append({
+                "up-to-date": machine.lifecycle_ignition[0].up_to_date,
+                "fqdn": machine.interfaces[0].fqdn,
+                "mac": machine.interfaces[0].mac,
+                "cidrv4": machine.interfaces[0].cidrv4,
+                "created_date": machine.created_date,
+                "updated_date": machine.updated_date,
+                "last_change_date": machine.lifecycle_ignition[0].last_change_date,
+            })
+        return status
 
     def get_coreos_install_status(self, mac: str):
         interface = self.session.query(MachineInterface).filter(MachineInterface.mac == mac).first()
         if interface:
             lifecycle = self.session.query(LifecycleCoreosInstall).filter(
-                LifecycleCoreosInstall.machine_interface == interface.id).first()
+                LifecycleCoreosInstall.machine_id == interface.id).first()
             return lifecycle.success if lifecycle else None
         self.log.debug("mac: %s return None" % mac)
         return None
 
     def get_all_coreos_install_status(self):
         life_status_list = []
-        for s in self.session.query(LifecycleCoreosInstall):
-            life_status_list.append(
-                {
-                    "mac": s.interface.mac,
-                    "fqdn": s.interface.fqdn,
-                    "cidrv4": s.interface.cidrv4,
-                    "success": s.success,
-                    "created_date": s.created_date,
-                    "updated_date": s.updated_date
-                }
-            )
+        for machine in self.session.query(Machine).join(LifecycleCoreosInstall).join(MachineInterface).filter(
+                        MachineInterface.as_boot == True):
+            life_status_list.append({
+                "mac": machine.interfaces[0].mac,
+                "fqdn": machine.interfaces[0].fqdn,
+                "cidrv4": machine.interfaces[0].cidrv4,
+                "success": machine.lifecycle_coreos_install[0].success,
+                "created_date": machine.lifecycle_coreos_install[0].created_date,
+                "updated_date": machine.lifecycle_coreos_install[0].updated_date
+            })
         return life_status_list
 
     def get_rolling_status(self, mac: str):
         interface = self.session.query(MachineInterface).filter(MachineInterface.mac == mac).first()
         if interface:
             l = self.session.query(LifecycleRolling).filter(
-                LifecycleRolling.machine_interface == interface.id).first()
+                LifecycleRolling.machine_id == interface.id).first()
             if l:
                 return l.enable, l.strategy
         self.log.debug("mac: %s return None" % mac)
@@ -642,15 +667,16 @@ class FetchLifecycle(object):
 
     def get_all_rolling_status(self):
         life_roll_list = []
-        for s in self.session.query(LifecycleRolling):
+        for machine in self.session.query(Machine).join(LifecycleRolling).join(MachineInterface).filter(
+                        MachineInterface.as_boot == True):
             life_roll_list.append(
                 {
-                    "mac": s.interface.mac,
-                    "fqdn": s.interface.fqdn,
-                    "cidrv4": s.interface.cidrv4,
-                    "enable": s.enable,
-                    "created_date": s.created_date,
-                    "updated_date": s.updated_date
+                    "mac": machine.interfaces[0].mac,
+                    "fqdn": machine.interfaces[0].fqdn,
+                    "cidrv4": machine.interfaces[0].cidrv4,
+                    "enable": machine.lifecycle_rolling[0].enable,
+                    "created_date": machine.lifecycle_rolling[0].created_date,
+                    "updated_date": machine.lifecycle_rolling[0].updated_date
                 }
             )
         return life_roll_list
@@ -662,53 +688,64 @@ class FetchView(object):
     """
     log = logger.get_logger(__file__)
 
-    def __init__(self, session):
+    def __init__(self, session: Session):
         self.session = session
 
     def get_machines(self):
-        query = self.session.query(MachineInterface).filter(MachineInterface.as_boot == True)
         data = {
             "gridColumns": [
                 "MAC",
                 "CIDR",
                 "FQDN",
+                "DiskProfile",
                 "Roles",
                 "Installation",
-                "Update Strategy",
+                "UpdateStrategy",
                 "UpToDate",
-                "Last Report",
-                "Last Change",
+                "LastReport",
+                "LastChange",
             ],
             "gridData": []
         }
-        for interface in query:
+        for machine in self.session.query(Machine).outerjoin(
+                MachineInterface).outerjoin(LifecycleCoreosInstall).outerjoin(LifecycleIgnition).outerjoin(
+            Schedule).outerjoin(MachineDisk).filter(MachineInterface.as_boot == True):
 
             coreos_install, ignition_updated_date, ignition_last_change = None, None, None
             ignition_up_to_date, lifecycle_rolling = None, None
 
-            if interface.lifecycle_coreos_install:
-                coreos_install = "Success" if interface.lifecycle_coreos_install[
-                                                    0].success is True else "Failed"
+            if machine.lifecycle_coreos_install:
+                coreos_install = "Success" if machine.lifecycle_coreos_install[
+                                                  0].success is True else "Failed"
 
-            if interface.lifecycle_ignition:
-                ignition_updated_date = interface.lifecycle_ignition[0].updated_date
-                ignition_up_to_date = interface.lifecycle_ignition[0].up_to_date
-                ignition_last_change = interface.lifecycle_ignition[0].last_change_date
+            if machine.lifecycle_ignition:
+                ignition_updated_date = machine.lifecycle_ignition[0].updated_date
+                ignition_up_to_date = machine.lifecycle_ignition[0].up_to_date
+                ignition_last_change = machine.lifecycle_ignition[0].last_change_date
 
-            if interface.lifecycle_rolling:
-                lifecycle_rolling = interface.lifecycle_rolling[0].strategy if interface.lifecycle_rolling[
+            if machine.lifecycle_rolling:
+                lifecycle_rolling = machine.lifecycle_rolling[0].strategy if machine.lifecycle_rolling[
                     0].enable else "Disable"
 
+            disks = []
+            if machine.disks:
+                for disk in machine.disks:
+                    disks.append({
+                        "path": disk.path,
+                        "size-bytes": disk.size
+                    })
             row = {
-                "Roles": ",".join([r.role for r in interface.schedule]),
-                "FQDN": interface.fqdn,
-                "CIDR": interface.cidrv4,
-                "MAC": interface.mac,
-                "Install": coreos_install,
+                "Roles": ",".join([r.role for r in machine.schedules]),
+                "FQDN": machine.interfaces[0].fqdn,
+                "CIDR": machine.interfaces[0].cidrv4,
+                "MAC": machine.interfaces[0].mac,
+                "Installation": coreos_install,
                 "LastReport": ignition_updated_date,
-                "LastUpdate": ignition_last_change,
+                "LastChange": ignition_last_change,
                 "UpToDate": ignition_up_to_date,
-                "AutoUpdate": lifecycle_rolling,
+                "UpdateStrategy": lifecycle_rolling,
+                "DiskProfile": sync.ConfigSyncSchedules.compute_disks_size(disks)
             }
+
             data["gridData"].append(row)
         return data
