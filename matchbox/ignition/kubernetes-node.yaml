@@ -427,7 +427,6 @@ systemd:
           --container-runtime=rkt \
           --rkt-path=/opt/rootfs/usr/bin/rkt \
           --v=2 \
-          --enable-cri=false \
           --tls-cert-file=/etc/vault.d/kubernetes/kubelet.certificate \
           --tls-private-key-file=/etc/vault.d/kubernetes/kubelet.private_key \
           --client-ca-file=/etc/vault.d/kubernetes/kubelet.issuing_ca

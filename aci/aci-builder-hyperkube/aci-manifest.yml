@@ -1,5 +1,4 @@
 name: enjoliver.local/builder-hyperkube:latest
 aci:
   dependencies:
-    - enjoliver.local/debian:latest
-    - enjoliver.local/go:1.7.5
+    - enjoliver.local/go:1.8.1

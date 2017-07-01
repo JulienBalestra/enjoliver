@@ -37,3 +37,20 @@ func TestGetDiskProperties2(t *testing.T) {
 	}
 
 }
+
+func TestGetDiskProperties3(t *testing.T) {
+	diskSize, err := getDiskProperties("Disk /dev/sda: 10 GiB, 10737418240 bytes, 20971520 sectors")
+
+	if err != nil {
+		t.Fail()
+	}
+
+	if diskSize.SizeBytes != 10737418240 {
+		t.Fail()
+	}
+
+	if diskSize.Path != "/dev/sda" {
+		t.Fail()
+	}
+
+}
