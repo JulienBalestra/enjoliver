@@ -2,6 +2,10 @@ name: enjoliver.local/enjoliver:latest
 builder:
   dependencies:
     - enjoliver.local/builder-enjoliver:latest
+  app:
+    environment:
+      - { name: GOPATH, value: "/go" }
+      - { name: GOROOT, value: "/usr/bin/go" }
 
   mountPoints:
     - {from: ../../, to: /opt/source-project}

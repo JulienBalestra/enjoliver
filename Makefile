@@ -128,6 +128,7 @@ dev_setup:
 	chown -R $(MY_USER): $(CWD)
 
 prod_setup:
+	make -C $(CWD) discoveryC
 	make -C $(CWD) submodules
 	make -C $(CWD) prod_setup_runtime
 	make -C $(CWD) front
