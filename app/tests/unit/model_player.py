@@ -709,6 +709,17 @@ class TestModel(unittest.TestCase):
         for i in result["gridData"]:
             self.assertEqual(1, i["CIDR"].count("/"))
 
+    def test_39(self):
+        with self.smart.new_session() as session:
+            export = crud.BackupExport(session)
+            playbook = export.get_playbook()
+            self.assertEqual(10, len(playbook))
+        for i, entry in enumerate(playbook):
+            if i % 2 == 0:
+                lastest = entry["data"]["boot-info"]["mac"]
+            else:
+                check = entry["data"]["selector"]["mac"]
+
     def test_99_healthz(self):
         for i in range(10):
             with self.smart.new_session() as session:
