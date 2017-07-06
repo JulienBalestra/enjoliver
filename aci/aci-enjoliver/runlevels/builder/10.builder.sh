@@ -7,8 +7,19 @@ isLevelEnabled "debug" && set -x
 export LC_ALL=C
 export DEBIAN_FRONTEND=noninteractive
 
-ENJOLIVER=/opt/enjoliver
+### Golang ###
+export GOROOT=/usr/local/go
+export GOPATH=/go
+
+go version
+
+
+### PATH ###
+
+ENJOLIVER=${GOPATH}/src/github.com/JulienBalestra/enjoliver
 SOURCE_PROJECT=/opt/source-project
+
+mkdir -pv ${ENJOLIVER}
 
 
 ### Git Bundle ###
@@ -28,7 +39,6 @@ else
     BRANCH=master
 fi
 
-mkdir -pv ${ENJOLIVER}
 cd -P ${ENJOLIVER}
 pwd -P
 git init
@@ -38,24 +48,21 @@ git reset --hard origin/${BRANCH}
 git checkout origin/${BRANCH}
 
 
-### Golang ###
-GOROOT=/usr/local/go
-go version
-
-
 ### Enjoliver setup ###
-cd -P ${ENJOLIVER}
-export MY_USER=enjoliver
 
+export MY_USER=enjoliver
 make prod_setup
 
-chown -R root: ${ENJOLIVER}
-
-rm -Rf ${ENJOLIVER}/chain
-rm -Rf ${ENJOLIVER}/cni
-rm -Rf ${ENJOLIVER}/discoveryC
 rm -Rf ${ENJOLIVER}/.git
+rm -Rf ${ENJOLIVER}/.ci
+rm -Rf ${ENJOLIVER}/aci
+rm -Rf ${ENJOLIVER}/chain
+rm -Rf ${ENJOLIVER}/discoveryC
+rm -Rf ${ENJOLIVER}/docs
+rm -Rf ${ENJOLIVER}/hyperkube
+rm -Rf ${ENJOLIVER}/py-vendor
 
 find ${ENJOLIVER}/runtime -not -name matchbox -delete || true
 
+chown -R root: ${ENJOLIVER}
 mv ${ENJOLIVER} ${ROOTFS}/opt
