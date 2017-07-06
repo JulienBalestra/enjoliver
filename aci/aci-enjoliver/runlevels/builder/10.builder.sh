@@ -19,7 +19,7 @@ go version
 ENJOLIVER=${GOPATH}/src/github.com/JulienBalestra/enjoliver
 SOURCE_PROJECT=/opt/source-project
 
-mkdir -pv ${ENJOLIVER}
+mkdir -pv ${ENJOLIVER} ${ROOTFS}/go/src/github.com/JulienBalestra/
 
 
 ### Git Bundle ###
@@ -65,4 +65,4 @@ rm -Rf ${ENJOLIVER}/py-vendor
 find ${ENJOLIVER}/runtime -not -name matchbox -delete || true
 
 chown -R root: ${ENJOLIVER}
-mv ${ENJOLIVER} ${ROOTFS}/opt
+mv ${ENJOLIVER} ${ROOTFS}/go/src/github.com/JulienBalestra/

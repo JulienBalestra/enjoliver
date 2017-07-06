@@ -26,7 +26,7 @@ aci:
 
   app:
     environment:
-      - { name: "PATH", value: "/opt/enjoliver/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" }
+      - { name: "PATH", value: "/go/src/github.com/JulienBalestra/enjoliver/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" }
     mountPoints:
       - name: matchbox-groups
         path: /var/lib/matchbox/groups
