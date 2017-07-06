@@ -431,7 +431,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         self.clean_sandbox()
         self.api_healthz()
 
-    def create_virtual_machine(self, name: str, nb_node: int, disk_gb=10):
+    def create_virtual_machine(self, name: str, nb_node: int, disk_gb=0):
         if disk_gb == 0:
             disk_opt = "size=10"
         else:
