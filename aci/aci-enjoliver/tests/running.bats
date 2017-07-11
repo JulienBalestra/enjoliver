@@ -2,17 +2,17 @@
 
 
 @test "Tests are OK" {
-  make -C /opt/enjoliver/app/tests testing.id_rsa
-  make -C /opt/enjoliver/app/tests check
+  make -C /go/src/github.com/JulienBalestra/enjoliver/app/tests testing.id_rsa
+  make -C /go/src/github.com/JulienBalestra/enjoliver/app/tests check
   [ $? -eq 0 ]
 }
 
 @test "Default config" {
-  /opt/enjoliver/manage.py show-configs
+  /go/src/github.com/JulienBalestra/enjoliver/manage.py show-configs
   [ $? -eq 0 ]
 }
 
 @test "validation is OK" {
-    /opt/enjoliver/manage.py validate
+    /go/src/github.com/JulienBalestra/enjoliver/manage.py validate
   [ $? -eq 0 ]
 }

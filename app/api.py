@@ -606,6 +606,28 @@ def backup_database():
     return jsonify({"NotImplementedError": "%s" % EC.db_uri}), 404
 
 
+@APPLICATION.route('/backup/export', methods=['GET'])
+def backup_as_export():
+    """
+    Backup by exporting a playbook of what discovery client and schedulers sent to the API
+    Allows to just run each entry against the enjoliver API
+    Note: it doesnt export the LLDP data eventually stored in the DB
+    ---
+    tags:
+      - ops
+    responses:
+      200:
+        description: Backup playbook
+        schema:
+            type: list
+    """
+    with SMART.new_session() as session:
+        exporter = crud.BackupExport(session)
+        playbook = exporter.get_playbook()
+
+    return jsonify(playbook), 200
+
+
 @APPLICATION.route('/discovery/interfaces', methods=['GET'])
 def discovery_interfaces():
     """

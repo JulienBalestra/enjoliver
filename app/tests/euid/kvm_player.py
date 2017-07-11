@@ -433,7 +433,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     def create_virtual_machine(self, name: str, nb_node: int, disk_gb=0):
         if disk_gb == 0:
-            disk_opt = "none"
+            disk_opt = "size=10"
         else:
             disk_opt = "size=%d" % disk_gb
         virt_install = [
@@ -451,7 +451,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "--os-type=linux",
             "--os-variant=generic",
             "--noautoconsole",
-            "--boot=network" if disk_gb == 0 else "--boot=hd,network"
+            "--boot=hd,network"
         ]
         return virt_install
 

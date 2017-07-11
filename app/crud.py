@@ -7,7 +7,7 @@ import socket
 
 import os
 from sqlalchemy import func
-from sqlalchemy.orm import subqueryload, Session
+from sqlalchemy.orm import Session
 
 import logger
 import sync
@@ -105,9 +105,9 @@ class FetchDiscovery(object):
 
     def get_all(self):
         all_data = []
-        for machine in self.session.query(Machine).order_by(Machine.updated_date.desc()).options(
-                subqueryload(Machine.interfaces)):
+        for machine in self.session.query(Machine):
             m = dict()
+
             m["interfaces"] = [
                 {
                     "mac": k.mac,
@@ -118,7 +118,8 @@ class FetchDiscovery(object):
                     "as_boot": k.as_boot,
                     "gateway": k.gateway,
                     "fqdn": k.fqdn,
-                } for k in machine.interfaces]
+                } for k in machine.interfaces
+            ]
             interface_boot = self.session.query(MachineInterface).filter(
                 MachineInterface.machine_id == machine.id and
                 MachineInterface.as_boot is True).first()
@@ -129,6 +130,13 @@ class FetchDiscovery(object):
                 "created-date": machine.created_date,
                 "updated-date": machine.updated_date,
             }
+
+            m["disks"] = [
+                {
+                    'size-bytes': k.size,
+                    'path': k.path,
+                } for k in machine.disks
+            ]
 
             all_data.append(m)
 
@@ -749,3 +757,82 @@ class FetchView(object):
 
             data["gridData"].append(row)
         return data
+
+
+class BackupExport(object):
+    def __init__(self, session: Session):
+        self.session = session
+        self.playbook = []
+
+    @staticmethod
+    def _construct_discovery(machine: Machine):
+        interfaces = list()
+        mac_boot = ""
+        for interface in machine.interfaces:
+            if interface.as_boot is True:
+                mac_boot = interface.mac
+            interfaces.append({
+                'mac': interface.mac,
+                'netmask': interface.netmask,
+                'ipv4': interface.ipv4,
+                'cidrv4': interface.ipv4,
+                'name': interface.name,
+                "gateway": interface.gateway,
+                "fqdn": [interface.fqdn]
+            })
+        if mac_boot == "":
+            raise LookupError("fail to retrieve mac boot in %s" % interfaces)
+
+        return {
+            "boot-info": {
+                "uuid": machine.uuid,
+                "mac": mac_boot,
+                "random-id": "",
+            },
+
+            "interfaces": interfaces,
+            "disks": [{
+                'size-bytes': k.size,
+                'path': k.path
+            } for k in machine.disks],
+
+            # TODO LLDP
+            "lldp": {
+                'data': {'interfaces': None},
+                'is_file': False
+            },
+
+            "ignition-journal": None
+        }
+
+    @staticmethod
+    def _construct_schedule(mac: str, schedule_type: str):
+        """
+        Construct the schedule as the scheduler does
+        :param mac:
+        :param schedule_type:
+        :return: dict
+        """
+        # TODO maybe decide to drop etcd-member because it's tricky to deal with two roles
+        # etcd-member + kubernetes-control-plane: in fact it's only one
+        if schedule_type == ScheduleRoles.kubernetes_control_plane:
+            roles = [ScheduleRoles.kubernetes_control_plane, ScheduleRoles.etcd_member]
+        else:
+            roles = [ScheduleRoles.kubernetes_node]
+        return {
+            u"roles": roles,
+            u'selector': {
+                u"mac": mac
+            }
+        }
+
+    def get_playbook(self):
+        for schedule_type in [ScheduleRoles.kubernetes_control_plane, ScheduleRoles.kubernetes_node]:
+            for schedule in self.session.query(Schedule).filter(Schedule.role == schedule_type):
+                for machine in self.session.query(Machine).filter(Machine.id == schedule.machine_id):
+                    discovery_data = self._construct_discovery(machine)
+                    schedule_data = self._construct_schedule(discovery_data["boot-info"]["mac"], schedule_type)
+                    self.playbook.append({"data": discovery_data, "route": "/discovery"})
+                    self.playbook.append({"data": schedule_data, "route": "/scheduler"})
+
+        return self.playbook
