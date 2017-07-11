@@ -483,32 +483,6 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
-    - name: run-netns.mount
-      enable: false
-      contents: |
-        [Unit]
-        Description=Netns Directory
-        DefaultDependencies=no
-        Conflicts=umount.target
-        Before=local-fs.target umount.target
-        [Mount]
-        What=tmpfs
-        Where=/run/netns
-        Type=tmpfs
-        Options=rw,nosuid,nodev,seclabel,mode=755
-        [Install]
-        WantedBy=local-fs.target
-
-    - name: run-netns.automount
-      enable: true
-      contents: |
-        [Unit]
-        Description=Netns Directory Automount
-        [Automount]
-        Where=/run/netns
-        [Install]
-        WantedBy=local-fs.target
-
     - name: rkt-gc.service
       enable: true
       dropins:
