@@ -1,0 +1,5 @@
+enjoliver:
+  clusters:
+    local:
+      - "http://127.0.0.1:5000"
+      - "http://172.20.0.1:5000"
