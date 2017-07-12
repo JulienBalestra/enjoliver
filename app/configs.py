@@ -135,7 +135,7 @@ class EnjoliverConfig(object):
         self.lldp_image_url = self.config_override("lldp_image_url", "enjoliver.local/lldp:latest")
         self.hyperkube_image_url = self.config_override("hyperkube_image_url", "enjoliver.local/hyperkube:1.7.0")
         self.rkt_image_url = self.config_override("rkt_image_url", "enjoliver.local/rkt:1.27.0")
-        self.etcd_image_url = self.config_override("etcd_image_url", "enjoliver.local/etcd:3.2.1")
+        self.etcd_image_url = self.config_override("etcd_image_url", "enjoliver.local/etcd:3.2.2")
         self.fleet_image_url = self.config_override("fleet_image_url", "enjoliver.local/fleet:1.0.0")
         self.cni_image_url = self.config_override("cni_image_url", "enjoliver.local/cni:0.5.2")
         self.vault_image_url = self.config_override("vault_image_url", 'enjoliver.local/vault:0.7.3')
