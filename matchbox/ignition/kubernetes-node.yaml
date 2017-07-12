@@ -720,7 +720,6 @@ storage:
           set -e
           set -o pipefail
 
-          curl -f {{.api_uri}}/healthz
           STATUS=$(curl -f -XPOST "{{.api_uri}}/lifecycle/ignition/{{.request.raw_query}}" \
                 -d @/usr/share/oem/coreos-install.json \
                 -H "Content-Type: application/json" \
