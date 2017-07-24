@@ -1,7 +1,7 @@
 CWD=$(shell pwd)
 
 # DGR
-DGR_VERSION=v81
+DGR_VERSION=v86
 DGR_GITHUB_DOWNLOAD=https://github.com/blablacar/dgr/releases/download
 DGR_TAR=dgr-$(DGR_VERSION)-linux-amd64.tar.gz
 DGR_GITHUB=$(DGR_GITHUB_DOWNLOAD)/$(DGR_VERSION)/$(DGR_TAR)
@@ -29,7 +29,7 @@ MATCHBOX=$(MATCHBOX_DIR)/matchbox
 MATCHBOX_DOWNLOAD_TAR=$(MATCHBOX_DIR)/$(MATCHBOX_TAR)
 
 # HELM
-HELM_VERSION=v2.4.0
+HELM_VERSION=v2.5.0
 HELM_GOOGLE_STORAGE_DOWNLOAD=https://storage.googleapis.com/kubernetes-helm
 HELM_TAR=helm-$(HELM_VERSION)-linux-amd64.tar.gz
 HELM_GOOGLE_STORAGE=$(HELM_GOOGLE_STORAGE_DOWNLOAD)/$(HELM_TAR)
@@ -48,7 +48,7 @@ prod_setup: $(MATCHBOX)
 $(ACSERVER):
 	go get golang.org/x/tools/cmd/goimports
 	go get github.com/jteeuwen/go-bindata
-	cd $(ACSERVER_DIR) && go-bindata -pkg dist templates && mkdir -pv $(ACSERVER_DIR)/vendor/github.com/appc/acserver/dist
+	cd $(ACSERVER_DIR) && PATH=$(ACSERVER_DIR)/bin/:$(GOPATH)/bin/:$(PATH) go-bindata -pkg dist templates && mkdir -pv $(ACSERVER_DIR)/vendor/github.com/appc/acserver/dist
 	mkdir -pv $(ACSERVER_DIR)/vendor/github.com/appc/acserver/dist
 	mv -v $(ACSERVER_DIR)/bindata.go $(ACSERVER_DIR)/vendor/github.com/appc/acserver/dist
 	cd $(ACSERVER_DIR) && PATH=$(ACSERVER_DIR)/bin/:$(PATH) go build -o acserver
@@ -67,6 +67,7 @@ $(MATCHBOX_DOWNLOAD_TAR):
 
 $(MATCHBOX): $(MATCHBOX_DOWNLOAD_TAR)
 	@$(MATCHBOX) --version || tar -C $(MATCHBOX_DIR) -xzf $(MATCHBOX_DIR)/$(MATCHBOX_TAR) --strip-components=1
+	$(MATCHBOX) --version
 
 $(DGR_DOWNLOAD_TAR):
 	mkdir -pv $(DGR_DIR)

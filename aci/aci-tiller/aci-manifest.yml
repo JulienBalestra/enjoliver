@@ -1,4 +1,4 @@
-name: enjoliver.local/tiller:2.4.0
+name: enjoliver.local/tiller:2.5.0
 
 builder:
   dependencies:

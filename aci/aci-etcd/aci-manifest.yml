@@ -1,4 +1,4 @@
-name: enjoliver.local/etcd:3.2.2
+name: enjoliver.local/etcd:3.2.4
 
 builder:
   dependencies:
