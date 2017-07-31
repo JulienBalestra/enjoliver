@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: tiller
-        image: enjoliver.local/tiller:2.4.0
+        image: enjoliver.local/tiller:2.5.0
         imagePullPolicy: IfNotPresent
         command:
         - /usr/bin/tiller

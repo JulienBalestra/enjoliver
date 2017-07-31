@@ -47,7 +47,7 @@ prod_setup: $(MATCHBOX)
 
 $(ACSERVER):
 	go get golang.org/x/tools/cmd/goimports
-	go get github.com/jteeuwen/go-bindata
+	go get -u github.com/jteeuwen/go-bindata/...
 	cd $(ACSERVER_DIR) && PATH=$(ACSERVER_DIR)/bin/:$(GOPATH)/bin/:$(PATH) go-bindata -pkg dist templates && mkdir -pv $(ACSERVER_DIR)/vendor/github.com/appc/acserver/dist
 	mkdir -pv $(ACSERVER_DIR)/vendor/github.com/appc/acserver/dist
 	mv -v $(ACSERVER_DIR)/bindata.go $(ACSERVER_DIR)/vendor/github.com/appc/acserver/dist
