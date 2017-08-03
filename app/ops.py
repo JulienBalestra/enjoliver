@@ -128,15 +128,6 @@ def healthz(application, smart: smartdb.SmartClient, request):
         status["global"] = False
         LOGGER.error(e)
 
-    try:
-        # don't ask to each healthz request to make the purge
-        ts = int(round(time.time() - 30))
-        if ts % 10 == 0:
-            with smart.new_session(snap=True) as session:
-                crud.health_check_purge(session, ts)
-    except Exception as e:
-        LOGGER.debug("health check purge: %s" % e)
-
     application.logger.debug("%s" % status)
     return status
 

@@ -170,7 +170,7 @@ class ChassisPort(BASE):
     mac = Column(String, nullable=False)
     chassis_id = Column(Integer, ForeignKey('chassis.id'))
 
-    machine_interface_id = Column(Integer, ForeignKey('machine-interface.id'))
+    machine_interface = Column(Integer, ForeignKey('machine-interface.id'))
 
     def __repr__(self):
         return "<%s: mac:%s chassis_mac:%s>" % (ChassisPort.__name__, self.mac, self.chassis_id)

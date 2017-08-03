@@ -14,10 +14,10 @@ for p in os.listdir(os.path.join(PROJECT_PATH, "env/lib/")):
     PYTHON_LIB = os.path.join(PROJECT_PATH, "env/lib/%s/site-packages" % p)
     sys.path.append(PYTHON_LIB)
 
-
 from app import (
     configs,
-    smartdb
+    smartdb,
+    crud
 )
 
 
@@ -32,6 +32,13 @@ def init_db(ec):
     for i in range(tries):
         try:
             smart.create_base()
+
+            @smartdb.cockroach_transaction
+            def op():
+                with smart.new_session() as session:
+                    crud.health_check_purge(session)
+
+            op()
             return
         except ConnectionError as e:
             print("%d/%d %s" % (i + 1, tries, e))

@@ -28,7 +28,7 @@ class FetchDiscovery(object):
 
     def _get_chassis_name(self, machine_interface):
         chassis_port = self.session.query(ChassisPort).filter(
-            ChassisPort.machine_interface_id == machine_interface.id
+            ChassisPort.machine_interface == machine_interface.id
         ).first()
         if chassis_port:
             chassis_name = self.session.query(Chassis).filter(
@@ -143,23 +143,25 @@ class FetchDiscovery(object):
         return all_data
 
 
-def health_check(session, ts: int, who: str):
+def health_check(session: Session, ts: int, who: str):
     """
     :param session: a constructed session
     :param ts: timestamp
     :param who: the host who asked for the check
     :return:
     """
-    health = Healthz()
+    health = session.query(Healthz).first()
+    if not health:
+        health = Healthz()
+        session.add(health)
     health.ts = ts
     health.host = who
-    session.add(health)
     session.commit()
     return True
 
 
-def health_check_purge(session, ts: int):
-    session.query(Healthz).filter(Healthz.ts < ts).delete()
+def health_check_purge(session):
+    session.query(Healthz).delete()
     session.commit()
 
 
@@ -333,7 +335,7 @@ class InjectDiscovery(object):
                 chassis_port = ChassisPort(
                     mac=entry["port"]["id"],
                     chassis_id=chassis.id,
-                    machine_interface_id=machine_interface.id
+                    machine_interface=machine_interface.id
                 )
                 self.session.add(chassis_port)
                 self.adds += 1

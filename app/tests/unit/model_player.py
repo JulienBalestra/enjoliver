@@ -726,7 +726,7 @@ class TestModel(unittest.TestCase):
                 crud.health_check(session, time.time(), "unittest")
 
         with self.smart.new_session() as session:
-            crud.health_check_purge(session, time.time())
+            crud.health_check_purge(session)
 
         with self.smart.new_session() as session:
-            crud.health_check_purge(session, time.time())
+            crud.health_check_purge(session)
