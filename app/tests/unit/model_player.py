@@ -494,8 +494,9 @@ class TestModel(unittest.TestCase):
             with self.smart.new_session() as session:
                 fetch = crud.FetchSchedule(session)
                 self.assertEqual(["kubernetes-node"], fetch.get_roles_by_mac_selector(i["mac"]))
+
                 r = fetch.get_machines_by_roles(
-                    model.ScheduleRoles.etcd_member, model.ScheduleRoles.kubernetes_node)
+                    model.ScheduleRoles.etcd_member, model.ScheduleRoles.kubernetes_control_plane)
                 self.assertEqual(1, len(r))
 
     def test_23a(self):

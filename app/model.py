@@ -45,9 +45,9 @@ class Machine(BASE):
     created_date = Column(DateTime, default=datetime.datetime.utcnow)
     updated_date = Column(DateTime, default=None)
 
-    interfaces = relationship("MachineInterface", lazy="joined")
-    disks = relationship("MachineDisk", lazy="joined")
-    schedules = relationship("Schedule", lazy="joined")
+    interfaces = relationship("MachineInterface")
+    disks = relationship("MachineDisk")
+    schedules = relationship("Schedule")
 
     lifecycle_rolling = relationship("LifecycleRolling")
     lifecycle_coreos_install = relationship("LifecycleCoreosInstall")
@@ -149,7 +149,7 @@ class Chassis(BASE):
     name = Column(String, nullable=False)
     mac = Column(String(17), nullable=False)
 
-    ports = relationship("ChassisPort", lazy="joined")
+    ports = relationship("ChassisPort")
 
     @validates('mac')
     def validate_mac(self, key, mac):

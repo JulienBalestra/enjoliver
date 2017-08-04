@@ -3,10 +3,9 @@ Over the application Model, queries to the database
 """
 
 import datetime
+import os
 import socket
 
-import os
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 import logger
@@ -361,7 +360,6 @@ class InjectDiscovery(object):
                 try:
                     self.log.debug("commiting")
                     self.session.commit()
-                    # self.session.commit()
 
                 except Exception as e:
                     self.log.error("%s %s adds=%s updates=%s" % (type(e), e, self.adds, self.updates))
@@ -400,18 +398,24 @@ class FetchSchedule(object):
 
     def get_available_machines(self):
         available_machines = []
-        for machine in self.session.query(Machine).outerjoin(Schedule).filter(Machine.schedules == None):
+
+        for row in self.session.execute("""SELECT mi.id, mi.mac, mi.ipv4, mi.cidrv4, mi.gateway, mi.as_boot, mi.name, mi.netmask, mi.fqdn, mi.machine_id FROM machine AS m
+            LEFT JOIN schedule AS s ON m.id = s.machine_id
+            INNER JOIN  "machine-interface" AS mi ON mi.machine_id = m.id AND mi.as_boot = TRUE
+            WHERE s.role IS NULL"""):
             available_machines.append({
-                "mac": machine.interfaces[0].mac,
-                "ipv4": machine.interfaces[0].ipv4,
-                "cidrv4": machine.interfaces[0].cidrv4,
-                "gateway": machine.interfaces[0].gateway,
-                "as_boot": machine.interfaces[0].as_boot,
-                "name": machine.interfaces[0].name,
-                "netmask": machine.interfaces[0].netmask,
-                "created_date": machine.created_date,
-                "fqdn": machine.interfaces[0].fqdn,
-                "disks": [{"path": k.path, "size-bytes": k.size} for k in machine.disks],
+                "mac": row["mac"],
+                "ipv4": row["ipv4"],
+                "cidrv4": row["cidrv4"],
+                "gateway": row["gateway"],
+                "as_boot": row["as_boot"],
+                "name": row["name"],
+                "netmask": row["netmask"],
+                "created_date": self.session.query(Machine).filter(
+                    Machine.id == row["machine_id"]).first().created_date,
+                "fqdn": row["fqdn"],
+                "disks": [{"path": k.path, "size-bytes": k.size}
+                          for k in self.session.query(MachineDisk).filter(MachineDisk.id == row["machine_id"])],
             })
         return available_machines
 
@@ -437,20 +441,32 @@ class FetchSchedule(object):
     def get_machines_by_roles(self, *args):
         machines = []
         if len(args) > 1:
-            for machine in self.session.query(Machine).join(Schedule).filter(
-                    Schedule.role.in_(args)).group_by(Schedule).having(func.count(Schedule.id) == len(args)):
+            union = ["""INNER JOIN (SELECT m.id FROM machine AS m
+              INNER JOIN schedule AS s ON s.machine_id = m.id
+              WHERE s.role = '%s') AS b ON a.machine_id = b.id""" % k for k in args[1:]]
+
+            query = """SELECT result.machine_id, mi.mac, mi.ipv4, mi.cidrv4, mi.gateway, mi.as_boot, mi.name, mi.netmask, mi.fqdn FROM (
+            (SELECT m.id as machine_id FROM machine AS m
+            INNER JOIN schedule AS s ON s.machine_id = m.id
+            WHERE s.role = '%s') AS a %s) AS result            
+            INNER JOIN "machine-interface" AS mi ON mi.machine_id = result.machine_id
+            WHERE mi.as_boot = TRUE""" % (args[0], " ".join(union))
+
+            for row in self.session.execute(query):
                 machines.append({
-                    "mac": machine.interfaces[0].mac,
-                    "ipv4": machine.interfaces[0].ipv4,
-                    "cidrv4": machine.interfaces[0].cidrv4,
-                    "gateway": machine.interfaces[0].gateway,
-                    "as_boot": machine.interfaces[0].as_boot,
-                    "name": machine.interfaces[0].name,
-                    "netmask": machine.interfaces[0].netmask,
-                    "roles": [k.role for k in machine.schedules],
-                    "created_date": machine.created_date,
-                    "fqdn": machine.interfaces[0].fqdn,
-                    "disks": [{"path": k.path, "size-bytes": k.size} for k in machine.disks],
+                    "mac": row["mac"],
+                    "ipv4": row["ipv4"],
+                    "cidrv4": row["cidrv4"],
+                    "gateway": row["gateway"],
+                    "as_boot": row["as_boot"],
+                    "name": row["name"],
+                    "netmask": row["netmask"],
+                    "roles": list(args),
+                    "created_date": self.session.query(Machine).filter(
+                        Machine.id == row["machine_id"]).first().created_date,
+                    "fqdn": row["fqdn"],
+                    "disks": [{"path": k.path, "size-bytes": k.size}
+                              for k in self.session.query(MachineDisk).filter(MachineDisk.id == row["machine_id"])],
                 })
             return machines
 
@@ -620,11 +636,12 @@ class FetchLifecycle(object):
         self.session = session
 
     def get_ignition_uptodate_status(self, mac: str):
-        interface = self.session.query(MachineInterface).filter(MachineInterface.mac == mac).first()
-        if interface:
-            lifecycle = self.session.query(LifecycleIgnition).filter(
-                LifecycleIgnition.machine_id == interface.id).first()
-            return lifecycle.up_to_date if lifecycle else None
+        for row in self.session.execute("""SELECT li.up_to_date FROM "machine-interface" AS mi
+          JOIN machine AS m ON m.id = mi.machine_id
+          JOIN "lifecycle-ignition" AS li ON li.machine_id = mi.machine_id
+          WHERE mi.mac = '%s'""" % mac):
+            return row["up_to_date"]
+
         return None
 
     def get_all_updated_status(self):
@@ -643,12 +660,12 @@ class FetchLifecycle(object):
         return status
 
     def get_coreos_install_status(self, mac: str):
-        interface = self.session.query(MachineInterface).filter(MachineInterface.mac == mac).first()
-        if interface:
-            lifecycle = self.session.query(LifecycleCoreosInstall).filter(
-                LifecycleCoreosInstall.machine_id == interface.id).first()
-            return lifecycle.success if lifecycle else None
-        self.log.debug("mac: %s return None" % mac)
+        for row in self.session.execute("""SELECT lci.success FROM "machine-interface" AS mi
+          JOIN machine AS m ON m.id = mi.machine_id
+          JOIN "lifecycle-coreos-install" AS lci ON lci.machine_id = mi.machine_id
+          WHERE mi.mac = '%s'""" % mac):
+            return row["success"]
+
         return None
 
     def get_all_coreos_install_status(self):
@@ -666,12 +683,12 @@ class FetchLifecycle(object):
         return life_status_list
 
     def get_rolling_status(self, mac: str):
-        interface = self.session.query(MachineInterface).filter(MachineInterface.mac == mac).first()
-        if interface:
-            l = self.session.query(LifecycleRolling).filter(
-                LifecycleRolling.machine_id == interface.id).first()
-            if l:
-                return l.enable, l.strategy
+        for row in self.session.execute("""SELECT lr.enable, lr.strategy FROM "machine-interface" AS mi
+          JOIN machine AS m ON m.id = mi.machine_id
+          JOIN "lifecycle-rolling" AS lr ON lr.machine_id = mi.machine_id
+          WHERE mi.mac = '%s'""" % mac):
+            return row["enable"], row["strategy"]
+
         self.log.debug("mac: %s return None" % mac)
         return None, None
 
