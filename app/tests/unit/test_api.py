@@ -5,7 +5,6 @@ import unittest
 
 from app import api
 from app import configs
-from app import model
 from common import posts
 
 ec = configs.EnjoliverConfig(importer=__file__)

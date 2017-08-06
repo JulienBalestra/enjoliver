@@ -8,7 +8,7 @@ import psycopg2.errorcodes
 from sqlalchemy import create_engine
 from sqlalchemy import text
 from sqlalchemy.exc import DatabaseError
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 
 import logger
 import model
@@ -19,6 +19,18 @@ class SmartClient(object):
 
     engines = []
     lazy_engine = None
+
+    @staticmethod
+    def get_bool_by_session(session: Session, wanted: bool):
+        if session.bind.dialect.name == "cockroachdb":
+            return "TRUE" if wanted is True else "FALSE"
+        return "1" if wanted is True else "0"
+
+    @staticmethod
+    def get_select_by_session(session: Session, alias: str, key: str):
+        if session.bind.dialect.name == "cockroachdb":
+            return key
+        return "%s.%s" % (alias, key)
 
     @staticmethod
     def parse_db_uri(db_uri: str):

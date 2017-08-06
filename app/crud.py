@@ -12,6 +12,7 @@ import logger
 import sync
 from model import ChassisPort, Chassis, MachineInterface, Machine, MachineDisk, \
     Healthz, Schedule, ScheduleRoles, LifecycleIgnition, LifecycleCoreosInstall, LifecycleRolling
+from smartdb import SmartClient as sc
 
 LOGGER = logger.get_logger(__file__)
 
@@ -401,8 +402,8 @@ class FetchSchedule(object):
 
         for row in self.session.execute("""SELECT mi.id, mi.mac, mi.ipv4, mi.cidrv4, mi.gateway, mi.as_boot, mi.name, mi.netmask, mi.fqdn, mi.machine_id FROM machine AS m
             LEFT JOIN schedule AS s ON m.id = s.machine_id
-            INNER JOIN  "machine-interface" AS mi ON mi.machine_id = m.id AND mi.as_boot = TRUE
-            WHERE s.role IS NULL"""):
+            INNER JOIN  "machine-interface" AS mi ON mi.machine_id = m.id AND mi.as_boot = :as_boot
+            WHERE s.role IS NULL""", {"as_boot": sc.get_bool_by_session(self.session, True)}):
             available_machines.append({
                 "mac": row["mac"],
                 "ipv4": row["ipv4"],
@@ -450,23 +451,28 @@ class FetchSchedule(object):
             INNER JOIN schedule AS s ON s.machine_id = m.id
             WHERE s.role = '%s') AS a %s) AS result            
             INNER JOIN "machine-interface" AS mi ON mi.machine_id = result.machine_id
-            WHERE mi.as_boot = TRUE""" % (args[0], " ".join(union))
+            WHERE mi.as_boot = %s""" % (args[0], " ".join(union),
+                                        sc.get_bool_by_session(self.session, True))
 
             for row in self.session.execute(query):
                 machines.append({
-                    "mac": row["mac"],
-                    "ipv4": row["ipv4"],
-                    "cidrv4": row["cidrv4"],
-                    "gateway": row["gateway"],
-                    "as_boot": row["as_boot"],
-                    "name": row["name"],
-                    "netmask": row["netmask"],
+                    "mac": row[sc.get_select_by_session(self.session, "mi", "mac")],
+                    "ipv4": row[sc.get_select_by_session(self.session, "mi", "ipv4")],
+                    "cidrv4": row[sc.get_select_by_session(self.session, "mi", "cidrv4")],
+                    "gateway": row[sc.get_select_by_session(self.session, "mi", "gateway")],
+                    "as_boot": row[sc.get_select_by_session(self.session, "mi", "as_boot")],
+                    "name": row[sc.get_select_by_session(self.session, "mi", "name")],
+                    "netmask": row[sc.get_select_by_session(self.session, "mi", "netmask")],
                     "roles": list(args),
                     "created_date": self.session.query(Machine).filter(
-                        Machine.id == row["machine_id"]).first().created_date,
-                    "fqdn": row["fqdn"],
+                        Machine.id == row[
+                            sc.get_select_by_session(self.session, "result", "machine_id")]).first().created_date,
+                    "fqdn": row[sc.get_select_by_session(self.session, "mi", "fqdn")],
                     "disks": [{"path": k.path, "size-bytes": k.size}
-                              for k in self.session.query(MachineDisk).filter(MachineDisk.id == row["machine_id"])],
+                              for k in
+                              self.session.query(MachineDisk).filter(
+                                  MachineDisk.id == row[
+                                      sc.get_select_by_session(self.session, "result", "machine_id")])],
                 })
             return machines
 
