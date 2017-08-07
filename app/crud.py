@@ -645,7 +645,7 @@ class FetchLifecycle(object):
         for row in self.session.execute("""SELECT li.up_to_date FROM "machine-interface" AS mi
           JOIN machine AS m ON m.id = mi.machine_id
           JOIN "lifecycle-ignition" AS li ON li.machine_id = mi.machine_id
-          WHERE mi.mac = '%s'""" % mac):
+          WHERE mi.mac = :mac""", {"mac": mac}):
             return row["up_to_date"]
 
         return None
@@ -669,7 +669,7 @@ class FetchLifecycle(object):
         for row in self.session.execute("""SELECT lci.success FROM "machine-interface" AS mi
           JOIN machine AS m ON m.id = mi.machine_id
           JOIN "lifecycle-coreos-install" AS lci ON lci.machine_id = mi.machine_id
-          WHERE mi.mac = '%s'""" % mac):
+          WHERE mi.mac = :mac""", {"mac": mac}):
             return row["success"]
 
         return None
@@ -692,8 +692,8 @@ class FetchLifecycle(object):
         for row in self.session.execute("""SELECT lr.enable, lr.strategy FROM "machine-interface" AS mi
           JOIN machine AS m ON m.id = mi.machine_id
           JOIN "lifecycle-rolling" AS lr ON lr.machine_id = mi.machine_id
-          WHERE mi.mac = '%s'""" % mac):
-            return row["enable"], row["strategy"]
+          WHERE mi.mac = :mac""", {"mac": mac}):
+            return True if row["enable"] else False, row["strategy"]
 
         self.log.debug("mac: %s return None" % mac)
         return None, None
@@ -707,7 +707,7 @@ class FetchLifecycle(object):
                     "mac": machine.interfaces[0].mac,
                     "fqdn": machine.interfaces[0].fqdn,
                     "cidrv4": machine.interfaces[0].cidrv4,
-                    "enable": machine.lifecycle_rolling[0].enable,
+                    "enable": True if machine.lifecycle_rolling[0].enable else False,
                     "created_date": machine.lifecycle_rolling[0].created_date,
                     "updated_date": machine.lifecycle_rolling[0].updated_date
                 }
