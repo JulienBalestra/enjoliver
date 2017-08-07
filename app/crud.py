@@ -670,7 +670,7 @@ class FetchLifecycle(object):
           JOIN machine AS m ON m.id = mi.machine_id
           JOIN "lifecycle-coreos-install" AS lci ON lci.machine_id = mi.machine_id
           WHERE mi.mac = :mac""", {"mac": mac}):
-            return row["success"]
+            return bool(row["success"])
 
         return None
 
@@ -693,7 +693,7 @@ class FetchLifecycle(object):
           JOIN machine AS m ON m.id = mi.machine_id
           JOIN "lifecycle-rolling" AS lr ON lr.machine_id = mi.machine_id
           WHERE mi.mac = :mac""", {"mac": mac}):
-            return True if row["enable"] else False, row["strategy"]
+            return bool(row["enable"]), row["strategy"]
 
         self.log.debug("mac: %s return None" % mac)
         return None, None
@@ -707,7 +707,7 @@ class FetchLifecycle(object):
                     "mac": machine.interfaces[0].mac,
                     "fqdn": machine.interfaces[0].fqdn,
                     "cidrv4": machine.interfaces[0].cidrv4,
-                    "enable": True if machine.lifecycle_rolling[0].enable else False,
+                    "enable": bool(machine.lifecycle_rolling[0].enable),
                     "created_date": machine.lifecycle_rolling[0].created_date,
                     "updated_date": machine.lifecycle_rolling[0].updated_date
                 }
