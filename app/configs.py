@@ -109,7 +109,7 @@ class EnjoliverConfig(object):
         self.skip_ips = int(self.config_override("skip_ips", 1))
 
         # Application config
-        self.kubernetes_api_server_port = int(self.config_override("kubernetes_api_server_port", 8080))
+        self.kubernetes_apiserver_insecure_port = int(self.config_override("kubernetes_apiserver_insecure_port", 8080))
         self.kubernetes_service_cluster_ip_range = self.config_override("kubernetes_service_cluster_ip_range",
                                                                         "172.30.0.0/24")
         self.kubernetes_apiserver_insecure_bind_address = self.config_override(

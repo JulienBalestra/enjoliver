@@ -259,7 +259,7 @@ class ConfigSyncSchedules(object):
                 m["ipv4"], EC.fleet_etcd_client_port),
 
             # Kubernetes
-            "kubernetes_api_server_port": EC.kubernetes_api_server_port,
+            "kubernetes_apiserver_insecure_port": EC.kubernetes_apiserver_insecure_port,
             "kubernetes_node_ip": "%s" % m["ipv4"],
             "kubernetes_node_name": "%s" % m["ipv4"] if fqdn == automatic_name else fqdn,
             "kubernetes_service_cluster_ip_range": EC.kubernetes_service_cluster_ip_range,
@@ -359,11 +359,15 @@ class ConfigSyncSchedules(object):
                 update_extra_metadata=update_md,
             )
 
+    def notify(self):
+        pass
+
     def apply(self, nb_try=2, seconds_sleep=0):
         for i in range(nb_try):
             try:
                 self.etcd_member_kubernetes_control_plane()
                 self.kubernetes_nodes()
+                self.notify()
                 return
             except Exception as e:
                 self.log.error("fail to apply the sync %s %s" % (type(e), e))

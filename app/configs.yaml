@@ -54,10 +54,10 @@ kubernetes_etcd_data_dir: '/var/lib/etcd3/kubernetes'
 kubernetes_etcd_client_port: 4003
 kubernetes_etcd_peer_port: 7003
 
-kubernetes_api_server_port: 8080
 
 kubernetes_service_cluster_ip_range: '172.30.0.0/24'
 kubernetes_apiserver_insecure_bind_address: '0.0.0.0'
+kubernetes_apiserver_insecure_port: 8080
 
 skip_ips: 1
 range_nb_ips: 253
