@@ -1,8 +1,11 @@
 import copy
+import json
 import os
+import unittest
+
+import requests
 import sys
 import time
-import unittest
 
 from app.plans import k8s_2t
 
@@ -34,12 +37,13 @@ class TestKVMK8SEnjolivageDiskLifecycleLifecycle0(TestKVMK8sEnjolivageDiskLifecy
         nb_node = 3
         marker = "plans-%s-%s" % (TestKVMK8sEnjolivageDiskLifecycle.__name__.lower(), self.test_00.__name__)
         nodes = ["%s-%d" % (marker, i) for i in range(nb_node)]
+        ignitions = {
+            "discovery": marker,
+            "etcd_member_kubernetes_control_plane": "%s-%s" % (marker, "etcd-member-control-plane"),
+            "kubernetes_nodes": "%s-%s" % (marker, "k8s-node"),
+        }
         plan_k8s_2t = k8s_2t.Kubernetes2Tiers(
-            {
-                "discovery": marker,
-                "etcd_member_kubernetes_control_plane": "%s-%s" % (marker, "etcd-member-control-plane"),
-                "kubernetes_nodes": "%s-%s" % (marker, "k8s-node"),
-            },
+            ignitions,
             matchbox_path=self.test_matchbox_path,
             api_uri=self.api_uri,
             extra_selectors=self.ec.extra_selectors,
@@ -72,11 +76,12 @@ class TestKVMK8SEnjolivageDiskLifecycleLifecycle0(TestKVMK8sEnjolivageDiskLifecy
             to_start = copy.deepcopy(nodes)
             self.kvm_restart_off_machines(to_start)
 
-            for i in range(nb_node * 3 + 1):
+            for i in range(nb_node * 4 + 1):
                 # 3 loops by node
                 # 1) setup
                 # 2) reboot
                 # 3) destroy -> setup
+                # 4) update
                 time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds)
 
                 self.etcd_member_len(plan_k8s_2t.kubernetes_control_plane_ip_list[i % 3],
@@ -138,6 +143,37 @@ class TestKVMK8SEnjolivageDiskLifecycleLifecycle0(TestKVMK8sEnjolivageDiskLifecy
                     ["virsh", "vol-create-as", "--name", "%s.qcow2" % machine_marker,
                      "--pool", "default", "--capacity", "11GB", "--format", "qcow2"], \
                     ["virsh", "start", "%s" % machine_marker]
+
+                if i + 1 > nb_node * 3:
+                    self.ec.kubernetes_apiserver_insecure_port = 8181
+
+                    req = requests.get("%s/scheduler" % self.api_uri)
+                    scheduler = json.loads(req.content.decode())
+                    req.close()
+                    for mac in scheduler:
+                        req = requests.post("%s/lifecycle/rolling/mac=%s" % (self.api_uri, mac))
+                        req.close()
+
+                    for j in os.listdir("%s/groups/" % self.test_matchbox_path):
+
+                        try:
+                            with open("%s/groups/%s" % (self.test_matchbox_path, j), 'r') as f:
+                                group = json.loads(f.read())
+                            group["metadata"]["kubernetes_apiserver_insecure_port"] = \
+                                self.ec.kubernetes_apiserver_insecure_port
+
+                            with open("%s/groups/%s" % (self.test_matchbox_path, j), 'w') as f:
+                                json.dump(group, f, indent=4)
+
+                        except json.decoder.JSONDecodeError:
+                            self.assertIn(j, ["discovery.json", ".gitkeep"])
+
+                    for k in range(nb_node):
+                        time.sleep(self.testing_sleep_seconds * 15)
+                        self.unseal_all_vaults(plan_k8s_2t.kubernetes_control_plane_ip_list,
+                                               self.ec.vault_etcd_client_port)
+
+                    continue
 
                 self.virsh(destroy)
                 time.sleep(1)

@@ -729,7 +729,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         self.assertEqual(len(result["members"]), members_nb)
 
     def kubernetes_node_nb(self, api_server_ip: str, nodes_nb: int, tries=200):
-        c = kc.ApiClient(host="%s:8080" % api_server_ip)
+        c = kc.ApiClient(host="%s:%d" % (api_server_ip, self.ec.kubernetes_apiserver_insecure_port))
         core = kc.CoreV1Api(c)
         items = []
         for t in range(tries):
@@ -755,13 +755,13 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 break
             for i, ip in enumerate(ips):
                 try:
-                    endpoint = "http://%s:8080/healthz" % ip
+                    endpoint = "http://%s:%d/healthz" % (ip, self.ec.kubernetes_apiserver_insecure_port)
                     request = requests.get(endpoint)
                     response_body = request.content
                     request.close()
                     display("-> RESULT %s %s" % (endpoint, response_body))
                     if response_body == b"ok":
-                        display("## kubectl -s %s:8080 get cs" % ip)
+                        display("## kubectl -s %s:%d get cs" % (ip, self.ec.kubernetes_apiserver_insecure_port))
                         ips.pop(i)
                         display("-> REMAIN %s for %s" % (str(ips), self.kube_apiserver_health.__name__))
                         continue
@@ -773,7 +773,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         self.assertEqual(len(ips), 0)
 
     def create_tiller(self, api_server_ip: str):
-        c = kc.ApiClient(host="%s:8080" % api_server_ip)
+        c = kc.ApiClient(host="%s:%d" % (api_server_ip, self.ec.kubernetes_apiserver_insecure_port))
 
         with open("%s/manifests/tiller/tiller-service.yaml" % self.euid_path) as f:
             service_manifest = yaml.load(f)
@@ -788,7 +788,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     def pod_tiller_is_running(self, api_server_ip: str, tries=100):
         code = 0
-        c = kc.ApiClient(host="%s:8080" % api_server_ip)
+        c = kc.ApiClient(host="%s:%d" % (api_server_ip, self.ec.kubernetes_apiserver_insecure_port))
         core = kc.CoreV1Api(c)
         for t in range(tries):
             if code == 200:
@@ -825,7 +825,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         return tiller_containers == 1
 
     def tiller_can_restart(self, api_server_ip: str):
-        c = kc.ApiClient(host="%s:8080" % api_server_ip)
+        c = kc.ApiClient(host="%s:%d" % (api_server_ip, self.ec.kubernetes_apiserver_insecure_bind_address))
         core = kc.CoreV1Api(c)
         r = core.list_namespaced_pod("kube-system", label_selector="app=tiller")
         pod_ip, node_ip, req, tiller_endpoint = "", "", "", ""
@@ -880,7 +880,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         raise AssertionError("tiller is not gc on node %s" % node_ip)
 
     def _get_tiller_grpc_endpoint(self, api_server_ip: str):
-        c = kc.ApiClient(host="%s:8080" % api_server_ip)
+        c = kc.ApiClient(host="%s:%d" % (api_server_ip, self.ec.kubernetes_apiserver_insecure_port))
         core = kc.CoreV1Api(c)
         r = core.list_namespaced_pod("kube-system", label_selector="app=tiller")
         exception = None
@@ -898,7 +898,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     def create_helm_etcd_backup(self, api_server_ip: str, etcd_app_name: str):
         tiller = self._get_tiller_grpc_endpoint(api_server_ip)
-        c = kc.ApiClient(host="%s:8080" % api_server_ip)
+        c = kc.ApiClient(host="%s:%d" % (api_server_ip, self.ec.kubernetes_apiserver_insecure_port))
         core = kc.CoreV1Api(c)
         try:
             core.create_namespace(body={"kind": "Namespace", "apiVersion": "v1", "metadata": {"name": "backup"}})
@@ -951,7 +951,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             time.sleep(self.testing_sleep_seconds)
 
     def etcd_backup_done(self, api_server_ip: str, etcd_app_name: str, tries=120):
-        c = kc.ApiClient(host="%s:8080" % api_server_ip)
+        c = kc.ApiClient(host="%s:%d" % (api_server_ip, self.ec.kubernetes_apiserver_insecure_port))
         core = kc.CoreV1Api(c)
         summary = self._snapshot_status(core, etcd_app_name, tries)
         for k in ["revision", "totalKey", "totalSize"]:
@@ -1074,3 +1074,9 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 kp.join(timeout=5)
         finally:
             display("-> Stopping %s" % self.iteractive_usage.__name__)
+
+    def updating_ignition_metadata(self, metadata, new_value):
+        pass
+
+
+
