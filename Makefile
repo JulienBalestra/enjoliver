@@ -50,7 +50,7 @@ acserver:
 	./runtime/runtime.acserver &
 
 aci: acserver
-	make -C aci kube_deps
+	make -C aci core
 	# Find a better way to stop it
 	pkill acserver
 
