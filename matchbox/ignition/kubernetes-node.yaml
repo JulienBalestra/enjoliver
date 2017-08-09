@@ -618,7 +618,7 @@ storage:
               "rktKind": "stage1",
               "rktVersion": "v1",
               "name": "coreos.com/rkt/stage1-coreos",
-              "version": "v1.25.0",
+              "version": "v1.27.0",
               "location": "/opt/rootfs/usr/lib/rkt/stage1-images/stage1-coreos.aci"
           }
 
