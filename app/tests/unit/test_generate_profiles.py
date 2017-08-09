@@ -39,7 +39,7 @@ class TestGenerateProfiles(TestCase):
             'initrd': ['%s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz' % self.gen.api_uri],
             'cmdline':
                 {
-                    'coreos.autologin': '',
+                    'console': 'tty0 console=ttyS0 console=ttyS1',
                     'coreos.first_boot': '',
                     'coreos.oem.id': 'pxe',
                     'coreos.config.url': '%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % self.gen.api_uri
@@ -58,7 +58,7 @@ class TestGenerateProfiles(TestCase):
                     "%s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz" % self.gen.api_uri
                 ],
                 "cmdline": {
-                    "coreos.autologin": "",
+                    "console": "tty0 console=ttyS0 console=ttyS1",
                     "coreos.first_boot": "",
                     "coreos.oem.id": "pxe",
                     "coreos.config.url": "%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}" %

@@ -211,7 +211,7 @@ class TestAPIGunicorn(unittest.TestCase):
         expect = "#!ipxe\n" \
                  "kernel " \
                  "%s/assets/coreos/serve/coreos_production_pxe.vmlinuz " \
-                 "coreos.autologin " \
+                 "console=tty0 console=ttyS0 console=ttyS1 " \
                  "coreos.config.url=%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp} " \
                  "coreos.first_boot " \
                  "coreos.oem.id=pxe\n" \
@@ -243,11 +243,12 @@ class TestAPIGunicorn(unittest.TestCase):
         request.close()
         expect = "#!ipxe\n" \
                  "kernel %s/assets/coreos/serve/coreos_production_pxe.vmlinuz " \
-                 "coreos.autologin " \
+                 "console=tty0 console=ttyS0 console=ttyS1 " \
                  "coreos.config.url=%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp} " \
                  "coreos.first_boot coreos.oem.id=pxe\n" \
                  "initrd %s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz \n" \
                  "boot\n" % (gen.profile.api_uri, gen.profile.api_uri, gen.profile.api_uri)
+        self.maxDiff = None
         self.assertEqual(expect, response_body)
         self.assertEqual(200, response_code)
 

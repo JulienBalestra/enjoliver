@@ -148,9 +148,10 @@ class GenerateProfile(GenerateCommon):
             "cmdline": {
                 "coreos.config.url":
                     "%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}" % self.api_uri,
-                "coreos.autologin": "",
+                # "coreos.autologin": "",
                 "coreos.first_boot": "",
-                "coreos.oem.id": "pxe"
+                "coreos.oem.id": "pxe",
+                "console": "tty0 console=ttyS0 console=ttyS1",
             }
         }
 

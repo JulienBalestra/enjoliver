@@ -544,6 +544,7 @@ systemd:
           --apiserver-count={{.kubernetes_apiserver_count}} \
           --advertise-address={{.network.ip}} \
           --insecure-bind-address={{.kubernetes_apiserver_insecure_bind_address}} \
+          --insecure-port={{.kubernetes_apiserver_insecure_port}} \
           --etcd-servers=http://127.0.0.1:{{.kubernetes_etcd_client_port}} \
           --allow-privileged=true \
           --service-cluster-ip-range={{.kubernetes_service_cluster_ip_range}} \
@@ -591,7 +592,7 @@ systemd:
           --register-schedulable=false \
           --allow-privileged=true \
           --enable-custom-metrics \
-          --api-servers=http://127.0.0.1:{{.kubernetes_api_server_port}} \
+          --api-servers=http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} \
           --node-labels=control-plane=true \
           --cloud-provider="" \
           --container-runtime=rkt \
@@ -611,7 +612,7 @@ systemd:
         [Unit]
         After=kube-apiserver.service
         [Service]
-        ExecStartPre=/usr/bin/curl -f http://127.0.0.1:{{.kubernetes_api_server_port}}/healthz
+        ExecStartPre=/usr/bin/curl -f http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}}/healthz
         ExecStart=/opt/bin/create-control-plane
         Restart=on-failure
         RestartSec=5
@@ -882,7 +883,7 @@ storage:
               command:
               - /hyperkube
               - controller-manager
-              - --master=http://127.0.0.1:{{.kubernetes_api_server_port}}
+              - --master=http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}}
               - --leader-elect=true
               - --service-account-private-key-file=/etc/secrets/service-accounts.key
               - --cluster-signing-cert-file=/etc/secrets/kube-apiserver.certificate
@@ -959,7 +960,7 @@ storage:
                   command:
                   - /hyperkube
                   - scheduler
-                  - --master=http://127.0.0.1:{{.kubernetes_api_server_port}}
+                  - --master=http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}}
                   - --leader-elect=true
                   resources:
                     requests:
@@ -1012,7 +1013,7 @@ storage:
           HOSTNAME='{{.hostname}}'
           HYPERKUBE_IMAGE_URL='{{.hyperkube_image_url}}'
           KUBERNETES_APISERVER_COUNT='{{.kubernetes_apiserver_count}}'
-          KUBERNETES_API_SERVER_PORT='{{.kubernetes_api_server_port}}'
+          KUBERNETES_API_SERVER_PORT='{{.kubernetes_apiserver_insecure_port}}'
           KUBERNETES_ETCD_ADVERTISE_CLIENT_URLS='{{.kubernetes_etcd_advertise_client_urls}}'
           KUBERNETES_ETCD_CLIENT_PORT='{{.kubernetes_etcd_client_port}}'
           KUBERNETES_ETCD_DATA_DIR='{{.kubernetes_etcd_data_dir}}'
@@ -1416,7 +1417,8 @@ storage:
           systemctl stop fleet.service
 
           echo "draining node..."
-          /opt/bin/kubectl drain {{.kubernetes_node_name}} --force --ignore-daemonsets --delete-local-data
+          /opt/bin/kubectl -s http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} \
+            drain {{.kubernetes_node_name}} --force --ignore-daemonsets --delete-local-data
 
           set +e
           for service in kubelet kube-apiserver etcd3@kubernetes etcd3@fleet vault etcd3@vault
@@ -1492,7 +1494,7 @@ storage:
              --ca-file /etc/vault.d/etcd-fleet/client.issuing_ca \
              --endpoints http://127.0.0.1:{{.fleet_etcd_client_port}} cluster-health
 
-          retry kubectl cluster-info
+          retry kubectl -s http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} cluster-info
 
           retry curl -fs http://127.0.0.1:10248/healthz
 
@@ -1507,7 +1509,7 @@ storage:
             --driver etcd --endpoint https://{{.network.ip}}:{{.fleet_etcd_client_port}},{{.fleet_etcd_member_client_uri_list}} \
             list-machines --fields ip --no-legend | grep -c {{.network.ip}}
 
-          retry kubectl uncordon {{.kubernetes_node_name}}
+          retry kubectl -s http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} uncordon {{.kubernetes_node_name}}
 
           systemctl preset-all 2>&1 | tee -a /run/systemd-preset-all
 
@@ -1921,7 +1923,7 @@ storage:
         inline: |
           #!/bin/bash
           PATH=/opt/bin:${PATH}
-          exec kubectl create -f /etc/kubernetes/manifests
+          exec kubectl -s http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} create -f /etc/kubernetes/manifests
 
     - path: /etc/profile.d/alias.sh
       mode: 0755

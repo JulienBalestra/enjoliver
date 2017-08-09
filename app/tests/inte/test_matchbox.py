@@ -1,11 +1,11 @@
 import json
 import os
-import sys
-import time
 from multiprocessing import Process
 from unittest import TestCase
 
 import requests
+import sys
+import time
 
 from app import generator
 
@@ -176,7 +176,7 @@ class TestBootConfigCommon(TestCase):
         kernel_expect = [
             'kernel',
             '%s/assets/coreos/serve/coreos_production_pxe.vmlinuz' % self.gen.profile.api_uri,
-            'coreos.autologin',
+            "console=tty0", "console=ttyS0", "console=ttyS1",
             'coreos.config.url=%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % self.gen.profile.api_uri,
             'coreos.first_boot',
             "coreos.oem.id=pxe"]
@@ -263,7 +263,7 @@ class TestBootConfigSelector(TestBootConfigCommon):
         kernel_expect = [
             'kernel',
             '%s/assets/coreos/serve/coreos_production_pxe.vmlinuz' % self.gen.profile.api_uri,
-            'coreos.autologin',
+            "console=tty0", "console=ttyS0", "console=ttyS1",
             'coreos.config.url=%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}' % self.gen.profile.api_uri,
             'coreos.first_boot',
             "coreos.oem.id=pxe"]

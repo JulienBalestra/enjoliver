@@ -1,15 +1,15 @@
 import datetime
 import json
 import multiprocessing
+import os
 import shutil
 import socket
 import subprocess
-import sys
 import unittest
 import warnings
 
-import os
 import requests
+import sys
 import time
 import yaml
 from kubernetes import client as kc
@@ -1075,8 +1075,19 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         finally:
             display("-> Stopping %s" % self.iteractive_usage.__name__)
 
-    def updating_ignition_metadata(self, metadata, new_value):
-        pass
+    def replace_ignition_metadata(self, metadata, new_value):
+        req = requests.get("%s/scheduler" % self.api_uri)
+        scheduler = json.loads(req.content.decode())
+        req.close()
+        for mac in scheduler:
+            req = requests.post("%s/lifecycle/rolling/mac=%s" % (self.api_uri, mac))
+            req.close()
 
-
-
+        for j in os.listdir("%s/groups/" % self.test_matchbox_path):
+            if j == "discovery.json" or ".json" not in j:
+                continue
+            with open("%s/groups/%s" % (self.test_matchbox_path, j), 'r') as f:
+                group = json.loads(f.read())
+            group["metadata"][metadata] = new_value
+            with open("%s/groups/%s" % (self.test_matchbox_path, j), 'w') as f:
+                json.dump(group, f, indent=4)

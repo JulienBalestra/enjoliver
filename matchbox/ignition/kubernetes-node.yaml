@@ -371,6 +371,7 @@ systemd:
         ExecStart=/opt/rootfs/hyperkube apiserver proxy \
           --advertise-address={{.network.ip}} \
           --insecure-bind-address=127.0.0.1 \
+          --insecure-port={{.kubernetes_apiserver_insecure_port}} \
           --allow-privileged=true \
           --service-cluster-ip-range={{.kubernetes_service_cluster_ip_range}} \
           --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota \
@@ -421,7 +422,7 @@ systemd:
           --register-schedulable=false \
           --allow-privileged=true \
           --enable-custom-metrics \
-          --api-servers=http://127.0.0.1:{{.kubernetes_api_server_port}} \
+          --api-servers=http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} \
           --node-labels=node=true \
           --cloud-provider="" \
           --container-runtime=rkt \
@@ -545,7 +546,7 @@ storage:
           FLEET_IMAGE_URL='{{.fleet_image_url}}'
           HOSTNAME='{{.hostname}}'
           HYPERKUBE_IMAGE_URL='{{.hyperkube_image_url}}'
-          KUBERNETES_API_SERVER_PORT='{{.kubernetes_api_server_port}}'
+          KUBERNETES_API_SERVER_PORT='{{.kubernetes_apiserver_insecure_port}}'
           KUBERNETES_ETCD_ADVERTISE_CLIENT_URLS='{{.kubernetes_etcd_advertise_client_urls}}'
           KUBERNETES_ETCD_CLIENT_PORT='{{.kubernetes_etcd_client_port}}'
           KUBERNETES_ETCD_DATA_DIR='{{.kubernetes_etcd_data_dir}}'
@@ -622,6 +623,7 @@ storage:
           agent_ttl = 120s
           engine_reconcile_interval = 1
           etcd_request_timeout = 10
+          disable_engine = true
 
     - path: /etc/modprobe.d/bonding.conf
       mode: 0644
@@ -762,7 +764,8 @@ storage:
           systemctl stop fleet.service
 
           echo "draining node..."
-          /opt/bin/kubectl drain {{.kubernetes_node_name}} --force --ignore-daemonsets --delete-local-data
+          /opt/bin/kubectl -s http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} \
+            drain {{.kubernetes_node_name}} --force --ignore-daemonsets --delete-local-data
 
           set +e
           for service in kubelet kube-apiserver etcd3@kubernetes etcd3@fleet
@@ -822,7 +825,7 @@ storage:
              --ca-file /etc/vault.d/etcd-fleet/client.issuing_ca \
              --endpoints http://127.0.0.1:{{.fleet_etcd_client_port}} cluster-health
 
-          retry kubectl cluster-info
+          retry kubectl -s http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} cluster-info
 
           retry curl -fs http://127.0.0.1:10248/healthz
 
@@ -837,7 +840,7 @@ storage:
             --driver etcd --endpoint https://{{.network.ip}}:{{.fleet_etcd_client_port}},{{.fleet_etcd_member_client_uri_list}} \
             list-machines --fields ip --no-legend | grep -c {{.network.ip}}
 
-          retry kubectl uncordon {{.kubernetes_node_name}}
+          retry kubectl -s http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} uncordon {{.kubernetes_node_name}}
 
           systemctl preset-all 2>&1 | tee -a /run/systemd-preset-all
 

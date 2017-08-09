@@ -76,7 +76,7 @@ class TestKVMK8SEnjolivageDiskLifecycleLifecycle0(TestKVMK8sEnjolivageDiskLifecy
             to_start = copy.deepcopy(nodes)
             self.kvm_restart_off_machines(to_start)
 
-            for i in range(nb_node * 4 + 1):
+            for i in range(nb_node * 3 + 2):
                 # 3 loops by node
                 # 1) setup
                 # 2) reboot
@@ -144,29 +144,10 @@ class TestKVMK8SEnjolivageDiskLifecycleLifecycle0(TestKVMK8sEnjolivageDiskLifecy
                      "--pool", "default", "--capacity", "11GB", "--format", "qcow2"], \
                     ["virsh", "start", "%s" % machine_marker]
 
-                if i + 1 > nb_node * 3:
+                if i + 1 == nb_node * 3:
                     self.ec.kubernetes_apiserver_insecure_port = 8181
-
-                    req = requests.get("%s/scheduler" % self.api_uri)
-                    scheduler = json.loads(req.content.decode())
-                    req.close()
-                    for mac in scheduler:
-                        req = requests.post("%s/lifecycle/rolling/mac=%s" % (self.api_uri, mac))
-                        req.close()
-
-                    for j in os.listdir("%s/groups/" % self.test_matchbox_path):
-
-                        try:
-                            with open("%s/groups/%s" % (self.test_matchbox_path, j), 'r') as f:
-                                group = json.loads(f.read())
-                            group["metadata"]["kubernetes_apiserver_insecure_port"] = \
-                                self.ec.kubernetes_apiserver_insecure_port
-
-                            with open("%s/groups/%s" % (self.test_matchbox_path, j), 'w') as f:
-                                json.dump(group, f, indent=4)
-
-                        except json.decoder.JSONDecodeError:
-                            self.assertIn(j, ["discovery.json", ".gitkeep"])
+                    self.replace_ignition_metadata("kubernetes_apiserver_insecure_port",
+                                                   self.ec.kubernetes_apiserver_insecure_port)
 
                     for k in range(nb_node):
                         time.sleep(self.testing_sleep_seconds * 15)
