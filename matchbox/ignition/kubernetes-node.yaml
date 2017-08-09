@@ -39,6 +39,28 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
+    - name: install-iproute2.service
+      enable: true
+      contents: |
+        [Unit]
+        Requires=network-online.target
+        After=network-online.target
+        AssertFileIsExecutable=!/opt/rootfs/usr/bin/ip
+        [Service]
+        Type=oneshot
+        Environment=IMAGE={{.iproute2_image_url}}
+        ExecStartPre=/usr/bin/rkt fetch --insecure-options=all $IMAGE
+        ExecStartPre=/usr/bin/rkt image export $IMAGE /tmp/%p.aci
+        ExecStartPre=/usr/bin/rkt image rm $IMAGE
+        ExecStartPre=/usr/bin/tar -C /opt/rootfs -xvf /tmp/%p.aci --strip-components=1
+        ExecStartPre=/bin/rm -v /tmp/%p.aci
+
+        ExecStart=/usr/bin/ln -sfv /opt/rootfs/usr/bin/ip /opt/bin/ip
+        ExecReload=-/bin/rm -v /opt/rootfs/usr/bin/ip
+        RemainAfterExit=yes
+        [Install]
+        WantedBy=multi-user.target
+
     - name: install-fleet.service
       enable: true
       contents: |
@@ -406,10 +428,12 @@ systemd:
         Requires=rkt-api.service
         After=kube-apiserver.service
         [Service]
+        Environment=PATH=/opt/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
         ExecStartPre=/bin/ls -l \
           /etc/vault.d/kubernetes/kubelet.certificate \
           /etc/vault.d/kubernetes/kubelet.private_key \
-          /etc/vault.d/kubernetes/kubelet.issuing_ca
+          /etc/vault.d/kubernetes/kubelet.issuing_ca \
+          /opt/bin/ip
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
         ExecStart=/opt/rootfs/hyperkube kubelet \
           --hairpin-mode=none \

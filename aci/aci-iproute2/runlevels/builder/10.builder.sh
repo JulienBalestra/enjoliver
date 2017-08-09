@@ -7,14 +7,13 @@ set -ex
 set -o pipefail
 
 apt-get update -qq
-apt-get install -y dh-autoreconf cpio squashfs-tools wget libacl1-dev libsystemd-dev
+apt-get install -y bison flex
 
-mkdir -pv /go/src/github.com/rkt
+git clone git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
 
-git clone https://github.com/rkt/rkt.git /go/src/github/rkt/rkt
-cd /go/src/github/rkt/rkt
-
+cd iproute2
 git checkout v${ACI_VERSION}
+
 
 # Apply custom patches
 PATCHES_DIR="${ACI_HOME}/patches"
@@ -29,11 +28,7 @@ do
     echo ""
 done
 
-./autogen.sh
-./configure --enable-tpm=no --with-stage1-flavors=coreos
+./configure
 make
 
-mkdir -pv ${ROOTFS}/usr/lib/rkt/stage1-images/
-
-mv -v build-rkt-*/target/bin/rkt ${ROOTFS}/usr/bin/rkt
-mv -v build-rkt-*/target/bin/*.aci ${ROOTFS}/usr/lib/rkt/stage1-images/
+mv -v ip/ip ${ROOTFS}/usr/bin/ip

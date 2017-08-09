@@ -1,0 +1,90 @@
+From a20209ed22aa1300e83a10315a6abd95c18c40ba Mon Sep 17 00:00:00 2001
+From: Julien Balestra <julien.balestra@gmail.com>
+Date: Tue, 1 Aug 2017 12:45:52 +0200
+Subject: [PATCH] Mount netns directory as iproute2 does
+
+---
+ networking/networking.go | 12 +++++++++---
+ networking/podenv.go     | 35 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 44 insertions(+), 3 deletions(-)
+
+diff --git a/networking/networking.go b/networking/networking.go
+index ed0d704..64cd56d 100644
+--- a/networking/networking.go
++++ b/networking/networking.go
+@@ -36,8 +36,9 @@ import (
+ )
+ 
+ const (
+-	IfNamePattern = "eth%d"
+-	selfNetNS     = "/proc/self/ns/net"
++	IfNamePattern       = "eth%d"
++	selfNetNS           = "/proc/self/ns/net"
++	mountNetnsDirectory = "/var/run/netns"
+ )
+ 
+ // Networking describes the networking details of a pod.
+@@ -83,8 +84,13 @@ func Setup(podRoot string, podID types.UUID, fps []commonnet.ForwardedPort, netL
+ 		},
+ 	}
+ 
++	err := n.mountNetnsDirectory()
++	if err != nil {
++		return nil, err
++	}
++
+ 	// Create the network namespace (and save its name in a file)
+-	err := n.podNSCreate()
++	err = n.podNSCreate()
+ 	if err != nil {
+ 		return nil, err
+ 	}
+diff --git a/networking/podenv.go b/networking/podenv.go
+index bb415a3..b2d7b7f 100644
+--- a/networking/podenv.go
++++ b/networking/podenv.go
+@@ -101,6 +101,41 @@ func (e *podEnv) loadNets() ([]activeNet, error) {
+ 	return netSlice, nil
+ }
+ 
++// Ensure the netns directory is mounted before adding new netns like `ip netns add <netns>` command does.
++// See https://github.com/kubernetes/kubernetes/issues/48427
++// Make it possible for network namespace mounts to propagate between mount namespaces.
++// This makes it likely that an unmounting a network namespace file in one namespace will unmount the network namespace.
++// file in all namespaces allowing the network namespace to be freed sooner.
++func (e *podEnv) mountNetnsDirectory() error {
++	const EINVAL = "invalid argument"
++
++	err := os.MkdirAll(mountNetnsDirectory, 0755)
++	if err != nil {
++		return err
++	}
++
++	err = syscall.Mount("", mountNetnsDirectory, "none", syscall.MS_SHARED|syscall.MS_REC, "")
++	if err != nil {
++		// Fail unless we need to make the mount point
++		if err.Error() != EINVAL {
++			return fmt.Errorf("mount --bind %s failed: %q", mountNetnsDirectory, err)
++		}
++
++		// Upgrade mountTarget to a mount point
++		err = syscall.Mount(mountNetnsDirectory, mountNetnsDirectory, "none", syscall.MS_BIND|syscall.MS_REC, "")
++		if err != nil {
++			return fmt.Errorf("mount --rbind %s %s failed: %q", mountNetnsDirectory, mountNetnsDirectory, err)
++		}
++
++		// Remount after the Upgrade
++		err = syscall.Mount("", mountNetnsDirectory, "none", syscall.MS_SHARED|syscall.MS_REC, "")
++		if err != nil {
++			return fmt.Errorf("mount --bind %s failed: %q", mountNetnsDirectory, err)
++		}
++	}
++	return nil
++}
++
+ // podNSCreate creates the network namespace and saves a reference to its path.
+ // NewNS will bind-mount the namespace in /run/netns, so we write that filename
+ // to disk.
+-- 
+2.7.4
+

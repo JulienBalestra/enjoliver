@@ -5,12 +5,10 @@ RUNTIME=$(PROJECT)/runtime
 RKT=$(RUNTIME)/rkt/rkt
 ACI=$(PROJECT)/aci
 
-
 DEBIAN=debian
 GO=go
 BUILDER_HYPERKUBE=builder-hyperkube
-RKT_ACI=rkt
-
+IPROUTE2=iproute2
 
 default: push
 
@@ -29,20 +27,25 @@ $(BUILDER_HYPERKUBE): $(GO)
 	IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE) make -C $(RUNTIME) install
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) push
 
-test: $(BUILDER_HYPERKUBE)
-	@echo ENV IMAGE=$(ACI)/aci-$(RKT_ACI)
-	IMAGE=$(ACI)/aci-$(RKT_ACI) make -C $(RUNTIME) test
+build: $(BUILDER_HYPERKUBE)
+	@echo ENV IMAGE=$(ACI)/aci-$(IPROUTE2)
+	IMAGE=$(ACI)/aci-$(IPROUTE2) make -C $(RUNTIME) build
+
+
+test: build
+	@echo ENV IMAGE=$(ACI)/aci-$(IPROUTE2)
+	IMAGE=$(ACI)/aci-$(IPROUTE2) make -C $(RUNTIME) test
 
 push: test
-	@echo ENV IMAGE=$(ACI)/aci-$(RKT_ACI)
-	IMAGE=$(ACI)/aci-$(RKT_ACI) make -C $(RUNTIME) push
+	@echo ENV IMAGE=$(ACI)/aci-$(IPROUTE2)
+	IMAGE=$(ACI)/aci-$(IPROUTE2) make -C $(RUNTIME) push
 
 gc:
 	$(RKT) --local-config=$(RUNTIME) gc --grace-period=0s
 	$(RKT) --local-config=$(RUNTIME) image gc --grace-period=0s
 
 clean: gc
-	IMAGE=$(ACI)/aci-$(RKT_ACI) make -C $(RUNTIME) clean
+	IMAGE=$(ACI)/aci-$(IPROUTE2) make -C $(RUNTIME) clean
 
 fclean: clean
 	IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE) make -C $(RUNTIME) clean

@@ -1,0 +1,20 @@
+Signed-off-by: Casey Callendrello <casey.callendrello@xxxxxxxxxx>
+---
+ ip/ipnetns.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/ip/ipnetns.c b/ip/ipnetns.c
+index 198e9de8..9ee1fe6a 100644
+--- a/ip/ipnetns.c
++++ b/ip/ipnetns.c
+@@ -636,7 +636,7 @@ static int netns_add(int argc, char **argv)
+ 		}
+ 
+ 		/* Upgrade NETNS_RUN_DIR to a mount point */
+-		if (mount(NETNS_RUN_DIR, NETNS_RUN_DIR, "none", MS_BIND, NULL)) {
++		if (mount(NETNS_RUN_DIR, NETNS_RUN_DIR, "none", MS_BIND | MS_REC, NULL)) {
+ 			fprintf(stderr, "mount --bind %s %s failed: %s\n",
+ 				NETNS_RUN_DIR, NETNS_RUN_DIR, strerror(errno));
+ 			return -1;
+-- 
+2.13.3
