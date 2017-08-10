@@ -1,6 +1,6 @@
 schedule: "*/1 * * * *"
 image:
   repository: enjoliver.local/etcd
-  tag: 3.2.4
+  tag: 3.2.5
   pullPolicy: IfNotPresent
 namespace: backup

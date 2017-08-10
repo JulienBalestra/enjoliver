@@ -1,9 +1,7 @@
 import copy
-import json
 import os
 import unittest
 
-import requests
 import sys
 import time
 
@@ -76,7 +74,9 @@ class TestKVMK8SEnjolivageDiskLifecycleLifecycle0(TestKVMK8sEnjolivageDiskLifecy
             to_start = copy.deepcopy(nodes)
             self.kvm_restart_off_machines(to_start)
 
-            for i in range(nb_node * 3 + 2):
+            iterations = nb_node * 3 + 2
+
+            for i in range(iterations):
                 # 3 loops by node
                 # 1) setup
                 # 2) reboot
@@ -144,7 +144,7 @@ class TestKVMK8SEnjolivageDiskLifecycleLifecycle0(TestKVMK8sEnjolivageDiskLifecy
                      "--pool", "default", "--capacity", "11GB", "--format", "qcow2"], \
                     ["virsh", "start", "%s" % machine_marker]
 
-                if i + 1 == nb_node * 3:
+                if i == iterations - 2:
                     self.ec.kubernetes_apiserver_insecure_port = 8181
                     self.replace_ignition_metadata("kubernetes_apiserver_insecure_port",
                                                    self.ec.kubernetes_apiserver_insecure_port)
