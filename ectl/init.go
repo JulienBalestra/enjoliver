@@ -5,6 +5,11 @@ type Configuration struct {
 }
 
 type Runtime struct {
-	Config  Configuration
-	Cluster string
+	Config          Configuration
+	Cluster         string
+	EndpointDisplay EndpointDisplay
+}
+
+func init() {
+
 }
