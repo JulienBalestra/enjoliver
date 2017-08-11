@@ -57,6 +57,7 @@ func main() {
 
 	rootCmd.AddCommand(getCmd)
 	getCmd.PersistentFlags().StringVarP(&run.Cluster, "cluster", "c", "", fmt.Sprintf("Cluster in [%s]", joinMap(run.Config.Clusters, " ")))
+	getCmd.PersistentFlags().StringVarP(&run.Output, "output", "o", "ascii", "formating")
 	getCmd.AddCommand(endpointCmd)
 
 	endpointCmd.Flags().BoolVarP(&run.EndpointDisplay.Fleet, "fleet", "F", false, "Fleet")

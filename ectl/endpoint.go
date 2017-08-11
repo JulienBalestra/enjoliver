@@ -67,12 +67,30 @@ func (r *Runtime) createRow(node SchedulerKubernetesControlPlane, config Enjoliv
 }
 
 func (r *Runtime) display(kubernetesControlPlanes []SchedulerKubernetesControlPlane, config EnjoliverConfig) {
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader(r.createHeader())
-	for _, node := range kubernetesControlPlanes {
-		table.Append(r.createRow(node, config))
+	if r.Output == "ascii" {
+		asciiTable := tablewriter.NewWriter(os.Stdout)
+		asciiTable.SetHeader(r.createHeader())
+		for _, node := range kubernetesControlPlanes {
+			asciiTable.Append(r.createRow(node, config))
+		}
+		asciiTable.Render()
+		return
 	}
-	table.Render()
+	if r.Output == "json" {
+		// TODO use a struct to make a json more exploitable
+		var stringArray [][]string
+		for _, node := range kubernetesControlPlanes {
+			stringArray = append(stringArray, r.createRow(node, config))
+		}
+		b, err := json.Marshal(stringArray)
+		if err != nil {
+			glog.Errorf("fail to marshal: %s", err)
+			return
+		}
+		os.Stdout.Write(b)
+		return
+	}
+	glog.Warning("unknown output format")
 }
 
 func (r *Runtime) getSchedulerKubernetesControlPlane() ([]SchedulerKubernetesControlPlane, error) {

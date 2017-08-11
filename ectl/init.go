@@ -8,6 +8,7 @@ type Runtime struct {
 	Config          Configuration
 	Cluster         string
 	EndpointDisplay EndpointDisplay
+	Output          string
 }
 
 func init() {
