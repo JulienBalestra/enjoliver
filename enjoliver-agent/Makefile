@@ -1,5 +1,5 @@
 CC=go
-TARGET=node-agent
+TARGET=enjoliver-agent
 FLAGS=-ldflags '-w'
 CWD=$(shell pwd)
 

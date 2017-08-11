@@ -81,3 +81,5 @@ image.aci
 /matchbox/assets/coreos/1353.7.0/
 /ectl/ectl
 /projectFilesBackup/
+/node-agent/node-agent
+/enjoliver-agent/enjoliver-agent
