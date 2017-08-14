@@ -20,8 +20,6 @@ systemd:
     - name: rkt-api.service
       enable: true
       contents: |
-        [Unit]
-
         [Service]
         LimitNOFILE=65826
         ExecStart=/usr/bin/rkt api-service
@@ -53,6 +51,7 @@ systemd:
         ExecStart=/opt/bin/vault-token %i client
         RestartSec={{.vault_polling_sec}}
         Restart=on-failure
+
         [Install]
         WantedBy=multi-user.target
 
@@ -64,6 +63,7 @@ systemd:
         ExecStart=/opt/bin/vault-token %i kubelet
         RestartSec={{.vault_polling_sec}}
         Restart=on-failure
+
         [Install]
         WantedBy=multi-user.target
 
@@ -75,6 +75,7 @@ systemd:
         ExecStart=/opt/bin/vault-token %i kube-apiserver
         RestartSec={{.vault_polling_sec}}
         Restart=on-failure
+
         [Install]
         WantedBy=multi-user.target
 
@@ -86,6 +87,7 @@ systemd:
         ExecStart=/opt/bin/vault-token %i peer
         RestartSec={{.vault_polling_sec}}
         Restart=on-failure
+
         [Install]
         WantedBy=multi-user.target
 
@@ -97,6 +99,7 @@ systemd:
         ExecStart=/opt/bin/vault-token %i client
         RestartSec={{.vault_polling_sec}}
         Restart=on-failure
+
         [Install]
         WantedBy=multi-user.target
 
@@ -108,6 +111,7 @@ systemd:
         ExecStart=/opt/bin/vault-pki-issue %i client
         RestartSec={{.vault_polling_sec}}
         Restart=on-failure
+
         [Install]
         WantedBy=multi-user.target
 
@@ -119,6 +123,7 @@ systemd:
         ExecStart=/opt/bin/vault-pki-issue %i kubelet
         RestartSec={{.vault_polling_sec}}
         Restart=on-failure
+
         [Install]
         WantedBy=multi-user.target
 
@@ -130,6 +135,7 @@ systemd:
         ExecStart=/opt/bin/vault-pki-issue %i kube-apiserver
         RestartSec={{.vault_polling_sec}}
         Restart=on-failure
+
         [Install]
         WantedBy=multi-user.target
 
@@ -141,6 +147,7 @@ systemd:
         ExecStart=/opt/bin/vault-secret %i service-accounts
         RestartSec={{.vault_polling_sec}}
         Restart=on-failure
+
         [Install]
         WantedBy=multi-user.target
 
@@ -152,6 +159,7 @@ systemd:
         ExecStart=/opt/bin/vault-pki-issue %i peer
         RestartSec={{.vault_polling_sec}}
         Restart=on-failure
+
         [Install]
         WantedBy=multi-user.target
 
@@ -163,6 +171,7 @@ systemd:
         ExecStart=/opt/bin/vault-pki-issue %i client
         RestartSec={{.vault_polling_sec}}
         Restart=on-failure
+
         [Install]
         WantedBy=multi-user.target
 
@@ -184,6 +193,7 @@ systemd:
         RestartSec=10s
         Restart=on-failure
         LimitNOFILE=65826
+
         [Install]
         WantedBy=multi-user.target
 
@@ -216,6 +226,7 @@ systemd:
         RestartSec=5s
         Restart=on-failure
         LimitNOFILE=65826
+
         [Install]
         WantedBy=multi-user.target
 
@@ -224,6 +235,7 @@ systemd:
       contents: |
         [Unit]
         After=etcd3@kubernetes.service
+
         [Service]
         Environment=ETCDCTL_API=3
         ExecStartPre=/bin/ls -l \
@@ -269,6 +281,7 @@ systemd:
           --etcd-keyfile=/etc/vault.d/etcd-kubernetes/client.private_key
         Restart=always
         RestartSec=5s
+
         [Install]
         WantedBy=multi-user.target
 
@@ -279,6 +292,7 @@ systemd:
         After=rkt-api.service
         Requires=rkt-api.service
         After=kube-apiserver.service
+
         [Service]
         Environment=PATH=/opt/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
         ExecStartPre=/bin/ls -l \
@@ -309,6 +323,7 @@ systemd:
           --client-ca-file=/etc/vault.d/kubernetes/kubelet.issuing_ca
         Restart=always
         RestartSec=5s
+
         [Install]
         WantedBy=multi-user.target
 
@@ -320,6 +335,7 @@ systemd:
             [Unit]
             After=etcd3@fleet.service
             After=rkt-metadata.service
+
             [Service]
             EnvironmentFile=/etc/metadata.env
             ExecStartPre=/bin/ls -lL /opt/bin/rkt
@@ -335,10 +351,12 @@ systemd:
         [Unit]
         After=etcd3@kubernetes.service
         After=kubelet.service
+
         [Service]
         Type=oneshot
         ExecStart=/opt/bin/lifecycle-ready
         RemainAfterExit=yes
+
         [Install]
         WantedBy=multi-user.target
 
@@ -351,11 +369,13 @@ systemd:
         After=etcd3@kubernetes.service
         After=kubelet.service
         After=lifecycle-ready.service
+
         [Service]
         EnvironmentFile=/etc/metadata.env
         ExecStart=/opt/bin/lifecycle-update
         Restart=always
         RestartSec={{.lifecycle_update_polling_sec}}
+
         [Install]
         WantedBy=multi-user.target
 

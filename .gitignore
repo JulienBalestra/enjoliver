@@ -57,8 +57,8 @@ image.aci
 /runtime/data/
 /runtime/data
 /runtime/matchbox/
-/runtime/renders/*.render/
-/runtime/target/
+/runtime/renders/*.render
+/runtime/target
 /hyperkube/hyperkube
 /hyperkube/controller-manager
 /hyperkube/federation-controller-manager
@@ -83,7 +83,8 @@ image.aci
 /runtime/helm/helm
 /runtime/helm/LICENSE
 /runtime/helm/README.md
+/matchbox/assets/coreos/1353.7.0/
 /ectl/ectl
-/projectFilesBackup/
+/projectFilesBackup
 /node-agent/node-agent
 /enjoliver-agent/enjoliver-agent
