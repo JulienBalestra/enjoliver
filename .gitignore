@@ -15,6 +15,8 @@ serve
 /app/tests/undionly.kkkpxe
 /discoveryC/discoveryC
 /matchbox/assets/discoveryC/discoveryC
+/matchbox/assets/coreos/current
+/matchbox/assets/coreos/1*
 /app/tests/paths.d/paths.json
 /app/tests/testing.id_rsa
 /app/tests/testing.id_rsa.pub
@@ -53,6 +55,7 @@ image.aci
 /runtime/config.yml
 /runtime/paths.d/
 /runtime/data/
+/runtime/data
 /runtime/matchbox/
 /runtime/renders/*.render/
 /runtime/target/
@@ -76,10 +79,10 @@ image.aci
 /app/tests/test_certs/*.issuing_ca
 /app/tests/test_certs/*.private_key
 /app/tests/test_certs/unseal.key
+/app/tests/trustedkeys/
 /runtime/helm/helm
 /runtime/helm/LICENSE
 /runtime/helm/README.md
-/matchbox/assets/coreos/1353.7.0/
 /ectl/ectl
 /projectFilesBackup/
 /node-agent/node-agent
