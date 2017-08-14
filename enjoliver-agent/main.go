@@ -25,29 +25,35 @@ func probeUrl(url string) (error) {
 	return nil
 }
 
-func (run *Runtime) probeHealthz() (map[string]bool, error) {
+func (run *Runtime) probeHealthz() (ProbeResponse) {
 	var err error
 
 	healthReport := make(map[string]bool)
+	errReport := make(map[string]string)
 	for _, p := range run.LivenessProbes {
-		healthReport[p.Name] = false
 		err = probeUrl(p.Url)
 		if err != nil {
 			glog.Errorf("fail to probe %s: %s", p.Name, err)
+			errReport[p.Name] = err.Error()
+			healthReport[p.Name] = false
 			continue
 		}
 		healthReport[p.Name] = true
 	}
+	return ProbeResponse{healthReport, errReport}
+}
 
-	return healthReport, nil
+type ProbeResponse struct {
+	LivenessStatus map[string]bool
+	Errors         map[string]string
 }
 
 func (run *Runtime) handlerHealthz(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		health, err := run.probeHealthz()
-		if err != nil {
-			glog.Errorf("fail to get health status: %s", err)
-			return
+		health := run.probeHealthz()
+		if len(health.Errors) != 0 {
+			glog.Errorf("fail to get health status for: %s", health.Errors)
+			w.WriteHeader(503)
 		}
 
 		b, err := json.Marshal(&health)
