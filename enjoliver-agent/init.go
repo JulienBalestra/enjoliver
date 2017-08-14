@@ -1,11 +1,12 @@
 package main
 
 import (
-	"os"
+	"flag"
+	"fmt"
 	"github.com/golang/glog"
+	"os"
 	"strconv"
 	"strings"
-	"fmt"
 )
 
 const (
@@ -65,9 +66,12 @@ func getLivenessProbesToQuery() ([]LivenessProbe, error) {
 		{"FLEET_ETCD_CLIENT_PORT", etcdLivenessPath},
 		{"KUBERNETES_ETCD_CLIENT_PORT", etcdLivenessPath},
 		{"VAULT_ETCD_CLIENT_PORT", etcdLivenessPath},
-		{"KUBERNETES_API_SERVER_PORT", kubernetesLivenessPath},
-		{"KUBELET_PORT", kubernetesLivenessPath},
-		{"VAULT_PORT", vaultLivenessPath},
+		{"KUBERNETES_APISERVER_INSECURE_PORT", kubernetesLivenessPath},
+		{"KUBELET_HEALTHZ_PORT", kubernetesLivenessPath},
+	}
+	if flag.Lookup(vaultFlagName).Value.String() == "true" {
+		glog.V(4).Infof("flag %s set to true", vaultFlagName)
+		probes = append(probes, []string{"VAULT_PORT", vaultLivenessPath})
 	}
 
 	for _, elt := range probes {

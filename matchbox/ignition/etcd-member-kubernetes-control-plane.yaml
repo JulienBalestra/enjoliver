@@ -624,7 +624,8 @@ systemd:
           --v=2 \
           --tls-cert-file=/etc/vault.d/kubernetes/kubelet.certificate \
           --tls-private-key-file=/etc/vault.d/kubernetes/kubelet.private_key \
-          --client-ca-file=/etc/vault.d/kubernetes/kubelet.issuing_ca
+          --client-ca-file=/etc/vault.d/kubernetes/kubelet.issuing_ca \
+          --healthz-port={{.kubelet_healthz_port}}
         Restart=always
         RestartSec=5s
         [Install]
@@ -738,7 +739,7 @@ storage:
               app: vault
           spec:
             ports:
-            - port: 8200
+            - port: {{.vault_port}}
               protocol: TCP
             clusterIP: "None"
           ---
@@ -755,7 +756,7 @@ storage:
                 - ip: {{$element}}
               {{end}}
               ports:
-                - port: 8200
+                - port: {{.vault_port}}
 
     - path: /etc/kubernetes/manifests/etcd-vault.yaml
       filesystem: root
@@ -1036,8 +1037,9 @@ storage:
           FLEET_IMAGE_URL='{{.fleet_image_url}}'
           HOSTNAME='{{.hostname}}'
           HYPERKUBE_IMAGE_URL='{{.hyperkube_image_url}}'
+          KUBELET_HEALTHZ_PORT='{{.kubelet_healthz_port}}'
           KUBERNETES_APISERVER_COUNT='{{.kubernetes_apiserver_count}}'
-          KUBERNETES_API_SERVER_PORT='{{.kubernetes_apiserver_insecure_port}}'
+          KUBERNETES_APISERVER_INSECURE_PORT='{{.kubernetes_apiserver_insecure_port}}'
           KUBERNETES_ETCD_ADVERTISE_CLIENT_URLS='{{.kubernetes_etcd_advertise_client_urls}}'
           KUBERNETES_ETCD_CLIENT_PORT='{{.kubernetes_etcd_client_port}}'
           KUBERNETES_ETCD_DATA_DIR='{{.kubernetes_etcd_data_dir}}'
@@ -1076,6 +1078,7 @@ storage:
           VAULT_ETCD_MEMBER_PEER_URI_LIST='{{.vault_etcd_member_peer_uri_list}}'
           VAULT_ETCD_PEER_PORT='{{.vault_etcd_peer_port}}'
           VAULT_IMAGE_URL='{{.vault_image_url}}'
+          VAULT_PORT='{{.vault_port}}'
 
     - path: /etc/hostname
       filesystem: root
@@ -1131,7 +1134,7 @@ storage:
             sync = "false"
           }
           listener "tcp" {
-            address     = "127.0.0.1:8200"
+            address     = "127.0.0.1:{{.vault_port}}"
             tls_disable = 1
           }
 
@@ -1146,12 +1149,12 @@ storage:
             sync = "false"
           }
           listener "tcp" {
-            address     = "{{.network.ip}}:8200"
+            address     = "{{.network.ip}}:{{.vault_port}}"
             tls_cert_file = "/etc/vault.d/vault/server.certificate"
             tls_key_file  = "/etc/vault.d/vault/server.private_key"
           }
           listener "tcp" {
-            address     = "127.0.0.1:8200"
+            address     = "127.0.0.1:{{.vault_port}}"
             tls_disable = 1
           }
 
@@ -1377,7 +1380,7 @@ storage:
         inline: |
            export PATH=/opt/bin:$PATH
            export PRIVATE_IPV4={{.network.ip}}
-           export VAULT_ADDR=http://127.0.0.1:8200
+           export VAULT_ADDR=http://127.0.0.1:{{.vault_port}}
 
     - path: /etc/modules-load.d/network.conf
       mode: 0644
@@ -1479,7 +1482,7 @@ storage:
         inline: |
           #!/usr/bin/env bash
           export PATH=/opt/rootfs/usr/bin:/opt/bin/:${PATH}
-          export VAULT_ADDR=http://127.0.0.1:8200
+          export VAULT_ADDR=http://127.0.0.1:{{.vault_port}}
 
           set -o pipefail
 
@@ -1520,7 +1523,7 @@ storage:
 
           retry kubectl -s http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} cluster-info
 
-          retry curl -fs http://127.0.0.1:10248/healthz
+          retry curl -fs http://127.0.0.1:{{.kubelet_healthz_port}}/healthz
 
           retry fleetctl --endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} \
             --driver etcd list-machines \
@@ -1550,7 +1553,7 @@ storage:
         inline: |
           #!/bin/bash
 
-          KEY="https://{{.network.ip}}:8200"
+          KEY="https://{{.network.ip}}:{{.vault_port}}"
           ls -l /etc/vault.d/vault/server.certificate /etc/vault.d/vault/server.private_key || {
             curl -f "http://127.0.0.1:{{.vault_etcd_client_port}}/v2/keys/initier?prevExist=false" -XPUT -d "value=${KEY}" || \
               curl -f "http://127.0.0.1:{{.vault_etcd_client_port}}/v2/keys/initier?prevValue=${KEY}" -XPUT -d "value=${KEY}" && {
@@ -1568,7 +1571,7 @@ storage:
         inline: |
           #!/usr/bin/env bash
 
-          export VAULT_ADDR="http://127.0.0.1:8200"
+          export VAULT_ADDR="http://127.0.0.1:{{.vault_port}}"
           export PATH=/opt/bin:${PATH}
           function retry {
             until $@
@@ -1582,11 +1585,11 @@ storage:
           unset ETCDCTL_API
 
           echo "Vault have to respond and may be sealed:"
-          curl http://127.0.0.1:8200/v1/ | jq -re .errors || exit 1
+          curl http://127.0.0.1:{{.vault_port}}/v1/ | jq -re .errors || exit 1
 
           vault init -check && {
-            echo "GET vault: https://{{.network.ip}}:8200/v1/"
-            curl --insecure https://{{.network.ip}}:8200/v1/ || {
+            echo "GET vault: https://{{.network.ip}}:{{.vault_port}}/v1/"
+            curl --insecure https://{{.network.ip}}:{{.vault_port}}/v1/ || {
               echo "vault already init but not running with TLS"
               retry ls -l /etc/vault.d/vault/server.certificate /etc/vault.d/vault/server.private_key
               systemctl restart vault
@@ -1863,7 +1866,7 @@ storage:
           do
             for ve in $(echo -n {{ .vault_ip_list }} | tr ',' '\n' | shuf)
             do
-              REQ="https://${ve}:8200/v1/pki/${1}/issue/${2}"
+              REQ="https://${ve}:{{.vault_port}}/v1/pki/${1}/issue/${2}"
               echo "POST ${REQ}"
               curl ${REQ} \
                 --cacert ${VAULT_CAPATH} -Lfs \
@@ -1919,7 +1922,7 @@ storage:
           do
             for ve in $(echo -n {{ .vault_ip_list }} | tr ',' '\n' | shuf)
             do
-              REQ="https://${ve}:8200/v1/secret/${1}/${2}"
+              REQ="https://${ve}:{{.vault_port}}/v1/secret/${1}/${2}"
               echo "GET ${REQ}"
               curl ${REQ} -Lfs \
                 --cacert ${VAULT_CAPATH} \
