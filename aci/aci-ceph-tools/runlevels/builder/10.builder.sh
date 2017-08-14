@@ -16,6 +16,7 @@ set -o pipefail
 # ./install-deps.sh
 # ./do_cmake.sh
 
+apt-get update -qq
 apt-get -qy install ceph-common
 mkdir -p ${ROOTFS}/opt/{lib,bin}  ${ROOTFS}/usr/lib64
 set +e
