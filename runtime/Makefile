@@ -46,12 +46,8 @@ default: dev_setup
 prod_setup: $(MATCHBOX)
 
 $(ACSERVER):
-	go get github.com/Masterminds/glide
-	go get golang.org/x/tools/cmd/goimports
-	go get -u github.com/jteeuwen/go-bindata/...
-	cd $(ACSERVER_DIR) && PATH=$(ACSERVER_DIR)/bin/:$(GOPATH)/bin/:$(PATH) go-bindata -pkg dist templates && glide install -v && mkdir -pv $(ACSERVER_DIR)/vendor/github.com/appc/acserver/dist
-	mv -v $(ACSERVER_DIR)/bindata.go $(ACSERVER_DIR)/vendor/github.com/appc/acserver/dist
-	cd $(ACSERVER_DIR) && PATH=$(ACSERVER_DIR)/bin/:$(PATH) go build -o acserver
+	mkdir -pv $(ACSERVER_DIR)
+	curl -fL https://github.com/JulienBalestra/acserver/releases/download/v0.1.0/acserver.tar.gz | tar -C $(ACSERVER_DIR) -xzvf -
 	$(ACSERVER) -V
 
 $(HELM_DOWNLOAD_TAR):

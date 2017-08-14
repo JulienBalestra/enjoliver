@@ -1,6 +1,3 @@
-[submodule "runtime/acserver"]
-	path = runtime/acserver
-	url = https://github.com/JulienBalestra/acserver.git
 [submodule "chain/ipxe"]
 	path = chain/ipxe
 	url = https://github.com/JulienBalestra/ipxe.git
