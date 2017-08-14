@@ -48,8 +48,7 @@ prod_setup: $(MATCHBOX)
 $(ACSERVER):
 	go get golang.org/x/tools/cmd/goimports
 	go get -u github.com/jteeuwen/go-bindata/...
-	cd $(ACSERVER_DIR) && PATH=$(ACSERVER_DIR)/bin/:$(GOPATH)/bin/:$(PATH) go-bindata -pkg dist templates && mkdir -pv $(ACSERVER_DIR)/vendor/github.com/appc/acserver/dist
-	mkdir -pv $(ACSERVER_DIR)/vendor/github.com/appc/acserver/dist
+	cd $(ACSERVER_DIR) && PATH=$(ACSERVER_DIR)/bin/:$(GOPATH)/bin/:$(PATH) go-bindata -pkg dist templates && glide install -v && mkdir -pv $(ACSERVER_DIR)/vendor/github.com/appc/acserver/dist
 	mv -v $(ACSERVER_DIR)/bindata.go $(ACSERVER_DIR)/vendor/github.com/appc/acserver/dist
 	cd $(ACSERVER_DIR) && PATH=$(ACSERVER_DIR)/bin/:$(PATH) go build -o acserver
 	$(ACSERVER) -V
@@ -88,6 +87,14 @@ $(RKT): $(RKT_DOWNLOAD_TAR)
 
 dev_setup: $(MATCHBOX) $(RKT) $(DGR) $(ACSERVER) $(HELM)
 
+create_rack0:
+	@file $(RKT)
+	$(RKT) \
+		--local-config=$(CWD) \
+		--net=rack0 \
+		run --insecure-options=all \
+		coreos.com/rkt/stage1-coreos \
+		--exec /bin/bash -- -c exit 0
 gc:
 	$(RKT) --local-config=$(CWD) gc --grace-period=0s
 

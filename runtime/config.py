@@ -47,6 +47,7 @@ def dgr_config(path):
 def acserver_config(path):
     data = [
         "api:",
+        "  serverName: enjoliver.local",
         "  port: 80",
         "storage:",
         "  unsigned: true",
@@ -61,7 +62,7 @@ def acserver_config(path):
                 return
     try:
         with open("/etc/hosts", 'a') as f:
-            f.write("127.0.0.1 enjoliver.local # added by %s\n" % os.path.abspath(__file__))
+            f.write("172.20.0.1 enjoliver.local # added by %s\n" % os.path.abspath(__file__))
     except IOError:
         print("/etc/hosts ignore: run as sudo")
 

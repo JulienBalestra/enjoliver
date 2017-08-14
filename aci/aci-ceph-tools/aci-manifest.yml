@@ -1,0 +1,12 @@
+name: enjoliver.local/ceph-tools:latest
+builder:
+  dependencies:
+    - enjoliver.local/debian:latest
+
+aci:
+  app:
+    exec: ["/opt/bin/rbd"]
+    environment:
+            - { name: LD_LIBRARY_PATH, value: "/opt/lib:/lib64:/usr/lib64" }
+# dependencies:
+ # - enjoliver.local/debian:latest

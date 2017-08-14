@@ -1,0 +1,6 @@
+image:
+  repository: enjoliver.local
+  name: rookd
+  tag: 0.4.0
+  pullPolicy: IfNotPresent
+namespace: rook

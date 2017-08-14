@@ -139,6 +139,7 @@ class EnjoliverConfig(object):
         self.fleet_image_url = self.config_override("fleet_image_url", "enjoliver.local/fleet:1.0.0")
         self.cni_image_url = self.config_override("cni_image_url", "enjoliver.local/cni:0.5.2")
         self.vault_image_url = self.config_override("vault_image_url", 'enjoliver.local/vault:0.8.0')
+        self.cephtools_image_url = self.config_override("cephtools_image_url", 'enjoliver.local/ceph-tools:latest')
         self.iproute2_image_url = self.config_override("iproute2_image_url", 'enjoliver.local/iproute2:4.12.0')
 
         # Ignition

@@ -17,184 +17,14 @@ systemd:
       enable: false
       mask: true
 
-    - name: install-etcd.service
-      enable: true
-      contents: |
-        [Unit]
-        Requires=network-online.target
-        After=network-online.target
-        AssertFileIsExecutable=!/opt/rootfs/usr/bin/etcd
-        [Service]
-        Type=oneshot
-        Environment=IMAGE={{.etcd_image_url}}
-        ExecStartPre=/usr/bin/rkt fetch --insecure-options=all $IMAGE
-        ExecStartPre=/usr/bin/rkt image export $IMAGE /tmp/%p.aci
-        ExecStartPre=/usr/bin/rkt image rm $IMAGE
-        ExecStartPre=/usr/bin/tar -C /opt/rootfs -xvf /tmp/%p.aci --strip-components=1
-        ExecStartPre=/bin/rm -v /tmp/%p.aci
-
-        ExecStart=/usr/bin/ln -sfv /opt/rootfs/usr/bin/etcdctl /opt/bin/etcdctl
-        ExecReload=-/bin/rm -v /opt/rootfs/usr/bin/etcd
-        RemainAfterExit=yes
-        [Install]
-        WantedBy=multi-user.target
-
-    - name: install-iproute2.service
-      enable: true
-      contents: |
-        [Unit]
-        Requires=network-online.target
-        After=network-online.target
-        AssertFileIsExecutable=!/opt/rootfs/usr/bin/ip
-        [Service]
-        Type=oneshot
-        Environment=IMAGE={{.iproute2_image_url}}
-        ExecStartPre=/usr/bin/rkt fetch --insecure-options=all $IMAGE
-        ExecStartPre=/usr/bin/rkt image export $IMAGE /tmp/%p.aci
-        ExecStartPre=/usr/bin/rkt image rm $IMAGE
-        ExecStartPre=/usr/bin/tar -C /opt/rootfs -xvf /tmp/%p.aci --strip-components=1
-        ExecStartPre=/bin/rm -v /tmp/%p.aci
-
-        ExecStart=/usr/bin/ln -sfv /opt/rootfs/usr/bin/ip /opt/bin/ip
-        ExecReload=-/bin/rm -v /opt/rootfs/usr/bin/ip
-        RemainAfterExit=yes
-        [Install]
-        WantedBy=multi-user.target
-
-    - name: install-vault.service
-      enable: true
-      contents: |
-        [Unit]
-        Requires=network-online.target
-        After=network-online.target
-        AssertFileIsExecutable=!/opt/rootfs/usr/bin/vault
-        [Service]
-        Type=oneshot
-        Environment=IMAGE={{.vault_image_url}}
-        ExecStartPre=/usr/bin/rkt fetch --insecure-options=all $IMAGE
-        ExecStartPre=/usr/bin/rkt image export $IMAGE /tmp/%p.aci
-        ExecStartPre=/usr/bin/rkt image rm $IMAGE
-        ExecStartPre=/usr/bin/tar -C /opt/rootfs -xvf /tmp/%p.aci --strip-components=1
-        ExecStartPre=/bin/rm -v /tmp/%p.aci
-
-        ExecStart=/usr/bin/ln -sfv /opt/rootfs/usr/bin/vault /opt/bin/vault
-        ExecReload=-/bin/rm -v /opt/rootfs/usr/bin/vault
-        RemainAfterExit=yes
-        [Install]
-        WantedBy=multi-user.target
-
-    - name: install-fleet.service
-      enable: true
-      contents: |
-        [Unit]
-        Requires=network-online.target
-        After=network-online.target
-        AssertFileIsExecutable=!/opt/rootfs/usr/bin/fleetd
-        [Service]
-        Type=oneshot
-        Environment=IMAGE={{.fleet_image_url}}
-        ExecStartPre=/usr/bin/rkt fetch --insecure-options=all $IMAGE
-        ExecStartPre=/usr/bin/rkt image export $IMAGE /tmp/%p.aci
-        ExecStartPre=/usr/bin/rkt image rm $IMAGE
-        ExecStartPre=/usr/bin/tar -C /opt/rootfs -xvf /tmp/%p.aci --strip-components=1
-        ExecStartPre=/bin/rm -v /tmp/%p.aci
-
-        ExecStart=/usr/bin/ln -sfv /opt/rootfs/usr/bin/fleetctl /opt/bin/fleetctl
-        ExecReload=-/bin/rm -v /opt/rootfs/usr/bin/fleetd
-        RemainAfterExit=yes
-        [Install]
-        WantedBy=multi-user.target
-
-    - name: install-rkt.service
-      enable: true
-      contents: |
-        [Unit]
-        Requires=network-online.target
-        After=network-online.target
-        AssertFileIsExecutable=!/opt/rootfs/usr/bin/rkt
-        [Service]
-        Type=oneshot
-        Environment=IMAGE={{.rkt_image_url}}
-        ExecStartPre=/usr/bin/rkt fetch --insecure-options=all $IMAGE
-        ExecStartPre=/usr/bin/rkt image export $IMAGE /tmp/%p.aci
-        ExecStartPre=/usr/bin/rkt image rm $IMAGE
-        ExecStartPre=/usr/bin/tar -C /opt/rootfs -xvf /tmp/%p.aci --strip-components=1
-        ExecStartPre=/bin/rm -v /tmp/%p.aci
-
-        ExecStart=/usr/bin/ln -sfv /opt/rootfs/usr/bin/rkt /opt/bin/rkt
-        ExecReload=-/bin/rm -v /opt/rootfs/usr/bin/rkt
-        RemainAfterExit=yes
-        [Install]
-        WantedBy=multi-user.target
-
-    - name: install-cni.service
-      enable: true
-      contents: |
-        [Unit]
-        Requires=network-online.target
-        After=network-online.target
-        AssertFileIsExecutable=!/opt/rootfs/usr/bin/host-local
-        [Service]
-        Type=oneshot
-        Environment=IMAGE={{.cni_image_url}}
-        ExecStartPre=/usr/bin/rkt fetch --insecure-options=all $IMAGE
-        ExecStartPre=/usr/bin/rkt image export $IMAGE /tmp/%p.aci
-        ExecStartPre=/usr/bin/rkt image rm $IMAGE
-        ExecStartPre=/usr/bin/tar -C /opt/rootfs -xvf /tmp/%p.aci --strip-components=1
-        ExecStartPre=/bin/rm -v /tmp/%p.aci
-
-        ExecStart=/usr/bin/ln -sfv /opt/rootfs/usr/bin/cnitool /opt/bin/cnitool
-        ExecReload=-/bin/rm -v /opt/rootfs/usr/bin/host-local
-        RemainAfterExit=yes
-        [Install]
-        WantedBy=multi-user.target
-
-    - name: install-hyperkube.service
-      enable: true
-      contents: |
-        [Unit]
-        Requires=network-online.target
-        After=network-online.target
-        AssertFileIsExecutable=!/opt/rootfs/hyperkube
-        [Service]
-        Type=oneshot
-        Environment=IMAGE={{.hyperkube_image_url}}
-        ExecStartPre=/usr/bin/rkt fetch --insecure-options=all $IMAGE
-        ExecStartPre=/usr/bin/rkt image export $IMAGE /tmp/%p.aci
-        ExecStartPre=/usr/bin/tar -C /opt/rootfs -xvf /tmp/%p.aci --strip-components=1
-        ExecStartPre=/bin/rm -v /tmp/%p.aci
-
-        ExecStart=/usr/bin/ln -sfv /opt/rootfs/hyperkube /opt/bin/kubectl
-        ExecReload=-/bin/rm -v /opt/rootfs/hyperkube
-        RemainAfterExit=yes
-        [Install]
-        WantedBy=multi-user.target
-
-    - name: installs.target
-      contents: |
-        [Unit]
-        Requires=install-cni.service
-        After=install-cni.service
-        Requires=install-fleet.service
-        After=install-fleet.service
-        Requires=install-etcd.service
-        After=install-etcd.service
-        Requires=install-vault.service
-        After=install-vault.service
-        Requires=install-rkt.service
-        After=install-rkt.service
-        Requires=install-hyperkube.service
-        After=install-hyperkube.service
-
     - name: rkt-api.service
       enable: true
       contents: |
         [Unit]
-        After=install-rkt.service
 
         [Service]
         LimitNOFILE=65826
-        ExecStart=/opt/rootfs/usr/bin/rkt api-service
+        ExecStart=/usr/bin/rkt api-service
         Restart=always
         RestartSec=2
 
@@ -211,7 +41,6 @@ systemd:
       enable: true
       contents: |
         [Unit]
-        After=install-etcd.service
 
         [Service]
         EnvironmentFile=/etc/etcd-%i
@@ -227,7 +56,6 @@ systemd:
       enable: true
       contents: |
         [Unit]
-        After=install-etcd.service
 
         [Service]
         EnvironmentFile=/etc/etcd-%i
@@ -243,7 +71,6 @@ systemd:
       enable: true
       contents: |
         [Unit]
-        After=install-etcd.service
 
         [Service]
         EnvironmentFile=/etc/etcd-%i
@@ -267,7 +94,6 @@ systemd:
       enable: true
       contents: |
         [Unit]
-        After=install-etcd.service
         Conflicts=etcd.service etcd2.service
 
         After=etcd-operator@%i.service
@@ -275,7 +101,7 @@ systemd:
         [Service]
         Type=notify
         EnvironmentFile=/etc/etcd-%i.env
-        ExecStart=/opt/rootfs/usr/bin/etcd --auto-tls --peer-auto-tls
+        ExecStart=/usr/bin/etcd --auto-tls --peer-auto-tls
         RestartSec=15s
         Restart=on-failure
         LimitNOFILE=65826
@@ -286,12 +112,11 @@ systemd:
       enable: true
       contents: |
         [Unit]
-        After=install-vault.service
         After=etcd3@vault.service
         [Service]
-        ExecStartPre=/opt/bin/etcdctl --no-sync --endpoints http://127.0.0.1:{{.vault_etcd_client_port}} ls
+        ExecStartPre=/usr/bin/etcdctl --no-sync --endpoints http://127.0.0.1:{{.vault_etcd_client_port}} ls
         ExecStartPre=/opt/bin/vault-config
-        ExecStart=/opt/rootfs/usr/bin/vault server -config=/etc/vault.d/
+        ExecStart=/usr/bin/vault server -config=/etc/vault.d/
         Restart=always
         RestartSec=5
         [Install]
@@ -303,7 +128,7 @@ systemd:
         [Unit]
         After=vault.service
         [Service]
-        ExecStartPre=/opt/bin/vault version
+        ExecStartPre=/usr/bin/vault version
         ExecStart=/opt/bin/vault-init
         RestartSec=15
         Restart=on-failure
@@ -479,7 +304,6 @@ systemd:
       enable: true
       contents: |
         [Unit]
-        After=install-etcd.service
         Conflicts=etcd.service etcd2.service
 
         After=etcd-operator@%i.service
@@ -494,7 +318,7 @@ systemd:
           /etc/vault.d/etcd-%i/peer.certificate \
           /etc/vault.d/etcd-%i/peer.private_key \
           /etc/vault.d/etcd-%i/peer.issuing_ca
-        ExecStart=/opt/rootfs/usr/bin/etcd \
+        ExecStart=/usr/bin/etcd \
           --cert-file /etc/vault.d/etcd-%i/client.certificate \
           --key-file /etc/vault.d/etcd-%i/client.private_key \
           --trusted-ca-file /etc/vault.d/etcd-%i/client.issuing_ca \
@@ -515,7 +339,6 @@ systemd:
       enable: true
       contents: |
         [Unit]
-        After=install-etcd.service
         Conflicts=etcd.service etcd2.service
 
         After=etcd-operator@%i.service
@@ -530,7 +353,7 @@ systemd:
           /etc/vault.d/etcd-%i/peer.certificate \
           /etc/vault.d/etcd-%i/peer.private_key \
           /etc/vault.d/etcd-%i/peer.issuing_ca
-        ExecStart=/opt/rootfs/usr/bin/etcd \
+        ExecStart=/usr/bin/etcd \
           --cert-file /etc/vault.d/etcd-%i/client.certificate \
           --key-file /etc/vault.d/etcd-%i/client.private_key \
           --trusted-ca-file /etc/vault.d/etcd-%i/client.issuing_ca \
@@ -561,8 +384,8 @@ systemd:
           /etc/vault.d/kubernetes/kubelet.private_key \
           /etc/vault.d/kubernetes/kubelet.issuing_ca \
           /etc/vault.d/kubernetes/service-accounts.key
-        ExecStartPre=/opt/bin/etcdctl --endpoints http://127.0.0.1:{{.kubernetes_etcd_client_port}} endpoint status
-        ExecStart=/opt/rootfs/hyperkube apiserver \
+        ExecStartPre=/usr/bin/etcdctl --endpoints http://127.0.0.1:{{.kubernetes_etcd_client_port}} endpoint status
+        ExecStart=/usr/bin/hyperkube apiserver \
           --apiserver-count={{.kubernetes_apiserver_count}} \
           --advertise-address={{.network.ip}} \
           --insecure-bind-address={{.kubernetes_apiserver_insecure_bind_address}} \
@@ -605,11 +428,11 @@ systemd:
           /etc/vault.d/kubernetes/kubelet.issuing_ca \
           /opt/bin/ip
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
-        ExecStart=/opt/rootfs/hyperkube kubelet \
+        ExecStart=/usr/bin/hyperkube kubelet \
           --hairpin-mode=none \
           --non-masquerade-cidr={{.network.subnet}} \
           --network-plugin=cni \
-          --cni-bin-dir=/opt/rootfs/usr/bin \
+          --cni-bin-dir=/usr/bin \
           --cni-conf-dir=/etc/rkt/net.d \
           --hostname-override={{.kubernetes_node_name}} \
           --node-ip={{.kubernetes_node_ip}} \
@@ -620,7 +443,7 @@ systemd:
           --node-labels=control-plane=true \
           --cloud-provider="" \
           --container-runtime=rkt \
-          --rkt-path=/opt/rootfs/usr/bin/rkt \
+          --rkt-path=/usr/bin/rkt \
           --v=2 \
           --tls-cert-file=/etc/vault.d/kubernetes/kubelet.certificate \
           --tls-private-key-file=/etc/vault.d/kubernetes/kubelet.private_key \
@@ -649,15 +472,14 @@ systemd:
         - name: 10-cluster.conf
           contents: |
             [Unit]
-            After=installs.target
             After=etcd3@fleet.service
             After=rkt-metadata.service
             [Service]
             EnvironmentFile=/etc/metadata.env
             ExecStartPre=/bin/ls -lL /opt/bin/rkt
-            ExecStartPre=/opt/bin/etcdctl --no-sync --endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} ls
+            ExecStartPre=/usr/bin/etcdctl --no-sync --endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} ls
             ExecStart=
-            ExecStart=/opt/rootfs/usr/bin/fleetd
+            ExecStart=/usr/bin/fleetd
             Restart=always
             RestartSec=10
 
@@ -698,8 +520,8 @@ systemd:
           contents: |
             [Service]
             ExecStart=
-            ExecStartPre=-/opt/rootfs/usr/bin/rkt image gc --grace-period=1h
-            ExecStart=/opt/rootfs/usr/bin/rkt gc --grace-period=0s
+            ExecStartPre=-/usr/bin/rkt image gc --grace-period=1h
+            ExecStart=/usr/bin/rkt gc --grace-period=0s
 
     - name: rkt-gc.timer
       enable: true
@@ -1286,7 +1108,7 @@ storage:
       contents:
         inline: |
           #!/bin/bash
-          ETCDCTL_API=3 exec /opt/bin/etcdctl $@
+          ETCDCTL_API=3 exec /usr/bin/etcdctl $@
 
     - path: /opt/bin/etcd-operator
       filesystem: root
@@ -1478,7 +1300,7 @@ storage:
       contents:
         inline: |
           #!/usr/bin/env bash
-          export PATH=/opt/rootfs/usr/bin:/opt/bin/:${PATH}
+          export PATH=/usr/bin:/opt/bin/:${PATH}
           export VAULT_ADDR=http://127.0.0.1:8200
 
           set -o pipefail
@@ -1948,6 +1770,19 @@ storage:
           #!/bin/bash
           PATH=/opt/bin:${PATH}
           exec kubectl -s http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} create -f /etc/kubernetes/manifests
+
+    - path: /opt/bin/rbd
+      mode: 0555
+      filesystem: root
+      contents:
+        inline: |
+          #!/bin/bash
+          # LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/rbd/lib /opt/rbd/bin/rbd
+          mkdir -p /etc/ceph
+          rkt --insecure-options=all run \
+            --volume data,kind=host,source=/etc/ceph \
+            --mount volume=data,target=/etc/ceph \
+            --interactive {{.cephtools_image_url}} -- $@
 
     - path: /etc/profile.d/alias.sh
       mode: 0755

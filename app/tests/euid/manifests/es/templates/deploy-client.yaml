@@ -1,0 +1,73 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ .Chart.Name }}-client
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: {{ .Chart.Name }}
+        type: "client"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "9200"
+    spec:
+      serviceAccount: {{ .Chart.Name }}
+      serviceAccountName: {{ .Chart.Name }}
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+        - name: KUBERNETES_SERVICE_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+
+        - name: KUBERNETES_SERVICE_PORT
+          value: "6443"
+        volumeMounts:
+        - name: config
+          mountPath: /dgr/attributes/kube
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: 9200
+          initialDelaySeconds: 60
+          timeoutSeconds: 10
+          periodSeconds: 3
+
+        readinessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /metrics
+            port: 9200
+          initialDelaySeconds: 30
+          timeoutSeconds: 10
+          periodSeconds: 2
+
+        resources:
+          limits:
+            cpu: 500m
+            memory: 2G
+          requests:
+            cpu: 200m
+            memory: 2G
+      volumes:
+      - name: config
+        configMap:
+          name: {{ .Chart.Name }}
+          items:
+          - key: es.yml
+            path: es.yml
+          - key: client.yml
+            path: client.yml

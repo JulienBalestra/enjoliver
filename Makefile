@@ -44,9 +44,10 @@ pip: $(ENV)
 	$(ENV)/bin/pip3 install py-vendor/ipaddr-py/
 
 acserver:
+	make -C runtime create_rack0
 	test $(shell id -u -r) -eq 0
 	# Check if the port is available
-	curl 127.0.0.1 && exit 1 || true
+	curl 172.20.0.1 && exit 1 || true
 	./runtime/runtime.acserver &
 
 aci: acserver
@@ -115,16 +116,16 @@ dev_setup:
 	test $(MY_USER)
 	test $(shell id -u -r) -eq 0
 	su - $(MY_USER) -c "make -C $(CWD) submodules"
-	su - $(MY_USER) -c "make -C $(CWD) dev_setup_runtime"
+	sudo -u $(MY_USER) -E make -C $(CWD) dev_setup_runtime
 	su - $(MY_USER) -c "make -C $(CWD)/app/tests testing.id_rsa"
 	su - $(MY_USER) -c "make -C $(CWD) front"
 	su - $(MY_USER) -c "make -C $(CWD) pip"
 	su - $(MY_USER) -c "make -C $(CWD) assets"
-	su - $(MY_USER) -c "make -C $(CWD)/matchbox/assets/coreos"
+	make -C $(CWD) aci
+	make -C $(CWD)/matchbox/assets/coreos
 	su - $(MY_USER) -c "make -C $(CWD)/matchbox/assets/coreos serve"
 	su - $(MY_USER) -c "make -C $(CWD) validate"
 	su - $(MY_USER) -c "make -C $(CWD) config"
-	make -C $(CWD) aci
 	chown -R $(MY_USER): $(CWD)
 
 prod_setup:

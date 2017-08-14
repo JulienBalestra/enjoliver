@@ -1,0 +1,29 @@
+default:
+  es:
+    config:
+      cluster.name: "elasticsearch"
+      node.name: '{{ orDef .pod.fqdn "local" }}'
+      node.master: true
+      node.data: true
+      node.attr.zone: local
+      node.attr.rack_id: rack
+      network.host: 0.0.0.0
+      transport.tcp.port: 9300
+      http.port: 9200
+      http.cors.enabled: true
+      http.cors.allow-origin: '*'
+      bootstrap.memory_lock: true
+      discovery.zen.ping_timeout: 3s
+      discovery.zen.minimum_master_nodes: 1
+      discovery.zen.ping.unicast.hosts: []
+      indices.recovery.max_bytes_per_sec: 20mb
+      cluster.routing.allocation.awareness.attributes: zone
+      cluster.routing.allocation.disk.threshold_enabled: true
+      action.destructive_requires_name: true
+      script.inline: true
+      script.stored: true
+      action.auto_create_index: true
+    memory: 512M
+  sysctl:
+    "fs.file-max": 65536
+    "vm.max_map_count": 65530

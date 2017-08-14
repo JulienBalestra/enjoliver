@@ -206,6 +206,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "--insecure-options=all",
             "--net=host",
             "--interactive",
+            "--caps-retain=all",
             "--set-env=TERM=%s" % os.getenv("TERM", "xterm"),
             "--uuid-file-save=/tmp/dnsmasq.uuid",
             "--volume",
@@ -451,6 +452,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "--os-type=linux",
             "--os-variant=generic",
             "--noautoconsole",
+            "--check=disk_size=off",
             "--boot=hd,network"
         ]
         return virt_install

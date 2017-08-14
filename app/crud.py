@@ -449,7 +449,7 @@ class FetchSchedule(object):
             query = """SELECT result.machine_id, mi.mac, mi.ipv4, mi.cidrv4, mi.gateway, mi.as_boot, mi.name, mi.netmask, mi.fqdn FROM (
             (SELECT m.id as machine_id FROM machine AS m
             INNER JOIN schedule AS s ON s.machine_id = m.id
-            WHERE s.role = '%s') AS a %s) AS result            
+            WHERE s.role = '%s') AS a %s) AS result
             INNER JOIN "machine-interface" AS mi ON mi.machine_id = result.machine_id
             WHERE mi.as_boot = %s""" % (args[0], " ".join(union),
                                         sc.get_bool_by_session(self.session, True))

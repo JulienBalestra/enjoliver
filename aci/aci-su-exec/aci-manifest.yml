@@ -1,0 +1,4 @@
+name: enjoliver.local/su-exec:0.2
+builder:
+  dependencies:
+  - enjoliver.local/builder-hyperkube:latest

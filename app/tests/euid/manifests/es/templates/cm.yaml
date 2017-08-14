@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Chart.Name }}
+  namespace: {{ .Values.namespace }}
+data:
+  es.yml: |-
+    override:
+      es:
+        amemory: 512M
+        config:
+          cloud:
+            kubernetes:
+              service: "{{ .Chart.Name }}"
+              namespace: "{{ .Values.namespace }}"
+          discovery:
+            zen:
+              hosts_provider: kubernetes
+  data.yml: |-
+    override:
+      es:
+        config:
+          node.master: false
+          node.data: true
+  master.yml: |-
+    override:
+      es:
+        config:
+          node.master: true
+          node.data: false
+  client.yml: |-
+    override:
+      es:
+        config:
+          node.master: false
+          node.data: false

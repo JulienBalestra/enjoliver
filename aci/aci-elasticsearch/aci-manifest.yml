@@ -1,0 +1,31 @@
+name: enjoliver.local/elasticsearch:5.3.1-1
+aci:
+  app:
+    exec: ["su-exec","elasticsearch","/run.sh"]
+    isolators:
+      - name: os/linux/capabilities-retain-set
+        value:
+          set:
+            - CAP_SYS_RESOURCE
+            - CAP_SYS_ADMIN
+            - CAP_IPC_LOCK
+            - CAP_SETUID
+            - CAP_SETGID
+            - CAP_CHOWN
+      - name: os/linux/seccomp-retain-set
+        value:
+          set:
+            - "@rkt/default-whitelist"
+            - umount
+            - mount
+            - setgroups
+            - mlockall
+            - setrlimit
+            - seccomp
+            - "@raw-io"
+    mountPoints:
+      - { name: es-data, path: /var/lib/elasticsearch, readOnly: false }
+      - { name: es-log, path: /var/log/elasticsearch, readOnly: false }
+  dependencies:
+    - enjoliver.local/java:1.8.131-1
+    - enjoliver.local/su-exec:0.2

@@ -277,6 +277,7 @@ class ConfigSyncSchedules(object):
             "cni_image_url": EC.cni_image_url,
             "vault_image_url": EC.vault_image_url,
             "iproute2_image_url": EC.iproute2_image_url,
+            "cephtools_image_url": EC.cephtools_image_url,
             # IPAM
             "cni": json.dumps(cni_attr, sort_keys=True),
             "network": {

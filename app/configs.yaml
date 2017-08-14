@@ -69,6 +69,7 @@ rkt_image_url: 'enjoliver.local/rkt:1.27.0'
 etcd_image_url: 'enjoliver.local/etcd:3.2.5'
 fleet_image_url: 'enjoliver.local/fleet:1.0.0'
 cni_image_url: 'enjoliver.local/cni:0.5.2'
+cephtools_image_url: 'enjoliver.local/ceph-tools:latest'
 vault_image_url: 'enjoliver.local/vault:0.8.0'
 iproute2_image_url: 'enjoliver.local/iproute2:4.12.0'
 

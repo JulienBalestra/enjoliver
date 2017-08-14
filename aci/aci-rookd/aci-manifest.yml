@@ -1,0 +1,7 @@
+name: enjoliver.local/rookd:0.4.0
+aci:
+  app:
+    exec:
+      - /usr/bin/rookd
+  dependencies:
+    - enjoliver.local/debian:latest

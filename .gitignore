@@ -22,6 +22,7 @@ serve
 /hyperkube/workspace/hyperkube
 /aci/aci-debian/target/
 /aci/aci-base/target/
+/aci/*/target/
 image.aci
 *.sqlite
 /app/tests/unit/ignition_journal/
