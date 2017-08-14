@@ -4,57 +4,80 @@ import (
 	"os"
 	"github.com/golang/glog"
 	"strconv"
+	"strings"
+	"fmt"
 )
 
-type EnjoliverConfig struct {
-	FleetEtcdClientPort      int
-	KubernetesEtcdClientPort int
-	VaultEtcdClientPort      int
+const (
+	etcdLivenessPath       = "/health"
+	kubernetesLivenessPath = "/healthz"
+	vaultLivenessPath      = "/v1/sys/health"
+)
 
-	KubeletPort              int
-	KubernetesApiServerPort  int
-	VaultPort                int
+func getPortFromEnv(key string) (int, error) {
+	port, err := strconv.Atoi(os.Getenv(key))
+	if err != nil {
+		glog.Warningf("cannot get from envName %s: %s", key, err)
+		return port, err
+	}
+	return port, nil
 }
 
-func getConfig() (EnjoliverConfig, error) {
-	var ec EnjoliverConfig
+type LivenessProbe struct {
+	Name string
+	Path string
+	Port int
+	Url  string
+}
+
+func formatProbeName(envPortName string) string {
+	str := strings.ToLower(envPortName)
+	str = strings.Replace(str, "port", "", 1)
+	strLowerList := strings.Split(str, "_")
+	var strCapitalizeList []string
+	for _, s := range strLowerList {
+		strCapitalizeList = append(strCapitalizeList, strings.Title(s))
+	}
+
+	return strings.Join(strCapitalizeList, "")
+}
+
+func constructLivenessProbe(envPortName string, path string) (LivenessProbe, error) {
+	var probe LivenessProbe
 	var err error
 
-	ec.FleetEtcdClientPort, err = strconv.Atoi(os.Getenv("FLEET_ETCD_CLIENT_PORT"))
+	probe.Port, err = getPortFromEnv(envPortName)
 	if err != nil {
-		glog.Errorf("cannot get from env FLEET_ETCD_CLIENT_PORT: %s", err)
-		return ec, err
+		glog.Errorf("fail to get environment variable %s: %s", envPortName, err)
+		return probe, err
 	}
 
-	ec.VaultEtcdClientPort, err = strconv.Atoi(os.Getenv("VAULT_ETCD_CLIENT_PORT"))
-	if err != nil {
-		glog.Errorf("cannot get from env VAULT_ETCD_CLIENT_PORT: %s", err)
-		return ec, err
+	probe.Name = formatProbeName(envPortName)
+	probe.Path = path
+	probe.Url = fmt.Sprintf("http://127.0.0.1:%d%s", probe.Port, probe.Path)
+	return probe, nil
+}
+
+func getLivenessProbesToQuery() ([]LivenessProbe, error) {
+	var livenessProbes []LivenessProbe
+
+	probes := [][]string{
+		{"FLEET_ETCD_CLIENT_PORT", etcdLivenessPath},
+		{"KUBERNETES_ETCD_CLIENT_PORT", etcdLivenessPath},
+		{"VAULT_ETCD_CLIENT_PORT", etcdLivenessPath},
+		{"KUBERNETES_API_SERVER_PORT", kubernetesLivenessPath},
+		{"KUBELET_PORT", kubernetesLivenessPath},
+		{"VAULT_PORT", vaultLivenessPath},
 	}
 
-	ec.KubernetesEtcdClientPort, err = strconv.Atoi(os.Getenv("KUBERNETES_ETCD_CLIENT_PORT"))
-	if err != nil {
-		glog.Errorf("cannot get from env KUBERNETES_ETCD_CLIENT_PORT: %s", err)
-		return ec, err
+	for _, elt := range probes {
+		probe, err := constructLivenessProbe(elt[0], elt[1])
+		if err != nil {
+			glog.Errorf("fail to aggregate probes: %s", err)
+			return livenessProbes, err
+		}
+		livenessProbes = append(livenessProbes, probe)
 	}
 
-	ec.KubernetesApiServerPort, err = strconv.Atoi(os.Getenv("KUBERNETES_API_SERVER_PORT"))
-	if err != nil {
-		glog.Errorf("cannot get from env KUBERNETES_API_SERVER_PORT: %s", err)
-		return ec, err
-	}
-
-	ec.KubeletPort, err = strconv.Atoi(os.Getenv("KUBELET_PORT"))
-	if err != nil {
-		glog.Errorf("cannot get from env KUBELET_PORT: %s", err)
-		return ec, err
-	}
-
-	ec.VaultPort, err = strconv.Atoi(os.Getenv("VAULT_PORT"))
-	if err != nil {
-		glog.Errorf("cannot get from env VAULT_PORT: %s", err)
-		return ec, err
-	}
-
-	return ec, nil
+	return livenessProbes, nil
 }
