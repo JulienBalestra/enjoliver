@@ -116,7 +116,7 @@ dev_setup:
 	test $(MY_USER)
 	test $(shell id -u -r) -eq 0
 	su - $(MY_USER) -c "make -C $(CWD) submodules"
-	sudo -u $(MY_USER) -E make -C $(CWD) dev_setup_runtime
+	su - $(MY_USER) -c "make -C $(CWD) dev_setup_runtime"
 	su - $(MY_USER) -c "make -C $(CWD)/app/tests testing.id_rsa"
 	su - $(MY_USER) -c "make -C $(CWD) front"
 	su - $(MY_USER) -c "make -C $(CWD) pip"
