@@ -193,7 +193,7 @@ class ConfigSyncSchedules(object):
 
     @property
     def kubernetes_control_plane(self):
-        return self.order_http_uri(self.kubernetes_control_plane_ip_list, EC.kubernetes_api_server_port)
+        return self.order_http_uri(self.kubernetes_control_plane_ip_list, EC.kubernetes_apiserver_insecure_port)
 
     @staticmethod
     def compute_disks_size(disks: list):
@@ -266,6 +266,9 @@ class ConfigSyncSchedules(object):
 
             # Vault are located with the etcd members
             "vault_ip_list": ",".join(self.etcd_member_ip_list),
+            "vault_port": EC.vault_port,
+
+            "kubelet_healthz_port": EC.kubelet_healthz_port,
 
             "etcd_member_kubernetes_control_plane_ip_list": ",".join(self.etcd_member_ip_list),
             "etcd_member_kubernetes_control_plane_ip": self.etcd_member_ip_list,

@@ -115,6 +115,8 @@ class EnjoliverConfig(object):
         self.kubernetes_apiserver_insecure_bind_address = self.config_override(
             "kubernetes_apiserver_insecure_bind_address", "127.0.0.1")
 
+        self.kubelet_healthz_port = int(self.config_override("kubelet_healthz_port", 10248))
+
         # Kubernetes Etcd
         self.kubernetes_etcd_data_dir = self.config_override("kubernetes_etcd_data_dir", "/var/lib/etcd3/kubernetes")
         self.kubernetes_etcd_client_port = int(self.config_override("kubernetes_etcd_client_port", 2379))
@@ -129,6 +131,9 @@ class EnjoliverConfig(object):
         self.vault_etcd_data_dir = self.config_override("vault_etcd_data_dir", "/var/lib/etcd3/vault")
         self.vault_etcd_client_port = int(self.config_override("vault_etcd_client_port", 4001))
         self.vault_etcd_peer_port = int(self.config_override("vault_etcd_peer_port", 7001))
+
+        # Vault
+        self.vault_port = int(self.config_override("vault_port", 8200))
 
         # Use a real registry in production like:
         # enjoliver.local/hyperkube:latest

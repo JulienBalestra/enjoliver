@@ -320,7 +320,8 @@ systemd:
           --v=2 \
           --tls-cert-file=/etc/vault.d/kubernetes/kubelet.certificate \
           --tls-private-key-file=/etc/vault.d/kubernetes/kubelet.private_key \
-          --client-ca-file=/etc/vault.d/kubernetes/kubelet.issuing_ca
+          --client-ca-file=/etc/vault.d/kubernetes/kubelet.issuing_ca \
+          --healthz-port={{.kubelet_healthz_port}}
         Restart=always
         RestartSec=5s
 
@@ -441,7 +442,9 @@ storage:
           FLEET_IMAGE_URL='{{.fleet_image_url}}'
           HOSTNAME='{{.hostname}}'
           HYPERKUBE_IMAGE_URL='{{.hyperkube_image_url}}'
+          KUBELET_HEALTHZ_PORT='{{.kubelet_healthz_port}}'
           KUBERNETES_API_SERVER_PORT='{{.kubernetes_apiserver_insecure_port}}'
+          KUBERNETES_APISERVER_INSECURE_PORT='{{.kubernetes_apiserver_insecure_port}}'
           KUBERNETES_ETCD_ADVERTISE_CLIENT_URLS='{{.kubernetes_etcd_advertise_client_urls}}'
           KUBERNETES_ETCD_CLIENT_PORT='{{.kubernetes_etcd_client_port}}'
           KUBERNETES_ETCD_DATA_DIR='{{.kubernetes_etcd_data_dir}}'
@@ -461,6 +464,7 @@ storage:
           RKT_IMAGE_URL='{{.rkt_image_url}}'
           ROLES='{{.roles}}'
           SELECTOR_MAC='{{.selector.mac}}'
+          VAULT_PORT='{{.vault_port}}'
 
     - path: /etc/hostname
       filesystem: root
@@ -852,7 +856,7 @@ storage:
           do
             for ve in $(echo -n {{ .vault_ip_list }} | tr ',' '\n' | shuf)
             do
-              REQ="https://${ve}:8200/v1/pki/${1}/issue/${2}"
+              REQ="https://${ve}:{{.vault_port}}/v1/pki/${1}/issue/${2}"
               echo "POST ${REQ}"
               curl ${REQ} \
                 --cacert ${VAULT_CAPATH} -Lfs \
@@ -908,7 +912,7 @@ storage:
           do
             for ve in $(echo -n {{ .vault_ip_list }} | tr ',' '\n' | shuf)
             do
-              REQ="https://${ve}:8200/v1/secret/${1}/${2}"
+              REQ="https://${ve}:{{.vault_port}}/v1/secret/${1}/${2}"
               echo "GET ${REQ}"
               curl ${REQ} -Lfs \
                 --cacert ${VAULT_CAPATH} \

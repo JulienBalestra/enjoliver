@@ -1,56 +1,83 @@
 package main
 
 import (
-	"net/http"
-	"github.com/golang/glog"
-	"os"
-	"fmt"
 	"encoding/json"
 	"flag"
+	"fmt"
+	"github.com/golang/glog"
+	"net/http"
+	"os"
+	"sync"
+	"time"
 )
 
-func probeUrl(url string) (error) {
-	resp, err := http.Get(url)
+const (
+	vaultFlagName = "vault"
+)
+
+type ProbeStatus struct {
+	Name    string
+	Healthy bool
+	Error   string
+}
+
+type probeRunner struct {
+	probeResultCh chan ProbeStatus
+	wg            sync.WaitGroup
+}
+
+func queryLivenessProbe(probe LivenessProbe, ch chan ProbeStatus) {
+	var probeResult ProbeStatus
+
+	probeResult.Name = probe.Name
+	http.DefaultClient.Timeout = time.Second
+	resp, err := http.Get(probe.Url)
+	glog.V(4).Infof("GET %s done", probe.Url)
 	if err != nil {
-		glog.Errorf("fail to get %s: %s", url, err)
-		return err
+		probeResult.Error = fmt.Sprintf("fail to get %s: %s", probe.Url, err)
+		glog.Errorf(probeResult.Error)
+	} else if resp.StatusCode != 200 {
+		probeResult.Error = fmt.Sprintf("fail to probe %s StatusCode != 200 -> %d", probe.Url, resp.StatusCode)
+		glog.Errorf(probeResult.Error)
+	} else {
+		probeResult.Healthy = true
 	}
-
-	if resp.StatusCode != 200 {
-		errMsg := fmt.Sprintf("fail to probe %s StatusCode != 200: %d", url, resp.StatusCode)
-		glog.Errorf(errMsg)
-		return fmt.Errorf(errMsg)
-	}
-
-	return nil
+	ch <- probeResult
+	glog.V(2).Infof("%s at %s Healthy: %t", probe.Name, probe.Url, probeResult.Healthy)
 }
 
-func (run *Runtime) probeHealthz() (ProbeResponse) {
-	var err error
+func (run *Runtime) runProbes() AllProbesStatus {
+	var allProbes AllProbesStatus
+	allProbes.LivenessStatus = make(map[string]bool)
+	allProbes.Errors = make(map[string]string)
 
-	healthReport := make(map[string]bool)
-	errReport := make(map[string]string)
-	for _, p := range run.LivenessProbes {
-		err = probeUrl(p.Url)
-		if err != nil {
-			glog.Errorf("fail to probe %s: %s", p.Name, err)
-			errReport[p.Name] = err.Error()
-			healthReport[p.Name] = false
-			continue
+	ch := make(chan ProbeStatus)
+	defer close(ch)
+	for _, probe := range run.LivenessProbes {
+		glog.V(3).Infof("ask for query %s", probe.Url)
+		go queryLivenessProbe(probe, ch)
+	}
+
+	glog.V(3).Infof("all queries sent")
+	for range run.LivenessProbes {
+		probeResult := <-ch
+		glog.V(3).Infof("received %s: %t", probeResult.Name, probeResult.Healthy)
+		allProbes.LivenessStatus[probeResult.Name] = probeResult.Healthy
+		if probeResult.Error != "" {
+			allProbes.Errors[probeResult.Name] = probeResult.Error
 		}
-		healthReport[p.Name] = true
 	}
-	return ProbeResponse{healthReport, errReport}
+	return allProbes
 }
 
-type ProbeResponse struct {
+type AllProbesStatus struct {
 	LivenessStatus map[string]bool
 	Errors         map[string]string
 }
 
 func (run *Runtime) handlerHealthz(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		health := run.probeHealthz()
+		health := run.runProbes()
 		if len(health.Errors) != 0 {
 			glog.Errorf("fail to get health status for: %s", health.Errors)
 			w.WriteHeader(503)
@@ -74,6 +101,8 @@ type Runtime struct {
 }
 
 func main() {
+	flag.Bool(vaultFlagName, false, "Enable vault probe")
+
 	flag.Parse()
 	flag.Lookup("alsologtostderr").Value.Set("true")
 
