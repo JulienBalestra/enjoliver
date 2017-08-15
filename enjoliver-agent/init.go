@@ -24,7 +24,7 @@ func getPortFromEnv(key string) (int, error) {
 	return port, nil
 }
 
-type LivenessProbe struct {
+type HttpLivenessProbe struct {
 	Name string
 	Path string
 	Port int
@@ -43,8 +43,8 @@ func formatProbeName(envPortName string) string {
 	return strings.Join(strCapitalizeList, "")
 }
 
-func constructLivenessProbe(envPortName string, path string) (LivenessProbe, error) {
-	var probe LivenessProbe
+func constructLivenessProbe(envPortName string, path string) (HttpLivenessProbe, error) {
+	var probe HttpLivenessProbe
 	var err error
 
 	probe.Port, err = getPortFromEnv(envPortName)
@@ -59,8 +59,8 @@ func constructLivenessProbe(envPortName string, path string) (LivenessProbe, err
 	return probe, nil
 }
 
-func getLivenessProbesToQuery() ([]LivenessProbe, error) {
-	var livenessProbes []LivenessProbe
+func getHttpLivenessProbesToQuery() ([]HttpLivenessProbe, error) {
+	var livenessProbes []HttpLivenessProbe
 
 	probes := [][]string{
 		{"FLEET_ETCD_CLIENT_PORT", etcdLivenessPath},

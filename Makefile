@@ -81,6 +81,7 @@ check_clean:
 
 $(CHECK):
 	make -C discoveryC/ $(CHECK)
+	make -C enjoliver-agent/ $(CHECK)
 	make -C app/tests/ $(CHECK)
 
 $(CHECK_EUID): validate
