@@ -2,3 +2,10 @@ name: enjoliver.local/dnsmasq:latest
 aci:
   dependencies:
     - enjoliver.local/debian:latest
+  app:
+    exec: ["/usr/sbin/dnsmasq", "-k"]
+
+
+builder:
+  dependencies:
+    - enjoliver.local/debian:latest

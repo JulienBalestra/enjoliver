@@ -30,14 +30,12 @@ runtime: $(TESTING_RSA)
 
 create_rack0:
 	@file $(RKT)
-	@cat $(CWD)/dnsmasq-rack0.conf
 	$(RKT) \
-		--interactive \
 		--local-config=$(CWD) \
 		--net=rack0 \
 		run --insecure-options=all \
-		quay.io/coreos/dnsmasq:v0.3.0 \
-		--exec /bin/true
+		coreos.com/rkt/stage1-coreos \
+		--exec /bin/bash -- -c exit 0
 
 gc:
 	$(RKT) --local-config=$(CWD) gc --grace-period=0s

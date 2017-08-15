@@ -202,7 +202,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "--mount",
             "volume=resolv,target=/etc/resolv.conf",
             "run",
-            "quay.io/coreos/dnsmasq:v0.3.0",
+            "enjoliver.local/dnsmasq:latest",
             "--insecure-options=all",
             "--net=host",
             "--interactive",
@@ -320,13 +320,13 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "%s" % KernelVirtualMachinePlayer.rkt_bin,
             "--local-config=%s" % KernelVirtualMachinePlayer.tests_path,
             "run",
-            "quay.io/coreos/dnsmasq:v0.3.0",
-            "--insecure-options=all",
             "--net=rack0",
             "--interactive",
             "--set-env=TERM=%s" % os.getenv("TERM", "xterm"),
+            "--insecure-options=all",
+            "coreos.com/rkt/stage1-coreos",
             "--exec",
-            "/bin/true"]
+            "/bin/bash", "--", "-c", "exit", "0"]
         display("call %s" % " ".join(cmd))
         ret = subprocess.call(cmd)
         display("Bridge w/ iptables creation exit: %d" % ret)
