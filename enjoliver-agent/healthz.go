@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/golang/glog"
 	"net/http"
@@ -26,6 +25,11 @@ type ProbeStatus struct {
 type probeRunner struct {
 	probeResultCh chan ProbeStatus
 	wg            sync.WaitGroup
+}
+
+type AllProbesStatus struct {
+	LivenessStatus map[string]bool
+	Errors         map[string]string
 }
 
 func queryHttpLivenessProbe(probe HttpLivenessProbe, ch chan ProbeStatus) {
@@ -61,7 +65,7 @@ func probeRktApi(ch chan ProbeStatus) {
 		return
 	}
 	defer func() {
-		time.AfterFunc(time.Millisecond * 100, func() {
+		time.AfterFunc(time.Millisecond*100, func() {
 			err := conn.Close()
 			if err != nil {
 				glog.Warningf("gRPC connection closed with err: %q", err)
@@ -103,30 +107,4 @@ func (run *Runtime) runProbes() AllProbesStatus {
 		}
 	}
 	return allProbes
-}
-
-type AllProbesStatus struct {
-	LivenessStatus map[string]bool
-	Errors         map[string]string
-}
-
-func (run *Runtime) handlerHealthz(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
-		health := run.runProbes()
-		if len(health.Errors) != 0 {
-			glog.Errorf("fail to get health status for: %s", health.Errors)
-			w.WriteHeader(503)
-		}
-
-		b, err := json.Marshal(&health)
-		if err != nil {
-			glog.Errorf("fail to marshal health: %s", err)
-			return
-		}
-
-		_, err = w.Write(b)
-		if err != nil {
-			glog.Errorf("fail to write %s on response: %s", string(b), err)
-		}
-	}
 }
