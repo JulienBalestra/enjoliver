@@ -17,6 +17,23 @@ systemd:
       enable: false
       mask: true
 
+    - name: download-enjoliver-agent.service
+      enable: true
+      contents: |
+        [Unit]
+        Requires=network-online.target
+        After=network-online.target
+        [Service]
+        Type=oneshot
+        ExecStartPre=/bin/mkdir -pv /opt/bin
+        ExecStart=/usr/bin/curl -f {{.api_uri}}/assets/enjoliver-agent/serve/enjoliver-agent \
+          -o /opt/bin/enjoliver-agent
+        ExecStartPost=/usr/bin/chmod +x /opt/bin/enjoliver-agent
+        RemainAfterExit=yes
+
+        [Install]
+        WantedBy=multi-user.target
+
     - name: rkt-api.service
       enable: true
       contents: |
@@ -25,6 +42,18 @@ systemd:
         ExecStart=/usr/bin/rkt api-service
         Restart=always
         RestartSec=2
+
+        [Install]
+        RequiredBy=multi-user.target
+
+    - name: enjoliver-agent.service
+      enable: true
+      contents: |
+        [Service]
+        ExecStart=/opt/bin/enjoliver-agent
+        EnvironmentFile=/etc/metadata.env
+        Restart=always
+        RestartSec=30
 
         [Install]
         RequiredBy=multi-user.target
@@ -260,7 +289,7 @@ systemd:
           --insecure-port={{.kubernetes_apiserver_insecure_port}} \
           --allow-privileged=true \
           --service-cluster-ip-range={{.kubernetes_service_cluster_ip_range}} \
-          --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota \
+          --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota,PodPreset \
           --runtime-config=batch/v2alpha1 \
           --tls-ca-file=/etc/vault.d/kubernetes/kube-apiserver.issuing_ca \
           --tls-cert-file=/etc/vault.d/kubernetes/kube-apiserver.certificate \
@@ -298,8 +327,7 @@ systemd:
         ExecStartPre=/bin/ls -l \
           /etc/vault.d/kubernetes/kubelet.certificate \
           /etc/vault.d/kubernetes/kubelet.private_key \
-          /etc/vault.d/kubernetes/kubelet.issuing_ca \
-          /opt/bin/ip
+          /etc/vault.d/kubernetes/kubelet.issuing_ca
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
         ExecStart=/usr/bin/hyperkube kubelet \
           --hairpin-mode=none \
@@ -321,7 +349,7 @@ systemd:
           --tls-cert-file=/etc/vault.d/kubernetes/kubelet.certificate \
           --tls-private-key-file=/etc/vault.d/kubernetes/kubelet.private_key \
           --client-ca-file=/etc/vault.d/kubernetes/kubelet.issuing_ca \
-          --healthz-port={{.kubelet_healthz_port}}
+          --healthz-port {{.kubelet_healthz_port}}
         Restart=always
         RestartSec=5s
 
@@ -340,7 +368,7 @@ systemd:
             [Service]
             EnvironmentFile=/etc/metadata.env
             ExecStartPre=/bin/ls -lL /opt/bin/rkt
-            ExecStartPre=/usr/bin/etcdctl--no-sync --endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} ls
+            ExecStartPre=/usr/bin/etcdctl --no-sync --endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} ls
             ExecStart=
             ExecStart=/usr/bin/fleetd
             Restart=always
@@ -410,10 +438,6 @@ storage:
         inline: |
           revision=1
 
-    - path: /opt/rootfs/.keep
-      filesystem: root
-      mode: 0644
-
     - path: /etc/metadata.env
       filesystem: root
       mode: 0644
@@ -425,13 +449,11 @@ storage:
           # curl '{{.api_uri}}/metadata?{{.request.raw_query}}' | sort
           API_URI='{{.api_uri}}'
           CNI='{{.cni}}'
-          CNI_IMAGE_URL='{{.cni_image_url}}'
           DNS_ATTR_DC='{{.dns_attr.dc}}'
           DNS_ATTR_DOMAIN='{{.dns_attr.domain}}'
           DNS_ATTR_POS='{{.dns_attr.pos}}'
           DNS_ATTR_RACK='{{.dns_attr.rack}}'
           DNS_ATTR_SHORTNAME='{{.dns_attr.shortname}}'
-          ETCD_IMAGE_URL='{{.etcd_image_url}}'
           ETCD_NAME='{{.etcd_name}}'
           FLEET_ETCD_ADVERTISE_CLIENT_URLS='{{.fleet_etcd_advertise_client_urls}}'
           FLEET_ETCD_CLIENT_PORT='{{.fleet_etcd_client_port}}'
@@ -439,11 +461,8 @@ storage:
           FLEET_ETCD_INITIAL_ADVERTISE_PEER_URLS='{{.fleet_etcd_initial_advertise_peer_urls}}'
           FLEET_ETCD_INITIAL_CLUSTER='{{.fleet_etcd_initial_cluster}}'
           FLEET_ETCD_MEMBER_CLIENT_URI_LIST='{{.fleet_etcd_member_client_uri_list}}'
-          FLEET_IMAGE_URL='{{.fleet_image_url}}'
           HOSTNAME='{{.hostname}}'
           HYPERKUBE_IMAGE_URL='{{.hyperkube_image_url}}'
-          KUBELET_HEALTHZ_PORT='{{.kubelet_healthz_port}}'
-          KUBERNETES_API_SERVER_PORT='{{.kubernetes_apiserver_insecure_port}}'
           KUBERNETES_APISERVER_INSECURE_PORT='{{.kubernetes_apiserver_insecure_port}}'
           KUBERNETES_ETCD_ADVERTISE_CLIENT_URLS='{{.kubernetes_etcd_advertise_client_urls}}'
           KUBERNETES_ETCD_CLIENT_PORT='{{.kubernetes_etcd_client_port}}'
@@ -454,6 +473,7 @@ storage:
           KUBERNETES_NODE_IP='{{.kubernetes_node_ip}}'
           KUBERNETES_NODE_NAME='{{.kubernetes_node_name}}'
           KUBERNETES_SERVICE_CLUSTER_IP_RANGE='{{.kubernetes_service_cluster_ip_range}}'
+          KUBELET_HEALTHZ_PORT='{{.kubelet_healthz_port}}'
           MAC='{{.mac}}'
           NETWORK_CIDRV4='{{.network.cidrv4}}'
           NETWORK_GATEWAY='{{.network.gateway}}'
@@ -461,7 +481,6 @@ storage:
           REQUEST_QUERY_MAC='{{.request.query.mac}}'
           REQUEST_QUERY_UUID='{{.request.query.uuid}}'
           REQUEST_RAW_QUERY='{{.request.raw_query}}'
-          RKT_IMAGE_URL='{{.rkt_image_url}}'
           ROLES='{{.roles}}'
           SELECTOR_MAC='{{.selector.mac}}'
           VAULT_PORT='{{.vault_port}}'
@@ -592,7 +611,7 @@ storage:
       contents:
         inline: |
           #!/bin/bash
-          ETCDCTL_API=3 exec /usr/bin/etcdctl$@
+          ETCDCTL_API=3 exec /usr/bin/etcdctl $@
 
     - path: /etc/profile.d/common.sh
       mode: 0755
@@ -674,7 +693,6 @@ storage:
 
           /opt/bin/rkt gc --grace-period=0s
           /opt/bin/rkt image gc --grace-period=0s
-          rm -Rf /opt/rootfs/*
           set -e
 
           DEVICE=/dev/sda
@@ -957,6 +975,18 @@ storage:
             --volume data,kind=host,source=/etc/ceph \
             --mount volume=data,target=/etc/ceph \
             --interactive {{.cephtools_image_url}} -- $@
+
+    - path: /etc/profile.d/alias.sh
+      mode: 0755
+      filesystem: root
+      contents:
+        inline: |
+          if [[ $- != *i* ]] ; then
+                   return
+          fi
+          alias ls='ls --color=auto'
+          alias la='ls -la'
+          alias ll='ls -ll'
 
 networkd:
   units:

@@ -17,6 +17,23 @@ systemd:
       enable: false
       mask: true
 
+    - name: download-enjoliver-agent.service
+      enable: true
+      contents: |
+        [Unit]
+        Requires=network-online.target
+        After=network-online.target
+        [Service]
+        Type=oneshot
+        ExecStartPre=/bin/mkdir -pv /opt/bin
+        ExecStart=/usr/bin/curl -f {{.api_uri}}/assets/enjoliver-agent/serve/enjoliver-agent \
+          -o /opt/bin/enjoliver-agent
+        ExecStartPost=/usr/bin/chmod +x /opt/bin/enjoliver-agent
+        RemainAfterExit=yes
+
+        [Install]
+        WantedBy=multi-user.target
+
     - name: rkt-api.service
       enable: true
       contents: |
@@ -25,6 +42,18 @@ systemd:
         ExecStart=/usr/bin/rkt api-service
         Restart=always
         RestartSec=2
+
+        [Install]
+        RequiredBy=multi-user.target
+
+    - name: enjoliver-agent.service
+      enable: true
+      contents: |
+        [Service]
+        ExecStart=/opt/bin/enjoliver-agent --vault
+        EnvironmentFile=/etc/metadata.env
+        Restart=always
+        RestartSec=30
 
         [Install]
         RequiredBy=multi-user.target
@@ -402,7 +431,6 @@ systemd:
           --advertise-address={{.network.ip}} \
           --insecure-bind-address={{.kubernetes_apiserver_insecure_bind_address}} \
           --insecure-port={{.kubernetes_apiserver_insecure_port}} \
-          --etcd-servers=http://127.0.0.1:{{.kubernetes_etcd_client_port}} \
           --allow-privileged=true \
           --service-cluster-ip-range={{.kubernetes_service_cluster_ip_range}} \
           --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota,PodPreset \
@@ -419,7 +447,8 @@ systemd:
           --service-account-key-file=/etc/vault.d/kubernetes/service-accounts.key \
           --service-account-lookup=true \
           --authorization-mode=AlwaysAllow \
-          --anonymous-auth=false
+          --anonymous-auth=false \
+          --etcd-servers=http://127.0.0.1:{{.kubernetes_etcd_client_port}}
         Restart=always
         RestartSec=5s
 
@@ -439,8 +468,7 @@ systemd:
         ExecStartPre=/bin/ls -l \
           /etc/vault.d/kubernetes/kubelet.certificate \
           /etc/vault.d/kubernetes/kubelet.private_key \
-          /etc/vault.d/kubernetes/kubelet.issuing_ca \
-          /opt/bin/ip
+          /etc/vault.d/kubernetes/kubelet.issuing_ca
         ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
         ExecStart=/usr/bin/hyperkube kubelet \
           --hairpin-mode=none \
@@ -461,7 +489,8 @@ systemd:
           --v=2 \
           --tls-cert-file=/etc/vault.d/kubernetes/kubelet.certificate \
           --tls-private-key-file=/etc/vault.d/kubernetes/kubelet.private_key \
-          --client-ca-file=/etc/vault.d/kubernetes/kubelet.issuing_ca
+          --client-ca-file=/etc/vault.d/kubernetes/kubelet.issuing_ca \
+          --healthz-port {{.kubelet_healthz_port}}
         Restart=always
         RestartSec=5s
 
@@ -565,10 +594,6 @@ storage:
         inline: |
           revision=1
 
-    - path: /opt/rootfs/.keep
-      filesystem: root
-      mode: 0644
-
     - path: /etc/kubernetes/manifests/vault.yaml
       filesystem: root
       contents:
@@ -582,7 +607,7 @@ storage:
               app: vault
           spec:
             ports:
-            - port: 8200
+            - port: {{.vault_port}}
               protocol: TCP
             clusterIP: "None"
           ---
@@ -599,7 +624,7 @@ storage:
                 - ip: {{$element}}
               {{end}}
               ports:
-                - port: 8200
+                - port: {{.vault_port}}
 
     - path: /etc/kubernetes/manifests/etcd-vault.yaml
       filesystem: root
@@ -861,13 +886,11 @@ storage:
           # curl '{{.api_uri}}/metadata?{{.request.raw_query}}' | sort
           API_URI='{{.api_uri}}'
           CNI='{{.cni}}'
-          CNI_IMAGE_URL='{{.cni_image_url}}'
           DNS_ATTR_DC='{{.dns_attr.dc}}'
           DNS_ATTR_DOMAIN='{{.dns_attr.domain}}'
           DNS_ATTR_POS='{{.dns_attr.pos}}'
           DNS_ATTR_RACK='{{.dns_attr.rack}}'
           DNS_ATTR_SHORTNAME='{{.dns_attr.shortname}}'
-          ETCD_IMAGE_URL='{{.etcd_image_url}}'
           ETCD_NAME='{{.etcd_name}}'
           FLEET_ETCD_ADVERTISE_CLIENT_URLS='{{.fleet_etcd_advertise_client_urls}}'
           FLEET_ETCD_CLIENT_PORT='{{.fleet_etcd_client_port}}'
@@ -877,11 +900,10 @@ storage:
           FLEET_ETCD_MEMBER_CLIENT_URI_LIST='{{.fleet_etcd_member_client_uri_list}}'
           FLEET_ETCD_MEMBER_PEER_URI_LIST='{{.fleet_etcd_member_peer_uri_list}}'
           FLEET_ETCD_PEER_PORT='{{.fleet_etcd_peer_port}}'
-          FLEET_IMAGE_URL='{{.fleet_image_url}}'
           HOSTNAME='{{.hostname}}'
           HYPERKUBE_IMAGE_URL='{{.hyperkube_image_url}}'
           KUBERNETES_APISERVER_COUNT='{{.kubernetes_apiserver_count}}'
-          KUBERNETES_API_SERVER_PORT='{{.kubernetes_apiserver_insecure_port}}'
+          KUBERNETES_APISERVER_INSECURE_PORT='{{.kubernetes_apiserver_insecure_port}}'
           KUBERNETES_ETCD_ADVERTISE_CLIENT_URLS='{{.kubernetes_etcd_advertise_client_urls}}'
           KUBERNETES_ETCD_CLIENT_PORT='{{.kubernetes_etcd_client_port}}'
           KUBERNETES_ETCD_DATA_DIR='{{.kubernetes_etcd_data_dir}}'
@@ -893,6 +915,7 @@ storage:
           KUBERNETES_NODE_IP='{{.kubernetes_node_ip}}'
           KUBERNETES_NODE_NAME='{{.kubernetes_node_name}}'
           KUBERNETES_SERVICE_CLUSTER_IP_RANGE='{{.kubernetes_service_cluster_ip_range}}'
+          KUBELET_HEALTHZ_PORT='{{.kubelet_healthz_port}}'
           MAC='{{.mac}}'
           NETWORK_CIDRV4='{{.network.cidrv4}}'
           NETWORK_GATEWAY='{{.network.gateway}}'
@@ -900,7 +923,6 @@ storage:
           REQUEST_QUERY_MAC='{{.request.query.mac}}'
           REQUEST_QUERY_UUID='{{.request.query.uuid}}'
           REQUEST_RAW_QUERY='{{.request.raw_query}}'
-          RKT_IMAGE_URL='{{.rkt_image_url}}'
           ROLES='{{.roles}}'
           SELECTOR_MAC='{{.selector.mac}}'
           VAULT_ETCD_ADVERTISE_CLIENT_URLS='{{.fleet_etcd_advertise_client_urls}}'
@@ -919,7 +941,7 @@ storage:
           VAULT_ETCD_MEMBER_CLIENT_URI_LIST='{{.vault_etcd_member_client_uri_list}}'
           VAULT_ETCD_MEMBER_PEER_URI_LIST='{{.vault_etcd_member_peer_uri_list}}'
           VAULT_ETCD_PEER_PORT='{{.vault_etcd_peer_port}}'
-          VAULT_IMAGE_URL='{{.vault_image_url}}'
+          VAULT_PORT='{{.vault_port}}'
 
     - path: /etc/hostname
       filesystem: root
@@ -936,7 +958,7 @@ storage:
           {
             "rktKind": "paths",
             "rktVersion": "v1",
-            "stage1-images": "/opt/rootfs/usr/lib/rkt/stage1-images"
+            "stage1-images": "/usr/lib/rkt/stage1-images"
           }
 
     - path: /etc/rkt/stage1.d/coreos.json
@@ -949,7 +971,7 @@ storage:
               "rktVersion": "v1",
               "name": "coreos.com/rkt/stage1-coreos",
               "version": "v1.27.0",
-              "location": "/opt/rootfs/usr/lib/rkt/stage1-images/stage1-coreos.aci"
+              "location": "/usr/lib/rkt/stage1-images/stage1-coreos.aci"
           }
 
     - path: /etc/rkt/net.d/10-k8s.conf
@@ -975,7 +997,7 @@ storage:
             sync = "false"
           }
           listener "tcp" {
-            address     = "127.0.0.1:8200"
+            address     = "127.0.0.1:{{.vault_port}}"
             tls_disable = 1
           }
 
@@ -990,12 +1012,12 @@ storage:
             sync = "false"
           }
           listener "tcp" {
-            address     = "{{.network.ip}}:8200"
+            address     = "{{.network.ip}}:{{.vault_port}}"
             tls_cert_file = "/etc/vault.d/vault/server.certificate"
             tls_key_file  = "/etc/vault.d/vault/server.private_key"
           }
           listener "tcp" {
-            address     = "127.0.0.1:8200"
+            address     = "127.0.0.1:{{.vault_port}}"
             tls_disable = 1
           }
 
@@ -1221,7 +1243,7 @@ storage:
         inline: |
            export PATH=/opt/bin:$PATH
            export PRIVATE_IPV4={{.network.ip}}
-           export VAULT_ADDR=http://127.0.0.1:8200
+           export VAULT_ADDR=http://127.0.0.1:{{.vault_port}}
 
     - path: /etc/modules-load.d/network.conf
       mode: 0644
@@ -1296,7 +1318,6 @@ storage:
 
           /opt/bin/rkt gc --grace-period=0s
           /opt/bin/rkt image gc --grace-period=0s
-          rm -Rf /opt/rootfs/*
           set -e
 
           DEVICE=/dev/sda
@@ -1323,7 +1344,7 @@ storage:
         inline: |
           #!/usr/bin/env bash
           export PATH=/usr/bin:/opt/bin/:${PATH}
-          export VAULT_ADDR=http://127.0.0.1:8200
+          export VAULT_ADDR=http://127.0.0.1:{{.vault_port}}
 
           set -o pipefail
 
@@ -1394,7 +1415,7 @@ storage:
         inline: |
           #!/bin/bash
 
-          KEY="https://{{.network.ip}}:8200"
+          KEY="https://{{.network.ip}}:{{.vault_port}}"
           ls -l /etc/vault.d/vault/server.certificate /etc/vault.d/vault/server.private_key || {
             curl -f "http://127.0.0.1:{{.vault_etcd_client_port}}/v2/keys/initier?prevExist=false" -XPUT -d "value=${KEY}" || \
               curl -f "http://127.0.0.1:{{.vault_etcd_client_port}}/v2/keys/initier?prevValue=${KEY}" -XPUT -d "value=${KEY}" && {
@@ -1412,7 +1433,7 @@ storage:
         inline: |
           #!/usr/bin/env bash
 
-          export VAULT_ADDR="http://127.0.0.1:8200"
+          export VAULT_ADDR="http://127.0.0.1:{{.vault_port}}"
           export PATH=/opt/bin:${PATH}
           function retry {
             until $@
@@ -1426,11 +1447,11 @@ storage:
           unset ETCDCTL_API
 
           echo "Vault have to respond and may be sealed:"
-          curl http://127.0.0.1:8200/v1/ | jq -re .errors || exit 1
+          curl http://127.0.0.1:{{.vault_port}}/v1/ | jq -re .errors || exit 1
 
           vault init -check && {
-            echo "GET vault: https://{{.network.ip}}:8200/v1/"
-            curl --insecure https://{{.network.ip}}:8200/v1/ || {
+            echo "GET vault: https://{{.network.ip}}:{{.vault_port}}/v1/"
+            curl --insecure https://{{.network.ip}}:{{.vault_port}}/v1/ || {
               echo "vault already init but not running with TLS"
               retry ls -l /etc/vault.d/vault/server.certificate /etc/vault.d/vault/server.private_key
               systemctl restart vault
@@ -1707,7 +1728,7 @@ storage:
           do
             for ve in $(echo -n {{ .vault_ip_list }} | tr ',' '\n' | shuf)
             do
-              REQ="https://${ve}:8200/v1/pki/${1}/issue/${2}"
+              REQ="https://${ve}:{{.vault_port}}/v1/pki/${1}/issue/${2}"
               echo "POST ${REQ}"
               curl ${REQ} \
                 --cacert ${VAULT_CAPATH} -Lfs \
@@ -1763,7 +1784,7 @@ storage:
           do
             for ve in $(echo -n {{ .vault_ip_list }} | tr ',' '\n' | shuf)
             do
-              REQ="https://${ve}:8200/v1/secret/${1}/${2}"
+              REQ="https://${ve}:{{.vault_port}}/v1/secret/${1}/${2}"
               echo "GET ${REQ}"
               curl ${REQ} -Lfs \
                 --cacert ${VAULT_CAPATH} \

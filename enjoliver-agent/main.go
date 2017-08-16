@@ -32,5 +32,6 @@ func main() {
 	run := &Runtime{p}
 	http.DefaultClient.Timeout = time.Second
 	http.HandleFunc("/healthz", run.handlerHealthz)
+	http.HandleFunc("/version", run.handlerVersion)
 	glog.Fatal(http.ListenAndServe("0.0.0.0:8000", nil))
 }
