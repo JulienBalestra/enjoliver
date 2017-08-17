@@ -20,10 +20,10 @@ class TestKVMK8sEnjolivageDiskLifecycle(kvm_player.KernelVirtualMachinePlayer):
     def setUpClass(cls):
         cls.running_requirements()
         cls.set_rack0()
+        cls.set_acserver()
         cls.set_api()
         cls.set_matchbox()
         cls.set_dnsmasq()
-        cls.set_acserver()
         cls.pause(cls.wait_setup_teardown)
 
 

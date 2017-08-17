@@ -154,8 +154,8 @@ class TestKVMDiscoveryClient02(TestKVMDiscoveryClient):
     @classmethod
     def setUpClass(cls):
         cls.running_requirements()
-        cls.set_acserver()
         cls.set_rack0()
+        cls.set_acserver()
         cls.set_api()
         cls.set_matchbox()
         cls.set_dnsmasq()
@@ -233,8 +233,8 @@ class TestKVMDiscoveryClient03(TestKVMDiscoveryClient):
     @classmethod
     def setUpClass(cls):
         cls.running_requirements()
-        cls.set_acserver()
         cls.set_rack0()
+        cls.set_acserver()
         cls.set_api()
         cls.set_matchbox()
         cls.set_dnsmasq()

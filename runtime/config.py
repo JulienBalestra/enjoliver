@@ -24,6 +24,23 @@ def rkt_path_d(path):
         json.dump(data, f)
 
 
+def rkt_stage1_d(path):
+    data = {
+        "rktKind": "stage1",
+        "rktVersion": "v1",
+        "name": "coreos.com/rkt/stage1-coreos",
+        "version": "v1.27.0",
+        "location": "%s/rkt/stage1-coreos.aci" % path
+    }
+    try:
+        os.makedirs("%s/stage1.d/" % path)
+    except OSError:
+        pass
+
+    with open("%s/stage1.d/coreos.json" % path, "w") as f:
+        json.dump(data, f)
+
+
 def dgr_config(path):
     data = [
         "targetWorkDir: %s/target" % path,
@@ -70,5 +87,6 @@ def acserver_config(path):
 if __name__ == "__main__":
     pwd = os.path.dirname(os.path.abspath(__file__))
     rkt_path_d(pwd)
+    rkt_stage1_d(pwd)
     dgr_config(pwd)
     acserver_config(pwd)
