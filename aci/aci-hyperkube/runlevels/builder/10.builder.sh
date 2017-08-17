@@ -48,6 +48,10 @@ chmod +x tick.sh
 # Build
 make hyperkube
 
+# Compress 215MB : 35MB
+upx _output/local/go/bin/hyperkube
+upx -t _output/local/go/bin/hyperkube
+
 # Small hack to check if the travis instance have enough space
 # Keep the current build state for dev rebuild
 AVAIL=$(df /dgr/aci-home --output=avail | tail -1)

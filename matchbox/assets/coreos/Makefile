@@ -48,8 +48,8 @@ $(IMAGE):
 
 ACI_PATH="../../../../../runtime/acserver.d/enjoliver.local"
 
-unsquash: $(INITRD)
-	VERSION=$(VERSION) ACI_PATH=$(ACI_PATH) ./unsquash.sh
+alter:
+	VERSION=$(VERSION) ACI_PATH=$(ACI_PATH) ./alter-distribution.sh
 
 clean:
 	@rm -rfv $(VERSION) 2>&1 || true
