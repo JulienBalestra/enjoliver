@@ -1,24 +1,25 @@
 #!/usr/bin/env python
-import os.path
 import argparse
+import os.path
 
-READ_ONLY = chr(0xff)
-READ_WRITE = chr(0x00)
+READ_ONLY = b'\xff'
+READ_WRITE = b'\x00'
 MOUNT_OPTION_OFFSET = 0x464 + 3
 USER_A = 138412032
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def change_flag(image_path, read_only=True):
-    with open(image_path, 'r+') as f:
+    c = READ_ONLY if read_only else READ_WRITE
+    with open(image_path, 'rb+') as f:
         f.seek(USER_A + MOUNT_OPTION_OFFSET)
-        f.write(READ_ONLY if read_only else READ_WRITE)
+        f.write(c)
 
 
 def get_current_flag(image_path):
-    with open(image_path, 'r') as f:
+    with open(image_path, 'rb') as f:
         f.seek(USER_A + MOUNT_OPTION_OFFSET)
-        return f.read(1)
+        return bytes(f.read(1))
 
 
 if __name__ == '__main__':
@@ -33,9 +34,10 @@ if __name__ == '__main__':
     image_path = os.path.join(FILE_DIR, version, "coreos_production_image.bin")
     current_flag = get_current_flag(image_path)
     if current_flag != READ_WRITE and current_flag != READ_ONLY:
-        raise IOError("%s flag at %d is incoherent: %r" % (image_path, USER_A, current_flag))
+        raise IOError("%s flag at %d is incoherent: %r ; should be %r or %r" % (
+            image_path, USER_A, current_flag, READ_WRITE, READ_ONLY))
 
-    if current_flag == READ_ONLY and task == "ro":
+    if (current_flag == READ_ONLY and task == "ro") or (current_flag == READ_WRITE and task == "rw"):
         print("Nothing to be done")
         exit(0)
 
