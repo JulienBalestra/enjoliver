@@ -19,7 +19,12 @@ $(DEBIAN):
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) install
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) push
 
-$(GO): $(DEBIAN)
+$(UPX): $(DEBIAN)
+	@echo ENV IMAGE=$(ACI)/aci-$(UPX)
+	IMAGE=$(ACI)/aci-$(GO) make -C $(RUNTIME) install
+	IMAGE=$(ACI)/aci-$(GO) make -C $(RUNTIME) push
+
+$(GO): $(UPX)
 	@echo ENV IMAGE=$(ACI)/aci-$(GO)
 	IMAGE=$(ACI)/aci-$(GO) make -C $(RUNTIME) install
 	IMAGE=$(ACI)/aci-$(GO) make -C $(RUNTIME) push

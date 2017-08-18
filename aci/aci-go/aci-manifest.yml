@@ -1,7 +1,7 @@
 name: enjoliver.local/go:1.8.3
 aci:
   dependencies:
-    - enjoliver.local/debian:latest
+    - enjoliver.local/upx:latest
   app:
     environment:
       - { name: GOPATH, value: "/go" }

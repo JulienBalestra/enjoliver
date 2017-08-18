@@ -1,0 +1,8 @@
+name: enjoliver.local/upx:latest
+aci:
+  dependencies:
+    - enjoliver.local/debian:latest
+
+builder:
+  dependencies:
+    - enjoliver.local/debian:latest

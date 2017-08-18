@@ -37,7 +37,7 @@ _remove_in_fs(){
 
 # CWD == ~/matchbox/assets/coreos/${VERSION}/squashfs
 
-EXCLUDES="--exclude rootfs/dgr --exclude rootfs/etc --exclude rootfs/tmp"
+EXCLUDES="--exclude rootfs/dgr --exclude rootfs/etc --exclude rootfs/tmp --exclude rootfs/run --exclude rootfs/sys"
 
 for useless in /bin/containerd /bin/containerd-shim /bin/dockerd /bin/runc /bin/coreos-cloudinit
 do

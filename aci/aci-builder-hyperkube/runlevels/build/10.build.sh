@@ -15,11 +15,6 @@ apt-get update -qq
 apt-get upgrade -y -qq
 apt-get install -y -qq git tar build-essential rsync xz-utils
 
-UPX=3.94
-curl https://github.com/upx/upx/releases/download/v${UPX}/upx-${UPX}-amd64_linux.tar.xz -L -o upx.tar.xz
-tar -xvf upx.tar.xz --strip 1
-mv -v upx ${ROOTFS}/usr/bin
-
 export GOROOT=/usr/local/go
 export GOPATH=/go
 export PATH=${PATH}:/go/bin:/usr/local/go/bin
