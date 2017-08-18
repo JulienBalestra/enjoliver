@@ -39,7 +39,7 @@ if __name__ == '__main__':
         print("Nothing to be done")
         exit(0)
 
-    print("Currently:\n%s: %s\n" % (image_path, ("ro" if current_flag == READ_ONLY else "rw")))
+    print("Currently:\n%s: %s" % (image_path, ("ro" if current_flag == READ_ONLY else "rw")))
     change_flag(image_path, True if task == "ro" else False)
     current_flag = get_current_flag(image_path)
     print("End with:\n%s: %s" % (image_path, ("ro" if current_flag == READ_ONLY else "rw")))

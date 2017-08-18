@@ -96,6 +96,7 @@ ${COREOS_DIRECTORY}/disk.py ro
 bzip2 -z ${COREOS_DIRECTORY}/${VERSION}/coreos_production_image.bin -9
 
 # Do the signing
+cp -v ${COREOS_DIRECTORY}/coreos-install squashfs-root/bin/coreos-install
 
 mksquashfs squashfs-root/ ../initrd/usr.squashfs -noappend -always-use-fragments
 cd ../initrd
