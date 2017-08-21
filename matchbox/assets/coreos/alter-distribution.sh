@@ -19,7 +19,9 @@ mkdir -pv {squashfs,initrd} ${USR_A} ${BOOT}
 bzip2 -fdk coreos_production_image.bin.bz2
 ${COREOS_DIRECTORY}/disk.py rw
 
-LOOP=$(losetup --find --show --partscan coreos_production_image.bin)
+LOOP=$(losetup --find --show coreos_production_image.bin)
+partprobe ${LOOP}
+
 set +e
 umount ${LOOP}p3 ${USR_A}
 umount ${LOOP}p1 ${BOOT}
