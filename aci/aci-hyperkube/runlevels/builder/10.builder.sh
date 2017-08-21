@@ -33,17 +33,7 @@ do
 done
 
 # If building in a slow travis instance, avoid to be killed by "no logs output since ..."
-cat << EOF > tick.sh
-#!/bin/bash
-until test -x _output/local/go/bin/hyperkube
-do
-    echo -n "."
-    sleep 0.5
-done
-EOF
-chmod +x tick.sh
-
-./tick.sh &
+bash -c 'while true; do echo -n "." ; sleep 30; done' &
 
 # Build
 make hyperkube

@@ -1,15 +1,16 @@
-Flask==0.12
-gunicorn==19.6.0
-gevent==1.2.1
-SQLAlchemy==1.1.6
-requests==2.9.1
-boto3==1.4.4
-kubernetes==1.0.0b3
-prometheus-client==0.0.19
-psutil==5.1.3
+certifi
+Flask==0.12.2
+gunicorn==19.7.1
+gevent==1.2.2
+SQLAlchemy==1.1.13
+requests==2.18.4
+boto3==1.4.6
+kubernetes==3.0.0
+prometheus-client==0.0.20
+psutil==5.2.2
 PyYAML==3.12
 cockroachdb==0.1.0
-deepdiff==3.1.1
-flasgger==0.5.14
+deepdiff==3.3.0
+flasgger==0.6.6
 
 #ipaddr==2.1.11 # Inside py-vendor/
