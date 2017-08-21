@@ -2,7 +2,7 @@ name: enjoliver.local/prometheus:1.7.0
 
 builder:
   dependencies:
-    - enjoliver.local/debian:latest
+    - enjoliver.local/upx:latest
 
 
 aci:

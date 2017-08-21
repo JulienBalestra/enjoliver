@@ -4,3 +4,7 @@
   [ -f /usr/bin/ip ]
 }
 
+@test "is able to run" {
+  run /usr/bin/ip -V
+  [ "$status" -eq 0 ]
+}

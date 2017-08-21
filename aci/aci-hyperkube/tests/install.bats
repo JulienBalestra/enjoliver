@@ -15,6 +15,6 @@
 }
 
 @test "hyperkube is able to run" {
-  ./hyperkube --version
-  [ $? -eq 0 ]
+  run /hyperkube --version
+  [ "$status" -eq 0 ]
 }

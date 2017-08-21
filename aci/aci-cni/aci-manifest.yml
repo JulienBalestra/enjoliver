@@ -2,7 +2,7 @@ name: enjoliver.local/cni:0.5.2
 
 builder:
   dependencies:
-    - enjoliver.local/debian:latest
+    - enjoliver.local/upx:latest
 
 aci:
   dependencies:

@@ -2,7 +2,7 @@ name: enjoliver.local/etcd:3.2.5
 
 builder:
   dependencies:
-    - enjoliver.local/debian:latest
+    - enjoliver.local/upx:latest
 
 aci:
   dependencies:

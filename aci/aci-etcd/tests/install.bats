@@ -5,3 +5,10 @@
   [ -x /usr/bin/etcd ]
 }
 
+@test "run" {
+  run /usr/bin/etcdctl --version
+  [ "$status" -eq 0 ]
+
+  run /usr/bin/etcd --version
+  [ "$status" -eq 0 ]
+}

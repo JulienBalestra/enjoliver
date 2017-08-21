@@ -14,4 +14,8 @@ cd ${GOPATH}/src/github.com/kubernetes/kube-state-metrics
 
 curl -L https://github.com/kubernetes/kube-state-metrics/archive/v${ACI_VERSION}.tar.gz | tar -xzf - --strip-components=1
 make build
+
+upx kube-state-metrics
+upx -t kube-state-metrics
+
 mv -v kube-state-metrics ${ROOTFS}/usr/bin/kube-state-metrics

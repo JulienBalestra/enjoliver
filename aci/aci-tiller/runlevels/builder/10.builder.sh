@@ -24,5 +24,7 @@ git clone https://github.com/kubernetes/helm.git . && git checkout v${ACI_VERSIO
 
 make bootstrap build
 
+upx /go/src/k8s.io/helm/bin/tiller
+upx -t /go/src/k8s.io/helm/bin/tiller
 mv -v /go/src/k8s.io/helm/bin/tiller ${ROOTFS}/usr/bin/tiller
 

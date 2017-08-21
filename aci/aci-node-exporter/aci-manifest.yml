@@ -2,7 +2,7 @@ name: enjoliver.local/node-exporter:0.14.0
 
 builder:
   dependencies:
-    - enjoliver.local/debian:latest
+    - enjoliver.local/upx:latest
 
 
 aci:

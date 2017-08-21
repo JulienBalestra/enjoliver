@@ -4,3 +4,7 @@
   [ -x /usr/bin/vault ]
 }
 
+@test "run" {
+  run /usr/bin/vault --version
+  [ "$status" -eq 0 ]
+}

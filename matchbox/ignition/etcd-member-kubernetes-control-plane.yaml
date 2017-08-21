@@ -474,7 +474,7 @@ systemd:
           --hairpin-mode=none \
           --non-masquerade-cidr={{.network.subnet}} \
           --network-plugin=cni \
-          --cni-bin-dir=/usr/bin \
+          --cni-bin-dir=/usr/local/cni/bin/ \
           --cni-conf-dir=/etc/rkt/net.d \
           --hostname-override={{.kubernetes_node_name}} \
           --node-ip={{.kubernetes_node_ip}} \
@@ -1307,7 +1307,7 @@ storage:
           systemctl stop fleet.service
 
           echo "draining node..."
-          /opt/bin/kubectl -s http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} \
+          kubectl -s http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} \
             drain {{.kubernetes_node_name}} --force --ignore-daemonsets --delete-local-data
 
           set +e
@@ -1316,8 +1316,8 @@ storage:
             systemctl stop ${service}.service
           done
 
-          /opt/bin/rkt gc --grace-period=0s
-          /opt/bin/rkt image gc --grace-period=0s
+          rkt gc --grace-period=0s
+          rkt image gc --grace-period=0s
           set -e
 
           DEVICE=/dev/sda
