@@ -30,7 +30,7 @@ do
 done
 
 ./autogen.sh
-./configure --enable-tpm=no --with-stage1-flavors=coreos
+./configure --enable-tpm=no --with-stage1-flavors=coreos,fly
 make
 
 mkdir -pv ${ROOTFS}/usr/lib/rkt/stage1-images/
