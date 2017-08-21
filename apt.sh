@@ -7,7 +7,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 apt-get update -qq
 
-apt-get install -y python3 curl python3-dev python-virtualenv qemu-kvm libvirt-bin virtinst jq file build-essential libpq-dev systemd cgpt cryptsetup-bin
+apt-get install -y python3 curl python3-dev python-virtualenv qemu-kvm libvirt-bin virtinst jq file build-essential libpq-dev systemd cgpt cryptsetup-bin squashfs-tools
 
 # Go version have to be > 1.4
 go help || apt-get install -y golang
