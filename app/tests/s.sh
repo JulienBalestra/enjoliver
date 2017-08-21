@@ -28,7 +28,7 @@ CMD="sudo -i"
 cd $(dirname $0)
 echo ${CMD}
 until ssh -t -i ${KEY} -lcore ${IP} \
-        -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=1 \
+        -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=2 -o ConnectTimeout=1 \
         "${CMD}"
 do
     sleep 2

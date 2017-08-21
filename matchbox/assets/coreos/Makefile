@@ -18,7 +18,7 @@ ASC=CoreOS_Image_Signing_Key.asc
 KEY=$(addprefix $(VERSION)/, $(ASC))
 GPG=gpg
 
-default: $(KEY) $(KERNEL) $(INITRD) $(TEXT_VERSION) $(IMAGE)
+default: $(KEY) $(KERNEL) $(INITRD) $(TEXT_VERSION) $(IMAGE) alter
 
 $(VERSION):
 	test $(VERSION)

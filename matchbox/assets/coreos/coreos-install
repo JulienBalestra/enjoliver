@@ -437,8 +437,7 @@ dd if=/dev/zero of="${DEVICE}" count=1024 2>/dev/null \
 
 echo "Downloading, writing and verifying ${IMAGE_NAME}..."
 declare -a EEND
-if ! wget --no-verbose -O - "${IMAGE_URL}" \
-    | tee >(bunzip2 --stdout >"${DEVICE}")
+if ! wget --no-verbose -O - "${IMAGE_URL}" | bunzip2 --stdout >"${DEVICE}"
 then
     EEND=(${PIPESTATUS[@]})
     [ ${EEND[0]} -ne 0 ] && echo "${EEND[0]}: Download of ${IMAGE_NAME} did not complete" >&2

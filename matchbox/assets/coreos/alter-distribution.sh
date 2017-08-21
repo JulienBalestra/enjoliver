@@ -7,21 +7,27 @@ test ${VERSION}
 
 cd $(dirname $0)
 COREOS_DIRECTORY=$(pwd -P)
-cd ${COREOS_DIRECTORY}/${VERSION}
+export VERSION_DIR=${COREOS_DIRECTORY}/${VERSION}
 
-export USR_A=${COREOS_DIRECTORY}/${VERSION}/usr-a
-export USR_A
+cd ${VERSION_DIR}
+export USR_A=${VERSION_DIR}/usr-a
+export BOOT=${VERSION_DIR}/boot
 export VERSION
 
-mkdir -pv {squashfs,initrd} ${USR_A}
+mkdir -pv {squashfs,initrd} ${USR_A} ${BOOT}
 
-bzip2 -d coreos_production_image.bin.bz2
+bzip2 -fdk coreos_production_image.bin.bz2
 ${COREOS_DIRECTORY}/disk.py rw
 
 LOOP=$(losetup --find --show --partscan coreos_production_image.bin)
-mount ${LOOP}p3 ${USR_A}
+set +e
+umount ${LOOP}p3 ${USR_A}
+umount ${LOOP}p1 ${BOOT}
+set -e
 
-gunzip --force coreos_production_pxe_image.cpio.gz
+mount ${LOOP}p3 ${USR_A}
+mount ${LOOP}p1 ${BOOT}
+gunzip -c --force coreos_production_pxe_image.cpio.gz > coreos_production_pxe_image.cpio
 cd initrd
 cpio -id < ../coreos_production_pxe_image.cpio
 cd ../squashfs
@@ -30,7 +36,7 @@ unsquashfs -no-progress ../initrd/usr.squashfs
 _remove_in_fs(){
     for fs in squashfs-root/ ${USR_A}
     do
-        rm -v ${fs}/${1}
+        rm -fv ${fs}/${1}
     done
 
 }
@@ -82,7 +88,6 @@ CNI_ACI=$(ls ${ACI_PATH}/cni/cni-*-linux-amd64.aci | head -n 1)
 tar -C squashfs-root/local/cni -xvf ${CNI_ACI} rootfs/usr --strip 2 ${EXCLUDES}
 tar -C ${USR_A}/local/cni -xvf ${CNI_ACI} rootfs/usr --strip 2 ${EXCLUDES}
 
-
 HYPERKUBE_ACI=$(ls ${ACI_PATH}/hyperkube/hyperkube-*-linux-amd64.aci | head -n 1)
 tar -C squashfs-root/bin -xvf ${HYPERKUBE_ACI} rootfs/ --strip 1 ${EXCLUDES}
 tar -C ${USR_A}/bin -xvf ${HYPERKUBE_ACI} rootfs/ --strip 1 ${EXCLUDES}
@@ -90,10 +95,16 @@ tar -C ${USR_A}/bin -xvf ${HYPERKUBE_ACI} rootfs/ --strip 1 ${EXCLUDES}
 sync
 
 umount ${USR_A}
+${COREOS_DIRECTORY}/disk_util --disk_layout=base verity --root_hash=${VERSION_DIR}/coreos_production_image_verity.txt ${VERSION_DIR}/coreos_production_image.bin
+printf %s "$(cat ${VERSION_DIR}/coreos_production_image_verity.txt)" | \
+        dd of=${BOOT}/coreos/vmlinuz-a conv=notrunc seek=64 count=64 bs=1 status=none
+sync
+
+umount ${BOOT}
 losetup -d ${LOOP}
 
 ${COREOS_DIRECTORY}/disk.py ro
-bzip2 -z ${COREOS_DIRECTORY}/${VERSION}/coreos_production_image.bin -9
+bzip2 -fz ${VERSION_DIR}/coreos_production_image.bin -9
 
 cp -v ${COREOS_DIRECTORY}/coreos-install squashfs-root/bin/coreos-install
 
