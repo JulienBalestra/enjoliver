@@ -49,11 +49,11 @@ acserver:
 
 aci_core: acserver
 	make -C aci core
-	pkill -F runtime/acserver.pid
+	pkill -F runtime/acserver.pid || true
 
 aci: acserver
 	make -C aci kube_deps
-	pkill -F runtime/acserver.pid
+	pkill -F runtime/acserver.pid || true
 
 assets:
 	make -C matchbox/assets/discoveryC
@@ -116,7 +116,7 @@ container_linux: acserver
 	./runtime/runtime.rkt run --volume enjoliver,kind=host,source=$(CWD),readOnly=false \
       --stage1-path=$(CWD)/runtime/rkt/stage1-fly.aci --insecure-options=all \
       --interactive enjoliver.local/container-linux:latest
-	pkill -F runtime/acserver.pid
+	pkill -F runtime/acserver.pid || true
 
 dev_setup:
 	echo "Need MY_USER for non root operations and root for dgr"
