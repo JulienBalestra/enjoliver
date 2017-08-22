@@ -4,6 +4,11 @@
 	"GodepVersion": "v77",
 	"Deps": [
 		{
+			"ImportPath": "github.com/fatih/color",
+			"Comment": "v1.5.0-4-g67c513e",
+			"Rev": "67c513e5729f918f5e69786686770c27141a4490"
+		},
+		{
 			"ImportPath": "github.com/fsnotify/fsnotify",
 			"Comment": "v1.3.1-1-gf12c623",
 			"Rev": "f12c6236fe7b5cf6bcf30e5935d08cb079d78334"
@@ -60,6 +65,16 @@
 			"ImportPath": "github.com/magiconair/properties",
 			"Comment": "v1.7.0-4-g61b492c",
 			"Rev": "61b492c03cf472e0c6419be5899b8e0dc28b1b88"
+		},
+		{
+			"ImportPath": "github.com/mattn/go-colorable",
+			"Comment": "v0.0.9-6-gad5389d",
+			"Rev": "ad5389df28cdac544c99bd7b9161a0b5b6ca9d1b"
+		},
+		{
+			"ImportPath": "github.com/mattn/go-isatty",
+			"Comment": "v0.0.2",
+			"Rev": "fc9e8d8ef48496124e79ae0df75490096eccf6fe"
 		},
 		{
 			"ImportPath": "github.com/mattn/go-runewidth",

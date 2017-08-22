@@ -53,6 +53,28 @@ func main() {
 		},
 	}
 
+	var componentStatusCmd = &cobra.Command{
+		Use:     "componentstatus",
+		Aliases: []string{"cs", "componentstatuses"},
+		Short:   "Status of components",
+		Long:    "long",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			clusterName := cmd.Flag("cluster").Value.String()
+			_, ok := run.Config.Clusters[clusterName]
+			if clusterName == "" || !ok {
+				return fmt.Errorf("--cluster %q is invalid, valid are: [%s]\n", clusterName, joinMap(run.Config.Clusters, " "))
+			}
+			return nil
+		},
+		Run: func(cmd *cobra.Command, args []string) {
+			err := run.DisplayComponentStatus()
+			if err != nil {
+				glog.Errorf("err: %s", err.Error())
+				os.Exit(2)
+			}
+		},
+	}
+
 	var rootCmd = &cobra.Command{Use: "Enjoliver control"}
 
 	rootCmd.AddCommand(getCmd)
@@ -63,6 +85,8 @@ func main() {
 	endpointCmd.Flags().BoolVarP(&run.EndpointDisplay.Fleet, "fleet", "F", false, "Fleet")
 	endpointCmd.Flags().BoolVarP(&run.EndpointDisplay.Kubernetes, "kubernetes", "K", false, "Kubernetes")
 	endpointCmd.Flags().BoolVarP(&run.EndpointDisplay.Vault, "vault", "V", false, "Vault")
+
+	getCmd.AddCommand(componentStatusCmd)
 
 	rootCmd.Execute()
 	return

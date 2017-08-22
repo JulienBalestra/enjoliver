@@ -9,10 +9,7 @@ import (
 )
 
 const (
-	schedulerKubernetesControlPlanePath = "/scheduler/kubernetes-control-plane"
-	enjoliverConfigPath                 = "/configs"
-	vaultPort                           = 8200
-	kubernetesApiServerSecurePort       = 6443
+	kubernetesApiServerSecurePort = 6443
 )
 
 type EndpointDisplay struct {
@@ -21,21 +18,8 @@ type EndpointDisplay struct {
 	Kubernetes bool
 }
 
-type SchedulerKubernetesControlPlane struct {
-	Ipv4 string `json:"ipv4"`
-	Fqdn string `json:"fqdn"`
-	Mac  string `json:"mac"`
-}
-
-type EnjoliverConfig struct {
-	Fleet_etcd_client_port      int
-	Vault_etcd_client_port      int
-	Kubernetes_etcd_client_port int
-	Kubernetes_api_server_port  int
-}
-
-func (r *Runtime) createHeader() []string {
-	header := []string{"FQDN"}
+func (r *Runtime) createHeaderForEndpoint() []string {
+	header := []string{"Fqdn"}
 	if r.EndpointDisplay.Fleet {
 		header = append(header, "etcd-fleet")
 	}
@@ -50,7 +34,11 @@ func (r *Runtime) createHeader() []string {
 	return header
 }
 
-func (r *Runtime) createRow(node SchedulerKubernetesControlPlane, config EnjoliverConfig) []string {
+func (r *Runtime) createRowForEndpoint(node SchedulerKubernetesControlPlane, config EnjoliverConfig) []string {
+	if node.Fqdn == "" {
+		node.Fqdn = node.Ipv4
+		glog.Errorf("no Fqdn for %s: using IP as Fqdn", node.Ipv4)
+	}
 	row := []string{node.Fqdn}
 	if r.EndpointDisplay.Fleet {
 		row = append(row, fmt.Sprintf("https://%s:%d", node.Ipv4, config.Fleet_etcd_client_port))
@@ -60,18 +48,18 @@ func (r *Runtime) createRow(node SchedulerKubernetesControlPlane, config Enjoliv
 		row = append(row, fmt.Sprintf("https://%s:%d", node.Ipv4, config.Kubernetes_etcd_client_port))
 	}
 	if r.EndpointDisplay.Vault {
-		row = append(row, fmt.Sprintf("https://%s:%d", node.Ipv4, vaultPort))
+		row = append(row, fmt.Sprintf("https://%s:%d", node.Ipv4, config.Vault_port))
 		row = append(row, fmt.Sprintf("https://%s:%d", node.Ipv4, config.Vault_etcd_client_port))
 	}
 	return row
 }
 
-func (r *Runtime) display(kubernetesControlPlanes []SchedulerKubernetesControlPlane, config EnjoliverConfig) {
+func (r *Runtime) displayEndpoints(kubernetesControlPlanes []SchedulerKubernetesControlPlane, config EnjoliverConfig) {
 	if r.Output == "ascii" {
 		asciiTable := tablewriter.NewWriter(os.Stdout)
-		asciiTable.SetHeader(r.createHeader())
+		asciiTable.SetHeader(r.createHeaderForEndpoint())
 		for _, node := range kubernetesControlPlanes {
-			asciiTable.Append(r.createRow(node, config))
+			asciiTable.Append(r.createRowForEndpoint(node, config))
 		}
 		asciiTable.Render()
 		return
@@ -80,7 +68,7 @@ func (r *Runtime) display(kubernetesControlPlanes []SchedulerKubernetesControlPl
 		// TODO use a struct to make a json more exploitable
 		var stringArray [][]string
 		for _, node := range kubernetesControlPlanes {
-			stringArray = append(stringArray, r.createRow(node, config))
+			stringArray = append(stringArray, r.createRowForEndpoint(node, config))
 		}
 		b, err := json.Marshal(stringArray)
 		if err != nil {
@@ -96,7 +84,7 @@ func (r *Runtime) display(kubernetesControlPlanes []SchedulerKubernetesControlPl
 func (r *Runtime) getSchedulerKubernetesControlPlane() ([]SchedulerKubernetesControlPlane, error) {
 	var schedulerKubeControlPlane []SchedulerKubernetesControlPlane
 
-	b, err := r.SmartClient(schedulerKubernetesControlPlanePath)
+	b, err := r.SmartClient(SchedulerKubernetesControlPlanePath)
 	if err != nil {
 		return nil, err
 	}
@@ -106,21 +94,6 @@ func (r *Runtime) getSchedulerKubernetesControlPlane() ([]SchedulerKubernetesCon
 		return nil, err
 	}
 	return schedulerKubeControlPlane, nil
-}
-
-func (r *Runtime) getEnjoliverConfig() (EnjoliverConfig, error) {
-	var enjoliverConfig EnjoliverConfig
-	b, err := r.SmartClient(enjoliverConfigPath)
-	if err != nil {
-		glog.Errorf("fail to query: %s", err)
-		return enjoliverConfig, err
-	}
-	err = json.Unmarshal(b, &enjoliverConfig)
-	if err != nil {
-		glog.Errorf("fail to unmarshal: %s", err)
-		return enjoliverConfig, err
-	}
-	return enjoliverConfig, nil
 }
 
 func (r *Runtime) DisplayEndpoints() error {
@@ -134,6 +107,6 @@ func (r *Runtime) DisplayEndpoints() error {
 		return err
 	}
 
-	r.display(schedulerKubeControlPlane, enjoliverConfig)
+	r.displayEndpoints(schedulerKubeControlPlane, enjoliverConfig)
 	return nil
 }
