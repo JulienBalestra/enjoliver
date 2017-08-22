@@ -263,7 +263,7 @@ Requirements:
 All in one dev setup:
 
 
-    sudo make dev_setup
+    sudo -E make dev_setup
     
     
 Start an interactive Kubernetes deployment of 2 nodes:

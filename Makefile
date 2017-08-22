@@ -44,20 +44,20 @@ pip: $(ENV)
 	$(ENV)/bin/pip3 install py-vendor/ipaddr-py/
 
 acserver:
-	make -C runtime create_rack0
 	test $(shell id -u -r) -eq 0
-	# Check if the port is available
-	curl 172.20.0.1 && exit 1 || true
-	./runtime/runtime.acserver &
+	./runtime/runtime.acserver
+
+aci_core: acserver
+	make -C aci core
+	pkill -F runtime/acserver.pid
 
 aci: acserver
-	make -C aci core
-	# Find a better way to stop it
-	pkill acserver
+	make -C aci kube_deps
+	pkill -F runtime/acserver.pid
 
 assets:
-	# Self
 	make -C matchbox/assets/discoveryC
+	make -C matchbox/assets/enjoliver-agent
 
 clean: check_clean
 	make -C cni clean
@@ -70,6 +70,7 @@ clean: check_clean
 
 clean_after_assets:
 	make -C discoveryC clean
+	make -C enjoliver-agent clean
 
 fclean: clean_after_assets clean check_clean
 	rm -Rf $(ENV)
@@ -112,6 +113,13 @@ config:
 	touch $(HOME)/.config/enjoliver/config.env
 	touch $(HOME)/.config/enjoliver/config.json
 
+container_linux: acserver
+	make -C aci/aci-container-linux install
+	./runtime/runtime.rkt run --volume enjoliver,kind=host,source=$(CWD),readOnly=false \
+      --stage1-path=$(CWD)/runtime/rkt/stage1-fly.aci --insecure-options=all \
+      --interactive enjoliver.local/container-linux:latest
+	pkill -F runtime/acserver.pid
+
 dev_setup:
 	echo "Need MY_USER for non root operations and root for dgr"
 	test $(MY_USER)
@@ -123,8 +131,7 @@ dev_setup:
 	su - $(MY_USER) -c "make -C $(CWD) pip"
 	su - $(MY_USER) -c "make -C $(CWD) assets"
 	make -C $(CWD) aci
-	make -C $(CWD)/matchbox/assets/coreos
-	su - $(MY_USER) -c "make -C $(CWD)/matchbox/assets/coreos serve"
+	make -C $(CWD) container_linux
 	su - $(MY_USER) -c "make -C $(CWD) validate"
 	su - $(MY_USER) -c "make -C $(CWD) config"
 	chown -R $(MY_USER): $(CWD)

@@ -139,13 +139,7 @@ class EnjoliverConfig(object):
         # enjoliver.local/hyperkube:latest
         self.lldp_image_url = self.config_override("lldp_image_url", "enjoliver.local/lldp:latest")
         self.hyperkube_image_url = self.config_override("hyperkube_image_url", "enjoliver.local/hyperkube:1.7.4")
-        self.rkt_image_url = self.config_override("rkt_image_url", "enjoliver.local/rkt:1.27.0")
-        self.etcd_image_url = self.config_override("etcd_image_url", "enjoliver.local/etcd:3.2.5")
-        self.fleet_image_url = self.config_override("fleet_image_url", "enjoliver.local/fleet:1.0.0")
-        self.cni_image_url = self.config_override("cni_image_url", "enjoliver.local/cni:0.5.2")
-        self.vault_image_url = self.config_override("vault_image_url", 'enjoliver.local/vault:0.8.0')
         self.cephtools_image_url = self.config_override("cephtools_image_url", 'enjoliver.local/ceph-tools:latest')
-        self.iproute2_image_url = self.config_override("iproute2_image_url", 'enjoliver.local/iproute2:4.12.0')
 
         # Ignition
         # All of them have to be in the matchbox/ignition

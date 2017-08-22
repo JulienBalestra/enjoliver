@@ -13,7 +13,7 @@
     sudo make -C ${GOPATH}/src/github.com/JulienBalestra/enjoliver/aci/aci-container-linux install
     
     # Run it inside rkt-fly
-    sudo make -C ${GOPATH}/src/github.com/JulienBalestra/enjoliver/runtime/runtime.rkt run --volume \
+    sudo ${GOPATH}/src/github.com/JulienBalestra/enjoliver/runtime/runtime.rkt run --volume \
       enjoliver,kind=host,source=${GOPATH}/src/github.com/JulienBalestra/enjoliver,readOnly=false \
       --stage1-path=${GOPATH}/src/github.com/JulienBalestra/enjoliver/runtime/rkt/stage1-fly.aci \
       --insecure-options=all --interactive enjoliver.local/container-linux:latest

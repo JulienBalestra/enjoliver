@@ -274,12 +274,6 @@ class ConfigSyncSchedules(object):
             "etcd_member_kubernetes_control_plane_ip": self.etcd_member_ip_list,
 
             "hyperkube_image_url": EC.hyperkube_image_url,
-            "rkt_image_url": EC.rkt_image_url,
-            "etcd_image_url": EC.etcd_image_url,
-            "fleet_image_url": EC.fleet_image_url,
-            "cni_image_url": EC.cni_image_url,
-            "vault_image_url": EC.vault_image_url,
-            "iproute2_image_url": EC.iproute2_image_url,
             "cephtools_image_url": EC.cephtools_image_url,
             # IPAM
             "cni": json.dumps(cni_attr, sort_keys=True),
