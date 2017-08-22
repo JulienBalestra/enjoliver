@@ -7,7 +7,7 @@
     sudo make -C ${GOPATH}/src/github.com/JulienBalestra aci
     
     # Make the acserver listen
-    sudo ${GOPATH}/src/github.com/JulienBalestra/enjoliver/runtime.acserver &
+    sudo ${GOPATH}/src/github.com/JulienBalestra/enjoliver/run_runtime.py &
     
     # Build the container linux builder
     sudo make -C ${GOPATH}/src/github.com/JulienBalestra/enjoliver/aci/aci-container-linux install
@@ -19,5 +19,5 @@
       --insecure-options=all --interactive enjoliver.local/container-linux:latest
     
     # Stop the acserver
-    sudo pkill acserver # Or: fg ; ^C    
+    sudo pkill -F ${GOPATH}/src/github.com/JulienBalestra/enjoliver/runtime/acserver.pid # Or: fg ; ^C
      

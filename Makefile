@@ -45,7 +45,7 @@ pip: $(ENV)
 
 acserver:
 	test $(shell id -u -r) -eq 0
-	./runtime/runtime.acserver
+	./runtime/run_acserver.py &
 
 aci_core: acserver
 	make -C aci core
