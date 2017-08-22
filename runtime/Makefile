@@ -78,9 +78,9 @@ $(RKT_DOWNLOAD_TAR):
 
 $(RKT): $(RKT_DOWNLOAD_TAR)
 	@test -x $(RKT) || tar -C $(RKT_DIR) -xzf $(RKT_DOWNLOAD_TAR) --strip-components=1
-	$(CWD)/config.py
-	mkdir -pv $(RKT_DATASTORE)
-	@ln -svf $(RKT_DATASTORE) $(CWD)/data || true
+	@$(CWD)/config.py
+	@mkdir -p $(RKT_DATASTORE)
+	@ln -sf $(RKT_DATASTORE) $(CWD)/data || true
 
 dev_setup: $(MATCHBOX) $(RKT) $(DGR) $(ACSERVER) $(HELM)
 
@@ -93,41 +93,34 @@ create_rack0:
 		coreos.com/rkt/stage1-coreos \
 		--exec /bin/bash -- -c exit 0
 gc:
-	$(RKT) --local-config=$(CWD) gc --grace-period=0s
+	@$(RKT) --local-config=$(CWD) gc --grace-period=0s
 
 gci:
-	$(RKT) --local-config=$(CWD) image gc --grace-period=0s
+	@$(RKT) --local-config=$(CWD) image gc --grace-period=0s
 
 build: $(DGR) $(RKT)
-	@echo ENV eg: IMAGE=$(CWD)/../aci/debian
-	test $(IMAGE)
-	$(DGR) -H $(CWD) config
-	$(DGR) -H $(CWD) build -W $(IMAGE) -k -c
-	$(RKT) --local-config=$(CWD) gc --grace-period=0s
+	@test $(IMAGE)
+	@$(DGR) -H $(CWD) config
+	@$(DGR) -H $(CWD) build -W $(IMAGE) -k -c
+	@$(RKT) --local-config=$(CWD) gc --grace-period=0s
 
 install: $(DGR) $(RKT)
-	@echo ENV eg: IMAGE=$(CWD)/../aci/debian
-	test $(IMAGE)
-	$(DGR) -H $(CWD) install -W $(IMAGE)
-	$(RKT) --local-config=$(CWD) image list
+	@test $(IMAGE)
+	@$(DGR) -H $(CWD) install -W $(IMAGE)
 
 push: $(DGR) $(RKT)
-	@echo ENV eg: IMAGE=$(CWD)/../aci/debian
-	test $(IMAGE)
-	$(DGR) -H $(CWD) push -W $(IMAGE)
+	@test $(IMAGE)
+	@$(DGR) -H $(CWD) push -W $(IMAGE)
 
 test: $(DGR) $(RKT)
-	@echo ENV eg: IMAGE=$(CWD)/../aci/debian
-	test $(IMAGE)
-	$(DGR) -H $(CWD) test -W $(IMAGE)
+	@test $(IMAGE)
+	@$(DGR) -H $(CWD) test -W $(IMAGE)
 
 clean: $(DGR)
-	@echo ENV eg: IMAGE=$(CWD)/../aci/debian
-	test $(IMAGE)
-	$(DGR) -H $(CWD) clean -W $(IMAGE)
-	$(RKT) --local-config=$(CWD) gc --grace-period=0s
-	$(RKT) --local-config=$(CWD) image gc --grace-period=0s
-	$(RKT) --local-config=$(CWD) image list
+	@test $(IMAGE)
+	@$(DGR) -H $(CWD) clean -W $(IMAGE)
+	@$(RKT) --local-config=$(CWD) gc --grace-period=0s
+	@$(RKT) --local-config=$(CWD) image gc --grace-period=0s
 
 fclean:
 	rm -Rf $(DGR_DIR) || true
