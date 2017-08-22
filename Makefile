@@ -59,14 +59,12 @@ assets:
 	make -C matchbox/assets/discoveryC
 	make -C matchbox/assets/enjoliver-agent
 
-clean: check_clean
-	make -C cni clean
-	make -C etcd clean
-	make -C fleet clean
-	make -C hyperkube clean
-	make -C lldp clean
-	make -C rkt clean
-	make -C vault clean
+remove_aci:
+	test $(shell id -u -r) -eq 0
+	make -C runtime gc
+	make -C runtime gci
+	rm -Rf runtime/target/*
+	rm -Rf runtime/acserver.d/enjoliver.local/*
 
 clean_after_assets:
 	make -C discoveryC clean
@@ -137,10 +135,8 @@ dev_setup:
 	chown -R $(MY_USER): $(CWD)
 
 prod_setup:
-	make -C $(CWD) discoveryC
 	make -C $(CWD) submodules
 	make -C $(CWD) prod_setup_runtime
 	make -C $(CWD) front
 	make -C $(CWD) pip
 	make -C $(CWD) assets
-	make -C $(CWD) validate
