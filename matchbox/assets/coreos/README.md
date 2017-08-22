@@ -13,10 +13,10 @@
     sudo make -C ${GOPATH}/src/github.com/JulienBalestra/enjoliver/aci/aci-container-linux install
     
     # Run it inside rkt-fly
-    sudo make -C ${GOPATH}/src/github.com/JulienBalestra/enjoliver/runtime/runtime.rkt \
-        run --volume enjoliver,kind=host,source=$PWD,readOnly=false \
-        --stage1-from-dir=stage1-fly.aci --insecure-options=all --interactive \
-        enjoliver.local/container-linux:latest
+    sudo make -C ${GOPATH}/src/github.com/JulienBalestra/enjoliver/runtime/runtime.rkt run --volume \
+      enjoliver,kind=host,source=${GOPATH}/src/github.com/JulienBalestra/enjoliver,readOnly=false \
+      --stage1-path=${GOPATH}/src/github.com/JulienBalestra/enjoliver/runtime/rkt/stage1-fly.aci \
+      --insecure-options=all --interactive enjoliver.local/container-linux:latest
     
     # Stop the acserver
     sudo pkill acserver # Or: fg ; ^C    
