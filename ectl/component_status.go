@@ -1,12 +1,12 @@
 package main
 
 import (
-	"github.com/golang/glog"
-	"fmt"
 	"encoding/json"
+	"fmt"
+	"github.com/fatih/color"
+	"github.com/golang/glog"
 	"github.com/olekukonko/tablewriter"
 	"os"
-	"github.com/fatih/color"
 )
 
 const (
@@ -43,7 +43,7 @@ func (r *Runtime) getComponentStatus() ([]EnjoliverAgentHealthz, error) {
 		uri := fmt.Sprintf("http://%s:%d%s", cp.Ipv4, enjoliverAgentPort, machineHealthzPath)
 		b, err := httpGetUnmarshal(uri)
 		if err != nil {
-			glog.Warningf("fail to fetch %s: %s", uri, err)
+			glog.Errorf("fail to fetch %s: %s", uri, err)
 			continue
 		}
 		var healthz EnjoliverAgentHealthz
@@ -71,26 +71,21 @@ func getColor(status bool) string {
 
 func (r *Runtime) createRowForComponentStatus(node EnjoliverAgentHealthz) []string {
 	row := []string{node.Fqdn}
-	row = append(row, getColor(node.LivenessStatus.FleetEtcdClient))
-	row = append(row, getColor(node.LivenessStatus.KubeletHealthz))
-	row = append(row, getColor(node.LivenessStatus.KubernetesApiserverInsecure))
-	row = append(row, getColor(node.LivenessStatus.KubernetesEtcdClient))
-	row = append(row, getColor(node.LivenessStatus.RktApi))
-	row = append(row, getColor(node.LivenessStatus.Vault))
-	row = append(row, getColor(node.LivenessStatus.VaultEtcdClient))
-
+	for _, elt := range []bool{
+		node.LivenessStatus.FleetEtcdClient,
+		node.LivenessStatus.KubeletHealthz,
+		node.LivenessStatus.KubernetesApiserverInsecure,
+		node.LivenessStatus.KubernetesEtcdClient,
+		node.LivenessStatus.RktApi,
+		node.LivenessStatus.Vault,
+		node.LivenessStatus.VaultEtcdClient} {
+		row = append(row, getColor(elt))
+	}
 	return row
 }
 
 func (r *Runtime) createHeaderForComponentStatus() []string {
-	header := []string{"Fqdn"}
-	header = append(header, "fleet-etcd")
-	header = append(header, "kubelet")
-	header = append(header, "kube-apiserver")
-	header = append(header, "kube-etcd")
-	header = append(header, "rkt-api")
-	header = append(header, "vault")
-	header = append(header, "vault-etcd")
+	header := []string{"Fqdn", "fleet-etcd", "kubelet", "kube-apiserver", "kube-etcd", "rkt-api", "vault", "vault-etcd"}
 	return header
 }
 
