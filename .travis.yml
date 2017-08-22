@@ -34,7 +34,7 @@ before_script:
 
 script:
   - make check
-  - make validate
+  - SKIP_ACSERVER=y make validate
 
 # If we are in the private repo, publish success on the public one
 after_success:

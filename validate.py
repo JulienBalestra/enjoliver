@@ -46,6 +46,7 @@ class TestValidateMatchboxAssets(unittest.TestCase):
         self.assertIn("version.txt", list_dir)
 
 
+@unittest.skipIf(os.getenv("SKIP_ACSERVER"), "skip acserver storage")
 class TestValidateAcserverStorage(unittest.TestCase):
     cwd = os.path.dirname(os.path.abspath(__file__))
     acserver_d = os.path.join(cwd, "runtime/acserver.d/enjoliver.local")
