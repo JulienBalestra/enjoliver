@@ -11,7 +11,7 @@ tar -xzvf cni.tar.gz
 
 for b in bridge  cnitool  dhcp  flannel  host-local  ipvlan  loopback  macvlan  noop  ptp  tuning
 do
-    upx $b
+    upx -q $b
     upx -t $b
     mv -v $b ${ROOTFS}/usr/bin/
 done

@@ -18,7 +18,7 @@ go get k8s.io/heapster/metrics
 
 make
 
-upx /go/src/k8s.io/heapster/heapster
+upx -q /go/src/k8s.io/heapster/heapster
 upx -t /go/src/k8s.io/heapster/heapster
 mv -v /go/src/k8s.io/heapster/heapster ${ROOTFS}/usr/bin/
 #mv -v /go/src/k8s.io/heapster/eventer ${ROOTFS}/usr/bin/

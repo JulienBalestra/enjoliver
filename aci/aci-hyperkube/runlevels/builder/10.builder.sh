@@ -39,7 +39,7 @@ bash -c 'while true; do echo -n "." ; sleep 30; done' &
 make hyperkube
 
 # Compress 215MB : 35MB
-upx _output/local/go/bin/hyperkube
+upx -q _output/local/go/bin/hyperkube
 upx -t _output/local/go/bin/hyperkube
 
 # Small hack to check if the travis instance have enough space

@@ -9,5 +9,5 @@ set -o pipefail
 curl -Lf https://github.com/prometheus/prometheus/releases/download/v${ACI_VERSION}/prometheus-${ACI_VERSION}.linux-amd64.tar.gz | tar -xzf - --strip-components=1
 
 upx prometheus
-upx -t prometheus
+upx -q -t prometheus
 mv -v prometheus ${ROOTFS}/usr/bin/

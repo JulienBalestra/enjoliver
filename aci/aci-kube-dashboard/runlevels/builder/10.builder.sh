@@ -28,6 +28,6 @@ npm install
 
 gulp build
 
-upx dist/amd64/dashboard
+upx -q dist/amd64/dashboard
 upx -t dist/amd64/dashboard
 mv -v dist/amd64/dashboard ${ROOTFS}/usr/bin/
