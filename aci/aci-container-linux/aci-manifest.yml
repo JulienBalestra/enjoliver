@@ -1,0 +1,14 @@
+name: enjoliver.local/container-linux:latest
+aci:
+  dependencies:
+    - enjoliver.local/debian:latest
+  app:
+    exec:
+      - /usr/bin/make
+      - -C
+      - /enjoliver/matchbox/assets/coreos
+      - re
+    mountPoints:
+      - name: enjoliver
+        path: /enjoliver
+        readOnly: false

@@ -6,7 +6,7 @@ RKT=$(RUNTIME)/rkt/rkt
 ACI=$(PROJECT)/aci
 
 DEBIAN=debian
-TARGET=repo
+TARGET=container-linux
 
 default: push
 
@@ -32,7 +32,7 @@ gc:
 	$(RKT) --local-config=$(RUNTIME) image gc --grace-period=0s
 
 clean: gc
-	IMAGE=$(ACI)/aci-$(HYPERKUBE) make -C $(RUNTIME) gc
-
+	IMAGE=$(ACI)/aci-$(TARGET) make -C $(RUNTIME) gc
+	IMAGE=$(ACI)/aci-$(TARGET) make -C $(RUNTIME) clean
 
 re: clean default

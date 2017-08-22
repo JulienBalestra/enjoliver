@@ -50,13 +50,11 @@ ACI_PATH="../../../../../runtime/acserver.d/enjoliver.local"
 
 alter:
 	VERSION=$(VERSION) ACI_PATH=$(ACI_PATH) ./alter-distribution.sh
+	ln -vsf $(VERSION) $(SERVE)
+	ln -vsf $(SERVE) current
 
 clean:
 	@rm -rfv $(VERSION) 2>&1 || true
-
-$(SERVE):
-	ln -vsf $(VERSION) $(SERVE)
-	ln -vsf $(SERVE) current
 
 fclean: clean
 	@find * -maxdepth 1 -type d -exec rm -Rfv {} \;
