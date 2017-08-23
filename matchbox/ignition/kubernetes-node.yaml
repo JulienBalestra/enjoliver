@@ -367,7 +367,6 @@ systemd:
 
             [Service]
             EnvironmentFile=/etc/metadata.env
-            ExecStartPre=/bin/ls -lL /opt/bin/rkt
             ExecStartPre=/usr/bin/etcdctl --no-sync --endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} ls
             ExecStart=
             ExecStart=/usr/bin/fleetd

@@ -5,6 +5,7 @@ import (
 	"github.com/golang/glog"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 // Iter on each URI to apply the func
@@ -20,6 +21,7 @@ func (r *Runtime) SmartClient(path string) ([]byte, error) {
 
 func httpGetUnmarshal(url string) ([]byte, error) {
 	glog.V(2).Infof("GET %s", url)
+	http.DefaultClient.Timeout = time.Millisecond * 2000
 	resp, err := http.Get(url)
 	if err != nil {
 		glog.Errorf("fail GET %s: %s", url, err)

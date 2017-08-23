@@ -37,30 +37,30 @@ type ComponentStatusDisplay struct {
 	KubernetesNode         bool
 }
 
-func (r *Runtime) queryEnjoliverAgent(m Machine, ch chan EnjoliverAgentHealthz) {
+func (r *Runtime) queryEnjoliverAgentForHealthz(m Machine, ch chan EnjoliverAgentHealthz) {
 	if m.Fqdn == "" {
 		m.Fqdn = m.Ipv4
-		glog.Errorf("no Fqdn for %s: using IP as Fqdn", m.Ipv4)
+		glog.Warningf("no Fqdn for %s: using IP as Fqdn", m.Ipv4)
 	}
+
+	var healthz EnjoliverAgentHealthz
+	healthz.Fqdn = m.Fqdn
+	healthz.ControlPlane = m.ControlPlane
 
 	uri := fmt.Sprintf("http://%s:%d%s", m.Ipv4, enjoliverAgentPort, machineHealthzPath)
 	b, err := httpGetUnmarshal(uri)
 	if err != nil {
 		glog.Errorf("fail to fetch %s: %s", uri, err)
-		ch <- EnjoliverAgentHealthz{Fqdn: m.Fqdn, LivenessStatus: ComponentHealthz{}, Unreachable: true}
+		healthz.Unreachable = true
+		ch <- healthz
 		return
 	}
 
-	var healthz EnjoliverAgentHealthz
 	err = json.Unmarshal(b, &healthz)
 	if err != nil {
 		glog.Errorf("fail to unmarshal response from %s: %s: %q", uri, string(b), err)
-		ch <- EnjoliverAgentHealthz{Fqdn: m.Fqdn, LivenessStatus: ComponentHealthz{}, Unreachable: true}
-		return
+		healthz.Unreachable = true
 	}
-
-	healthz.Fqdn = m.Fqdn
-	healthz.ControlPlane = m.ControlPlane
 	ch <- healthz
 	return
 }
@@ -93,7 +93,7 @@ func (r *Runtime) getComponentStatus() (EnjoliverAgentHealthzList, error) {
 	ch := make(chan EnjoliverAgentHealthz)
 	defer close(ch)
 	for _, m := range machineList {
-		go r.queryEnjoliverAgent(m, ch)
+		go r.queryEnjoliverAgentForHealthz(m, ch)
 	}
 	for range machineList {
 		enjoliverAgentHealthzList = append(enjoliverAgentHealthzList, <-ch)
@@ -133,7 +133,7 @@ func (r *Runtime) createRowForComponentStatus(node EnjoliverAgentHealthz) []stri
 			}
 		}
 	} else {
-		row = append(row, []string{"N/A", "N/A", "N/A"}...)
+		row = append(row, []string{"N/I", "N/A", "N/A"}...)
 	}
 	return row
 }

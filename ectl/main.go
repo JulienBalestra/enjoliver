@@ -67,12 +67,39 @@ func main() {
 			if cmd.Flag("control-plane").Value.String() == "false" && cmd.Flag("node").Value.String() == "false" {
 				return fmt.Errorf("Need to select at least one machine role: [--%s -%s] or [--%s -%s]",
 					cmd.Flag("control-plane").Name, cmd.Flag("control-plane").Shorthand,
-				cmd.Flag("node").Name, cmd.Flag("node").Shorthand)
+					cmd.Flag("node").Name, cmd.Flag("node").Shorthand)
 			}
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			err := run.DisplayComponentStatus()
+			if err != nil {
+				glog.Errorf("err: %s", err.Error())
+				os.Exit(2)
+			}
+		},
+	}
+
+	var binaryVersionCmd = &cobra.Command{
+		Use:     "binaryversion",
+		Aliases: []string{"bv"},
+		Short:   "Version of binaries",
+		Long:    "long",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			clusterName := cmd.Flag("cluster").Value.String()
+			_, ok := run.Config.Clusters[clusterName]
+			if clusterName == "" || !ok {
+				return fmt.Errorf("--cluster %q is invalid, valid are: [%s]\n", clusterName, joinMap(run.Config.Clusters, " "))
+			}
+			if cmd.Flag("control-plane").Value.String() == "false" && cmd.Flag("node").Value.String() == "false" {
+				return fmt.Errorf("Need to select at least one machine role: [--%s -%s] or [--%s -%s]",
+					cmd.Flag("control-plane").Name, cmd.Flag("control-plane").Shorthand,
+					cmd.Flag("node").Name, cmd.Flag("node").Shorthand)
+			}
+			return nil
+		},
+		Run: func(cmd *cobra.Command, args []string) {
+			err := run.DisplayBinaryVersion()
 			if err != nil {
 				glog.Errorf("err: %s", err.Error())
 				os.Exit(2)
@@ -95,6 +122,10 @@ func main() {
 	getCmd.AddCommand(componentStatusCmd)
 	componentStatusCmd.Flags().BoolVarP(&run.ComponentStatusDisplay.KubernetesControlPlane, "control-plane", "C", false, "Kubernetes control plane")
 	componentStatusCmd.Flags().BoolVarP(&run.ComponentStatusDisplay.KubernetesNode, "node", "N", false, "Kubernetes node")
+
+	getCmd.AddCommand(binaryVersionCmd)
+	binaryVersionCmd.Flags().BoolVarP(&run.ComponentStatusDisplay.KubernetesControlPlane, "control-plane", "C", false, "Kubernetes control plane")
+	binaryVersionCmd.Flags().BoolVarP(&run.ComponentStatusDisplay.KubernetesNode, "node", "N", false, "Kubernetes node")
 
 	rootCmd.Execute()
 	return

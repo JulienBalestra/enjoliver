@@ -523,7 +523,6 @@ systemd:
 
             [Service]
             EnvironmentFile=/etc/metadata.env
-            ExecStartPre=/bin/ls -lL /opt/bin/rkt
             ExecStartPre=/usr/bin/etcdctl --no-sync --endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} ls
             ExecStart=
             ExecStart=/usr/bin/fleetd
@@ -1811,8 +1810,11 @@ storage:
       contents:
         inline: |
           #!/bin/bash
-          PATH=/opt/bin:${PATH}
-          exec kubectl -s http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} create -f /etc/kubernetes/manifests
+          kubectl -s http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} get -f /etc/kubernetes/manifests && {
+            kubectl -s http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} apply -f /etc/kubernetes/manifests
+            exit $?
+          }
+          kubectl -s http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} create --save-config -f /etc/kubernetes/manifests
 
     - path: /opt/bin/rbd
       mode: 0555

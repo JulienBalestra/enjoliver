@@ -38,7 +38,7 @@ func (r *Runtime) createHeaderForEndpoint() []string {
 func (r *Runtime) createRowForEndpoint(node Machine, config EnjoliverConfig) []string {
 	if node.Fqdn == "" {
 		node.Fqdn = node.Ipv4
-		glog.Errorf("no Fqdn for %s: using IP as Fqdn", node.Ipv4)
+		glog.Warningf("no Fqdn for %s: using IP as Fqdn", node.Ipv4)
 	}
 	row := []string{node.Fqdn}
 	if r.EndpointDisplay.Fleet {
@@ -58,7 +58,12 @@ func (r *Runtime) createRowForEndpoint(node Machine, config EnjoliverConfig) []s
 func (r *Runtime) displayEndpoints(kubernetesControlPlanes []Machine, config EnjoliverConfig) {
 	if r.Output == "ascii" {
 		asciiTable := tablewriter.NewWriter(os.Stdout)
-		asciiTable.SetHeader(r.createHeaderForEndpoint())
+		if r.HideAsciiHeader == false {
+			asciiTable.SetHeader(r.createHeaderForEndpoint())
+		}
+		asciiTable.SetRowSeparator(" ")
+		asciiTable.SetColumnSeparator(" ")
+		asciiTable.SetCenterSeparator("")
 		for _, node := range kubernetesControlPlanes {
 			asciiTable.Append(r.createRowForEndpoint(node, config))
 		}
