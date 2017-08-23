@@ -86,7 +86,7 @@ dev_setup: $(MATCHBOX) $(RKT) $(DGR) $(ACSERVER) $(HELM)
 
 create_rack0:
 	@file $(RKT)
-	$(RKT) \
+	ip addr show rack0 || $(RKT) \
 		--local-config=$(CWD) \
 		--net=rack0 \
 		run --insecure-options=all \
