@@ -6,6 +6,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/olekukonko/tablewriter"
 	"os"
+	"sort"
 )
 
 const (
@@ -34,7 +35,7 @@ func (r *Runtime) createHeaderForEndpoint() []string {
 	return header
 }
 
-func (r *Runtime) createRowForEndpoint(node SchedulerKubernetesControlPlane, config EnjoliverConfig) []string {
+func (r *Runtime) createRowForEndpoint(node Machine, config EnjoliverConfig) []string {
 	if node.Fqdn == "" {
 		node.Fqdn = node.Ipv4
 		glog.Errorf("no Fqdn for %s: using IP as Fqdn", node.Ipv4)
@@ -54,7 +55,7 @@ func (r *Runtime) createRowForEndpoint(node SchedulerKubernetesControlPlane, con
 	return row
 }
 
-func (r *Runtime) displayEndpoints(kubernetesControlPlanes []SchedulerKubernetesControlPlane, config EnjoliverConfig) {
+func (r *Runtime) displayEndpoints(kubernetesControlPlanes []Machine, config EnjoliverConfig) {
 	if r.Output == "ascii" {
 		asciiTable := tablewriter.NewWriter(os.Stdout)
 		asciiTable.SetHeader(r.createHeaderForEndpoint())
@@ -81,23 +82,37 @@ func (r *Runtime) displayEndpoints(kubernetesControlPlanes []SchedulerKubernetes
 	glog.Warning("unknown output format")
 }
 
-func (r *Runtime) getSchedulerKubernetesControlPlane() ([]SchedulerKubernetesControlPlane, error) {
-	var schedulerKubeControlPlane []SchedulerKubernetesControlPlane
+type Machines []Machine
 
-	b, err := r.SmartClient(SchedulerKubernetesControlPlanePath)
+func (slice Machines) Len() int {
+	return len(slice)
+}
+
+func (slice Machines) Less(i, j int) bool {
+	return slice[i].Fqdn < slice[j].Fqdn
+}
+
+func (slice Machines) Swap(i, j int) {
+	slice[i], slice[j] = slice[j], slice[i]
+}
+
+func (r *Runtime) getMachineByRole(rolePath string) (Machines, error) {
+	var machines Machines
+
+	b, err := r.SmartClient(rolePath)
 	if err != nil {
 		return nil, err
 	}
-	err = json.Unmarshal(b, &schedulerKubeControlPlane)
+	err = json.Unmarshal(b, &machines)
 	if err != nil {
 		glog.Errorf("fail to unmarshal: %s", err)
 		return nil, err
 	}
-	return schedulerKubeControlPlane, nil
+	return machines, nil
 }
 
 func (r *Runtime) DisplayEndpoints() error {
-	schedulerKubeControlPlane, err := r.getSchedulerKubernetesControlPlane()
+	schedulerKubeControlPlane, err := r.getMachineByRole(SchedulerKubernetesControlPlanePath)
 	if err != nil {
 		return err
 	}
@@ -107,6 +122,7 @@ func (r *Runtime) DisplayEndpoints() error {
 		return err
 	}
 
+	sort.Sort(schedulerKubeControlPlane)
 	r.displayEndpoints(schedulerKubeControlPlane, enjoliverConfig)
 	return nil
 }

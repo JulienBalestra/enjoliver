@@ -50,7 +50,7 @@ systemd:
       enable: true
       contents: |
         [Service]
-        ExecStart=/opt/bin/enjoliver-agent --vault
+        ExecStart=/opt/bin/enjoliver-agent --control-plane
         EnvironmentFile=/etc/metadata.env
         Restart=always
         RestartSec=30

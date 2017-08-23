@@ -7,6 +7,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/olekukonko/tablewriter"
 	"os"
+	"sort"
 )
 
 const (
@@ -26,40 +27,78 @@ type ComponentHealthz struct {
 
 type EnjoliverAgentHealthz struct {
 	LivenessStatus ComponentHealthz
-	//Errors         map[string]map[string]string
-	Fqdn string
+	Fqdn           string
+	Unreachable    bool
+	ControlPlane   bool
 }
 
-func (r *Runtime) getComponentStatus() ([]EnjoliverAgentHealthz, error) {
-	var enjoliverAgentHealthzList []EnjoliverAgentHealthz
+type ComponentStatusDisplay struct {
+	KubernetesControlPlane bool
+	KubernetesNode         bool
+}
 
-	cpList, err := r.getSchedulerKubernetesControlPlane()
+func (r *Runtime) queryEnjoliverAgent(m Machine, ch chan EnjoliverAgentHealthz) {
+	if m.Fqdn == "" {
+		m.Fqdn = m.Ipv4
+		glog.Errorf("no Fqdn for %s: using IP as Fqdn", m.Ipv4)
+	}
+
+	uri := fmt.Sprintf("http://%s:%d%s", m.Ipv4, enjoliverAgentPort, machineHealthzPath)
+	b, err := httpGetUnmarshal(uri)
 	if err != nil {
-		glog.Errorf("fail to get Kubernetes Control planes: %s", err)
-		return nil, err
+		glog.Errorf("fail to fetch %s: %s", uri, err)
+		ch <- EnjoliverAgentHealthz{Fqdn: m.Fqdn, LivenessStatus: ComponentHealthz{}, Unreachable: true}
+		return
 	}
 
-	for _, cp := range cpList {
-		uri := fmt.Sprintf("http://%s:%d%s", cp.Ipv4, enjoliverAgentPort, machineHealthzPath)
-		b, err := httpGetUnmarshal(uri)
-		if err != nil {
-			glog.Errorf("fail to fetch %s: %s", uri, err)
-			continue
-		}
-		var healthz EnjoliverAgentHealthz
-		err = json.Unmarshal(b, &healthz)
-		if err != nil {
-			glog.Errorf("fail to unmarshal response from %s: %s: %q", uri, string(b), err)
-			continue
-		}
-		if cp.Fqdn == "" {
-			cp.Fqdn = cp.Ipv4
-			glog.Errorf("no Fqdn for %s: using IP as Fqdn", cp.Ipv4)
-		}
-		healthz.Fqdn = cp.Fqdn
-		enjoliverAgentHealthzList = append(enjoliverAgentHealthzList, healthz)
+	var healthz EnjoliverAgentHealthz
+	err = json.Unmarshal(b, &healthz)
+	if err != nil {
+		glog.Errorf("fail to unmarshal response from %s: %s: %q", uri, string(b), err)
+		ch <- EnjoliverAgentHealthz{Fqdn: m.Fqdn, LivenessStatus: ComponentHealthz{}, Unreachable: true}
+		return
 	}
-	return enjoliverAgentHealthzList, err
+
+	healthz.Fqdn = m.Fqdn
+	healthz.ControlPlane = m.ControlPlane
+	ch <- healthz
+	return
+}
+
+func (r *Runtime) getComponentStatus() (EnjoliverAgentHealthzList, error) {
+	var enjoliverAgentHealthzList EnjoliverAgentHealthzList
+
+	var machineList []Machine
+	if r.ComponentStatusDisplay.KubernetesControlPlane == true {
+		cp, err := r.getMachineByRole(SchedulerKubernetesControlPlanePath)
+		if err != nil {
+			glog.Errorf("fail to get Kubernetes Control planes: %s", err)
+			return nil, err
+		}
+		for _, m := range cp {
+			m.ControlPlane = true
+			machineList = append(machineList, m)
+		}
+	}
+
+	if r.ComponentStatusDisplay.KubernetesNode == true {
+		no, err := r.getMachineByRole(SchedulerKubernetesNodePath)
+		if err != nil {
+			glog.Errorf("fail to get Kubernetes Nodes: %s", err)
+			return nil, err
+		}
+		machineList = append(machineList, no...)
+	}
+
+	ch := make(chan EnjoliverAgentHealthz)
+	defer close(ch)
+	for _, m := range machineList {
+		go r.queryEnjoliverAgent(m, ch)
+	}
+	for range machineList {
+		enjoliverAgentHealthzList = append(enjoliverAgentHealthzList, <-ch)
+	}
+	return enjoliverAgentHealthzList, nil
 }
 
 func getColor(status bool) string {
@@ -75,25 +114,59 @@ func (r *Runtime) createRowForComponentStatus(node EnjoliverAgentHealthz) []stri
 		node.LivenessStatus.FleetEtcdClient,
 		node.LivenessStatus.KubeletHealthz,
 		node.LivenessStatus.KubernetesApiserverInsecure,
-		node.LivenessStatus.KubernetesEtcdClient,
-		node.LivenessStatus.RktApi,
-		node.LivenessStatus.Vault,
-		node.LivenessStatus.VaultEtcdClient} {
-		row = append(row, getColor(elt))
+		node.LivenessStatus.RktApi} {
+		if node.Unreachable == true {
+			row = append(row, color.YellowString("unreachable"))
+		} else {
+			row = append(row, getColor(elt))
+		}
+	}
+	if node.ControlPlane == true {
+		for _, elt := range []bool{
+			node.LivenessStatus.KubernetesEtcdClient,
+			node.LivenessStatus.Vault,
+			node.LivenessStatus.VaultEtcdClient} {
+			if node.Unreachable == true {
+				row = append(row, color.YellowString("unreachable"))
+			} else {
+				row = append(row, getColor(elt))
+			}
+		}
+	} else {
+		row = append(row, []string{"N/A", "N/A", "N/A"}...)
 	}
 	return row
 }
 
 func (r *Runtime) createHeaderForComponentStatus() []string {
-	header := []string{"Fqdn", "fleet-etcd", "kubelet", "kube-apiserver", "kube-etcd", "rkt-api", "vault", "vault-etcd"}
+	header := []string{"Fqdn", "fleet-etcd", "kubelet", "kube-apiserver", "rkt-api", "kube-etcd", "vault", "vault-etcd"}
 	return header
 }
 
-func (r *Runtime) displayComponentStatus(componentStatus []EnjoliverAgentHealthz, config EnjoliverConfig) {
+type EnjoliverAgentHealthzList []EnjoliverAgentHealthz
+
+func (slice EnjoliverAgentHealthzList) Len() int {
+	return len(slice)
+}
+
+func (slice EnjoliverAgentHealthzList) Less(i, j int) bool {
+	return slice[i].Fqdn < slice[j].Fqdn
+}
+
+func (slice EnjoliverAgentHealthzList) Swap(i, j int) {
+	slice[i], slice[j] = slice[j], slice[i]
+}
+
+func (r *Runtime) displayComponentStatus(componentStatuses EnjoliverAgentHealthzList, config EnjoliverConfig) {
 	if r.Output == "ascii" {
 		asciiTable := tablewriter.NewWriter(os.Stdout)
-		asciiTable.SetHeader(r.createHeaderForComponentStatus())
-		for _, node := range componentStatus {
+		if r.HideAsciiHeader == false {
+			asciiTable.SetHeader(r.createHeaderForComponentStatus())
+		}
+		asciiTable.SetRowSeparator(" ")
+		asciiTable.SetColumnSeparator(" ")
+		asciiTable.SetCenterSeparator("")
+		for _, node := range componentStatuses {
 			asciiTable.Append(r.createRowForComponentStatus(node))
 		}
 		asciiTable.Render()
@@ -103,11 +176,11 @@ func (r *Runtime) displayComponentStatus(componentStatus []EnjoliverAgentHealthz
 		// TODO
 		return
 	}
-	glog.Warning("unknown output format")
+	glog.Errorf("unknown output format")
 }
 
 func (r *Runtime) DisplayComponentStatus() error {
-	componentStatus, err := r.getComponentStatus()
+	componentStatuses, err := r.getComponentStatus()
 	if err != nil {
 		return err
 	}
@@ -117,6 +190,7 @@ func (r *Runtime) DisplayComponentStatus() error {
 		return err
 	}
 
-	r.displayComponentStatus(componentStatus, enjoliverConfig)
+	sort.Sort(componentStatuses)
+	r.displayComponentStatus(componentStatuses, enjoliverConfig)
 	return nil
 }

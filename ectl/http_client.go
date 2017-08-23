@@ -22,7 +22,7 @@ func httpGetUnmarshal(url string) ([]byte, error) {
 	glog.V(2).Infof("GET %s", url)
 	resp, err := http.Get(url)
 	if err != nil {
-		glog.Errorf("fail GET %s: %s %d", url, err)
+		glog.Errorf("fail GET %s: %s", url, err)
 		return nil, err
 	}
 	b, err := ioutil.ReadAll(resp.Body)

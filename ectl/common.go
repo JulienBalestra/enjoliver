@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/golang/glog"
 	"encoding/json"
+	"github.com/golang/glog"
 )
 
 const (
@@ -11,10 +11,11 @@ const (
 	SchedulerKubernetesNodePath         = "/scheduler/kubernetes-node"
 )
 
-type SchedulerKubernetesControlPlane struct {
-	Ipv4 string `json:"ipv4"`
-	Fqdn string `json:"fqdn"`
-	Mac  string `json:"mac"`
+type Machine struct {
+	Ipv4         string `json:"ipv4"`
+	Fqdn         string `json:"fqdn"`
+	Mac          string `json:"mac"`
+	ControlPlane bool   `json:"control-plane"`
 }
 
 type Configuration struct {
@@ -22,10 +23,12 @@ type Configuration struct {
 }
 
 type Runtime struct {
-	Config          Configuration
-	Cluster         string
-	EndpointDisplay EndpointDisplay
-	Output          string
+	Config                 Configuration
+	Cluster                string
+	EndpointDisplay        EndpointDisplay
+	ComponentStatusDisplay ComponentStatusDisplay
+	Output                 string
+	HideAsciiHeader        bool
 }
 
 type EnjoliverConfig struct {

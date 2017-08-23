@@ -64,6 +64,7 @@ if __name__ == '__main__':
 
     except requests.exceptions.ConnectionError:
         acserver_p = multiprocessing.Process(target=start_acserver)
+        acserver_p.daemon = True
         acserver_p.start()
         with open("%s/acserver.pid" % RUNTIME_PATH, "w") as f:
             f.write(acserver_p.pid.__str__())

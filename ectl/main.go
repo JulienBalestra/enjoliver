@@ -64,6 +64,11 @@ func main() {
 			if clusterName == "" || !ok {
 				return fmt.Errorf("--cluster %q is invalid, valid are: [%s]\n", clusterName, joinMap(run.Config.Clusters, " "))
 			}
+			if cmd.Flag("control-plane").Value.String() == "false" && cmd.Flag("node").Value.String() == "false" {
+				return fmt.Errorf("Need to select at least one machine role: [--%s -%s] or [--%s -%s]",
+					cmd.Flag("control-plane").Name, cmd.Flag("control-plane").Shorthand,
+				cmd.Flag("node").Name, cmd.Flag("node").Shorthand)
+			}
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
@@ -80,6 +85,7 @@ func main() {
 	rootCmd.AddCommand(getCmd)
 	getCmd.PersistentFlags().StringVarP(&run.Cluster, "cluster", "c", "", fmt.Sprintf("Cluster in [%s]", joinMap(run.Config.Clusters, " ")))
 	getCmd.PersistentFlags().StringVarP(&run.Output, "output", "o", "ascii", "formating")
+	getCmd.PersistentFlags().BoolVar(&run.HideAsciiHeader, "no-header", false, "with header")
 	getCmd.AddCommand(endpointCmd)
 
 	endpointCmd.Flags().BoolVarP(&run.EndpointDisplay.Fleet, "fleet", "F", false, "Fleet")
@@ -87,6 +93,8 @@ func main() {
 	endpointCmd.Flags().BoolVarP(&run.EndpointDisplay.Vault, "vault", "V", false, "Vault")
 
 	getCmd.AddCommand(componentStatusCmd)
+	componentStatusCmd.Flags().BoolVarP(&run.ComponentStatusDisplay.KubernetesControlPlane, "control-plane", "C", false, "Kubernetes control plane")
+	componentStatusCmd.Flags().BoolVarP(&run.ComponentStatusDisplay.KubernetesNode, "node", "N", false, "Kubernetes node")
 
 	rootCmd.Execute()
 	return

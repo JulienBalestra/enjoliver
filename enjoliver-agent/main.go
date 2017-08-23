@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	vaultFlagName = "vault"
+	ControlPlaneFlagName = "control-plane"
 )
 
 type Runtime struct {
@@ -18,7 +18,7 @@ type Runtime struct {
 
 func main() {
 	glog.V(2).Infof("starting node-agent")
-	flag.Bool(vaultFlagName, false, "Enable vault probe")
+	flag.Bool(ControlPlaneFlagName, false, "Is control-plane node")
 
 	flag.Parse()
 	flag.Lookup("alsologtostderr").Value.Set("true")

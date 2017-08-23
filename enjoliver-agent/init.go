@@ -64,14 +64,16 @@ func getHttpLivenessProbesToQuery() ([]HttpLivenessProbe, error) {
 
 	probes := [][]string{
 		{"FLEET_ETCD_CLIENT_PORT", etcdLivenessPath},
-		{"KUBERNETES_ETCD_CLIENT_PORT", etcdLivenessPath},
-		{"VAULT_ETCD_CLIENT_PORT", etcdLivenessPath},
 		{"KUBERNETES_APISERVER_INSECURE_PORT", kubernetesLivenessPath},
 		{"KUBELET_HEALTHZ_PORT", kubernetesLivenessPath},
 	}
-	if flag.Lookup(vaultFlagName).Value.String() == "true" {
-		glog.V(4).Infof("flag %s set to true", vaultFlagName)
-		probes = append(probes, []string{"VAULT_PORT", vaultLivenessPath})
+	if flag.Lookup(ControlPlaneFlagName).Value.String() == "true" {
+		glog.V(4).Infof("flag %s set to true", ControlPlaneFlagName)
+		probes = append(probes, [][]string{
+			{"VAULT_PORT", vaultLivenessPath},
+			{"VAULT_ETCD_CLIENT_PORT", etcdLivenessPath},
+			{"KUBERNETES_ETCD_CLIENT_PORT", etcdLivenessPath},
+		}...)
 	}
 
 	for _, elt := range probes {
