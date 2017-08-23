@@ -16,6 +16,8 @@ before_install:
 install:
   - sudo -E make apt
 
+before_script:
+  # eq dev_setup rule but without all ACIs
   - make submodules
   - make dev_setup_runtime
   - make -C app/tests testing.id_rsa
@@ -27,10 +29,6 @@ install:
   - sudo -E make container_linux
 
   - make config
-
-
-before_script:
-  - sudo -E MY_USER=travis make dev_setup
 
 script:
   - make check
