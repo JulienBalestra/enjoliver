@@ -33,7 +33,7 @@ func writeResponse(w http.ResponseWriter, v interface{}) {
 
 func (run *Runtime) handlerVersion(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		binaries := GetComponentVersions()
+		binaries := GetComponentVersion()
 		if len(binaries.Errors) != 0 {
 			glog.Errorf("fail to get health status for: %s", binaries.Errors)
 			w.WriteHeader(503)

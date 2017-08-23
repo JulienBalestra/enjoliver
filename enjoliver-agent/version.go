@@ -14,6 +14,7 @@ type ExecForVersion struct {
 	xy          []int
 }
 
+// Quite technical but covered by tests
 var (
 	rktVersion       = ExecForVersion{"rkt", []string{"version"}, 6, 3, []int{0, -1}}
 	etcdVersion      = ExecForVersion{"etcd", []string{"--version"}, 5, 3, []int{0, -1}}
@@ -28,6 +29,12 @@ var (
 		vaultVersion, systemdVersion, kernelVersion, fleetVersion,
 	}
 )
+
+type BinaryResult struct {
+	Cmd     string
+	Version string
+	Error   error
+}
 
 func getOutputOfCommand(cmd string, arg ...string) (string, error) {
 	out, err := exec.Command(cmd, arg...).Output()
@@ -64,25 +71,36 @@ type AllComponentVersion struct {
 	Errors        map[string]string
 }
 
-func GetComponentVersions() AllComponentVersion {
+func execBinaryToParseVersion(b ExecForVersion, ch chan BinaryResult) {
+	br := BinaryResult{Cmd: b.cmd}
+	output, err := getOutputOfCommand(b.cmd, b.arg...)
+	if err != nil {
+		br.Error = err
+		glog.Errorf("fail to get version by exec: %s", err)
+		return
+	}
+	br.Version, err = getStringInTable(output, b)
+	if err != nil {
+		br.Error = err
+		glog.Errorf("fail to get version by exec: %s", err)
+	}
+	ch <- br
+}
+
+func GetComponentVersion() AllComponentVersion {
 	var allComponentVersion AllComponentVersion
 	allComponentVersion.BinaryVersion = make(map[string]string)
 	allComponentVersion.Errors = make(map[string]string)
 
+	ch := make(chan BinaryResult)
+	defer close(ch)
 	for _, b := range binariesToExec {
-		output, err := getOutputOfCommand(b.cmd, b.arg...)
-		if err != nil {
-			allComponentVersion.Errors[b.cmd] = err.Error()
-			glog.Errorf("fail to get version by exec: %s", err)
-			continue
-		}
-		allComponentVersion.BinaryVersion[b.cmd], err = getStringInTable(output, b)
-		if err != nil {
-			allComponentVersion.Errors[b.cmd] = err.Error()
-			glog.Errorf("fail to get version by exec: %s", err)
-			continue
-		}
-
+		go execBinaryToParseVersion(b, ch)
+	}
+	for range binariesToExec {
+		bv := <-ch
+		allComponentVersion.BinaryVersion[bv.Cmd] = bv.Version
+		allComponentVersion.Errors[bv.Cmd] = bv.Error.Error()
 	}
 	return allComponentVersion
 }
