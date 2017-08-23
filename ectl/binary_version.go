@@ -10,36 +10,35 @@ import (
 )
 
 const (
-	machineBinaryVersionPath = "/version"
+	AgentBinaryVersionPath = "/version"
 )
 
-var eltInRow = []string{"Fqdn", "Etcd", "Fleetd", "Hyperkube", "Iproute2", "Rkt", "Systemd", "Kernel", "Vault"}
+var eltInRowForBinaryVersion = []string{"Fqdn", "Etcd", "Fleetd", "Hyperkube", "Iproute2", "Rkt", "Systemd", "Kernel", "Vault"}
 
 type BinaryVersion struct {
 	Etcd, Fleet, Hyperkube, Ip, Rkt, Systemctl, Uname, Vault string
 }
 
-type EnjoliverAgentVersion struct {
+type AgentBinaryVersion struct {
 	BinaryVersion BinaryVersion
 	Fqdn          string
 	Unreachable   bool
 }
 
 type BinaryVersionDisplay struct {
-	KubernetesControlPlane bool
-	KubernetesNode         bool
+	KubernetesControlPlane, KubernetesNode bool
 }
 
-func (r *Runtime) queryEnjoliverAgentForVersion(m Machine, ch chan EnjoliverAgentVersion) {
+func (r *Runtime) queryEnjoliverAgentForVersion(m Machine, ch chan AgentBinaryVersion) {
 	if m.Fqdn == "" {
 		m.Fqdn = m.Ipv4
 		glog.Warningf("no Fqdn for %s: using IP as Fqdn", m.Ipv4)
 	}
 
-	var version EnjoliverAgentVersion
+	var version AgentBinaryVersion
 	version.Fqdn = m.Fqdn
 
-	uri := fmt.Sprintf("http://%s:%d%s", m.Ipv4, enjoliverAgentPort, machineBinaryVersionPath)
+	uri := fmt.Sprintf("http://%s:%d%s", m.Ipv4, EnjoliverAgentPort, AgentBinaryVersionPath)
 	b, err := httpGetUnmarshal(uri)
 	if err != nil {
 		glog.Errorf("fail to fetch %s: %s", uri, err)
@@ -82,7 +81,7 @@ func (r *Runtime) getBinaryVersion() (EnjoliverAgentBinaryVersionList, error) {
 		machineList = append(machineList, no...)
 	}
 
-	ch := make(chan EnjoliverAgentVersion)
+	ch := make(chan AgentBinaryVersion)
 	defer close(ch)
 	for _, m := range machineList {
 		go r.queryEnjoliverAgentForVersion(m, ch)
@@ -93,7 +92,7 @@ func (r *Runtime) getBinaryVersion() (EnjoliverAgentBinaryVersionList, error) {
 	return EnjoliverAgentBinaryVersion, nil
 }
 
-func (r *Runtime) createRowForBinaryVersion(node EnjoliverAgentVersion) []string {
+func (r *Runtime) createRowForBinaryVersion(node AgentBinaryVersion) []string {
 	row := []string{}
 	for _, r := range []string{
 		node.Fqdn,
@@ -111,7 +110,7 @@ func (r *Runtime) createRowForBinaryVersion(node EnjoliverAgentVersion) []string
 	return row
 }
 
-type EnjoliverAgentBinaryVersionList []EnjoliverAgentVersion
+type EnjoliverAgentBinaryVersionList []AgentBinaryVersion
 
 func (slice EnjoliverAgentBinaryVersionList) Len() int {
 	return len(slice)
@@ -125,22 +124,19 @@ func (slice EnjoliverAgentBinaryVersionList) Swap(i, j int) {
 	slice[i], slice[j] = slice[j], slice[i]
 }
 
-func (r *Runtime) displayBinaryVersion(binaryVersion EnjoliverAgentBinaryVersionList, config EnjoliverConfig) {
-	if r.Output == "ascii" {
+func (r *Runtime) displayBinaryVersion(binaryVersion EnjoliverAgentBinaryVersionList) {
+	if r.Output == AsciiDisplay {
 		asciiTable := tablewriter.NewWriter(os.Stdout)
 		if r.HideAsciiHeader == false {
-			asciiTable.SetHeader(eltInRow)
+			asciiTable.SetHeader(eltInRowForBinaryVersion)
 		}
-		asciiTable.SetRowSeparator(" ")
-		asciiTable.SetColumnSeparator(" ")
-		asciiTable.SetCenterSeparator("")
 		for _, node := range binaryVersion {
 			asciiTable.Append(r.createRowForBinaryVersion(node))
 		}
-		asciiTable.Render()
+		setAsciiTableStyleAndRender(asciiTable)
 		return
 	}
-	if r.Output == "json" {
+	if r.Output == JsonDisplay {
 		// TODO
 		return
 	}
@@ -153,12 +149,7 @@ func (r *Runtime) DisplayBinaryVersion() error {
 		return err
 	}
 
-	enjoliverConfig, err := r.getEnjoliverConfig()
-	if err != nil {
-		return err
-	}
-
 	sort.Sort(binaryVersion)
-	r.displayBinaryVersion(binaryVersion, enjoliverConfig)
+	r.displayBinaryVersion(binaryVersion)
 	return nil
 }

@@ -11,9 +11,10 @@ import (
 )
 
 const (
-	machineHealthzPath = "/healthz"
-	enjoliverAgentPort = 8000
+	AgentHealthzPath = "/healthz"
 )
+
+var eltInRowForComponentStatus = []string{"Fqdn", "fleet-etcd", "kubelet", "kube-apiserver", "rkt-api", "kube-etcd", "vault", "vault-etcd"}
 
 type ComponentHealthz struct {
 	FleetEtcdClient             bool
@@ -47,7 +48,7 @@ func (r *Runtime) queryEnjoliverAgentForHealthz(m Machine, ch chan EnjoliverAgen
 	healthz.Fqdn = m.Fqdn
 	healthz.ControlPlane = m.ControlPlane
 
-	uri := fmt.Sprintf("http://%s:%d%s", m.Ipv4, enjoliverAgentPort, machineHealthzPath)
+	uri := fmt.Sprintf("http://%s:%d%s", m.Ipv4, EnjoliverAgentPort, AgentHealthzPath)
 	b, err := httpGetUnmarshal(uri)
 	if err != nil {
 		glog.Errorf("fail to fetch %s: %s", uri, err)
@@ -157,22 +158,19 @@ func (slice EnjoliverAgentHealthzList) Swap(i, j int) {
 	slice[i], slice[j] = slice[j], slice[i]
 }
 
-func (r *Runtime) displayComponentStatus(componentStatuses EnjoliverAgentHealthzList, config EnjoliverConfig) {
-	if r.Output == "ascii" {
+func (r *Runtime) displayComponentStatus(componentStatuses EnjoliverAgentHealthzList) {
+	if r.Output == AsciiDisplay {
 		asciiTable := tablewriter.NewWriter(os.Stdout)
 		if r.HideAsciiHeader == false {
-			asciiTable.SetHeader(r.createHeaderForComponentStatus())
+			asciiTable.SetHeader(eltInRowForComponentStatus)
 		}
-		asciiTable.SetRowSeparator(" ")
-		asciiTable.SetColumnSeparator(" ")
-		asciiTable.SetCenterSeparator("")
 		for _, node := range componentStatuses {
 			asciiTable.Append(r.createRowForComponentStatus(node))
 		}
-		asciiTable.Render()
+		setAsciiTableStyleAndRender(asciiTable)
 		return
 	}
-	if r.Output == "json" {
+	if r.Output == JsonDisplay {
 		// TODO
 		return
 	}
@@ -185,12 +183,7 @@ func (r *Runtime) DisplayComponentStatus() error {
 		return err
 	}
 
-	enjoliverConfig, err := r.getEnjoliverConfig()
-	if err != nil {
-		return err
-	}
-
 	sort.Sort(componentStatuses)
-	r.displayComponentStatus(componentStatuses, enjoliverConfig)
+	r.displayComponentStatus(componentStatuses)
 	return nil
 }

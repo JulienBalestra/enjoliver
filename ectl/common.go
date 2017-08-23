@@ -3,12 +3,16 @@ package main
 import (
 	"encoding/json"
 	"github.com/golang/glog"
+	"github.com/olekukonko/tablewriter"
 )
 
 const (
-	enjoliverConfigPath                 = "/configs"
+	EnjoliverConfigPath                 = "/configs"
+	EnjoliverAgentPort                  = 8000
 	SchedulerKubernetesControlPlanePath = "/scheduler/kubernetes-control-plane"
 	SchedulerKubernetesNodePath         = "/scheduler/kubernetes-node"
+	AsciiDisplay                        = "ascii"
+	JsonDisplay                         = "json"
 )
 
 type Machine struct {
@@ -41,7 +45,7 @@ type EnjoliverConfig struct {
 
 func (r *Runtime) getEnjoliverConfig() (EnjoliverConfig, error) {
 	var enjoliverConfig EnjoliverConfig
-	b, err := r.SmartClient(enjoliverConfigPath)
+	b, err := r.SmartClient(EnjoliverConfigPath)
 	if err != nil {
 		glog.Errorf("fail to query: %s", err)
 		return enjoliverConfig, err
@@ -52,4 +56,11 @@ func (r *Runtime) getEnjoliverConfig() (EnjoliverConfig, error) {
 		return enjoliverConfig, err
 	}
 	return enjoliverConfig, nil
+}
+
+func setAsciiTableStyleAndRender(asciiTable *tablewriter.Table) {
+	asciiTable.SetRowSeparator(" ")
+	asciiTable.SetColumnSeparator(" ")
+	asciiTable.SetCenterSeparator("")
+	asciiTable.Render()
 }

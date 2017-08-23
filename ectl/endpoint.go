@@ -10,13 +10,11 @@ import (
 )
 
 const (
-	kubernetesApiServerSecurePort = 6443
+	KubernetesApiServerSecurePort = 6443
 )
 
 type EndpointDisplay struct {
-	Fleet      bool
-	Vault      bool
-	Kubernetes bool
+	Fleet, Vault, Kubernetes bool
 }
 
 func (r *Runtime) createHeaderForEndpoint() []string {
@@ -25,12 +23,10 @@ func (r *Runtime) createHeaderForEndpoint() []string {
 		header = append(header, "etcd-fleet")
 	}
 	if r.EndpointDisplay.Kubernetes {
-		header = append(header, "kube-apiserver")
-		header = append(header, "etcd-kube")
+		header = append(header, []string{"kube-apiserver", "etcd-kube"}...)
 	}
 	if r.EndpointDisplay.Vault {
-		header = append(header, "vault")
-		header = append(header, "etcd-vault")
+		header = append(header, []string{"vault", "etcd-vault"}...)
 	}
 	return header
 }
@@ -45,32 +41,33 @@ func (r *Runtime) createRowForEndpoint(node Machine, config EnjoliverConfig) []s
 		row = append(row, fmt.Sprintf("https://%s:%d", node.Ipv4, config.Fleet_etcd_client_port))
 	}
 	if r.EndpointDisplay.Kubernetes {
-		row = append(row, fmt.Sprintf("https://%s:%d", node.Ipv4, kubernetesApiServerSecurePort))
-		row = append(row, fmt.Sprintf("https://%s:%d", node.Ipv4, config.Kubernetes_etcd_client_port))
+		row = append(row, []string{
+			fmt.Sprintf("https://%s:%d", node.Ipv4, KubernetesApiServerSecurePort),
+			fmt.Sprintf("https://%s:%d", node.Ipv4, config.Kubernetes_etcd_client_port),
+		}...)
 	}
 	if r.EndpointDisplay.Vault {
-		row = append(row, fmt.Sprintf("https://%s:%d", node.Ipv4, config.Vault_port))
-		row = append(row, fmt.Sprintf("https://%s:%d", node.Ipv4, config.Vault_etcd_client_port))
+		row = append(row, []string{
+			fmt.Sprintf("https://%s:%d", node.Ipv4, config.Vault_port),
+			fmt.Sprintf("https://%s:%d", node.Ipv4, config.Vault_etcd_client_port),
+		}...)
 	}
 	return row
 }
 
 func (r *Runtime) displayEndpoints(kubernetesControlPlanes []Machine, config EnjoliverConfig) {
-	if r.Output == "ascii" {
+	if r.Output == AsciiDisplay {
 		asciiTable := tablewriter.NewWriter(os.Stdout)
 		if r.HideAsciiHeader == false {
 			asciiTable.SetHeader(r.createHeaderForEndpoint())
 		}
-		asciiTable.SetRowSeparator(" ")
-		asciiTable.SetColumnSeparator(" ")
-		asciiTable.SetCenterSeparator("")
 		for _, node := range kubernetesControlPlanes {
 			asciiTable.Append(r.createRowForEndpoint(node, config))
 		}
-		asciiTable.Render()
+		setAsciiTableStyleAndRender(asciiTable)
 		return
 	}
-	if r.Output == "json" {
+	if r.Output == JsonDisplay {
 		// TODO use a struct to make a json more exploitable
 		var stringArray [][]string
 		for _, node := range kubernetesControlPlanes {
@@ -84,7 +81,7 @@ func (r *Runtime) displayEndpoints(kubernetesControlPlanes []Machine, config Enj
 		os.Stdout.Write(b)
 		return
 	}
-	glog.Warning("unknown output format")
+	glog.Errorf("unknown output format")
 }
 
 type Machines []Machine
