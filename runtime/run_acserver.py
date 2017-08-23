@@ -3,6 +3,7 @@ import multiprocessing
 import os.path
 import signal
 import subprocess
+
 import sys
 
 RUNTIME_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -18,7 +19,6 @@ for p in os.listdir(os.path.join(PROJECT_PATH, "env/lib/")):
 from runtime import (
     config,
 )
-import psutil
 import requests
 
 
@@ -57,10 +57,7 @@ if __name__ == '__main__':
         resp.close()
         if resp.status_code != 200:
             raise AcserverError("status code: %s != 200" % resp.status_code)
-        with open("%s/acserver.pid" % RUNTIME_PATH, 'r') as f:
-            pid = f.read()
-        p = psutil.Process(int(pid))
-        print("%s %s running: %s" % (pid, p.name(), p.is_running()))
+        print("acserver already started")
 
     except requests.exceptions.ConnectionError:
         acserver_p = multiprocessing.Process(target=start_acserver)

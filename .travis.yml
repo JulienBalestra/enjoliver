@@ -15,14 +15,13 @@ before_install:
 
 install:
   - sudo -E make apt
-
-before_script:
-  # eq dev_setup rule but without all ACIs
   - make submodules
+  - make pip
   - make dev_setup_runtime
   - make -C app/tests testing.id_rsa
   - make front
-  - make pip
+
+before_script:
   - make assets
 
   - sudo -E make aci_core
