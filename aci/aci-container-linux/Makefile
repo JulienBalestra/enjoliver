@@ -8,12 +8,11 @@ ACI=$(PROJECT)/aci
 DEBIAN=debian
 TARGET=container-linux
 
-default: push
+default: install
 
 $(DEBIAN):
 	@echo ENV IMAGE=$(ACI)/aci-$(DEBIAN)
 	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) install
-	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) push
 
 install: $(DEBIAN)
 	@echo ENV IMAGE=$(ACI)/aci-$(TARGET)

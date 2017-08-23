@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 import multiprocessing
 import os.path
+import signal
 import subprocess
-import sys
 
 import requests
+import sys
 
 RUNTIME_PATH = os.path.dirname(os.path.abspath(__file__))
 PROJECT_PATH = os.path.dirname(RUNTIME_PATH)
@@ -67,10 +68,15 @@ if __name__ == '__main__':
         acserver_p.start()
         with open("%s/acserver.pid" % RUNTIME_PATH, "w") as f:
             f.write(acserver_p.pid.__str__())
-        try:
-            acserver_p.join()
-        except KeyboardInterrupt:
+
+
+        def stop_acserver(signum, frame):
+            print("terminating %d" % acserver_p.pid)
             acserver_p.terminate()
-            acserver_p.join(1)
-            with open("%s/acserver.pid" % RUNTIME_PATH, "w") as f:
-                pass
+
+
+        signal.signal(signal.SIGINT, stop_acserver)
+        signal.signal(signal.SIGTERM, stop_acserver)
+        acserver_p.join()
+        with open("%s/acserver.pid" % RUNTIME_PATH, "w") as f:
+            pass

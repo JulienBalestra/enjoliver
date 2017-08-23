@@ -49,11 +49,11 @@ acserver:
 
 aci_core: acserver
 	make -C aci core
-	pkill -F runtime/acserver.pid || true
+	pkill -F $(CWD)/runtime/acserver.pid || true
 
 aci: acserver
 	make -C aci kube_deps
-	pkill -F runtime/acserver.pid || true
+	pkill -F $(CWD)/runtime/acserver.pid || true
 
 assets:
 	make -C matchbox/assets/discoveryC
