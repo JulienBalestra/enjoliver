@@ -3,8 +3,6 @@ import multiprocessing
 import os.path
 import signal
 import subprocess
-
-import requests
 import sys
 
 RUNTIME_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -21,6 +19,7 @@ from runtime import (
     config,
 )
 import psutil
+import requests
 
 
 def start_acserver():
