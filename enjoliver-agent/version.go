@@ -77,6 +77,7 @@ func execBinaryToParseVersion(b ExecForVersion, ch chan BinaryResult) {
 	if err != nil {
 		br.Error = err
 		glog.Errorf("fail to get version by exec: %s", err)
+		ch <- br
 		return
 	}
 	br.Version, err = getStringInTable(output, b)
@@ -100,7 +101,9 @@ func GetComponentVersion() AllComponentVersion {
 	for range binariesToExec {
 		bv := <-ch
 		allComponentVersion.BinaryVersion[bv.Cmd] = bv.Version
-		allComponentVersion.Errors[bv.Cmd] = bv.Error.Error()
+		if bv.Error != nil {
+			allComponentVersion.Errors[bv.Cmd] = bv.Error.Error()
+		}
 	}
 	return allComponentVersion
 }
