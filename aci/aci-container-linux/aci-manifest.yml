@@ -1,7 +1,7 @@
 name: enjoliver.local/container-linux:latest
 aci:
   dependencies:
-    - enjoliver.local/debian:latest
+    - enjoliver.local/upx:latest
   app:
     exec:
       - /usr/bin/make

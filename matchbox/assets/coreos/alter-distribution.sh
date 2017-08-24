@@ -7,6 +7,7 @@ test ${VERSION}
 
 cd $(dirname $0)
 COREOS_DIRECTORY=$(pwd -P)
+ASSETS_DIRECTORY=$(dirname ${COREOS_DIRECTORY})
 export VERSION_DIR=${COREOS_DIRECTORY}/${VERSION}
 
 cd ${VERSION_DIR}
@@ -40,14 +41,23 @@ _remove_in_fs(){
     do
         rm -fv ${fs}/${1}
     done
+}
 
+_upx_in_fs() {
+    for fs in squashfs-root/ ${USR_A}
+    do
+        upx -q ${fs}/${1}
+        upx -t ${fs}/${1}
+    done
 }
 
 # CWD == ~/matchbox/assets/coreos/${VERSION}/squashfs
 
 EXCLUDES="--exclude rootfs/dgr --exclude rootfs/etc --exclude rootfs/tmp --exclude rootfs/run --exclude rootfs/sys"
 
-for useless in /bin/containerd /bin/containerd-shim /bin/dockerd /bin/runc /bin/coreos-cloudinit
+for useless in /bin/docker /bin/coreos-metadata /bin/containerd /bin/containerd-shim /bin/dockerd /bin/runc \
+    /bin/docker-containerd-shim /bin/docker-containerd /bin/docker-runc /bin/ctr /bin/docker-proxy /bin/mayday \
+    /bin/actool /bin/tpmd
 do
     _remove_in_fs ${useless}
 done
@@ -89,10 +99,29 @@ mkdir -pv ${USR_A}/local/cni
 CNI_ACI=$(ls ${ACI_PATH}/cni/cni-*-linux-amd64.aci | head -n 1)
 tar -C squashfs-root/local/cni -xvf ${CNI_ACI} rootfs/usr --strip 2 ${EXCLUDES}
 tar -C ${USR_A}/local/cni -xvf ${CNI_ACI} rootfs/usr --strip 2 ${EXCLUDES}
+for p in squashfs-root/bin ${USR_A}/bin
+do
+    cd ${p}
+    ln -svf ../local/cni/bin/cnitool
+    cd -
+done
 
 HYPERKUBE_ACI=$(ls ${ACI_PATH}/hyperkube/hyperkube-*-linux-amd64.aci | head -n 1)
 tar -C squashfs-root/bin -xvf ${HYPERKUBE_ACI} rootfs/ --strip 1 ${EXCLUDES}
 tar -C ${USR_A}/bin -xvf ${HYPERKUBE_ACI} rootfs/ --strip 1 ${EXCLUDES}
+
+cp -v ${ASSETS_DIRECTORY}/enjoliver-agent/serve/enjoliver-agent squashfs-root/bin/
+cp -v ${ASSETS_DIRECTORY}/enjoliver-agent/serve/enjoliver-agent ${USR_A}/bin
+_upx_in_fs /bin/enjoliver-agent
+
+cp -v ${ASSETS_DIRECTORY}/discoveryC/serve/discoveryC squashfs-root/bin
+upx -q squashfs-root/bin/discoveryC
+upx -t squashfs-root/bin/discoveryC
+
+for b in /bin/locksmithctl /bin/coreos-cloudinit
+do
+    _upx_in_fs ${b}
+done
 
 sync
 

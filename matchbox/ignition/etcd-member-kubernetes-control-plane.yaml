@@ -5,6 +5,10 @@ systemd:
       enable: false
       mask: true
 
+    - name: locksmithd.service
+      enable: false
+      mask: true
+
     - name: containerd.service
       enable: false
       mask: true
@@ -17,22 +21,13 @@ systemd:
       enable: false
       mask: true
 
-    - name: download-enjoliver-agent.service
-      enable: true
-      contents: |
-        [Unit]
-        Requires=network-online.target
-        After=network-online.target
-        [Service]
-        Type=oneshot
-        ExecStartPre=/bin/mkdir -pv /opt/bin
-        ExecStart=/usr/bin/curl -f {{.api_uri}}/assets/enjoliver-agent/serve/enjoliver-agent \
-          -o /opt/bin/enjoliver-agent
-        ExecStartPost=/usr/bin/chmod +x /opt/bin/enjoliver-agent
-        RemainAfterExit=yes
+    - name: tpmd.service
+      enable: false
+      mask: true
 
-        [Install]
-        WantedBy=multi-user.target
+    - name: tcsd.service
+      enable: false
+      mask: true
 
     - name: rkt-api.service
       enable: true
@@ -50,7 +45,7 @@ systemd:
       enable: true
       contents: |
         [Service]
-        ExecStart=/opt/bin/enjoliver-agent --control-plane
+        ExecStart=/usr/bin/enjoliver-agent --control-plane
         EnvironmentFile=/etc/metadata.env
         Restart=always
         RestartSec=30

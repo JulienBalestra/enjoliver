@@ -45,6 +45,7 @@ pip: $(ENV)
 
 acserver:
 	test $(shell id -u -r) -eq 0
+	make -C $(CWD)/runtime/ create_rack0
 	./runtime/run_acserver.py &
 
 aci_core: acserver
@@ -129,7 +130,6 @@ dev_setup:
 	su - $(MY_USER) -c "make -C $(CWD) front"
 	su - $(MY_USER) -c "make -C $(CWD) pip"
 	su - $(MY_USER) -c "make -C $(CWD) assets"
-	make -C $(CWD)/runtime/ create_rack0
 	make -C $(CWD) aci
 	make -C $(CWD) container_linux
 	su - $(MY_USER) -c "make -C $(CWD) validate"

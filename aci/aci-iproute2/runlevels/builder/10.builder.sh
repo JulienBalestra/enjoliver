@@ -31,7 +31,4 @@ done
 ./configure
 make
 
-upx -q ip/ip
-upx -t ip/ip
-
 mv -v ip/ip ${ROOTFS}/usr/bin/ip
