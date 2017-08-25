@@ -1,4 +1,4 @@
-name: enjoliver.local/prometheus:1.7.0
+name: enjoliver.local/prometheus:1.7.1
 
 builder:
   dependencies:

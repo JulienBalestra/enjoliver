@@ -297,7 +297,7 @@ systemd:
           --kubelet-preferred-address-types=InternalIP,LegacyHostIP,ExternalDNS,InternalDNS,Hostname \
           --service-account-key-file=/etc/vault.d/kubernetes/service-accounts.key \
           --service-account-lookup=true \
-          --authorization-mode=AlwaysAllow \
+          --authorization-mode=RBAC \
           --anonymous-auth=false \
           --etcd-servers=https://127.0.0.1:{{.kubernetes_etcd_client_port}} \
           --etcd-cafile=/etc/vault.d/etcd-kubernetes/client.issuing_ca \

@@ -1,6 +1,6 @@
 image:
   repository: enjoliver.local/prometheus
-  tag: 1.7.0
+  tag: 1.7.1
   pullPolicy: IfNotPresent
 namespace: kube-system
 hostPathData: /var/lib/prometheus

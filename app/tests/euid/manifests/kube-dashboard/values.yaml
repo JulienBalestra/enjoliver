@@ -1,6 +1,6 @@
 image:
   repository: enjoliver.local/kube-dashboard
-  tag: 1.6.0
+  tag: 1.6.3
   pullPolicy: IfNotPresent
 namespace: kube-system
 appPort: 9090

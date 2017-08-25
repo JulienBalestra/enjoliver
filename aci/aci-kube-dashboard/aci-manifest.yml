@@ -1,10 +1,10 @@
-name: enjoliver.local/kube-dashboard:1.6.0
+name: enjoliver.local/kube-dashboard:1.6.3
 
 builder:
   dependencies:
     - enjoliver.local/builder-hyperkube:latest
-    - enjoliver.local/nodejs:7.10.0
+    - enjoliver.local/nodejs:7.10.1
 
 aci:
   dependencies:
-    - enjoliver.local/debian:latest
+    - enjoliver.local/kube-dashboard:1.6.3

@@ -783,9 +783,18 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         with open("%s/manifests/tiller/tiller-deploy.yaml" % self.euid_path) as f:
             deploy_manifest = yaml.load(f)
 
+        with open("%s/manifests/tiller/tiller-service-account.yaml" % self.euid_path) as f:
+            serviceaccount_manifest = yaml.load(f)
+
+        with open("%s/manifests/tiller/clusterrolebinding.yaml" % self.euid_path) as f:
+            clusterrolebinding_manifest = yaml.load(f)
+
         core, beta = kc.CoreV1Api(c), kc.ExtensionsV1beta1Api(c)
+        rbac = kc.RbacAuthorizationV1beta1Api(c)
 
         core.create_namespaced_service("kube-system", service_manifest)
+        rbac.create_cluster_role_binding(clusterrolebinding_manifest)
+        core.create_namespaced_service_account("kube-system", serviceaccount_manifest)
         beta.create_namespaced_deployment("kube-system", deploy_manifest)
 
     def pod_tiller_is_running(self, api_server_ip: str, tries=100):

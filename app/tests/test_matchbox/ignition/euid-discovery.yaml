@@ -32,24 +32,6 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
-    - name: download-discoveryC.service
-      enable: true
-      contents: |
-        [Unit]
-        Requires=network-online.target
-        After=network-online.target
-        [Service]
-        Type=oneshot
-        Environment=OPT_BIN=/opt/bin
-        EnvironmentFile=-/etc/metadata-endpoints.env
-        ExecStartPre=/bin/mkdir -pv ${OPT_BIN}
-        ExecStart=/usr/bin/curl -f ${API_URI}/assets/discoveryC/serve/discoveryC \
-          -o ${OPT_BIN}/discoveryC
-        ExecStartPost=/usr/bin/chmod +x ${OPT_BIN}/discoveryC
-        RemainAfterExit=yes
-        [Install]
-        WantedBy=multi-user.target
-
     - name: discoveryC.service
       enable: true
       contents: |
@@ -70,7 +52,7 @@ systemd:
            --exec opt/bin/lldp-export
         ExecStartPre=-/usr/bin/rkt image gc --grace-period=0s
         ExecStartPre=-/usr/bin/rkt gc --grace-period=0s
-        ExecStart=/opt/bin/discoveryC
+        ExecStart=/usr/bin/discoveryC
         Restart=on-failure
         RestartSec=5s
         [Install]

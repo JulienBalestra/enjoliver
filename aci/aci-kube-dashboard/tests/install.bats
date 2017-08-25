@@ -5,6 +5,6 @@
 }
 
 @test "run" {
-  run /usr/bin/dashboard --version
-  [ "$status" -eq 0 ]
+  run /usr/bin/dashboard -h
+  [ "$status" -eq 2 ]
 }

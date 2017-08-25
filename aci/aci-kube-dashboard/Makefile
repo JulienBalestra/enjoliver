@@ -16,26 +16,25 @@ DASHBOARD=kube-dashboard
 default: push
 
 $(DEBIAN):
-	@echo ENV IMAGE=$(ACI)/aci-$(DEBIAN)
-	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) install
-	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) push
+	@echo ENV IMAGE=$(ACI)/aci-$@
+	IMAGE=$(ACI)/aci-$@ make -C $(RUNTIME) install
+	IMAGE=$(ACI)/aci-$@ make -C $(RUNTIME) push
 
 $(GO): $(DEBIAN)
-	@echo ENV IMAGE=$(ACI)/aci-$(GO)
-	IMAGE=$(ACI)/aci-$(GO) make -C $(RUNTIME) install
-	IMAGE=$(ACI)/aci-$(GO) make -C $(RUNTIME) push
+	@echo ENV IMAGE=$(ACI)/aci-$@
+	IMAGE=$(ACI)/aci-$@ make -C $(RUNTIME) install
+	IMAGE=$(ACI)/aci-$@ make -C $(RUNTIME) push
 
 $(NODEJS): $(DEBIAN)
-	@echo ENV IMAGE=$(ACI)/aci-$(GO)
-	IMAGE=$(ACI)/aci-$(NODEJS) make -C $(RUNTIME) install
-	IMAGE=$(ACI)/aci-$(NODEJS) make -C $(RUNTIME) push
+	@echo ENV IMAGE=$(ACI)/aci-$@
+	IMAGE=$(ACI)/aci-$@ make -C $(RUNTIME) install
+	IMAGE=$(ACI)/aci-$@ make -C $(RUNTIME) push
 
 $(BUILDER_HYPERKUBE): $(GO)
-	@echo ENV IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE)
-	IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE) make -C $(RUNTIME) install
-	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) push
+	@echo ENV IMAGE=$(ACI)/aci-$@
+	IMAGE=$(ACI)/aci-$@ make -C $(RUNTIME) install
 
-prepare: $(GO) $(BUILDER_HYPERKUBE) $(NODEJS)
+prepare: $(BUILDER_HYPERKUBE) $(NODEJS)
 
 install: prepare
 	@echo ENV IMAGE=$(ACI)/aci-$(DASHBOARD)
@@ -43,7 +42,7 @@ install: prepare
 
 test: install
 	@echo ENV IMAGE=$(ACI)/aci-$(DASHBOARD)
-	IMAGE=$(ACI)/aci-$(DASHBOARD) make -C $(RUNTIME) push
+	IMAGE=$(ACI)/aci-$(DASHBOARD) make -C $(RUNTIME) test
 
 push: test
 	@echo ENV IMAGE=$(ACI)/aci-$(DASHBOARD)
