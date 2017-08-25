@@ -12,6 +12,7 @@ from sqlalchemy.orm import sessionmaker, Session
 
 import logger
 import model
+import monitoring
 
 
 class SmartClient(object):
@@ -108,6 +109,7 @@ class SmartClient(object):
                         self.log.info("moving reliable %s to index 0" % engine.url)
                         self.engines[0], self.engines[i] = self.engines[i], self.engines[0]
                     return conn
+                monitoring.SMARTDB_NUM_CONN_ERROR.inc()
                 self.log.warning("%d/%d could not connect to %s" % (i + 1, len(self.engines), engine.url))
             except Exception as e:
                 self.log.warning("%d/%d could not connect to %s %s" % (i + 1, len(self.engines), engine.url, e))
@@ -133,10 +135,12 @@ class _MultipleEndpoints(SmartClient):
 
 def cockroach_transaction(f):
     def run_transaction(*args, **kwargs):
+        monitoring.SMARTDB_NUM_TRANSACTION.inc()
         while True:
             try:
                 return f(*args, **kwargs)
             except DatabaseError as e:
+                monitoring.SMARTDB_NUM_RETRY.inc()
                 if not isinstance(e.orig, psycopg2.OperationalError) and \
                         not e.orig.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
                     raise

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import argparse
-import sys
-
 import os
+
+import sys
 import time
 
 PROJECT_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -70,6 +70,13 @@ def gunicorn(ec):
     print("exec[%s] -> %s\n" % (os.getpid(), " ".join(cmd)))
     with open(ec.gunicorn_pid_file, "w") as f:
         f.write("%d" % os.getpid())
+    if not os.environ.get('prometheus_multiproc_dir'):
+        os.environ["prometheus_multiproc_dir"] = ec.prometheus_multiproc_dir
+    try:
+        for f in os.listdir(ec.prometheus_multiproc_dir):
+            os.remove(os.path.join(ec.prometheus_multiproc_dir, f))
+    except FileNotFoundError:
+        os.makedirs(ec.prometheus_multiproc_dir)
     os.execve(cmd[0], cmd, os.environ)
 
 

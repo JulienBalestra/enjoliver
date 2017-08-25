@@ -1,14 +1,17 @@
 import json as std_json
-
 import os
+
 import requests
 from flasgger import Swagger
 from flask import Flask, request, json, jsonify, render_template, Response
+from prometheus_client import generate_latest, CollectorRegistry, CONTENT_TYPE_LATEST
+from prometheus_client import multiprocess
 from werkzeug.contrib.cache import FileSystemCache
 
 import crud
 import logger
 import model
+import monitoring
 import ops
 import smartdb
 from configs import EnjoliverConfig
@@ -50,8 +53,22 @@ APPLICATION.config["BACKUP_LOCK_KEY"] = EC.backup_lock_key
 
 SMART = SmartClient
 
-if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", "None"):
+if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", ""):
     SMART = SmartClient(APPLICATION.config["DB_URI"])
+
+    if "gunicorn" in os.getenv("SERVER_SOFTWARE", "") and os.getenv('prometheus_multiproc_dir'):
+        @APPLICATION.route("/metrics", methods=["GET"])
+        def collect():
+            registry = CollectorRegistry()
+            multiprocess.MultiProcessCollector(registry)
+            data = generate_latest(registry)
+            return Response(data, mimetype=CONTENT_TYPE_LATEST)
+
+
+@APPLICATION.errorhandler(Exception)
+def handle_invalid_usage(error):
+    monitoring.FLASK_NUM_500.inc()
+    raise error
 
 
 @APPLICATION.route("/shutdown", methods=["POST"])
@@ -85,6 +102,7 @@ def configs():
 
 
 @APPLICATION.route("/lifecycle/ignition/<string:request_raw_query>", methods=["POST"])
+@monitoring.FLASK_INPROGRESS_LIFECYCLE.track_inprogress()
 def submit_lifecycle_ignition(request_raw_query):
     """
     Lifecycle Ignition
@@ -95,6 +113,7 @@ def submit_lifecycle_ignition(request_raw_query):
       200:
         description: A JSON of the ignition status
     """
+    monitoring.FLASK_NUM_REQUESTS_LIFECYCLE.inc()
     try:
         machine_ignition = json.loads(request.get_data())
     except ValueError:
@@ -126,6 +145,7 @@ def submit_lifecycle_ignition(request_raw_query):
 
 
 @APPLICATION.route("/lifecycle/rolling/<string:request_raw_query>", methods=["GET"])
+@monitoring.FLASK_INPROGRESS_LIFECYCLE.track_inprogress()
 def report_lifecycle_rolling(request_raw_query):
     """
     Lifecycle Rolling Update
@@ -153,6 +173,7 @@ def report_lifecycle_rolling(request_raw_query):
         schema:
             type: dict
     """
+    monitoring.FLASK_NUM_REQUESTS_LIFECYCLE.inc()
     with SMART.new_session() as session:
         life = crud.FetchLifecycle(session)
         try:
@@ -171,6 +192,7 @@ def report_lifecycle_rolling(request_raw_query):
 
 
 @APPLICATION.route("/lifecycle/rolling/<string:request_raw_query>", methods=["POST"])
+@monitoring.FLASK_INPROGRESS_LIFECYCLE.track_inprogress()
 def change_lifecycle_rolling(request_raw_query):
     """
     Lifecycle Rolling Update
@@ -194,6 +216,7 @@ def change_lifecycle_rolling(request_raw_query):
         schema:
             type: dict
     """
+    monitoring.FLASK_NUM_REQUESTS_LIFECYCLE.inc()
     LOGGER.info("%s %s" % (request.method, request.url))
     try:
         strategy = json.loads(request.get_data())["strategy"]
@@ -216,6 +239,7 @@ def change_lifecycle_rolling(request_raw_query):
 
 
 @APPLICATION.route("/lifecycle/rolling/<string:request_raw_query>", methods=["DELETE"])
+@monitoring.FLASK_INPROGRESS_LIFECYCLE.track_inprogress()
 def lifecycle_rolling_delete(request_raw_query):
     """
     Lifecycle Rolling Update
@@ -235,6 +259,7 @@ def lifecycle_rolling_delete(request_raw_query):
         schema:
             type: dict
     """
+    monitoring.FLASK_NUM_REQUESTS_LIFECYCLE.inc()
     LOGGER.info("%s %s" % (request.method, request.url))
 
     @smartdb.cockroach_transaction
@@ -248,6 +273,7 @@ def lifecycle_rolling_delete(request_raw_query):
 
 
 @APPLICATION.route("/lifecycle/rolling", methods=["GET"])
+@monitoring.FLASK_INPROGRESS_LIFECYCLE.track_inprogress()
 def lifecycle_rolling_all():
     """
     Lifecycle Rolling Update
@@ -261,6 +287,7 @@ def lifecycle_rolling_all():
         schema:
             type: list
     """
+    monitoring.FLASK_NUM_REQUESTS_LIFECYCLE.inc()
     with SMART.new_session() as session:
         fetch = crud.FetchLifecycle(session)
         rolling_status_list = fetch.get_all_rolling_status()
@@ -269,6 +296,7 @@ def lifecycle_rolling_all():
 
 
 @APPLICATION.route("/lifecycle/ignition", methods=["GET"])
+@monitoring.FLASK_INPROGRESS_LIFECYCLE.track_inprogress()
 def lifecycle_get_ignition_status():
     """
     Lifecycle Ignition Update
@@ -282,6 +310,7 @@ def lifecycle_get_ignition_status():
         schema:
             type: list
     """
+    monitoring.FLASK_NUM_REQUESTS_LIFECYCLE.inc()
     with SMART.new_session() as session:
         fetch = crud.FetchLifecycle(session)
         updated_status_list = fetch.get_all_updated_status()
@@ -290,6 +319,7 @@ def lifecycle_get_ignition_status():
 
 
 @APPLICATION.route("/lifecycle/coreos-install", methods=["GET"])
+@monitoring.FLASK_INPROGRESS_LIFECYCLE.track_inprogress()
 def lifecycle_get_coreos_install_status():
     """
     Lifecycle CoreOS Install
@@ -303,6 +333,7 @@ def lifecycle_get_coreos_install_status():
         schema:
             type: list
     """
+    monitoring.FLASK_NUM_REQUESTS_LIFECYCLE.inc()
     with SMART.new_session() as session:
         fetch = crud.FetchLifecycle(session)
         install_status_list = fetch.get_all_coreos_install_status()
@@ -311,6 +342,7 @@ def lifecycle_get_coreos_install_status():
 
 
 @APPLICATION.route("/lifecycle/coreos-install/<string:status>/<string:request_raw_query>", methods=["POST"])
+@monitoring.FLASK_INPROGRESS_LIFECYCLE.track_inprogress()
 def report_lifecycle_coreos_install(status, request_raw_query):
     """
     Lifecycle CoreOS Install
@@ -324,6 +356,7 @@ def report_lifecycle_coreos_install(status, request_raw_query):
         schema:
             type: dict
     """
+    monitoring.FLASK_NUM_REQUESTS_LIFECYCLE.inc()
     LOGGER.info("%s %s" % (request.method, request.url))
     if status.lower() == "success":
         success = True
@@ -364,6 +397,7 @@ def root():
 
 
 @APPLICATION.route('/healthz', methods=['GET'])
+@monitoring.FLASK_INPROGRESS_HEALTHZ.track_inprogress()
 def healthz():
     """
     Health
@@ -377,11 +411,13 @@ def healthz():
         schema:
             type: dict
     """
+    monitoring.FLASK_NUM_REQUESTS_HEALTHZ.inc()
     resp = ops.healthz(APPLICATION, SMART, request)
     return jsonify(resp)
 
 
 @APPLICATION.route('/discovery', methods=['POST'])
+@monitoring.FLASK_INPROGRESS_DISCOVERY.track_inprogress()
 def discovery():
     """
     Discovery
@@ -395,6 +431,7 @@ def discovery():
         schema:
             type: dict
     """
+    monitoring.FLASK_NUM_REQUESTS_DISCOVERY.inc()
     LOGGER.info("%s %s" % (request.method, request.url))
     err = jsonify({u'boot-info': {}, u'lldp': {}, u'interfaces': [], u"disks": []}), 406
     try:
@@ -420,6 +457,7 @@ def discovery():
 
 
 @APPLICATION.route('/discovery', methods=['GET'])
+@monitoring.FLASK_INPROGRESS_DISCOVERY.track_inprogress()
 def discovery_get():
     """
     Discovery
@@ -433,6 +471,7 @@ def discovery_get():
         schema:
             type: list
     """
+    monitoring.FLASK_NUM_REQUESTS_DISCOVERY.inc()
     all_data = CACHE.get(request.path)
     if all_data is None:
         with SMART.new_session() as session:
@@ -456,6 +495,7 @@ def scheduler_get():
         schema:
             type: list
     """
+    monitoring.FLASK_NUM_REQUESTS_SCHEDULER.inc()
     all_data = CACHE.get(request.path)
     if all_data is None:
         with SMART.new_session() as session:
@@ -467,6 +507,7 @@ def scheduler_get():
 
 
 @APPLICATION.route('/scheduler/<string:role>', methods=['GET'])
+@monitoring.FLASK_INPROGRESS_SCHEDULER.track_inprogress()
 def get_schedule_by_role(role):
     """
     Scheduler
@@ -486,6 +527,7 @@ def get_schedule_by_role(role):
         schema:
             type: list
     """
+    monitoring.FLASK_NUM_REQUESTS_SCHEDULER.inc()
     with SMART.new_session() as session:
         fetch = crud.FetchSchedule(session)
         multi = role.split("&")
@@ -495,6 +537,7 @@ def get_schedule_by_role(role):
 
 
 @APPLICATION.route('/scheduler/available', methods=['GET'])
+@monitoring.FLASK_INPROGRESS_SCHEDULER.track_inprogress()
 def get_available_machine():
     """
     Scheduler
@@ -508,6 +551,7 @@ def get_available_machine():
         schema:
             type: list
     """
+    monitoring.FLASK_NUM_REQUESTS_SCHEDULER.inc()
     with SMART.new_session() as session:
         fetch = crud.FetchSchedule(session)
         data = fetch.get_available_machines()
@@ -516,6 +560,7 @@ def get_available_machine():
 
 
 @APPLICATION.route('/scheduler/ip-list/<string:role>', methods=['GET'])
+@monitoring.FLASK_INPROGRESS_SCHEDULER.track_inprogress()
 def get_schedule_role_ip_list(role):
     """
     Scheduler
@@ -535,6 +580,7 @@ def get_schedule_role_ip_list(role):
         schema:
             type: list
     """
+    monitoring.FLASK_NUM_REQUESTS_SCHEDULER.inc()
     with SMART.new_session() as session:
         fetch = crud.FetchSchedule(session)
         ip_list_role = fetch.get_role_ip_list(role)
@@ -543,6 +589,7 @@ def get_schedule_role_ip_list(role):
 
 
 @APPLICATION.route('/scheduler', methods=['POST'])
+@monitoring.FLASK_INPROGRESS_SCHEDULER.track_inprogress()
 def scheduler_post():
     """
     Scheduler
@@ -560,6 +607,7 @@ def scheduler_post():
         schema:
             type: dict
     """
+    monitoring.FLASK_NUM_REQUESTS_SCHEDULER.inc()
     try:
         req = json.loads(request.get_data())
     except ValueError:
@@ -629,6 +677,7 @@ def backup_as_export():
 
 
 @APPLICATION.route('/discovery/interfaces', methods=['GET'])
+@monitoring.FLASK_INPROGRESS_DISCOVERY.track_inprogress()
 def discovery_interfaces():
     """
     Discovery
@@ -642,6 +691,7 @@ def discovery_interfaces():
         schema:
             type: list
     """
+    monitoring.FLASK_NUM_REQUESTS_DISCOVERY.inc()
     with SMART.new_session() as session:
         fetch = crud.FetchDiscovery(session, ignition_journal=ignition_journal)
         interfaces = fetch.get_all_interfaces()
@@ -694,6 +744,7 @@ def report_ignition_version(filename):
 
 
 @APPLICATION.route('/discovery/ignition-journal/<string:uuid>/<string:boot_id>', methods=['GET'])
+@monitoring.FLASK_INPROGRESS_DISCOVERY.track_inprogress()
 def discovery_ignition_journal_by_boot_id(uuid, boot_id):
     """
     Discovery
@@ -718,6 +769,7 @@ def discovery_ignition_journal_by_boot_id(uuid, boot_id):
         schema:
             type: list
     """
+    monitoring.FLASK_NUM_REQUESTS_DISCOVERY.inc()
     with SMART.new_session() as session:
         fetch = crud.FetchDiscovery(session,
                                     ignition_journal=ignition_journal)
@@ -727,6 +779,7 @@ def discovery_ignition_journal_by_boot_id(uuid, boot_id):
 
 
 @APPLICATION.route('/discovery/ignition-journal/<string:uuid>', methods=['GET'])
+@monitoring.FLASK_INPROGRESS_DISCOVERY.track_inprogress()
 def discovery_ignition_journal_by_uuid(uuid):
     """
     Discovery
@@ -746,6 +799,7 @@ def discovery_ignition_journal_by_uuid(uuid):
         schema:
             type: list
     """
+    monitoring.FLASK_NUM_REQUESTS_DISCOVERY.inc()
     with SMART.new_session() as session:
         fetch = crud.FetchDiscovery(session,
                                     ignition_journal=ignition_journal)
@@ -755,6 +809,7 @@ def discovery_ignition_journal_by_uuid(uuid):
 
 
 @APPLICATION.route('/discovery/ignition-journal', methods=['GET'])
+@monitoring.FLASK_INPROGRESS_DISCOVERY.track_inprogress()
 def discovery_ignition_journal_summary():
     """
     Discovery
@@ -768,6 +823,7 @@ def discovery_ignition_journal_summary():
         schema:
             type: list
     """
+    monitoring.FLASK_NUM_REQUESTS_DISCOVERY.inc()
     with SMART.new_session() as session:
         fetch = crud.FetchDiscovery(session,
                                     ignition_journal=ignition_journal)
@@ -778,6 +834,7 @@ def discovery_ignition_journal_summary():
 
 @APPLICATION.route('/boot.ipxe', methods=['GET'])
 @APPLICATION.route('/boot.ipxe.0', methods=['GET'])
+@monitoring.FLASK_INPROGRESS_MATCHBOX.track_inprogress()
 def boot_ipxe():
     """
     iPXE
@@ -790,6 +847,7 @@ def boot_ipxe():
         schema:
             type: string
     """
+    monitoring.FLASK_NUM_REQUESTS_MATCHBOX.inc()
     LOGGER.info("%s %s" % (request.method, request.url))
     try:
         flask_uri = APPLICATION.config["API_URI"]
@@ -819,6 +877,7 @@ def boot_ipxe():
 
 
 @APPLICATION.route("/ignition", methods=["GET"])
+@monitoring.FLASK_INPROGRESS_MATCHBOX.track_inprogress()
 def ignition():
     """
     Ignition
@@ -831,6 +890,7 @@ def ignition():
         schema:
             type: dict
     """
+    monitoring.FLASK_NUM_REQUESTS_MATCHBOX.inc()
     matchbox_uri = APPLICATION.config.get("MATCHBOX_URI")
     if matchbox_uri:
         matchbox_resp = requests.get("%s%s" % (matchbox_uri, request.full_path))
@@ -842,6 +902,7 @@ def ignition():
 
 
 @APPLICATION.route("/metadata", methods=["GET"])
+@monitoring.FLASK_INPROGRESS_MATCHBOX.track_inprogress()
 def metadata():
     """
     Metadata
@@ -854,6 +915,7 @@ def metadata():
         schema:
             type: string
     """
+    monitoring.FLASK_NUM_REQUESTS_MATCHBOX.inc()
     matchbox_uri = APPLICATION.config.get("MATCHBOX_URI")
     if matchbox_uri:
         matchbox_resp = requests.get("%s%s" % (matchbox_uri, request.full_path))
@@ -864,7 +926,7 @@ def metadata():
     return Response("matchbox=%s" % matchbox_uri, status=403, mimetype="text/plain")
 
 
-@APP.route('/install-authorization/<string:request_raw_query>')
+@APPLICATION.route('/install-authorization/<string:request_raw_query>')
 def require_install_authorization(request_raw_query):
     """
     Install Authorization
@@ -893,8 +955,9 @@ def require_install_authorization(request_raw_query):
     return Response(response="Granted", status=200)
 
 
-@APP.route('/assets', defaults={'path': ''})
-@APP.route('/assets/<path:path>')
+@APPLICATION.route('/assets', defaults={'path': ''})
+@APPLICATION.route('/assets/<path:path>')
+@monitoring.FLASK_INPROGRESS_MATCHBOX.track_inprogress()
 def assets(path):
     """
     Assets server
@@ -910,6 +973,7 @@ def assets(path):
         schema:
             type: string
     """
+    monitoring.FLASK_NUM_REQUESTS_MATCHBOX.inc()
     LOGGER.info("%s %s" % (request.method, request.url))
     matchbox_uri = APPLICATION.config.get("MATCHBOX_URI")
     if matchbox_uri:
@@ -923,6 +987,7 @@ def assets(path):
 
 
 @APPLICATION.route('/ipxe', methods=['GET'])
+@monitoring.FLASK_INPROGRESS_MATCHBOX.track_inprogress()
 def ipxe():
     """
     iPXE
@@ -939,6 +1004,7 @@ def ipxe():
         schema:
             type: string
     """
+    monitoring.FLASK_NUM_REQUESTS_MATCHBOX.inc()
     LOGGER.info("%s %s" % (request.method, request.url))
     try:
         matchbox_resp = requests.get(
@@ -954,7 +1020,7 @@ def ipxe():
         return "404", 404
 
 
-@APP.errorhandler(404)
+@APPLICATION.errorhandler(404)
 def page_not_found(error):
     return Response("404", status=404, mimetype="text/plain")
 

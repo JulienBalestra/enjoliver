@@ -30,6 +30,7 @@ apply_deps_delay: 60
 gunicorn_worker_type: 'sync'
 gunicorn_workers: 1
 gunicorn_bind: "0.0.0.0:5000"
+prometheus_multiproc_dir: "/tmp/prometheus_multiproc_dir"
 
 #db_path: '/var/lib/enjoliver/enjoliver.sqlite'
 
