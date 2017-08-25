@@ -40,7 +40,7 @@ $(ENV):
 
 pip: $(ENV)
 	$(ENV)/bin/pip3 install -U setuptools
-	$(ENV)/bin/pip3 install -r requirements.txt
+	$(ENV)/bin/pip3 install -Ir requirements.txt
 	$(ENV)/bin/pip3 install py-vendor/ipaddr-py/
 
 acserver:
