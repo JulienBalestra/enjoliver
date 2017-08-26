@@ -1,29 +1,57 @@
-from prometheus_client import Gauge, Counter
+import time
 
-FLASK_INPROGRESS_LIFECYCLE = Gauge("flask_inprogress_requests_lifecycle", "Gauge in progress requests",
-                                   multiprocess_mode='livesum')
-FLASK_NUM_REQUESTS_LIFECYCLE = Counter("flask_num_requests_lifecycle", "Counter of number of requests")
+from flask import request
+from prometheus_client import Counter, Histogram
 
-FLASK_INPROGRESS_HEALTHZ = Gauge("flask_inprogress_requests_healthz", "Gauge in progress requests",
-                                 multiprocess_mode='livesum')
-FLASK_NUM_REQUESTS_HEALTHZ = Counter("flask_num_requests_healthz", "Counter of number of requests")
 
-FLASK_INPROGRESS_DISCOVERY = Gauge("flask_inprogress_requests_discovery", "Gauge in progress requests",
-                                   multiprocess_mode='livesum')
-FLASK_NUM_REQUESTS_DISCOVERY = Counter("flask_num_requests_discovery", "Counter of number of requests")
+def once(__init__):
+    def wrapper(*args, **kwargs):
+        self = args[0]
+        if self._init is True:
+            return
 
-FLASK_INPROGRESS_MATCHBOX = Gauge("flask_inprogress_requests_matchbox", "Gauge in progress requests",
-                                  multiprocess_mode='livesum')
-FLASK_NUM_REQUESTS_MATCHBOX = Counter("flask_num_requests_matchbox", "Counter of number of requests")
+        __init__(*args, **kwargs)
+        self._init = True
 
-FLASK_INPROGRESS_SCHEDULER = Gauge("flask_inprogress_requests_scheduler", "Gauge in progress requests",
-                                   multiprocess_mode='livesum')
-FLASK_NUM_REQUESTS_SCHEDULER = Counter("flask_num_requests_scheduler", "Counter of number of requests")
+    return wrapper
 
-FLASK_NUM_REQUESTS_INSTALL_AUTHORIZATION = Counter("flask_num_requests_authorization", "Counter of number of requests")
 
-FLASK_NUM_500 = Counter("flask_num_500", "Counter of number of requests")
+class FlaskMonitoringComponents:
+    _instances = dict()
+    _init = False
+    __name__ = "FlaskMonitoringComponents"
 
-SMARTDB_NUM_RETRY = Counter("db_num_retry", "Counter of number of retry in db")
-SMARTDB_NUM_CONN_ERROR = Counter("db_num_conn_error", "Counter of number of retry in db")
-SMARTDB_NUM_TRANSACTION = Counter("db_num_transaction", "Counter of number of transaction in db")
+    def __new__(cls, *args, **kwargs):
+        if args[0] in cls._instances:
+            return cls._instances[args[0]]
+
+        o = object.__new__(cls)
+        cls._instances[args[0]] = o
+        return o
+
+    @once
+    def __init__(self, route_name):
+        route_name = route_name[1:].replace("/", "_").replace("&", "-")
+        self.request_latency = Histogram("%s_latency" % route_name, "Gauge in progress requests",
+                                         ['method', 'endpoint'])
+        self.request_count = Counter("%s_requests_count" % route_name, "Counter of number requests done",
+                                     ['method', 'endpoint', 'http_status'])
+        self._route_name = route_name
+
+    @property
+    def route_name(self):
+        return self._route_name
+
+    def __repr__(self):
+        return "<%s(%s)>" % (self.__name__, self.route_name)
+
+    def before(self):
+        if self.route_name != "metrics":
+            request.start_time = time.time()
+
+    def after(self, response):
+        if self.route_name != "metrics":
+            request_latency = time.time() - request.start_time
+            self.request_latency.labels(request.method, request.path).observe(request_latency)
+            self.request_count.labels(request.method, request.path, response.status_code).inc()
+        return response
