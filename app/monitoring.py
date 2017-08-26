@@ -31,7 +31,7 @@ class FlaskMonitoringComponents:
 
     @once
     def __init__(self, route_name):
-        route_name = route_name[1:].replace("/", "_").replace("&", "-")
+        route_name = route_name[1:].replace("/", "_").replace("-", "_")
         self.request_latency = Histogram("%s_latency" % route_name, "Gauge in progress requests",
                                          ['method', 'endpoint'])
         self.request_count = Counter("%s_requests_count" % route_name, "Counter of number requests done",
