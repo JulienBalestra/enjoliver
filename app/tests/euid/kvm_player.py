@@ -2,6 +2,7 @@ import datetime
 import json
 import multiprocessing
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -447,6 +448,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "--cpu",
             "host",
             "--pxe",
+            "--mac=%s" % self.get_mac_addr(name),
             "--disk",
             disk_opt,
             "--os-type=linux",
@@ -456,6 +458,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "--boot=hd,network"
         ]
         return virt_install
+    def get_mac_addr(self,name:str):
+        return "54:52:00:00:00:0" + str(int(re.match('.*-(\d)$',name).group(1)) + 1)
 
     def virsh(self, cmd, assertion=False, v=None):
         ret = subprocess.call(cmd, stdout=v, stderr=v)
