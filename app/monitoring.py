@@ -46,12 +46,10 @@ class FlaskMonitoringComponents:
         return "<%s(%s)>" % (self.__name__, self.route_name)
 
     def before(self):
-        if self.route_name != "metrics":
-            request.start_time = time.time()
+        request.start_time = time.time()
 
     def after(self, response):
-        if self.route_name != "metrics":
-            request_latency = time.time() - request.start_time
-            self.request_latency.labels(request.method, request.path).observe(request_latency)
-            self.request_count.labels(request.method, request.path, response.status_code).inc()
+        request_latency = time.time() - request.start_time
+        self.request_latency.labels(request.method, request.path).observe(request_latency)
+        self.request_count.labels(request.method, request.path, response.status_code).inc()
         return response
