@@ -25,7 +25,7 @@ class TestModelSQLiteMemory(model_player.TestModel):
 
         db_uri = 'sqlite:///:memory:'
 
-        cls.smart = smartdb.SmartClient(db_uri)
+        cls.smart = smartdb.SmartDatabaseClient(db_uri)
         cls.set_up_class_checks(cls.smart, cls.ignition_journal_path)
 
 
@@ -50,7 +50,7 @@ class TestModelSQLiteFS(model_player.TestModel):
         assert os.path.isfile(db) is False
         db_uri = 'sqlite:///%s' % db
 
-        cls.smart = smartdb.SmartClient(db_uri)
+        cls.smart = smartdb.SmartDatabaseClient(db_uri)
         cls.set_up_class_checks(cls.smart, cls.ignition_journal_path)
 
 
@@ -73,7 +73,7 @@ class TestModelCockroach(model_player.TestModel):
             "cockroachdb://root@localhost:26259"
         ]
         db_uri = ",".join(uris)
-        cls.smart = smartdb.SmartClient(db_uri)
+        cls.smart = smartdb.SmartDatabaseClient(db_uri)
         cls.set_up_class_checks(cls.smart, cls.ignition_journal_path)
 
 
@@ -91,5 +91,5 @@ class TestModelPostgresql(model_player.TestModel):
             pass
 
         db_uri = "postgresql://postgres@localhost:5432"
-        cls.smart = smartdb.SmartClient(db_uri)
+        cls.smart = smartdb.SmartDatabaseClient(db_uri)
         cls.set_up_class_checks(cls.smart, cls.ignition_journal_path)

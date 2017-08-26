@@ -12,7 +12,7 @@ import logger
 import sync
 from model import ChassisPort, Chassis, MachineInterface, Machine, MachineDisk, \
     Healthz, Schedule, ScheduleRoles, LifecycleIgnition, LifecycleCoreosInstall, LifecycleRolling
-from smartdb import SmartClient as sc
+from smartdb import SmartDatabaseClient as sc
 
 LOGGER = logger.get_logger(__file__)
 

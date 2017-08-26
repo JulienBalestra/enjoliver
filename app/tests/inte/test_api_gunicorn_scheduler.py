@@ -79,7 +79,7 @@ class TestAPIGunicornScheduler(unittest.TestCase):
         shutil.rmtree(EC.ignition_journal_dir, ignore_errors=True)
 
         cls.clean_sandbox()
-        smart = api.SmartClient(EC.db_uri)
+        smart = api.SmartDatabaseClient(EC.db_uri)
         api.SMART = smart
         api.SMART.create_base()
 

@@ -19,34 +19,34 @@ class TestModel(unittest.TestCase):
         if os.path.isfile(ec.db_path):
             os.remove(ec.db_path)
 
-        smartdb.SmartClient.engines = []
+        smartdb.SmartDatabaseClient.engines = []
 
     # @unittest.skip("")
     def test_00(self):
-        ss = smartdb.SmartClient("sqlite:////var/lib/enjoliver/enjoliver.sqlite")
+        ss = smartdb.SmartDatabaseClient("sqlite:////var/lib/enjoliver/enjoliver.sqlite")
         self.assertEqual(smartdb._SingleEndpoint, type(ss))
         self.assertEqual(1, len(ss.engines))
 
     def test_01(self):
-        ss = smartdb.SmartClient("cockroachdb://root@localhost:26257")
+        ss = smartdb.SmartDatabaseClient("cockroachdb://root@localhost:26257")
         self.assertEqual(smartdb._SingleEndpoint, type(ss))
         self.assertEqual(1, len(ss.engines))
 
     def test_02(self):
-        ss = smartdb.SmartClient(
+        ss = smartdb.SmartDatabaseClient(
             "cockroachdb://root@1.1.1.1:26257,cockroachdb://root@1.1.1.2:26257,cockroachdb://root@1.1.1.3:26257")
         self.assertEqual(smartdb._MultipleEndpoints, type(ss))
         self.assertEqual(3, len(ss.engines))
 
     def test_03(self):
-        ss = smartdb.SmartClient("sqlite:///%s/dbs/smart.sqlite" % (self.unit_path))
+        ss = smartdb.SmartDatabaseClient("sqlite:///%s/dbs/smart.sqlite" % (self.unit_path))
         self.assertEqual(smartdb._SingleEndpoint, type(ss))
         self.assertEqual(1, len(ss.engines))
         ss.create_base()
         ss.connected_cockroach_session()
 
     def test_04(self):
-        ss = smartdb.SmartClient("cockroachdb://root@127.0.0.1:16257")
+        ss = smartdb.SmartDatabaseClient("cockroachdb://root@127.0.0.1:16257")
         self.assertEqual(smartdb._SingleEndpoint, type(ss))
         self.assertEqual(1, len(ss.engines))
         with self.assertRaises(ConnectionError):
@@ -56,7 +56,7 @@ class TestModel(unittest.TestCase):
             pass
 
     def test_05(self):
-        ss = smartdb.SmartClient("cockroachdb://root@127.0.0.1:16257,cockroachdb://root@127.0.1.1:16257")
+        ss = smartdb.SmartDatabaseClient("cockroachdb://root@127.0.0.1:16257,cockroachdb://root@127.0.1.1:16257")
         self.assertEqual(smartdb._MultipleEndpoints, type(ss))
         self.assertEqual(2, len(ss.engines))
         with self.assertRaises(ConnectionError):

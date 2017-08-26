@@ -12,9 +12,10 @@ from sqlalchemy.orm import sessionmaker, Session
 
 import logger
 import model
+import monitoring
 
 
-class SmartClient(object):
+class SmartDatabaseClient(object):
     log = logger.get_logger(__file__)
 
     engines = []
@@ -48,6 +49,7 @@ class SmartClient(object):
             self.new_session = self.lazy_session
         else:
             self.new_session = self.connected_cockroach_session
+        self.monitor = monitoring.DatabaseMonitoringComponents("db")
 
     def _create_engines(self, uri_list: list):
         for single_uri in uri_list:
@@ -74,11 +76,12 @@ class SmartClient(object):
 
     @contextmanager
     def new_session_maker(self, bind):
-        sm = sessionmaker(bind)
-        try:
-            yield sm
-        finally:
-            sm.close_all()
+        with self.monitor.observe_session(bind.url):
+            sm = sessionmaker(bind)
+            try:
+                yield sm
+            finally:
+                sm.close_all()
 
     @contextmanager
     def new_session(self):
@@ -108,6 +111,7 @@ class SmartClient(object):
                         self.log.info("moving reliable %s to index 0" % engine.url)
                         self.engines[0], self.engines[i] = self.engines[i], self.engines[0]
                     return conn
+                self.monitor.connection_error(engine.url)
                 self.log.warning("%d/%d could not connect to %s" % (i + 1, len(self.engines), engine.url))
             except Exception as e:
                 self.log.warning("%d/%d could not connect to %s %s" % (i + 1, len(self.engines), engine.url, e))
@@ -123,12 +127,15 @@ class SmartClient(object):
             conn.close()
 
 
-class _SingleEndpoint(SmartClient):
+class _SingleEndpoint(SmartDatabaseClient):
     pass
 
 
-class _MultipleEndpoints(SmartClient):
+class _MultipleEndpoints(SmartDatabaseClient):
     pass
+
+
+MONITOR_COCKROACHDB = monitoring.CockroachDatabase()
 
 
 def cockroach_transaction(f):
@@ -140,5 +147,6 @@ def cockroach_transaction(f):
                 if not isinstance(e.orig, psycopg2.OperationalError) and \
                         not e.orig.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
                     raise
+                MONITOR_COCKROACHDB.transaction_retry_inc()
 
     return run_transaction

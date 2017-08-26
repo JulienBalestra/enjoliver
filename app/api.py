@@ -15,7 +15,7 @@ import monitoring
 import ops
 import smartdb
 from configs import EnjoliverConfig
-from smartdb import SmartClient
+from smartdb import SmartDatabaseClient
 
 EC = EnjoliverConfig(importer=__file__)
 
@@ -51,10 +51,10 @@ APPLICATION.config["BACKUP_BUCKET_NAME"] = EC.backup_bucket_name
 APPLICATION.config["BACKUP_BUCKET_DIRECTORY"] = EC.backup_bucket_directory
 APPLICATION.config["BACKUP_LOCK_KEY"] = EC.backup_lock_key
 
-SMART = SmartClient
+SMART = SmartDatabaseClient
 
 if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", ""):
-    SMART = SmartClient(APPLICATION.config["DB_URI"])
+    SMART = SmartDatabaseClient(APPLICATION.config["DB_URI"])
 
     if "gunicorn" in os.getenv("SERVER_SOFTWARE", "") and os.getenv('prometheus_multiproc_dir'):
         @APPLICATION.route("/metrics", methods=["GET"])

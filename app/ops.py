@@ -93,7 +93,7 @@ def backup_sqlite(cache, application):
     return jsonify(resp)
 
 
-def healthz(application, smart: smartdb.SmartClient, request):
+def healthz(application, smart: smartdb.SmartDatabaseClient, request):
     """
     Query all services and return the status
     :return: json

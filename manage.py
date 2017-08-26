@@ -28,7 +28,7 @@ def init_db(ec):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-    smart = smartdb.SmartClient(ec.db_uri)
+    smart = smartdb.SmartDatabaseClient(ec.db_uri)
     tries = 60
     for i in range(tries):
         try:

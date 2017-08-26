@@ -46,7 +46,7 @@ class TestEnjoliverCockroach(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.smart = smartdb.SmartClient(EC.db_uri)
+        cls.smart = smartdb.SmartDatabaseClient(EC.db_uri)
         cls.p_matchbox = Process(target=TestEnjoliverCockroach.process_target_matchbox)
         cls.p_api = Process(target=TestEnjoliverCockroach.process_target_api)
 

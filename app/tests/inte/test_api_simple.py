@@ -51,7 +51,7 @@ class TestAPI(unittest.TestCase):
             os.remove(ec.db_path)
         except OSError:
             pass
-        smart = api.SmartClient(ec.db_uri)
+        smart = api.SmartDatabaseClient(ec.db_uri)
         smart.create_base()
         api.SMART = smart
         api.CACHE.clear()
