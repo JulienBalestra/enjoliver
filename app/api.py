@@ -67,16 +67,26 @@ if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", ""):
 
 def before_request():
     try:
-        monitoring.FlaskMonitoringComponents(request.url_rule.rule).before()
+        # don't monitor /metrics
+        if request.url_rule.rule != "/metrics":
+            monitoring.FlaskMonitoringComponents(request.url_rule.endpoint).before()
+    except AttributeError:
+        # 404
+        pass
     except Exception as e:
-        LOGGER.error("fail to monitor request: %s: %s" % (e, request.path))
+        LOGGER.error("monitor request: type(%s) %s: %s" % (type(e), e, request.path))
 
 
 def after_request(response):
     try:
-        monitoring.FlaskMonitoringComponents(request.url_rule.rule).after(response)
+        # don't monitor /metrics
+        if request.url_rule.rule != "/metrics":
+            monitoring.FlaskMonitoringComponents(request.url_rule.endpoint).after(response)
+    except AttributeError:
+        # 404
+        pass
     except Exception as e:
-        LOGGER.error("fail to monitor request: %s: %s" % (e, request.path))
+        LOGGER.error("monitor request: type(%s) %s: %s" % (type(e), e, request.path))
     finally:
         return response
 
