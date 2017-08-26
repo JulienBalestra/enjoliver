@@ -45,7 +45,7 @@ class TestAPI(unittest.TestCase):
             }}
 
         result = self.app.get('/healthz')
-        self.assertEqual(result.status_code, 200)
+        self.assertEqual(result.status_code, 503)
         content = json.loads(result.data.decode())
         self.assertEqual(content, expect)
 

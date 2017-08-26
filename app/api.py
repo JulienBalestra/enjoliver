@@ -410,7 +410,7 @@ def healthz():
             type: dict
     """
     resp = ops.healthz(APPLICATION, SMART, request)
-    return jsonify(resp)
+    return jsonify(resp), 503 if resp["global"] is False else 200
 
 
 @APPLICATION.route('/discovery', methods=['POST'])

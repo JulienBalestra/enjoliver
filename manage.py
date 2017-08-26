@@ -17,7 +17,8 @@ for p in os.listdir(os.path.join(PROJECT_PATH, "env/lib/")):
 from app import (
     configs,
     smartdb,
-    crud
+    crud,
+    gunicorn_conf
 )
 
 
@@ -66,6 +67,8 @@ def gunicorn(ec):
         ec.logging_level.lower(),
         "-w",
         "%s" % ec.gunicorn_workers,
+        "-c",
+        gunicorn_conf.__file__
     ]
     print("exec[%s] -> %s\n" % (os.getpid(), " ".join(cmd)))
     with open(ec.gunicorn_pid_file, "w") as f:
