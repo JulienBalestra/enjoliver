@@ -54,8 +54,6 @@ class EnjoliverConfig(object):
         self.gunicorn_workers = self.config_override("gunicorn_workers", 1)
         self.gunicorn_worker_type = self.config_override("gunicorn_worker_type", "sync")
         self.gunicorn_bind = self.config_override("gunicorn_bind", "0.0.0.0:5000")
-        self.prometheus_multiproc_dir = self.config_override("prometheus_multiproc_dir",
-                                                             "/tmp/prometheus_multiproc_dir")
 
         # Bootcfg aka CoreOS Baremetal aka Matchbox
         self.matchbox_uri = self.config_override("matchbox_uri", "http://127.0.0.1:8080")
@@ -79,9 +77,9 @@ class EnjoliverConfig(object):
                 os.path.abspath(
                     __file__)))
         self.werkzeug_fs_cache_dir = self.config_override(
-            "werkzeug_fs_cache_dir", '%s/werkzeug_cache' % os.path.dirname(
-                os.path.abspath(
-                    __file__)))
+            "werkzeug_fs_cache_dir", '%s/werkzeug_cache' % os.path.dirname(os.path.abspath(__file__)))
+        self.prometheus_multiproc_dir = self.config_override(
+            "prometheus_multiproc_dir", '%s/prometheus_multiproc_dir' % os.path.dirname(os.path.abspath(__file__)))
 
         # S3
         self.aws_id = self.config_override("aws_id", os.getenv("AWS_ACCESS_KEY_ID", None))

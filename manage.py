@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import argparse
+import multiprocessing
 import os
+import signal
 
 import sys
 import time
@@ -23,6 +25,7 @@ from app import (
 
 
 def init_db(ec):
+    print("initializing db")
     if "sqlite://" in ec.db_uri:
         directory = os.path.dirname(ec.db_path)
         if not os.path.exists(directory):
@@ -70,17 +73,34 @@ def gunicorn(ec):
         "-c",
         gunicorn_conf.__file__
     ]
-    print("exec[%s] -> %s\n" % (os.getpid(), " ".join(cmd)))
-    with open(ec.gunicorn_pid_file, "w") as f:
-        f.write("%d" % os.getpid())
-    if not os.environ.get('prometheus_multiproc_dir'):
+    if not os.getenv('prometheus_multiproc_dir', None):
         os.environ["prometheus_multiproc_dir"] = ec.prometheus_multiproc_dir
-    try:
-        for f in os.listdir(ec.prometheus_multiproc_dir):
-            os.remove(os.path.join(ec.prometheus_multiproc_dir, f))
-    except FileNotFoundError:
-        os.makedirs(ec.prometheus_multiproc_dir)
-    os.execve(cmd[0], cmd, os.environ)
+    fs_gunicorn_cleaning()
+
+    p = multiprocessing.Process(target=lambda: os.execve(cmd[0], cmd, os.environ))
+
+    def stop(signum, frame):
+        print("terminating %d" % p.pid)
+        p.terminate()
+
+    print("starting gunicorn")
+    p.start()
+    with open(ec.gunicorn_pid_file, "w") as f:
+        f.write("%d" % p.pid)
+    for sig in [signal.SIGINT, signal.SIGTERM]:
+        signal.signal(sig, stop)
+    p.join()
+    fs_gunicorn_cleaning()
+
+
+def fs_gunicorn_cleaning():
+    for directory in [ec.prometheus_multiproc_dir, ec.werkzeug_fs_cache_dir]:
+        print("cleaning %s" % directory)
+        try:
+            for item in os.listdir(directory):
+                os.remove(os.path.join(directory, item))
+        except FileNotFoundError:
+            os.makedirs(directory)
 
 
 def matchbox(ec):

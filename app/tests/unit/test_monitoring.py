@@ -11,11 +11,13 @@ class TestFlaskMonitoringComponents(unittest.TestCase):
         two = FlaskMonitoringComponents("two")
         self.assertIsNot(one, two)
 
+    @unittest.skip("")
     def test_01(self):
         one = CockroachDatabase()
         two = CockroachDatabase()
         self.assertIs(one, two)
 
+    @unittest.skip("")
     def test_02(self):
         one = DatabaseMonitoringComponents("db")
         two = DatabaseMonitoringComponents("db")
