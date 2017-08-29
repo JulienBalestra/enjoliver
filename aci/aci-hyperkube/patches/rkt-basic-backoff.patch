@@ -1,0 +1,121 @@
+From 5a7a5743b1c39672650615aa5935eafd61f719dd Mon Sep 17 00:00:00 2001
+From: JulienBalestra <julien.balestra@gmail.com>
+Date: Mon, 28 Aug 2017 16:21:54 +0200
+Subject: [PATCH] Backoff sleep for RunPod
+
+---
+ pkg/kubelet/rkt/rkt.go | 56 ++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 54 insertions(+), 2 deletions(-)
+
+diff --git a/pkg/kubelet/rkt/rkt.go b/pkg/kubelet/rkt/rkt.go
+index d16c92d..e1e6fd2 100644
+--- a/pkg/kubelet/rkt/rkt.go
++++ b/pkg/kubelet/rkt/rkt.go
+@@ -66,6 +66,7 @@ import (
+ 	"k8s.io/kubernetes/pkg/util/selinux"
+ 	utilstrings "k8s.io/kubernetes/pkg/util/strings"
+ 	"k8s.io/kubernetes/pkg/util/term"
++	"k8s.io/apimachinery/pkg/util/rand"
+ )
+ 
+ const (
+@@ -140,8 +141,11 @@ const (
+ 	// constant recognizable.
+ 	defaultRequestTimeout = 2*time.Minute - 1*time.Second
+ 
+-	etcHostsPath      = "/etc/hosts"
+-	etcResolvConfPath = "/etc/resolv.conf"
++	etcHostsPath           = "/etc/hosts"
++	etcResolvConfPath      = "/etc/resolv.conf"
++	backOffMaxCalledStored = 4
++	backOffSleepCoeff      = 10
++	backOffTrigger         = backOffSleepCoeff * backOffMaxCalledStored * 2
+ )
+ 
+ // Runtime implements the Containerruntime for rkt. The implementation
+@@ -185,6 +189,9 @@ type Runtime struct {
+ 	requestTimeout time.Duration
+ 
+ 	unitGetter unitServiceGetter
++
++	RunPodCalled     map[string][]int64
++	RunPodCalledLock sync.RWMutex
+ }
+ 
+ // Field of the X-Kubernetes directive of a systemd service file
+@@ -275,6 +282,8 @@ func New(
+ 		requestTimeout = defaultRequestTimeout
+ 	}
+ 
++	runPodCalled := make(map[string][]int64)
++
+ 	rkt := &Runtime{
+ 		os:                  kubecontainer.RealOS{},
+ 		systemd:             systemd,
+@@ -292,6 +301,7 @@ func New(
+ 		touchPath:           touchPath,
+ 		nsenterPath:         nsenterPath,
+ 		requestTimeout:      requestTimeout,
++		RunPodCalled:        runPodCalled,
+ 	}
+ 
+ 	rkt.config, err = rkt.getConfig(rkt.config)
+@@ -1356,6 +1366,46 @@ func createHostPathVolumes(pod *v1.Pod) (err error) {
+ 	return nil
+ }
+ 
++func (r *Runtime) basicBackoff(pod *v1.Pod) {
++	glog.V(4).Infof("backoff checks")
++	now := time.Now().Unix()
++	r.RunPodCalledLock.Lock()
++	if lastCalled, ok := r.RunPodCalled[pod.Name]; ok {
++		var t int64
++		var empty int64
++		for _, elt := range lastCalled {
++			if elt == 0 {
++				empty++
++			}
++		}
++
++		t = lastCalled[backOffMaxCalledStored-1]
++		// FIFO
++		for i := backOffMaxCalledStored - 1; i > 0; i-- {
++			t += lastCalled[i]
++			lastCalled[i] = lastCalled[i-1]
++		}
++		lastCalled[0] = now
++		r.RunPodCalledLock.Unlock()
++
++		t = now - (t / backOffMaxCalledStored)
++
++		glog.V(4).Infof("backoff value for %s: %d, RunPod still runnable without backoff: %d/%d", pod.Name, t / (backOffMaxCalledStored - empty), empty, backOffMaxCalledStored)
++		if empty == 0 && t < backOffTrigger {
++			toWait := (backOffTrigger - t) + int64(rand.Intn(backOffSleepCoeff))
++			glog.Warningf("backoff triggered for %s: %d < %d, holding %d seconds", pod.Name, t, backOffTrigger, toWait)
++			time.Sleep(time.Second * time.Duration(toWait))
++			glog.Warningf("backoff for %s release the hold of %d seconds", pod.Name, toWait)
++		}
++		return
++	}
++
++	glog.V(4).Infof("initializing backoff for %s", pod.Name)
++	r.RunPodCalled[pod.Name] = make([]int64, backOffMaxCalledStored)
++	r.RunPodCalled[pod.Name][0] = now
++	r.RunPodCalledLock.Unlock()
++}
++
+ // RunPod first creates the unit file for a pod, and then
+ // starts the unit over d-bus.
+ func (r *Runtime) RunPod(pod *v1.Pod, pullSecrets []v1.Secret) error {
+@@ -1365,6 +1415,8 @@ func (r *Runtime) RunPod(pod *v1.Pod, pullSecrets []v1.Secret) error {
+ 	var networkNamespace kubecontainer.ContainerID
+ 	var podIP string
+ 
++	r.basicBackoff(pod)
++
+ 	err = createHostPathVolumes(pod)
+ 	if err != nil {
+ 		return err
+-- 
+2.7.4
+

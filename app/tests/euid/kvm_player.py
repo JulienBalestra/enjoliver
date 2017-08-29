@@ -95,7 +95,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     rkt_bin = "%s/rkt/rkt" % runtime_path
     helm_bin = "%s/helm/helm" % runtime_path
     matchbox_bin = "%s/matchbox/matchbox" % runtime_path
-    acserver_bin = "%s/acserver/acserver" % runtime_path
+    acserver_bin = "%s/run_acserver.py" % runtime_path
 
     ssh_private_key = os.path.join(tests_path, "testing.id_rsa")
     test_certs_path = "%s/test_certs" % tests_path
@@ -155,7 +155,6 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
     def process_target_acserver():
         cmd = [
             "%s" % KernelVirtualMachinePlayer.acserver_bin,
-            "%s/ac-config.yml" % KernelVirtualMachinePlayer.runtime_path
         ]
         display("PID  -> %s\n"
                 "exec -> %s" % (os.getpid(), " ".join(cmd)))
@@ -356,9 +355,9 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         cls.p_acserver = multiprocessing.Process(target=KernelVirtualMachinePlayer.process_target_acserver,
                                                  name="acserver")
         cls.p_acserver.start()
-        time.sleep(0.5)
-        assert cls.p_acserver.is_alive() is True
-        cls.p_list.append(cls.p_acserver)
+        time.sleep(1)
+        if cls.p_acserver.is_alive() is True:
+            cls.p_list.append(cls.p_acserver)
 
     @classmethod
     def set_lldp(cls):
