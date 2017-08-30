@@ -989,6 +989,9 @@ networkd:
         [NetDev]
         Name=bond0
         Kind=bond
+        Mode=802.3ad
+        LACPTransmitRate=fast
+        MIIMonitorSec=100s
 
     - name: 00-vbond0.netdev
       contents: |

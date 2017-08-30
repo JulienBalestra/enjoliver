@@ -447,7 +447,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "--cpu",
             "host",
             "--pxe",
-            "--mac=%s" % self.get_mac_addr(name),
+            "--mac=%s" % self.generate_mac_from_name(name),
             "--disk",
             disk_opt,
             "--os-type=linux",
@@ -457,10 +457,17 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "--boot=hd,network"
         ]
         return virt_install
-    def get_mac_addr(self,name:str):
-        return "54:52:00:00:00:0" + str(int(re.match('.*-(\d)$',name).group(1)) + 1)
 
-    def virsh(self, cmd, assertion=False, v=None):
+    @staticmethod
+    def generate_mac_from_name(name: str):
+        """
+        :param name: virtual machine name
+        :return:
+        """
+        return "54:52:00:00:00:%02d" % (int(re.match('.*-(\d)$', name).group(1)) + 1)
+
+    @staticmethod
+    def virsh(cmd, assertion=False, v=None):
         ret = subprocess.call(cmd, stdout=v, stderr=v)
         if assertion is True and ret != 0:
             raise RuntimeError("\"%s\"" % " ".join(cmd))
