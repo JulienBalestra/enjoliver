@@ -4,6 +4,16 @@
 	"GodepVersion": "v79",
 	"Deps": [
 		{
+			"ImportPath": "github.com/coreos/go-systemd/dbus",
+			"Comment": "v15",
+			"Rev": "d2196463941895ee908e13531a23a39feb9e1243"
+		},
+		{
+			"ImportPath": "github.com/godbus/dbus",
+			"Comment": "v4.0.0-45-g7f21b8d",
+			"Rev": "7f21b8d03d62063e35a1088c6d675e7de3f4fe0d"
+		},
+		{
 			"ImportPath": "github.com/golang/glog",
 			"Rev": "44145f04b68cf362d9c4df2182967c2275eaefed"
 		},

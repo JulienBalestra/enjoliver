@@ -10,6 +10,7 @@ import (
 
 const (
 	ControlPlaneFlagName = "control-plane"
+	RktFetchInsecure     = "rkt-fetch-insecure"
 )
 
 type Runtime struct {
@@ -17,8 +18,9 @@ type Runtime struct {
 }
 
 func main() {
-	glog.V(2).Infof("starting node-agent")
+	glog.Infof("starting node-agent")
 	flag.Bool(ControlPlaneFlagName, false, "Is control-plane node")
+	flag.Bool(RktFetchInsecure, true, "rkt fetch --insecure-options=all")
 
 	flag.Parse()
 	flag.Lookup("alsologtostderr").Value.Set("true")
@@ -33,5 +35,7 @@ func main() {
 	http.DefaultClient.Timeout = time.Second
 	http.HandleFunc("/healthz", run.handlerHealthz)
 	http.HandleFunc("/version", run.handlerVersion)
+	http.HandleFunc("/hack/rkt/fetch", run.handlerHackRktFetch)
+	http.HandleFunc("/hack/systemd/restart/kubernetes", run.handlerHackSystemdRestartKubernetesStack)
 	glog.Fatal(http.ListenAndServe("0.0.0.0:8000", nil))
 }
