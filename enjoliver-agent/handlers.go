@@ -2,9 +2,10 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/golang/glog"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/golang/glog"
 )
 
 func (run *Runtime) handlerHealthz(w http.ResponseWriter, r *http.Request) {

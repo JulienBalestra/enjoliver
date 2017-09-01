@@ -15,6 +15,8 @@ const (
 
 type Runtime struct {
 	HttpLivenessProbes []HttpLivenessProbe
+	LocksmithEndpoint  string
+	LocksmithLock      string
 }
 
 func main() {
@@ -31,8 +33,18 @@ func main() {
 		os.Exit(2)
 	}
 
-	run := &Runtime{p}
-	http.DefaultClient.Timeout = time.Second
+	locksmithEndpoint, locksmithLockName, err := getLocksmithConfig(p)
+	if err != nil {
+		glog.Errorf("fail to get locksmith endpoint in probes: %s", err)
+		os.Exit(3)
+	}
+
+	run := &Runtime{
+		p,
+		locksmithEndpoint,
+		locksmithLockName,
+	}
+	http.DefaultClient.Timeout = time.Second * 2
 	http.HandleFunc("/healthz", run.handlerHealthz)
 	http.HandleFunc("/version", run.handlerVersion)
 	http.HandleFunc("/hack/rkt/fetch", run.handlerHackRktFetch)

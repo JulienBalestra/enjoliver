@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/golang/glog"
 	"os/exec"
 	"strings"
+
+	"github.com/golang/glog"
 )
 
 type ExecForVersion struct {

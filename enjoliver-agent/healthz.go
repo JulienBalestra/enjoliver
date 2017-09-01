@@ -1,14 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"github.com/golang/glog"
 	"net/http"
 	"sync"
+	"time"
+
+	"github.com/golang/glog"
 	rktapi "github.com/rkt/rkt/api/v1alpha"
 	"google.golang.org/grpc"
-	"context"
-	"time"
 )
 
 const (

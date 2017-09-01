@@ -3,16 +3,20 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/golang/glog"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/golang/glog"
 )
 
 const (
-	etcdLivenessPath       = "/health"
-	kubernetesLivenessPath = "/healthz"
-	vaultLivenessPath      = "/v1/sys/health"
+	etcdLivenessPath         = "/health"
+	kubernetesLivenessPath   = "/healthz"
+	vaultLivenessPath        = "/v1/sys/health"
+	locksmithEtcd            = "FleetEtcdClient"
+	locksmithRawQueryEnvName = "REQUEST_RAW_QUERY"
+	locksmithSuffix          = "EnjoliverAgent"
 )
 
 func getPortFromEnv(key string) (int, error) {
@@ -25,10 +29,11 @@ func getPortFromEnv(key string) (int, error) {
 }
 
 type HttpLivenessProbe struct {
-	Name string
-	Path string
-	Port int
-	Url  string
+	Name     string
+	Path     string
+	Port     int
+	Url      string
+	Endpoint string
 }
 
 func formatProbeName(envPortName string) string {
@@ -55,7 +60,8 @@ func constructLivenessProbe(envPortName string, path string) (HttpLivenessProbe,
 
 	probe.Name = formatProbeName(envPortName)
 	probe.Path = path
-	probe.Url = fmt.Sprintf("http://127.0.0.1:%d%s", probe.Port, probe.Path)
+	probe.Endpoint = fmt.Sprintf("http://127.0.0.1:%d", probe.Port)
+	probe.Url = fmt.Sprintf("%s%s", probe.Endpoint, probe.Path)
 	return probe, nil
 }
 
@@ -86,4 +92,27 @@ func getHttpLivenessProbesToQuery() ([]HttpLivenessProbe, error) {
 	}
 
 	return livenessProbes, nil
+}
+
+// from environment file (/etc/metadata.env) get the RAW QUERY
+func getLocksmithConfig(livenessProbes []HttpLivenessProbe) (string, string, error) {
+	rawQuery := os.Getenv(locksmithRawQueryEnvName)
+	if rawQuery == "" {
+		errMsg := fmt.Sprintf("fail to get ENV: %s", locksmithRawQueryEnvName)
+		glog.Errorf(errMsg)
+		return "", "", fmt.Errorf(errMsg)
+	}
+	// add a suffix to the raw query to avoid unlocking by lifecycle process
+	rawQuery = fmt.Sprintf("%s-%s", rawQuery, locksmithSuffix)
+
+	for _, p := range livenessProbes {
+		if p.Name == locksmithEtcd {
+			glog.V(4).Infof("locksmith endpoint %s is %s", locksmithEtcd, p.Endpoint)
+			return p.Endpoint, rawQuery, nil
+		}
+	}
+
+	errMsg := fmt.Sprintf("fail to find locksmith endpoint %s in probes", locksmithEtcd)
+	glog.Errorf(errMsg)
+	return "", "", fmt.Errorf(errMsg)
 }

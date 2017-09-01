@@ -2,9 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/coreos/go-systemd/dbus"
-	"github.com/golang/glog"
+	"os/exec"
+	"strings"
 	"time"
+
+	dbus "github.com/coreos/go-systemd/dbus"
+	"github.com/golang/glog"
 )
 
 var k8s_units = []string{"kubelet.service", "rkt-api.service", "kube-apiserver.service", "etcd3@kubernetes.service"}
@@ -99,14 +102,50 @@ func restartSystemdKubernetesStack() error {
 	return nil
 }
 
-func (run *Runtime) RestartKubernetes() error {
+// action should be unlock, lock
+func (run *Runtime) locksmithAction(action string) error {
+	commandLine := []string{"locksmithctl", "-endpoint", run.LocksmithEndpoint, action, run.LocksmithLock}
+	glog.V(2).Infof("running %q", strings.Join(commandLine, " "))
+	cmd := exec.Command(commandLine[0], commandLine[1:]...)
+	b, err := cmd.CombinedOutput()
+	if err != nil {
+		glog.Errorf("fail to run %s: %s %s", strings.Join(commandLine, " "), err, string(b))
+		return err
+	}
+	glog.V(3).Infof("successfully run %q: %s", strings.Join(commandLine, " "), string(b))
+	return nil
+}
 
-	//TODO make an etcd lock
-	err := restartSystemdKubernetesStack()
+func (run *Runtime) RestartKubernetes() error {
+	const maxLockTry = 10
+	var err error
+
+	// if it's self locked and not released
+	run.locksmithAction("unlock")
+
+	for i := 0; i < maxLockTry; i++ {
+		err = run.locksmithAction("lock")
+		if err != nil {
+			glog.Warningf("%d/%d fail to take lock %s", i, maxLockTry, err)
+			time.Sleep(time.Millisecond * (200 * time.Duration(i)))
+		}
+	}
+
+	if err != nil {
+		glog.Errorf("fail to take lock %s", err)
+		return err
+	}
+
+	err = restartSystemdKubernetesStack()
 	if err != nil {
 		glog.Errorf("fail to restart units", err)
 		return err
 	}
 
+	err = run.locksmithAction("unlock")
+	if err != nil {
+		glog.Errorf("fail to release the lock: %s", err)
+		return err
+	}
 	return nil
 }

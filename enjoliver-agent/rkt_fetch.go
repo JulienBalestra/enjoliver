@@ -3,11 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/golang/glog"
 	"io/ioutil"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/golang/glog"
 )
 
 const insecure_options = "--insecure-options=all"
