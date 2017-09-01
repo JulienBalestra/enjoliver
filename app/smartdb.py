@@ -6,7 +6,6 @@ from contextlib import contextmanager
 import psycopg2
 import psycopg2.errorcodes
 from sqlalchemy import create_engine
-from sqlalchemy import text
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.orm import sessionmaker, Session
 
@@ -23,12 +22,27 @@ class SmartDatabaseClient(object):
 
     @staticmethod
     def get_bool_by_session(session: Session, wanted: bool):
+        """
+        Hack to fix the migration from SQLAlchemy dialect to Raw SQL
+        TODO fix this
+        :param session:
+        :param wanted:
+        :return:
+        """
         if session.bind.dialect.name == "cockroachdb":
             return "TRUE" if wanted is True else "FALSE"
         return "1" if wanted is True else "0"
 
     @staticmethod
     def get_select_by_session(session: Session, alias: str, key: str):
+        """
+        Hack to fix the migration from SQLAlchemy dialect to Raw SQL
+        Sometimes it doesn't works with SQLite
+        TODO fix this
+        :param session:
+        :param wanted:
+        :return:
+        """
         if session.bind.dialect.name == "cockroachdb":
             return key
         return "%s.%s" % (alias, key)
@@ -49,7 +63,6 @@ class SmartDatabaseClient(object):
             self.new_session = self.lazy_session
         else:
             self.new_session = self.connected_cockroach_session
-        self.monitor = monitoring.DatabaseMonitoringComponents("db")
 
     def _create_engines(self, uri_list: list):
         for single_uri in uri_list:
@@ -60,13 +73,11 @@ class SmartDatabaseClient(object):
         self.log.info("total: %d" % len(self.engines))
 
     @contextmanager
-    def connected_cockroach_session(self, snap=False):
+    def connected_cockroach_session(self):
         conn = self.get_engine_connection()
         try:
             with self.new_session_maker(conn) as sm:
                 session = sm()
-                if isinstance(self, _MultipleEndpoints) and snap:
-                    session.execute(text("SET TRANSACTION ISOLATION LEVEL SNAPSHOT"))
                 try:
                     yield session
                 finally:
@@ -76,19 +87,18 @@ class SmartDatabaseClient(object):
 
     @contextmanager
     def new_session_maker(self, bind):
-        with self.monitor.observe_session(bind.url):
-            sm = sessionmaker(bind)
-            try:
-                yield sm
-            finally:
-                sm.close_all()
+        sm = sessionmaker(bind)
+        try:
+            yield sm
+        finally:
+            sm.close_all()
 
     @contextmanager
     def new_session(self):
         raise NotImplementedError
 
     @contextmanager
-    def lazy_session(self, snap=False):
+    def lazy_session(self):
         if not self.lazy_engine:
             self.lazy_engine = self.engines[0]
         with self.new_session_maker(self.lazy_engine) as sm:
@@ -111,7 +121,6 @@ class SmartDatabaseClient(object):
                         self.log.info("moving reliable %s to index 0" % engine.url)
                         self.engines[0], self.engines[i] = self.engines[i], self.engines[0]
                     return conn
-                self.monitor.connection_error(engine.url)
                 self.log.warning("%d/%d could not connect to %s" % (i + 1, len(self.engines), engine.url))
             except Exception as e:
                 self.log.warning("%d/%d could not connect to %s %s" % (i + 1, len(self.engines), engine.url, e))
@@ -135,18 +144,18 @@ class _MultipleEndpoints(SmartDatabaseClient):
     pass
 
 
-MONITOR_COCKROACHDB = monitoring.CockroachDatabase()
+MONITOR_COCKROACHDB = monitoring.DatabaseMonitoring()
 
 
 def cockroach_transaction(f):
-    def run_transaction(*args, **kwargs):
+    def run_transaction(caller):
         while True:
             try:
-                return f(*args, **kwargs)
+                return f()
             except DatabaseError as e:
                 if not isinstance(e.orig, psycopg2.OperationalError) and \
                         not e.orig.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
                     raise
-                MONITOR_COCKROACHDB.transaction_retry_inc()
+                MONITOR_COCKROACHDB.retry_count.labels(caller).inc()
 
     return run_transaction

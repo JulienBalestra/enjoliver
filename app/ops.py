@@ -117,12 +117,12 @@ def healthz(application, smart: smartdb.SmartDatabaseClient, request):
             LOGGER.error(e)
 
     @smartdb.cockroach_transaction
-    def op():
-        with smart.new_session(snap=True) as session:
+    def op(caller="/healthz"):
+        with smart.new_session() as session:
             return crud.health_check(session, ts=time.time(), who=request.remote_addr)
 
     try:
-        status["db"] = op()
+        status["db"] = op("/healthz")
         if len(smart.engines) > 1:
             status["dbs"] = smart.engine_urls
     except Exception as e:

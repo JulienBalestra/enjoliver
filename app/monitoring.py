@@ -1,8 +1,10 @@
-import time
+import os
 from contextlib import contextmanager
 
-from flask import request
-from prometheus_client import Counter, Histogram
+import sys
+import time
+from flask import request, Flask, Response, g
+from prometheus_client import Counter, Histogram, CollectorRegistry, multiprocess, generate_latest, CONTENT_TYPE_LATEST
 
 
 def once(__init__):
@@ -17,91 +19,7 @@ def once(__init__):
     return wrapper
 
 
-class FlaskMonitoringComponents:
-    _instances = dict()
-    _init = False
-
-    def __new__(cls, *args, **kwargs):
-        if args[0] in cls._instances:
-            return cls._instances[args[0]]
-
-        o = object.__new__(cls)
-        cls._instances[args[0]] = o
-        return o
-
-    @once
-    def __init__(self, endpoint: str):
-        self._endpoint = endpoint
-        self.request_latency = Histogram("%s_latency" % self.endpoint, "Histogram of request latency",
-                                         ['method', 'endpoint'])
-        self.request_count = Counter("%s_requests_count" % self.endpoint, "Counter of number requests done",
-                                     ['method', 'endpoint', 'http_status'])
-
-    @property
-    def endpoint(self):
-        return self._endpoint
-
-    def __repr__(self):
-        return "<%s(%s)>" % (self.__class__.__name__, self.endpoint)
-
-    def before(self):
-        request.start_time = time.time()
-
-    def after(self, response):
-        request_latency = time.time() - request.start_time
-        self.request_latency.labels(request.method, request.url_rule.rule).observe(request_latency)
-        self.request_count.labels(request.method, request.url_rule.rule, response.status_code).inc()
-        return response
-
-
-class DatabaseMonitoringComponents:
-    _instances = dict()
-    _init = False
-
-    def __new__(cls, *args, **kwargs):
-        if args[0] in cls._instances:
-            return cls._instances[args[0]]
-
-        o = object.__new__(cls)
-        cls._instances[args[0]] = o
-        return o
-
-    @once
-    def __init__(self, endpoint: str):
-        self._endpoint = endpoint
-        self.request_latency = Histogram("%s_latency" % self.endpoint, "Histogram of request latency",
-                                         ['endpoint'])
-        self.request_count = Counter("%s_requests_count" % self.endpoint, "Counter of number requests done",
-                                     ['endpoint'])
-        self.connection_error_count = Counter("%s_connection_error_count" % self.endpoint,
-                                              "Counter of number connection error done", ['engine_url'])
-        self.error_during_session = Counter("%s_error_during_session_count" % self.endpoint,
-                                            "Counter of number error during session done", ['engine_url', "exception"])
-
-    @property
-    def endpoint(self):
-        return self._endpoint
-
-    def __repr__(self):
-        return "<%s(%s)>" % (self.__class__.__name__, self.endpoint)
-
-    def connection_error(self, engine_url: str):
-        self.connection_error_count.labels(engine_url).inc()
-
-    @contextmanager
-    def observe_session(self, engine_url: str):
-        start = time.time()
-        try:
-            yield
-        except Exception as e:
-            self.error_during_session.labels(engine_url, type(e).__name__).inc()
-        finally:
-            latency = time.time() - start
-            self.request_latency.labels(engine_url).observe(latency)
-            self.request_count.labels(engine_url).inc()
-
-
-class CockroachDatabase:
+class DatabaseMonitoring:
     _instance = None
     _init = False
 
@@ -115,7 +33,78 @@ class CockroachDatabase:
 
     @once
     def __init__(self):
-        self.retry_count = Counter("cockroachdb_txn_retry_count", "Counter of transaction retry done")
+        self.request_latency = Histogram("db_latency", "Histogram of request latency", ['endpoint', "caller"])
+        self.connection_error_count = Counter("db_connection_error_count", "Counter of number connection error",
+                                              ['engine_url', "caller"])
+        self.error_during_session = Counter("db_error_during_session_count", "Counter of number error during session",
+                                            ['engine_url', "caller", "exception"])
+        self.retry_count = Counter("cockroachdb_txn_retry_count", "Counter of transaction retry done", ['caller'])
 
-    def transaction_retry_inc(self):
-        self.retry_count.inc()
+
+def extract_exception_name(exc_info=None):
+    if not exc_info:
+        exc_info = sys.exc_info()
+    return '{}.{}'.format(exc_info[0].__module__, exc_info[0].__name__)
+
+
+def monitor_flask(app: Flask):
+    metrics = CollectorRegistry()
+
+    def collect():
+        registry = CollectorRegistry()
+        multiprocess.MultiProcessCollector(registry)
+        data = generate_latest(registry)
+        return Response(data, mimetype=CONTENT_TYPE_LATEST)
+
+    if "gunicorn" in os.getenv("SERVER_SOFTWARE", "") and os.getenv('prometheus_multiproc_dir'):
+        app.add_url_rule('/metrics', 'metrics', collect)
+
+    additional_kwargs = {
+        'registry': metrics
+    }
+    request_latency = Histogram(
+        'requests_duration_seconds',
+        'Backend API request latency',
+        ['method', 'path'],
+        **additional_kwargs
+    )
+    request_count = Counter(
+        'request_total',
+        'Backend API request count',
+        ['method', 'path'],
+        **additional_kwargs
+    )
+    status_count = Counter(
+        'responses_total',
+        'Backend API response count',
+        ['method', 'path', 'status_code'],
+        **additional_kwargs
+    )
+    exception_count = Counter(
+        'exceptions_total',
+        'Backend API top-level exception count',
+        ['method', 'path', 'type'],
+        **additional_kwargs
+    )
+
+    @app.before_request
+    def start_measure():
+        g._start_time = time.time()
+        request_count.labels(request.method, request.url_rule).inc()
+
+    @app.after_request
+    def count_status(response: Response):
+        status_count.labels(request.method, request.url_rule, response.status_code).inc()
+        request_latency.labels(request.method, request.url_rule).observe(time.time() - g._start_time)
+        return response
+
+    # Override log_exception to increment the exception counter
+    def log_exception(exc_info):
+        class_name = extract_exception_name(exc_info)
+        exception_count.labels(request.method, request.url_rule, class_name).inc()
+        app.logger.error('Exception on %s [%s]' % (
+            request.path,
+            request.method
+        ), exc_info=exc_info)
+
+    app.log_exception = log_exception

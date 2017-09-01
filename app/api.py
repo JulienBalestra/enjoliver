@@ -4,8 +4,6 @@ import os
 import requests
 from flasgger import Swagger
 from flask import Flask, request, json, jsonify, render_template, Response
-from prometheus_client import generate_latest, CollectorRegistry, CONTENT_TYPE_LATEST
-from prometheus_client import multiprocess
 from werkzeug.contrib.cache import FileSystemCache
 
 import crud
@@ -55,44 +53,7 @@ SMART = SmartDatabaseClient
 
 if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", ""):
     SMART = SmartDatabaseClient(APPLICATION.config["DB_URI"])
-
-    if "gunicorn" in os.getenv("SERVER_SOFTWARE", "") and os.getenv('prometheus_multiproc_dir'):
-        @APPLICATION.route("/metrics", methods=["GET"])
-        def collect():
-            registry = CollectorRegistry()
-            multiprocess.MultiProcessCollector(registry)
-            data = generate_latest(registry)
-            return Response(data, mimetype=CONTENT_TYPE_LATEST)
-
-
-def before_request():
-    try:
-        # don't monitor /metrics
-        if request.url_rule.rule != "/metrics":
-            monitoring.FlaskMonitoringComponents(request.url_rule.endpoint).before()
-    except AttributeError:
-        # 404
-        pass
-    except Exception as e:
-        LOGGER.error("monitor request: type(%s) %s: %s" % (type(e), e, request.path))
-
-
-def after_request(response):
-    try:
-        # don't monitor /metrics
-        if request.url_rule.rule != "/metrics":
-            monitoring.FlaskMonitoringComponents(request.url_rule.endpoint).after(response)
-    except AttributeError:
-        # 404
-        pass
-    except Exception as e:
-        LOGGER.error("monitor request: type(%s) %s: %s" % (type(e), e, request.path))
-    finally:
-        return response
-
-
-APP.before_request(before_request)
-APP.after_request(after_request)
+    monitoring.monitor_flask(APPLICATION)
 
 
 @APPLICATION.route("/shutdown", methods=["POST"])
@@ -151,7 +112,7 @@ def submit_lifecycle_ignition(request_raw_query):
         return jsonify({"message": "MatchboxValueError"}), 406
 
     @smartdb.cockroach_transaction
-    def op():
+    def op(caller=request.url_rule):
         with SMART.new_session() as session:
             try:
                 inject = crud.InjectLifecycle(session, request_raw_query=request_raw_query)
@@ -164,7 +125,7 @@ def submit_lifecycle_ignition(request_raw_query):
             except AttributeError:
                 return jsonify({"message": "Unknown"}), 406
 
-    return op()
+    return op(caller=request.url_rule)
 
 
 @APPLICATION.route("/lifecycle/rolling/<string:request_raw_query>", methods=["GET"])
@@ -245,7 +206,7 @@ def change_lifecycle_rolling(request_raw_query):
         strategy = "kexec"
 
     @smartdb.cockroach_transaction
-    def op():
+    def op(caller=request.url_rule):
         with SMART.new_session() as session:
             try:
                 life = crud.InjectLifecycle(session, request_raw_query)
@@ -254,7 +215,7 @@ def change_lifecycle_rolling(request_raw_query):
             except AttributeError:
                 return jsonify({"enable": None, "request_raw_query": request_raw_query, "strategy": strategy}), 401
 
-    return op()
+    return op(caller=request.url_rule)
 
 
 @APPLICATION.route("/lifecycle/rolling/<string:request_raw_query>", methods=["DELETE"])
@@ -280,13 +241,13 @@ def lifecycle_rolling_delete(request_raw_query):
     LOGGER.info("%s %s" % (request.method, request.url))
 
     @smartdb.cockroach_transaction
-    def op():
+    def op(caller=request.url_rule):
         with SMART.new_session() as session:
             life = crud.InjectLifecycle(session, request_raw_query)
             life.apply_lifecycle_rolling(False, None)
             return jsonify({"enable": False, "request_raw_query": request_raw_query}), 200
 
-    return op()
+    return op(caller=request.url_rule)
 
 
 @APPLICATION.route("/lifecycle/rolling", methods=["GET"])
@@ -376,12 +337,12 @@ def report_lifecycle_coreos_install(status, request_raw_query):
         return "success or fail != %s" % status.lower(), 403
 
     @smartdb.cockroach_transaction
-    def op():
+    def op(caller=request.url_rule):
         with SMART.new_session() as session:
             inject = crud.InjectLifecycle(session, request_raw_query=request_raw_query)
             inject.refresh_lifecycle_coreos_install(success)
 
-    op()
+    op(caller=request.url_rule)
     return jsonify({"success": success, "request_raw_query": request_raw_query}), 200
 
 
@@ -445,7 +406,7 @@ def discovery():
         return err
 
     @smartdb.cockroach_transaction
-    def op():
+    def op(caller=request.url_rule):
         with SMART.new_session() as session:
             inject = crud.InjectDiscovery(
                 session,
@@ -456,7 +417,7 @@ def discovery():
             return jsonify({"total_elt": new[0], "new": new[1]})
 
     try:
-        return op()
+        return op(caller=request.url_rule)
     except TypeError:
         return err
 
@@ -614,13 +575,13 @@ def scheduler_post():
             }), 406
 
     @smartdb.cockroach_transaction
-    def op():
+    def op(caller=request.url_rule):
         with SMART.new_session() as session:
             inject = crud.InjectSchedule(session, data=req)
             inject.apply_roles()
             inject.commit()
 
-    op()
+    op(caller=request.url_rule)
     CACHE.delete(request.path)
     return jsonify(req)
 

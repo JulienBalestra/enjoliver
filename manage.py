@@ -38,11 +38,11 @@ def init_db(ec):
             smart.create_base()
 
             @smartdb.cockroach_transaction
-            def op():
+            def op(caller=init_db.__name__):
                 with smart.new_session() as session:
                     crud.health_check_purge(session)
 
-            op()
+            op(caller=init_db.__name__)
             return
         except ConnectionError as e:
             print("%d/%d %s" % (i + 1, tries, e))
