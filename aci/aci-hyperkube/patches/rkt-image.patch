@@ -1,15 +1,15 @@
-From c6647a1f0c0a8e6f83948e2701f5e2dd7853ce26 Mon Sep 17 00:00:00 2001
+From 50dacd9712b77efc0b69bcd341b1a8349903b41b Mon Sep 17 00:00:00 2001
 From: JulienBalestra <julien.balestra@gmail.com>
 Date: Wed, 30 Aug 2017 12:19:37 +0200
 Subject: [PATCH] rkt image list
 
 ---
- pkg/kubelet/rkt/image.go    | 36 +++++++++++++----
+ pkg/kubelet/rkt/image.go    | 38 ++++++++++++++----
  pkg/kubelet/rkt/rkt_test.go | 96 ---------------------------------------------
- 2 files changed, 28 insertions(+), 104 deletions(-)
+ 2 files changed, 30 insertions(+), 104 deletions(-)
 
 diff --git a/pkg/kubelet/rkt/image.go b/pkg/kubelet/rkt/image.go
-index 3a1687b..ecae192 100644
+index 3a1687b..626bdb6 100644
 --- a/pkg/kubelet/rkt/image.go
 +++ b/pkg/kubelet/rkt/image.go
 @@ -37,6 +37,7 @@ import (
@@ -29,7 +29,7 @@ index 3a1687b..ecae192 100644
  		glog.Errorf("Failed to fetch: %v", err)
  		return "", err
  	}
-@@ -98,20 +99,39 @@ func (r *Runtime) GetImageRef(image kubecontainer.ImageSpec) (string, error) {
+@@ -98,23 +99,44 @@ func (r *Runtime) GetImageRef(image kubecontainer.ImageSpec) (string, error) {
  	return images[0].Id, nil
  }
  
@@ -48,7 +48,7 @@ index 3a1687b..ecae192 100644
 -	ctx, cancel := context.WithTimeout(context.Background(), r.requestTimeout)
 -	defer cancel()
 -	listResp, err := r.apisvc.ListImages(ctx, &rktapi.ListImagesRequest{})
-+	commandLine := []string{"rkt", "image", "list", "--format=json"}
++	commandLine := []string{r.config.Path, "image", "list", "--format=json"}
 +	cmd := exec.Command(commandLine[0], commandLine[1:]...)
 +	b, err := cmd.Output()
  	if err != nil {
@@ -56,6 +56,7 @@ index 3a1687b..ecae192 100644
 +		glog.Errorf("fail to run %q: %s", strings.Join(commandLine, " "), err)
 +		return nil, err
 +	}
++	glog.V(6).Infof("%q give the following output: %s", strings.Join(commandLine, " "), string(b))
 +
 +	var rktImages RktImageList
 +	err = json.Unmarshal(b, &rktImages)
@@ -76,6 +77,10 @@ index 3a1687b..ecae192 100644
  			Size:     image.Size,
  		}
  	}
++	glog.V(4).Infof("listed %d images", len(rktImages))
+ 	return images, nil
+ }
+ 
 diff --git a/pkg/kubelet/rkt/rkt_test.go b/pkg/kubelet/rkt/rkt_test.go
 index 16c6617..dfcea20 100644
 --- a/pkg/kubelet/rkt/rkt_test.go
