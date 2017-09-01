@@ -42,8 +42,7 @@ class TestKVMDiscoveryClient00(TestKVMDiscoveryClient):
         )
         gen.dumps()
 
-        destroy, undefine = ["virsh", "destroy", "%s" % marker], ["virsh", "undefine", "%s" % marker]
-        self.virsh(destroy, v=self.dev_null), self.virsh(undefine, v=self.dev_null)
+        self.clean_up_virtual_machine(marker)
         interfaces = {}
         try:
             virt_install = self.create_virtual_machine(marker, 1)
@@ -66,8 +65,7 @@ class TestKVMDiscoveryClient00(TestKVMDiscoveryClient):
 
             self.write_ending(marker)
         finally:
-            self.virsh(destroy)
-            self.virsh(undefine)
+            self.clean_up_virtual_machine(marker)
 
 
 # @unittest.skip("just skip")

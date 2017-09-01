@@ -432,6 +432,11 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         self.clean_sandbox()
         self.api_healthz()
 
+    def clean_up_virtual_machine(self, name: str):
+        for elt in [["virsh", "destroy", name], ["virsh", "undefine", name],
+                    ["virsh", "vol-delete", "%s.qcow2" % name, "--pool", "default"]]:
+            self.virsh(elt)
+
     def create_virtual_machine(self, name: str, nb_node: int, disk_gb=0):
         if disk_gb == 0:
             disk_opt = "size=10"
@@ -464,7 +469,10 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         :param name: virtual machine name
         :return:
         """
-        return "54:52:00:00:00:%02d" % (int(re.match('.*-(\d)$', name).group(1)) + 1)
+        nb = int(re.match('.*-(\d)$', name).group(1)) + 1
+        if nb > 99:
+            raise AssertionError("machine number extracted from name is incoherent: %d %s" % (nb, name))
+        return "54:52:00:00:00:%02d" % nb
 
     @staticmethod
     def virsh(cmd, assertion=False, v=None):

@@ -49,13 +49,7 @@ class TestKVMK8SEnjolivageDiskLifecycleLifecycle0(TestKVMK8sEnjolivageDiskLifecy
 
         for i in range(nb_node):
             machine_marker = "%s-%d" % (marker, i)
-            destroy, undefine, vol_delete = ["virsh", "destroy", "%s" % machine_marker], \
-                                            ["virsh", "undefine", "%s" % machine_marker], \
-                                            ["virsh", "vol-delete", "%s.qcow2" % machine_marker, "--pool",
-                                             "default"]
-            self.virsh(destroy)
-            self.virsh(undefine)
-            self.virsh(vol_delete)
+            self.clean_up_virtual_machine(machine_marker)
         try:
             for i, m in enumerate(nodes):
                 virt_install = self.create_virtual_machine(m, nb_node, disk_gb=10)
@@ -175,13 +169,7 @@ class TestKVMK8SEnjolivageDiskLifecycleLifecycle0(TestKVMK8sEnjolivageDiskLifecy
             finally:
                 for i in range(nb_node):
                     machine_marker = "%s-%d" % (marker, i)
-                    destroy, undefine, vol_del = ["virsh", "destroy", "%s" % machine_marker], \
-                                                 ["virsh", "undefine", "%s" % machine_marker], \
-                                                 ["virsh", "vol-delete", "%s.qcow2" % machine_marker, "--pool",
-                                                  "default"]
-                    self.virsh(destroy)
-                    self.virsh(undefine)
-                    self.virsh(vol_del)
+                    self.clean_up_virtual_machine(machine_marker)
 
 
 if __name__ == "__main__":

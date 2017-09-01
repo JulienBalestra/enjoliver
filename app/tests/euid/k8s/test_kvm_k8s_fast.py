@@ -51,9 +51,7 @@ class TestKVMK8SFast0(TestKVMK8sFast):
             }
         )
         for m in nodes:
-            destroy, undefine = ["virsh", "destroy", m], \
-                                ["virsh", "undefine", m]
-            self.virsh(destroy, v=self.dev_null), self.virsh(undefine, v=self.dev_null)
+            self.clean_up_virtual_machine(m)
         try:
             for i, m in enumerate(nodes):
                 virt_install = self.create_virtual_machine(m, nb_node)
@@ -118,10 +116,7 @@ class TestKVMK8SFast0(TestKVMK8sFast):
                 )
             for i in range(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
-                destroy, undefine = ["virsh", "destroy", "%s" % machine_marker], \
-                                    ["virsh", "undefine", "%s" % machine_marker]
-                self.virsh(destroy)
-                self.virsh(undefine)
+                self.clean_up_virtual_machine(machine_marker)
 
 
 if __name__ == "__main__":
