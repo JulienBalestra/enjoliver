@@ -11,8 +11,3 @@
   /go/src/github.com/JulienBalestra/enjoliver/manage.py show-configs
   [ $? -eq 0 ]
 }
-
-@test "validation is OK" {
-    /go/src/github.com/JulienBalestra/enjoliver/manage.py validate
-  [ $? -eq 0 ]
-}
