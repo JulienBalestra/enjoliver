@@ -5,16 +5,16 @@ RUNTIME=$(PROJECT)/runtime
 RKT=$(RUNTIME)/rkt/rkt
 ACI=$(PROJECT)/aci
 
-DEBIAN=debian
+UPX=upx
 TARGET=container-linux
 
 default: install
 
-$(DEBIAN):
-	@echo ENV IMAGE=$(ACI)/aci-$(DEBIAN)
-	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) install
+$(UPX):
+	@echo ENV IMAGE=$(ACI)/aci-$@
+	IMAGE=$(ACI)/aci-$@ make -C $(RUNTIME) install
 
-install: $(DEBIAN)
+install: $(UPX)
 	@echo ENV IMAGE=$(ACI)/aci-$(TARGET)
 	IMAGE=$(ACI)/aci-$(TARGET) make -C $(RUNTIME) install
 

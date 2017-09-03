@@ -123,6 +123,9 @@ do
     _upx_in_fs ${b}
 done
 
+mkdir -pv ${USR_A}/local/etc/ squashfs-root/local/etc/
+echo -n "{\"release\": \"${VERSION}\", \"alter_timestamp\": \"$(date +%s)\"}" | tee ${USR_A}/local/etc/alter-version | tee squashfs-root/local/etc/alter-version
+
 sync
 
 umount ${USR_A}
