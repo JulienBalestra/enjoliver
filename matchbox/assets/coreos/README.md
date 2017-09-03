@@ -7,7 +7,7 @@
     sudo make -C ${GOPATH}/src/github.com/JulienBalestra aci
     
     # Make the acserver listen
-    sudo ${GOPATH}/src/github.com/JulienBalestra/enjoliver/run_runtime.py &
+    sudo ${GOPATH}/src/github.com/JulienBalestra/enjoliver/run_acserver.py &
     
     # Build the container linux builder
     sudo make -C ${GOPATH}/src/github.com/JulienBalestra/enjoliver/aci/aci-container-linux install
@@ -20,4 +20,10 @@
     
     # Stop the acserver
     sudo pkill -F ${GOPATH}/src/github.com/JulienBalestra/enjoliver/runtime/acserver.pid # Or: fg ; ^C
-     
+
+
+## TODO
+
+* extract used features in the coreos python script `disk_util`
+* refactor the script `alter-distribution.sh`
+* sign the image with custom key
