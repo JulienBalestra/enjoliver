@@ -20,6 +20,11 @@ data:
     # default named port `https`. This works for single API server deployments as
     # well as HA API server deployments.
     scrape_configs:
+    # custom additions
+    - job_name: 'enjoliver'
+      static_configs:
+        - targets: ['172.20.0.1:5000']
+
     - job_name: 'kubernetes-apiservers'
 
       kubernetes_sd_configs:

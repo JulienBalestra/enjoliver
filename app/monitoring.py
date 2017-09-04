@@ -40,11 +40,11 @@ class DatabaseMonitoring:
 
     @once
     def __init__(self):
-        self.request_latency = Histogram("db_request_duration_seconds", "Database request latency", ["caller"])
-        self.request_count = Counter("db_request_total", "Database request count", ["caller"])
-        self.cockroach_retry_count = Counter("cockroachdb_txn_retry_total", "CockroachDB transaction retry count",
+        self.request_latency = Histogram("enjoliver_db_request_duration_seconds", "Database request latency", ["caller"])
+        self.request_count = Counter("enjoliver_db_request_total", "Database request count", ["caller"])
+        self.cockroach_retry_count = Counter("enjoliver_cockroachdb_txn_retry_total", "CockroachDB transaction retry count",
                                              ['caller'])
-        self.exception_count = Counter("db_exception_total", "Counter of number error during session",
+        self.exception_count = Counter("enjoliver_db_exception_total", "Counter of number error during session",
                                        ["caller", "exception"])
 
     @contextmanager
@@ -98,25 +98,25 @@ def monitor_flask(app: Flask):
         'registry': metrics
     }
     request_latency = Histogram(
-        'requests_duration_seconds',
+        'enjoliver_requests_duration_seconds',
         'Backend API request latency',
         ['method', 'path'],
         **additional_kwargs
     )
     request_count = Counter(
-        'request_total',
+        'enjoliver_request_total',
         'Backend API request count',
         ['method', 'path'],
         **additional_kwargs
     )
     status_count = Counter(
-        'responses_total',
+        'enjoliver_responses_total',
         'Backend API response count',
         ['method', 'path', 'status_code'],
         **additional_kwargs
     )
     exception_count = Counter(
-        'exceptions_total',
+        'enjoliver_exceptions_total',
         'Backend API top-level exception count',
         ['method', 'path', 'type'],
         **additional_kwargs
