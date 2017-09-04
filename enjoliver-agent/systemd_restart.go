@@ -120,15 +120,21 @@ func (run *Runtime) RestartKubernetes() error {
 	const maxLockTry = 10
 	var err error
 
+	// we don't want to concurrently restart the same systemd stack
+	run.RestartKubernetesLock.Lock()
+	defer run.RestartKubernetesLock.Unlock()
+
 	// if it's self locked and not released
+	// we are safe because after the mutex
 	run.locksmithAction("unlock")
 
 	for i := 0; i < maxLockTry; i++ {
 		err = run.locksmithAction("lock")
-		if err != nil {
-			glog.Warningf("%d/%d fail to take lock %s", i, maxLockTry, err)
-			time.Sleep(time.Millisecond * (200 * time.Duration(i)))
+		if err == nil {
+			break
 		}
+		glog.Warningf("%d/%d fail to take lock %s", i, maxLockTry, err)
+		time.Sleep(time.Millisecond * (200 * time.Duration(i)))
 	}
 
 	if err != nil {

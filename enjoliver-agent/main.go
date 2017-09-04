@@ -5,6 +5,7 @@ import (
 	"github.com/golang/glog"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -14,9 +15,10 @@ const (
 )
 
 type Runtime struct {
-	HttpLivenessProbes []HttpLivenessProbe
-	LocksmithEndpoint  string
-	LocksmithLock      string
+	HttpLivenessProbes    []HttpLivenessProbe
+	LocksmithEndpoint     string
+	LocksmithLock         string
+	RestartKubernetesLock sync.RWMutex
 }
 
 func main() {
@@ -43,6 +45,7 @@ func main() {
 		p,
 		locksmithEndpoint,
 		locksmithLockName,
+		sync.RWMutex{},
 	}
 	http.DefaultClient.Timeout = time.Second * 2
 	http.HandleFunc("/healthz", run.handlerHealthz)

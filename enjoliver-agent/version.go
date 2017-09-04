@@ -5,7 +5,9 @@ import (
 	"os/exec"
 	"strings"
 
+	"encoding/json"
 	"github.com/golang/glog"
+	"io/ioutil"
 )
 
 type ExecForVersion struct {
@@ -89,6 +91,35 @@ func execBinaryToParseVersion(b ExecForVersion, ch chan BinaryResult) {
 	ch <- br
 }
 
+type ContainerLinuxVersion struct {
+	Release        string `json:"release"`
+	AlterTimestamp string `json:"alter_timestamp"`
+}
+
+// Read the file dropped into the distribution to track release and build / alter date
+func getContainerLinuxAlterVersion() BinaryResult {
+	const alterVersionFile = "/usr/local/etc/alter-version"
+	var br BinaryResult
+	br.Cmd = "distribution"
+
+	b, err := ioutil.ReadFile(alterVersionFile)
+	if err != nil {
+		glog.Errorf("fail to read file %s: %s", alterVersionFile, err)
+		br.Error = err
+		return br
+	}
+
+	var clv ContainerLinuxVersion
+	err = json.Unmarshal(b, &clv)
+	if err != nil {
+		glog.Errorf("fail to unmarshal %q: %s", string(b), err)
+		br.Error = err
+		return br
+	}
+	br.Version = fmt.Sprintf("%s@%s", clv.Release, clv.AlterTimestamp)
+	return br
+}
+
 func GetComponentVersion() AllComponentVersion {
 	var allComponentVersion AllComponentVersion
 	allComponentVersion.BinaryVersion = make(map[string]string)
@@ -105,6 +136,11 @@ func GetComponentVersion() AllComponentVersion {
 		if bv.Error != nil {
 			allComponentVersion.Errors[bv.Cmd] = bv.Error.Error()
 		}
+	}
+	containerLinuxVersion := getContainerLinuxAlterVersion()
+	allComponentVersion.BinaryVersion[containerLinuxVersion.Cmd] = containerLinuxVersion.Version
+	if containerLinuxVersion.Error != nil {
+		allComponentVersion.BinaryVersion[containerLinuxVersion.Cmd] = containerLinuxVersion.Error.Error()
 	}
 	return allComponentVersion
 }
