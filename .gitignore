@@ -91,3 +91,4 @@ image.aci
 /runtime/acserver/
 /matchbox/assets/keys
 /runtime/stage1.d
+/app/prometheus_multiproc_dir
