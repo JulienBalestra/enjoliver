@@ -150,12 +150,13 @@ MONITOR_COCKROACHDB = monitoring.DatabaseMonitoring()
 def cockroach_transaction(f):
     def run_transaction(caller):
         while True:
-            try:
-                return f()
-            except DatabaseError as e:
-                if not isinstance(e.orig, psycopg2.OperationalError) and \
-                        not e.orig.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
-                    raise
-                MONITOR_COCKROACHDB.retry_count.labels(caller).inc()
+            with MONITOR_COCKROACHDB.observe_transaction(caller):
+                try:
+                    return f()
+                except DatabaseError as e:
+                    if not isinstance(e.orig, psycopg2.OperationalError) and \
+                            not e.orig.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
+                        raise
+                    MONITOR_COCKROACHDB.cockroach_retry_count.labels(caller).inc()
 
     return run_transaction

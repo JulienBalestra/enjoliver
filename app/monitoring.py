@@ -8,6 +8,13 @@ from prometheus_client import Counter, Histogram, CollectorRegistry, multiproces
 
 
 def once(__init__):
+    """
+    Decorate the __init__ method of a class if you don't want to init a class twice when using a singleton
+    The class have to embed a class variable named _init by default at False
+    :param __init__:
+    :return:
+    """
+
     def wrapper(*args, **kwargs):
         self = args[0]
         if self._init is True:
@@ -33,21 +40,49 @@ class DatabaseMonitoring:
 
     @once
     def __init__(self):
-        self.request_latency = Histogram("db_latency", "Histogram of request latency", ['endpoint', "caller"])
-        self.connection_error_count = Counter("db_connection_error_count", "Counter of number connection error",
-                                              ['engine_url', "caller"])
-        self.error_during_session = Counter("db_error_during_session_count", "Counter of number error during session",
-                                            ['engine_url', "caller", "exception"])
-        self.retry_count = Counter("cockroachdb_txn_retry_count", "Counter of transaction retry done", ['caller'])
+        self.request_latency = Histogram("db_request_duration_seconds", "Database request latency", ["caller"])
+        self.request_count = Counter("db_request_total", "Database request count", ["caller"])
+        self.cockroach_retry_count = Counter("cockroachdb_txn_retry_total", "CockroachDB transaction retry count",
+                                             ['caller'])
+        self.exception_count = Counter("db_exception_total", "Counter of number error during session",
+                                       ["caller", "exception"])
+
+    @contextmanager
+    def observe_transaction(self, caller: str):
+        """
+        Wrapper to call around transaction against a database
+        :param caller:
+        :return:
+        """
+        start = time.time()
+        try:
+            yield
+        except Exception as e:
+            self.exception_count.labels(caller, type(e).__name__).inc()
+        finally:
+            latency = time.time() - start
+            self.request_latency.labels(caller).observe(latency)
+            self.request_count.labels(caller).inc()
 
 
 def extract_exception_name(exc_info=None):
+    """
+    Function to get the exception name and module
+    :param exc_info:
+    :return:
+    """
     if not exc_info:
         exc_info = sys.exc_info()
     return '{}.{}'.format(exc_info[0].__module__, exc_info[0].__name__)
 
 
 def monitor_flask(app: Flask):
+    """
+    Add components to monitor each route with prometheus
+    The monitoring is available at /metrics
+    :param app: Flask application
+    :return:
+    """
     metrics = CollectorRegistry()
 
     def collect():
