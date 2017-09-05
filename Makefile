@@ -141,4 +141,3 @@ prod_setup:
 	make -C $(CWD) prod_setup_runtime
 	make -C $(CWD) front
 	make -C $(CWD) pip
-	make -C $(CWD) assets
