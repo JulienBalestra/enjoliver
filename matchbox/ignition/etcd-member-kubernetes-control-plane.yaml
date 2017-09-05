@@ -566,6 +566,8 @@ systemd:
             [Service]
             ExecStart=
             ExecStartPre=-/usr/bin/rkt image gc --grace-period=1h
+            # rkt doesn't remove used images
+            ExecStartPre=-/bin/bash -c '/opt/bin/rkt image list | tail -n +1 | awk \'$8 ~ /(day|week|month)s?/ { system("/opt/bin/rkt image rm " $1) }\''
             ExecStart=/usr/bin/rkt gc --grace-period=0s
 
     - name: rkt-gc.timer
@@ -581,6 +583,16 @@ systemd:
 
 storage:
   files:
+    - path: /opt/bin/rkt
+      filesystem: root
+      mode: 0755
+      contents:
+        inline: |
+          #!/bin/bash
+          # legacy system could link to this file
+          # ignition version is too old to use links
+          exec /usr/bin/rkt $@
+
     - path: /etc/enjoliver
       filesystem: root
       mode: 0644

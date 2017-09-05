@@ -13,10 +13,10 @@ const (
 	AgentBinaryVersionPath = "/version"
 )
 
-var eltInRowForBinaryVersion = []string{"Fqdn", "Etcd", "Fleetd", "Hyperkube", "Iproute2", "Rkt", "Systemd", "Kernel", "Vault"}
+var eltInRowForBinaryVersion = []string{"Fqdn", "Distribution", "Etcd", "Fleetd", "Hyperkube", "Iproute2", "Rkt", "Systemd", "Kernel", "Vault"}
 
 type BinaryVersion struct {
-	Etcd, Fleet, Hyperkube, Ip, Rkt, Systemctl, Uname, Vault string
+	Distribution, Etcd, Fleet, Hyperkube, Ip, Rkt, Systemctl, Uname, Vault string
 }
 
 type AgentBinaryVersion struct {
@@ -96,6 +96,7 @@ func (r *Runtime) createRowForBinaryVersion(node AgentBinaryVersion) []string {
 	row := []string{}
 	for _, r := range []string{
 		node.Fqdn,
+		node.BinaryVersion.Distribution,
 		node.BinaryVersion.Etcd,
 		node.BinaryVersion.Fleet,
 		node.BinaryVersion.Hyperkube,
