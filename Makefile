@@ -114,7 +114,8 @@ config:
 
 container_linux: acserver
 	make -C aci/aci-container-linux install
-	./runtime/runtime.rkt run --volume enjoliver,kind=host,source=$(CWD),readOnly=false \
+	./runtime/runtime.rkt run --set-env=COMMIT_ID=$(shell git log --pretty=format:'%h' -n 1) \
+	  --volume enjoliver,kind=host,source=$(CWD),readOnly=false \
       --stage1-path=$(CWD)/runtime/rkt/stage1-fly.aci --insecure-options=all \
       --interactive enjoliver.local/container-linux:latest
 	pkill -F runtime/acserver.pid || true

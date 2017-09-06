@@ -150,8 +150,9 @@ class TestAPIGunicornScheduler(unittest.TestCase):
     def api_healthz(self):
         expect = {
             u'flask': True,
-            u'global': True,
+            u'global': False,
             u'db': True,
+            'discovery': {'ignition': False, 'ipxe': False},
             u'matchbox': {
                 u'/': True,
                 u'/boot.ipxe': True,
@@ -164,7 +165,7 @@ class TestAPIGunicornScheduler(unittest.TestCase):
         response_code = request.status_code
         request.close()
         self.assertEqual(json.loads(response_body.decode()), expect)
-        self.assertEqual(200, response_code)
+        self.assertEqual(503, response_code)
 
 
 # @unittest.skip("skip")

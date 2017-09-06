@@ -114,8 +114,9 @@ class TestAPI(unittest.TestCase):
     def test_00_healthz(self):
         expect = {
             u'flask': True,
-            u'global': True,
+            u'global': False,
             u'db': True,
+            'discovery': {'ignition': False, 'ipxe': False},
             u'matchbox': {
                 u'/': True,
                 u'/boot.ipxe': True,
@@ -124,9 +125,9 @@ class TestAPI(unittest.TestCase):
                 u"/metadata": True
             }}
         result = self.app.get('/healthz')
-        self.assertEqual(result.status_code, 200)
         content = json.loads(result.data.decode())
         self.assertEqual(expect, content)
+        self.assertEqual(result.status_code, 503)
 
     def test_01_boot_ipxe(self):
         expect = [

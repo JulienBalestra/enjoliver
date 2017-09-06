@@ -94,6 +94,7 @@ func execBinaryToParseVersion(b ExecForVersion, ch chan BinaryResult) {
 type ContainerLinuxVersion struct {
 	Release        string `json:"release"`
 	AlterTimestamp string `json:"alter_timestamp"`
+	Commit         string `json:"commit"`
 }
 
 // Read the file dropped into the distribution to track release and build / alter date
@@ -116,7 +117,7 @@ func getContainerLinuxAlterVersion() BinaryResult {
 		br.Error = err
 		return br
 	}
-	br.Version = fmt.Sprintf("%s@%s", clv.Release, clv.AlterTimestamp)
+	br.Version = fmt.Sprintf("%s@%s:%s", clv.Release, clv.AlterTimestamp, clv.Commit)
 	return br
 }
 

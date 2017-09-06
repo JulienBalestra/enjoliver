@@ -3,10 +3,11 @@ Help the application to be more exploitable
 """
 
 import ctypes
+import json
+import os
 import shutil
 
 import math
-import os
 import psutil
 import requests
 import time
@@ -14,7 +15,6 @@ from flask import jsonify
 
 import crud
 import logger
-import monitoring
 import objs3
 import smartdb
 
@@ -102,7 +102,12 @@ def healthz(application, smart: smartdb.SmartDatabaseClient, request):
         "global": True,
         "flask": True,
         "db": False,
-        "matchbox": {k: False for k in application.config["MATCHBOX_URLS"]}
+        "matchbox": {k: False for k in application.config["MATCHBOX_URLS"]},
+        "discovery": {
+            "ipxe": False,
+            "ignition": False,
+        }
+
     }
     if application.config["MATCHBOX_URI"] is None:
         application.logger.error("MATCHBOX_URI is None")
@@ -115,6 +120,33 @@ def healthz(application, smart: smartdb.SmartDatabaseClient, request):
             status["matchbox"][k] = False
             status["global"] = False
             LOGGER.error(e)
+
+    # Try a functional testing in discovery stages
+    try:
+        # here try if a default profile let any new machine boot in iPXE
+        req = requests.get("%s%s" % (application.config["MATCHBOX_URI"], "/ipxe"))
+        req.close()
+        if req.status_code != 200:
+            raise AssertionError("/ipxe returned a bad status code: %d" % req.status_code)
+        status["discovery"]["ipxe"] = True
+    except Exception as e:
+        LOGGER.error(e)
+        status["global"] = False
+
+    try:
+        # create a random mac address to see if matchbox respond us something like it should
+        ignition_url = "/ignition?mac=00-00-00-00-00-00"
+        req = requests.get("%s%s" % (application.config["MATCHBOX_URI"], ignition_url))
+        req.close()
+        # Later parse the result to improve the coverage of this check
+        _ = json.loads(req.content.decode())
+
+        if req.status_code != 200:
+            raise AssertionError("%s returned a bad status code: %d" % (ignition_url, req.status_code))
+        status["discovery"]["ignition"] = True
+    except Exception as e:
+        LOGGER.error(e)
+        status["global"] = False
 
     @smartdb.cockroach_transaction
     def op(caller="/healthz"):

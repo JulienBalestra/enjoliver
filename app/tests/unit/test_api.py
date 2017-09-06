@@ -36,6 +36,7 @@ class TestAPI(unittest.TestCase):
             u'flask': True,
             u'global': False,
             u'db': True,
+            'discovery': {'ignition': False, 'ipxe': False},
             u'matchbox': {
                 u'/boot.ipxe': False,
                 u'/boot.ipxe.0': False,

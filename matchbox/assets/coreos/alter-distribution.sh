@@ -4,6 +4,7 @@ set -ex
 
 test $(id -u -r) -eq 0
 test ${VERSION}
+test ${COMMIT_ID}
 
 cd $(dirname $0)
 COREOS_DIRECTORY=$(pwd -P)
@@ -124,7 +125,8 @@ do
 done
 
 mkdir -pv ${USR_A}/local/etc/ squashfs-root/local/etc/
-echo -n "{\"release\": \"${VERSION}\", \"alter_timestamp\": \"$(date +%s)\"}" | tee ${USR_A}/local/etc/alter-version | tee squashfs-root/local/etc/alter-version
+echo -n "{\"release\": \"${VERSION}\", \"alter_timestamp\": \"$(date +%s)\", \"commit\": \"${COMMIT_ID}\"}" | \
+    tee ${USR_A}/local/etc/alter-version | tee squashfs-root/local/etc/alter-version
 
 sync
 
