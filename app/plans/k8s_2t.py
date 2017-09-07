@@ -109,7 +109,7 @@ if __name__ == '__main__':
             content = r.content.decode()
             s = json.loads(content)
             # we only want the database and matchbox be ready
-            status = is_health_for_plan(content)
+            status = is_health_for_plan(s)
             if status is True:
                 log.info("%d/%d status for plan is %s" % (i, tries, status))
                 break
