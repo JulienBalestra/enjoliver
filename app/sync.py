@@ -2,10 +2,10 @@
 Sync the matchbox configuration
 """
 import json
+import os
 import re
 
 import ipaddr
-import os
 import requests
 import time
 
@@ -38,6 +38,7 @@ class ConfigSyncSchedules(object):
         self.ignition_dict = ignition_dict
         self._reporting_ignitions()
         self.extra_selector = extra_selector_dict if extra_selector_dict else {}
+        self._cache_query = {}
 
     def _reporting_ignitions(self):
         for k, v in self.ignition_dict.items():
@@ -359,6 +360,10 @@ class ConfigSyncSchedules(object):
             )
 
     def notify(self):
+        """
+        TODO if we need to notify the API for any reason
+        :return:
+        """
         pass
 
     def apply(self, nb_try=2, seconds_sleep=0):
@@ -378,17 +383,46 @@ class ConfigSyncSchedules(object):
 
     def _query_roles(self, *roles):
         roles = "&".join(roles)
+        url = "/scheduler/%s" % roles
         self.log.debug("roles='%s'" % roles)
-        req = requests.get("%s/scheduler/%s" % (self.api_uri, roles))
-        data = json.loads(req.content.decode())
-        req.close()
-        data.sort(key=lambda k: k["mac"])
-        return data
+        try:
+            return self._retrieve_from_cache(url)
+        except KeyError:
+            # not in cache or evicted
+            req = requests.get("%s%s" % (self.api_uri, url))
+            data = json.loads(req.content.decode())
+            req.close()
+            data.sort(key=lambda k: k["mac"])
+            self._cache_query[url] = {"data": data, "ts": time.time()}
+            return data
+
+    def _retrieve_from_cache(self, role, ttl=30):
+        """
+        Get from instance dict a matching key[data] if the key[ts] is not too old
+        TODO Maybe use werkzeug cache for this ?
+        :param role:
+        :param ttl:
+        :return:
+        """
+        eviction = time.time() - ttl
+        if self._cache_query[role]["ts"] > eviction:
+            self.log.debug("cache return %s" % role)
+            return self._cache_query[role]["data"]
+        self.log.info("cache %s is outdated: %d ; eviction is %d ; delta is %ds" % (
+            role, self._cache_query[role]["ts"], eviction, self._cache_query[role]["ts"] - eviction))
+        del self._cache_query[role]
+        raise KeyError(role)
 
     def _query_ip_list(self, role):
         self.log.debug("role='%s'" % role)
-        req = requests.get("%s/scheduler/ip-list/%s" % (self.api_uri, role))
-        data = json.loads(req.content.decode())
-        req.close()
-        data.sort()
-        return data
+        url = "/scheduler/ip-list/%s" % role
+        try:
+            return self._retrieve_from_cache(url)
+        except KeyError:
+            # not in cache or evicted
+            req = requests.get("%s%s" % (self.api_uri, url))
+            data = json.loads(req.content.decode())
+            req.close()
+            data.sort()
+            self._cache_query[url] = {"data": data, "ts": time.time()}
+            return data
