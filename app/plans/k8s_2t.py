@@ -80,6 +80,21 @@ class Kubernetes2Tiers(object):
         return self._sync.kubernetes_nodes_ip_list
 
 
+def is_health_for_plan(healthz: dict):
+    """
+    Healthy for starting the plan class
+    :param healthz:
+    :return: bool
+    """
+    if healthz["global"] is True:
+        return True
+
+    if healthz["db"] is True and healthz["matchbox"]["/"] is True:
+        return True
+
+    return False
+
+
 if __name__ == '__main__':
     log = logger.get_logger(__file__)
     wait = 30
@@ -93,12 +108,16 @@ if __name__ == '__main__':
             r = requests.get(health)
             content = r.content.decode()
             s = json.loads(content)
-            if s["global"] is True:
-                log.info("%d/%d Global status is %s" % (i, tries, s["global"]))
+            # we only want the database and matchbox be ready
+            status = is_health_for_plan(content)
+            if status is True:
+                log.info("%d/%d status for plan is %s" % (i, tries, status))
                 break
-            log.warning("%d/%d Global status is %s" % (i, tries, s["global"]))
+            log.warning("%d/%d status for plan is %s" % (i, tries, status))
         except Exception as e:
             log.error("%d/%d [%s] returned -> %s" % (i, tries, health, e))
+            if i == tries - 1:
+                raise
         time.sleep(5)
 
     k2t = Kubernetes2Tiers(
