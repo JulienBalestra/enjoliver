@@ -107,6 +107,7 @@ class EnjoliverConfig(object):
         self.sub_ips = int(self.config_override("sub_ips", 256))
         self.range_nb_ips = int(self.config_override("range_nb_ips", 253))
         self.skip_ips = int(self.config_override("skip_ips", 1))
+        self.sync_cache_ttl = int(self.config_override("sync_cache_ttl", 30))
 
         # Application config
         self.kubernetes_apiserver_insecure_port = int(self.config_override("kubernetes_apiserver_insecure_port", 8080))

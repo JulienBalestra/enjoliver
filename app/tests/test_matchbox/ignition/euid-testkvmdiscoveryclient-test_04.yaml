@@ -18,8 +18,7 @@ systemd:
       enable: true
       contents: |
         [Unit]
-        Requires=download-discoveryC.service
-        After=download-discoveryC.service lldpd.service
+        After=lldpd.service
         [Service]
         Environment=LLDP_VOLUME=/run/lldp
         Environment=LLDP_FILE=/run/lldp/lldp.xml

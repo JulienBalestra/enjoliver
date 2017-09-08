@@ -17,9 +17,6 @@ systemd:
     - name: discoveryC.service
       enable: true
       contents: |
-        [Unit]
-        Requires=download-discoveryC.service
-        After=download-discoveryC.service
         [Service]
         Type=oneshot
         EnvironmentFile=-/etc/metadata-endpoints.env

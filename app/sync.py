@@ -40,7 +40,7 @@ class ConfigSyncSchedules(object):
         self._reporting_ignitions()
         self.extra_selector = extra_selector_dict if extra_selector_dict else {}
         # inMemory cache for http queries
-        self._cache_query = SimpleCache(default_timeout=30)
+        self._cache_query = SimpleCache(default_timeout=EC.sync_cache_ttl)
 
     def _reporting_ignitions(self):
         for k, v in self.ignition_dict.items():

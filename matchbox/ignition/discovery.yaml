@@ -56,20 +56,22 @@ systemd:
       enable: true
       contents: |
         [Unit]
-        Requires=download-discoveryC.service
-        After=download-discoveryC.service lldpd.service
+        After=lldpd.service
         [Service]
         TimeoutStartSec=10m
         Environment=LLDP_VOLUME=/run/lldp
         Environment=LLDP_FILE=/run/lldp/lldp.xml
         Environment=IGNITION_FILE=/run/ignition.journal
         EnvironmentFile=-/etc/metadata-endpoints.env
+        # Prepare the ignition logs
         ExecStartPre=-/bin/bash -c "/usr/bin/journalctl --identifier=ignition -o short-iso > ${IGNITION_FILE}"
+        # LLDP export xml file
         ExecStartPre=-/usr/bin/rkt run --insecure-options=all --mount volume=socket,target=/var/run \
            --net=host \
            {{.lldp_image_url}} \
            --volume socket,kind=host,source=${LLDP_VOLUME} \
            --exec opt/bin/lldp-export
+        # Clean the store to save space
         ExecStartPre=-/usr/bin/rkt image gc --grace-period=0s
         ExecStartPre=-/usr/bin/rkt gc --grace-period=0s
         ExecStart=/usr/bin/discoveryC
@@ -161,6 +163,7 @@ storage:
               curl -f ${API_URI}/ignition?${QUERY} -o ${NEW_IGNITION} || continue
 
               # Be sure the returned Ignition is not a discovery one
+              # We don't want installing discovery profile on disk
               jq -e '.storage.files[] | select(.path == "/etc/discovery") | .contents.source' ${NEW_IGNITION}
               if [ $? -ne 0 ]
               then
