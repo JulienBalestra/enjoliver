@@ -408,11 +408,15 @@ systemd:
         - name: 10-rkt.conf
           contents: |
             [Service]
+            # drop-in bugs if don't create an empty entry
             ExecStart=
-            ExecStartPre=-/usr/bin/rkt image gc --grace-period=1h
             # rkt doesn't remove used images
             ExecStartPre=-/bin/bash -c '/opt/bin/rkt image list | tail -n +1 | awk \'$8 ~ /(day|week|month)s?/ { system("/opt/bin/rkt image rm " $1) }\''
-            ExecStart=/usr/bin/rkt gc --grace-period=0s
+            # safety for the rkt lock
+            ExecStartPre=-/bin/sleep 2
+            ExecStartPre=-/usr/bin/rkt image gc --grace-period=12h
+            # 1h because the run-prepared by kubernetes can be gc
+            ExecStart=/usr/bin/rkt gc --grace-period=1h
 
     - name: rkt-gc.timer
       enable: true
@@ -420,6 +424,7 @@ systemd:
         - name: 10-rkt.conf
           contents: |
             [Service]
+            # drop-in bugs if don't create an empty entry
             OnActiveSec=
             OnActiveSec=5min
             OnUnitActiveSec=

@@ -1,4 +1,4 @@
-name: enjoliver.local/cni:0.5.2
+name: enjoliver.local/cni:0.6.0
 
 builder:
   dependencies:
