@@ -1,4 +1,4 @@
-import json as std_json
+import json
 import os
 
 import requests
@@ -201,7 +201,9 @@ def change_lifecycle_rolling(request_raw_query):
     try:
         strategy = json.loads(request.get_data())["strategy"]
         LOGGER.info("%s %s rolling strategy: setting to %s" % (request.method, request.url, strategy))
-    except (KeyError, std_json.decoder.JSONDecodeError):
+    except (KeyError, ValueError):
+        # JSONDecodeError is a subclass of ValueError
+        # Cannot use JSONDecodeError because the import is not consistent between python3.X
         LOGGER.info("%s %s rolling strategy: setting default to kexec" % (request.method, request.url))
         strategy = "kexec"
 
