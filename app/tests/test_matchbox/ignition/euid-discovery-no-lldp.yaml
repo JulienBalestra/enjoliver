@@ -6,11 +6,31 @@ systemd:
       enable: false
       mask: true
 
+    - name: locksmithd.service
+      enable: false
+      mask: true
+
+    - name: ntpd.service
+      enable: false
+      mask: true
+
     - name: containerd.service
       enable: false
       mask: true
 
     - name: update-engine.service
+      enable: false
+      mask: true
+
+    - name: update-engine-stub.service
+      enable: false
+      mask: true
+
+    - name: tpmd.service
+      enable: false
+      mask: true
+
+    - name: tcsd.service
       enable: false
       mask: true
 
@@ -21,9 +41,15 @@ systemd:
         After=lldpd.service
         [Service]
         TimeoutStartSec=10m
+        Environment=LLDP_VOLUME=/run/lldp
+        Environment=LLDP_FILE=/run/lldp/lldp.xml
         Environment=IGNITION_FILE=/run/ignition.journal
         EnvironmentFile=-/etc/metadata-endpoints.env
+        # Prepare the ignition logs
         ExecStartPre=-/bin/bash -c "/usr/bin/journalctl --identifier=ignition -o short-iso > ${IGNITION_FILE}"
+        # Clean the store to save space
+        ExecStartPre=-/usr/bin/rkt image gc --grace-period=0s
+        ExecStartPre=-/usr/bin/rkt gc --grace-period=0s
         ExecStart=/usr/bin/discoveryC
         Restart=on-failure
         RestartSec=5s
@@ -65,6 +91,9 @@ storage:
         inline: |
           discovery
 
+    - path: /etc/discovery
+      filesystem: root
+
     - path: /etc/metadata-endpoints.env
       filesystem: root
       mode: 0644
@@ -85,6 +114,8 @@ storage:
         inline: |
           #!/bin/bash -x
 
+          set -o pipefail
+
           NEW_IGNITION=/run/new-ignition.json
 
           if [ -z ${TIMER} ]
@@ -96,15 +127,32 @@ storage:
 
           while true
           do
+              sleep ${TIMER}
+
               curl -f ${API_URI}/scheduler | jq -e ". | has(${NORMALIZED_MAC})"
-              if [ $? -eq 0 ]
+              if [ $? -ne 0 ]
               then
-                  sleep 1
-                  curl -o ${NEW_IGNITION} -f \
-                    ${API_URI}/ignition?${QUERY} || continue
-                  ls -l /run/ignition.json ${NEW_IGNITION}
+                echo "${API_URI}/scheduler still not have ${NORMALIZED_MAC}"
+                continue
+              fi
+
+              curl -f ${API_URI}/ignition?${QUERY} -o ${NEW_IGNITION} || continue
+
+              # Be sure the returned Ignition is not a discovery one
+              # We don't want installing discovery profile on disk
+              jq -e '.storage.files[] | select(.path == "/etc/discovery") | .contents.source' ${NEW_IGNITION}
+              if [ $? -ne 0 ]
+              then
                   udevadm settle
-                  #coreos-install -d /dev/sda -V current -C stable -i ${NEW_IGNITION} || {
+
+                  until curl -f "${API_URI}/install-authorization/${QUERY}"
+                  do
+                    echo "install-authorization not aquired"
+                    sleep 10
+                  done
+
+                  #coreos-install -d /dev/sda -V current -C stable -i ${NEW_IGNITION} \
+                  #  {{if index . "coreos_install_base_url"}} -b {{.coreos_install_base_url}}{{end}} || {
                   #  curl -f -XPOST \
                   #    "${API_URI}/lifecycle/coreos-install/fail/${QUERY}"
                   #  exit 2
@@ -112,8 +160,14 @@ storage:
                   curl -f -XPOST "${API_URI}/lifecycle/coreos-install/success/${QUERY}"
                   systemctl reboot
               fi
-              sleep ${TIMER}
           done
+
+    - path: /etc/coreos/update.conf
+      mode: 0644
+      filesystem: root
+      contents:
+        inline: |
+          REBOOT_STRATEGY=off
 
 {{ if index . "ssh_authorized_keys" }}
 passwd:

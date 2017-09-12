@@ -55,7 +55,7 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
             time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds)
 
             for i in range(60):
-                if plan_k8s_2t.apply() == 1:
+                if plan_k8s_2t.apply() == nb_node:
                     break
                 time.sleep(self.testing_sleep_seconds)
 

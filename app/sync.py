@@ -8,7 +8,7 @@ import re
 import ipaddr
 import requests
 import time
-from werkzeug.contrib.cache import SimpleCache
+from werkzeug.contrib.cache import SimpleCache, NullCache
 
 import generator
 import logger
@@ -40,7 +40,10 @@ class ConfigSyncSchedules(object):
         self._reporting_ignitions()
         self.extra_selector = extra_selector_dict if extra_selector_dict else {}
         # inMemory cache for http queries
-        self._cache_query = SimpleCache(default_timeout=EC.sync_cache_ttl)
+        if EC.sync_cache_ttl == -1:
+            self._cache_query = NullCache()
+        else:
+            self._cache_query = SimpleCache(default_timeout=EC.sync_cache_ttl)
 
     def _reporting_ignitions(self):
         for k, v in self.ignition_dict.items():
@@ -342,6 +345,7 @@ class ConfigSyncSchedules(object):
                 automatic_name="cp-%d-%s" % (i, m["ipv4"].replace(".", "-")),
                 update_extra_metadata=update_md,
             )
+        return len(machine_roles)
 
     def kubernetes_nodes(self):
         marker = self.kubernetes_nodes.__name__
@@ -360,6 +364,7 @@ class ConfigSyncSchedules(object):
                 automatic_name="no-%d-%s" % (i, m["ipv4"].replace(".", "-")),
                 update_extra_metadata=update_md,
             )
+        return len(machine_roles)
 
     def notify(self):
         """
@@ -370,11 +375,12 @@ class ConfigSyncSchedules(object):
 
     def apply(self, nb_try=2, seconds_sleep=0):
         for i in range(nb_try):
+            self.log.debug("start syncing...")
             try:
-                self.etcd_member_kubernetes_control_plane()
-                self.kubernetes_nodes()
+                nb = self.etcd_member_kubernetes_control_plane()
+                nb += self.kubernetes_nodes()
                 self.notify()
-                return
+                return nb
             except Exception as e:
                 self.log.error("fail to apply the sync %s %s" % (type(e), e))
                 if i + 1 == nb_try:
@@ -382,6 +388,7 @@ class ConfigSyncSchedules(object):
 
             self.log.warning("retry %d/%d in %d s" % (i + 1, nb_try, seconds_sleep))
             time.sleep(seconds_sleep)
+        raise RuntimeError("fail to apply after %d try" % nb_try)
 
     def _query_roles(self, *roles):
         roles = "&".join(roles)

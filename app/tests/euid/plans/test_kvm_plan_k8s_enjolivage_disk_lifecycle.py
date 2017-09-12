@@ -59,7 +59,7 @@ class TestKVMK8SEnjolivageDiskLifecycleLifecycle0(TestKVMK8sEnjolivageDiskLifecy
             time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds)
 
             for i in range(120):
-                if plan_k8s_2t.apply() == 0:
+                if plan_k8s_2t.apply() == nb_node:
                     break
                 time.sleep(self.testing_sleep_seconds)
 

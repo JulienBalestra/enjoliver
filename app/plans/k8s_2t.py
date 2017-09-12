@@ -20,6 +20,10 @@ from configs import EnjoliverConfig
 
 
 class Kubernetes2Tiers(object):
+    """
+    Kubernetes 2 tiers is a plan class for creating control plane and nodes
+    It run a simple scheduler and a sync state of matchbox
+    """
     wait = 10
 
     def __init__(self,
@@ -61,11 +65,15 @@ class Kubernetes2Tiers(object):
         gen.dumps()
 
     def apply(self):
+        """
+        Schedule and synchronise the state for matchbox
+        :return: the number of synchronised machines
+        """
         while self._sch_k8s_control_plane.apply(nb_try=5, seconds_sleep=1) is False:
             time.sleep(self.wait)
-        nb = self._sch_k8s_node.apply(nb_try=5, seconds_sleep=1)
-        self._sync.apply(nb_try=10, seconds_sleep=2)
-        return nb
+
+        self._sch_k8s_node.apply(nb_try=5, seconds_sleep=1)
+        return self._sync.apply(nb_try=10, seconds_sleep=2)
 
     @property
     def etcd_member_ip_list(self):

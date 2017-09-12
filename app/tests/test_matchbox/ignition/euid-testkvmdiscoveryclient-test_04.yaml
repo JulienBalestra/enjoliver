@@ -57,6 +57,9 @@ storage:
         inline: |
           discovery
 
+    - path: /etc/discovery
+      filesystem: root
+
     - path: /etc/metadata-endpoints.env
       filesystem: root
       mode: 0644
