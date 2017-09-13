@@ -509,8 +509,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         return disco_data
 
     def kvm_restart_off_machines(self, to_start: list, tries=120):
-        assert type(to_start) is list
-        assert len(to_start) > 0
+        self.assertIs(list, type(to_start))
+        self.assertGreater(len(to_start), 0)
         for j in range(tries):
             if len(to_start) == 0:
                 break
@@ -530,8 +530,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         self.assertEqual(len(to_start), 0)
 
     def etcd_endpoint_health(self, ips: list, port: int, tries=30, verify=True, certs_name=""):
-        assert type(ips) is list
-        assert len(ips) > 0
+        self.assertIs(list, type(ips))
+        self.assertGreater(len(ips), 0)
         certs = tuple()
         if certs_name:
             verify, certs = self._get_certificates(certs_name)
@@ -772,8 +772,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         self.assertEqual(len(items), nodes_nb)
 
     def kube_apiserver_health(self, ips: list, tries=200):
-        assert type(ips) is list
-        assert len(ips) > 0
+        self.assertIs(list, type(ips))
+        self.assertGreater(len(ips), 0)
         for t in range(tries):
             if len(ips) == 0:
                 break

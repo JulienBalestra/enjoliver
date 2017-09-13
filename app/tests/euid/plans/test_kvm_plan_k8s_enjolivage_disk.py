@@ -119,7 +119,6 @@ class TestKVMK8sEnjolivageDisk0(TestKVMK8sEnjolivageDisk):
                 if os.getenv("TEST"):
                     self.iteractive_usage(
                         api_server_uri="https://%s:6443" % plan_k8s_2t.kubernetes_control_plane_ip_list[0],
-                        # fns=[plan_k8s_2t.apply]
                     )
             finally:
                 for i in range(nb_node):

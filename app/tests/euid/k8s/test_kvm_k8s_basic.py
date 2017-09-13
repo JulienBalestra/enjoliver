@@ -1,10 +1,11 @@
 import copy
 import os
-import sys
-import time
 import unittest
 
-from app import generator, schedulerv2, sync
+import sys
+import time
+
+from app.plans import k8s_2t
 
 try:
     import kvm_player
@@ -34,88 +35,75 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
         nb_node = 2
         marker = "euid-%s-%s" % (TestKVMK8sBasic.__name__.lower(), self.test_00.__name__)
         nodes = ["%s-%d" % (marker, i) for i in range(nb_node)]
-        gen = generator.Generator(
-            api_uri=self.api_uri,
-            profile_id="%s" % marker,
-            name="%s" % marker,
-            ignition_id="%s.yaml" % marker,
+        plan_k8s_2t = k8s_2t.Kubernetes2Tiers(
+            {
+                "discovery": marker,
+                "etcd_member_kubernetes_control_plane": "%s-%s" % (marker, "etcd-member-control-plane"),
+                "kubernetes_nodes": "%s-%s" % (marker, "k8s-node"),
+            },
             matchbox_path=self.test_matchbox_path,
-            extra_metadata={
-                "lldp_image_url": self.ec.lldp_image_url,
-                "etc_hosts": self.ec.etc_hosts,
-            }
-        )
-        gen.dumps()
-        sy = sync.ConfigSyncSchedules(
             api_uri=self.api_uri,
-            matchbox_path=self.test_matchbox_path,
-            ignition_dict={
-                "etcd_member_kubernetes_control_plane": "%s-%s" % (marker, "k8s-control-plane"),
-                "kubernetes_nodes": "%s-%s" % (marker, "k8s-node")
-            }
+            extra_selectors=dict(),
         )
-        for m in nodes:
-            self.clean_up_virtual_machine(m)
+        plan_k8s_2t._sch_k8s_control_plane.expected_nb = 1
+
         try:
             for i, m in enumerate(nodes):
+                # if the machine already exist: clean it
+                self.clean_up_virtual_machine(m)
                 virt_install = self.create_virtual_machine(m, nb_node)
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
-                time.sleep(self.testing_sleep_seconds)  # KVM fail to associate nic
-
-            time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds)
-
-            sch_cp = schedulerv2.EtcdMemberKubernetesControlPlane(self.api_uri)
-            sch_cp.expected_nb = 1
-            for i in range(60):
-                if sch_cp.apply() is True:
-                    sy.apply()
-                    break
                 time.sleep(self.testing_sleep_seconds)
 
-            self.assertTrue(sch_cp.apply())
-            sch_no = schedulerv2.KubernetesNode(self.api_uri, apply_dep=False)
-            for i in range(60):
-                sy.apply()
-                if sch_no.apply() == nb_node - 1:
+            for i in range(120):
+                if plan_k8s_2t.apply() == nb_node:
                     break
                 time.sleep(self.testing_sleep_seconds)
-
-            self.assertEqual(nb_node - 1, sch_no.apply())
-            sy.apply()
-
-            time.sleep(self.testing_sleep_seconds)
 
             to_start = copy.deepcopy(nodes)
             self.kvm_restart_off_machines(to_start)
             time.sleep(self.testing_sleep_seconds * nb_node)
 
-            self.etcd_member_len(sy.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb,
+            self.etcd_member_len(plan_k8s_2t.kubernetes_control_plane_ip_list[0],
+                                 plan_k8s_2t._sch_k8s_control_plane.expected_nb,
                                  self.ec.vault_etcd_client_port, verify=False)
-            self.etcd_endpoint_health(sy.kubernetes_control_plane_ip_list, self.ec.vault_etcd_client_port, verify=False)
+            self.etcd_endpoint_health(plan_k8s_2t.kubernetes_control_plane_ip_list, self.ec.vault_etcd_client_port,
+                                      verify=False)
 
-            self.vault_self_certs(sy.kubernetes_control_plane_ip_list[0], self.ec.vault_etcd_client_port)
-            self.vault_verifing_issuing_ca(sy.kubernetes_control_plane_ip_list[0], self.ec.vault_etcd_client_port)
-            self.vault_issue_app_certs(sy.kubernetes_control_plane_ip_list[0], self.ec.vault_etcd_client_port)
+            self.vault_self_certs(plan_k8s_2t.kubernetes_control_plane_ip_list[0], self.ec.vault_etcd_client_port)
+            self.vault_verifing_issuing_ca(plan_k8s_2t.kubernetes_control_plane_ip_list[0],
+                                           self.ec.vault_etcd_client_port)
+            self.vault_issue_app_certs(plan_k8s_2t.kubernetes_control_plane_ip_list[0], self.ec.vault_etcd_client_port)
 
-            self.save_unseal_key(sy.kubernetes_control_plane_ip_list)
-            self.unseal_all_vaults(sy.kubernetes_control_plane_ip_list, self.ec.vault_etcd_client_port)
+            self.save_unseal_key(plan_k8s_2t.kubernetes_control_plane_ip_list)
+            self.unseal_all_vaults(plan_k8s_2t.kubernetes_control_plane_ip_list, self.ec.vault_etcd_client_port)
 
-            self.etcd_member_len(sy.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb,
+            self.etcd_member_len(plan_k8s_2t.kubernetes_control_plane_ip_list[0],
+                                 plan_k8s_2t._sch_k8s_control_plane.expected_nb,
                                  self.ec.kubernetes_etcd_client_port, certs_name="etcd-kubernetes_client")
-            self.etcd_member_len(sy.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb,
+            self.etcd_member_len(plan_k8s_2t.kubernetes_control_plane_ip_list[0],
+                                 plan_k8s_2t._sch_k8s_control_plane.expected_nb,
                                  self.ec.fleet_etcd_client_port, certs_name="etcd-fleet_client")
 
-            self.etcd_endpoint_health(sy.kubernetes_control_plane_ip_list, self.ec.kubernetes_etcd_client_port,
+            self.etcd_endpoint_health(plan_k8s_2t.kubernetes_control_plane_ip_list, self.ec.kubernetes_etcd_client_port,
                                       certs_name="etcd-kubernetes_client")
-            self.etcd_endpoint_health(sy.kubernetes_control_plane_ip_list + sy.kubernetes_nodes_ip_list,
-                                      self.ec.fleet_etcd_client_port, certs_name="etcd-fleet_client")
+            self.etcd_endpoint_health(
+                plan_k8s_2t.kubernetes_control_plane_ip_list + plan_k8s_2t.kubernetes_nodes_ip_list,
+                self.ec.fleet_etcd_client_port, certs_name="etcd-fleet_client")
+            self.kube_apiserver_health(plan_k8s_2t.kubernetes_control_plane_ip_list)
+            self.create_tiller(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+            self.kubernetes_node_nb(plan_k8s_2t.kubernetes_control_plane_ip_list[0], nb_node)
 
-            self.kube_apiserver_health(sy.kubernetes_control_plane_ip_list)
-            self.kubernetes_node_nb(sy.kubernetes_control_plane_ip_list[0], nb_node)
+            self.pod_tiller_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+            for chart in ["heapster", "node-exporter", "prometheus"]:
+                self.create_helm_by_name(plan_k8s_2t.kubernetes_control_plane_ip_list[0], chart)
+
             self.write_ending(marker)
         finally:
             if os.getenv("TEST"):
-                self.iteractive_usage(api_server_uri="https://%s:6443" % sy.kubernetes_control_plane_ip_list[0])
+                self.iteractive_usage(
+                    api_server_uri="https://%s:6443" % plan_k8s_2t.kubernetes_control_plane_ip_list[0],
+                )
             for i in range(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 self.clean_up_virtual_machine(machine_marker)
@@ -129,88 +117,75 @@ class TestKVMK8SBasic1(TestKVMK8sBasic):
         nb_node = 3
         marker = "euid-%s-%s" % (TestKVMK8sBasic.__name__.lower(), self.test_01.__name__)
         nodes = ["%s-%d" % (marker, i) for i in range(nb_node)]
-        gen = generator.Generator(
-            api_uri=self.api_uri,
-            profile_id="%s" % marker,
-            name="%s" % marker,
-            ignition_id="%s.yaml" % marker,
+        plan_k8s_2t = k8s_2t.Kubernetes2Tiers(
+            {
+                "discovery": marker,
+                "etcd_member_kubernetes_control_plane": "%s-%s" % (marker, "etcd-member-control-plane"),
+                "kubernetes_nodes": "%s-%s" % (marker, "k8s-node"),
+            },
             matchbox_path=self.test_matchbox_path,
-            extra_metadata={
-                "lldp_image_url": self.ec.lldp_image_url,
-                "etc_hosts": self.ec.etc_hosts,
-            }
-        )
-        gen.dumps()
-        sy = sync.ConfigSyncSchedules(
             api_uri=self.api_uri,
-            matchbox_path=self.test_matchbox_path,
-            ignition_dict={
-                "etcd_member_kubernetes_control_plane": "%s-%s" % (marker, "k8s-control-plane"),
-                "kubernetes_nodes": "%s-%s" % (marker, "k8s-node")
-            }
+            extra_selectors=dict(),
         )
-        for m in nodes:
-            self.clean_up_virtual_machine(m)
+        plan_k8s_2t._sch_k8s_control_plane.expected_nb = 3
+
         try:
             for i, m in enumerate(nodes):
+                # if the machine already exist: clean it
+                self.clean_up_virtual_machine(m)
                 virt_install = self.create_virtual_machine(m, nb_node)
                 self.virsh(virt_install, assertion=True, v=self.dev_null)
                 time.sleep(self.testing_sleep_seconds)
 
-            time.sleep(self.testing_sleep_seconds * self.testing_sleep_seconds)
-
-            sch_cp = schedulerv2.EtcdMemberKubernetesControlPlane(self.api_uri)
-            sch_cp.expected_nb = 1
-            for i in range(60):
-                if sch_cp.apply() is True:
-                    sy.apply()
+            for i in range(120):
+                if plan_k8s_2t.apply() == nb_node:
                     break
                 time.sleep(self.testing_sleep_seconds)
-
-            self.assertTrue(sch_cp.apply())
-            sch_no = schedulerv2.KubernetesNode(self.api_uri, apply_dep=False)
-            for i in range(60):
-                sy.apply()
-                if sch_no.apply() == nb_node - 1:
-                    break
-                time.sleep(self.testing_sleep_seconds)
-
-            self.assertEqual(nb_node - 1, sch_no.apply())
-            sy.apply()
-
-            time.sleep(self.testing_sleep_seconds)
 
             to_start = copy.deepcopy(nodes)
             self.kvm_restart_off_machines(to_start)
             time.sleep(self.testing_sleep_seconds * nb_node)
 
-            self.etcd_member_len(sy.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb,
+            self.etcd_member_len(plan_k8s_2t.kubernetes_control_plane_ip_list[0],
+                                 plan_k8s_2t._sch_k8s_control_plane.expected_nb,
                                  self.ec.vault_etcd_client_port, verify=False)
-            self.etcd_endpoint_health(sy.kubernetes_control_plane_ip_list, self.ec.vault_etcd_client_port, verify=False)
+            self.etcd_endpoint_health(plan_k8s_2t.kubernetes_control_plane_ip_list, self.ec.vault_etcd_client_port,
+                                      verify=False)
 
-            self.vault_self_certs(sy.kubernetes_control_plane_ip_list[0], self.ec.vault_etcd_client_port)
-            self.vault_verifing_issuing_ca(sy.kubernetes_control_plane_ip_list[0], self.ec.vault_etcd_client_port)
-            self.vault_issue_app_certs(sy.kubernetes_control_plane_ip_list[0], self.ec.vault_etcd_client_port)
+            self.vault_self_certs(plan_k8s_2t.kubernetes_control_plane_ip_list[0], self.ec.vault_etcd_client_port)
+            self.vault_verifing_issuing_ca(plan_k8s_2t.kubernetes_control_plane_ip_list[0],
+                                           self.ec.vault_etcd_client_port)
+            self.vault_issue_app_certs(plan_k8s_2t.kubernetes_control_plane_ip_list[0], self.ec.vault_etcd_client_port)
 
-            self.save_unseal_key(sy.kubernetes_control_plane_ip_list)
-            self.unseal_all_vaults(sy.kubernetes_control_plane_ip_list, self.ec.vault_etcd_client_port)
+            self.save_unseal_key(plan_k8s_2t.kubernetes_control_plane_ip_list)
+            self.unseal_all_vaults(plan_k8s_2t.kubernetes_control_plane_ip_list, self.ec.vault_etcd_client_port)
 
-            self.etcd_member_len(sy.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb,
+            self.etcd_member_len(plan_k8s_2t.kubernetes_control_plane_ip_list[0],
+                                 plan_k8s_2t._sch_k8s_control_plane.expected_nb,
                                  self.ec.kubernetes_etcd_client_port, certs_name="etcd-kubernetes_client")
-            self.etcd_member_len(sy.kubernetes_control_plane_ip_list[0], sch_cp.expected_nb,
+            self.etcd_member_len(plan_k8s_2t.kubernetes_control_plane_ip_list[0],
+                                 plan_k8s_2t._sch_k8s_control_plane.expected_nb,
                                  self.ec.fleet_etcd_client_port, certs_name="etcd-fleet_client")
 
-            self.etcd_endpoint_health(sy.kubernetes_control_plane_ip_list, self.ec.kubernetes_etcd_client_port,
+            self.etcd_endpoint_health(plan_k8s_2t.kubernetes_control_plane_ip_list, self.ec.kubernetes_etcd_client_port,
                                       certs_name="etcd-kubernetes_client")
-            self.etcd_endpoint_health(sy.kubernetes_control_plane_ip_list + sy.kubernetes_nodes_ip_list,
-                                      self.ec.fleet_etcd_client_port, certs_name="etcd-fleet_client")
+            self.etcd_endpoint_health(
+                plan_k8s_2t.kubernetes_control_plane_ip_list + plan_k8s_2t.kubernetes_nodes_ip_list,
+                self.ec.fleet_etcd_client_port, certs_name="etcd-fleet_client")
+            self.kube_apiserver_health(plan_k8s_2t.kubernetes_control_plane_ip_list)
+            self.create_tiller(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+            self.kubernetes_node_nb(plan_k8s_2t.kubernetes_control_plane_ip_list[0], nb_node)
 
-            self.kube_apiserver_health(sy.kubernetes_control_plane_ip_list)
-            self.kubernetes_node_nb(sy.kubernetes_control_plane_ip_list[0], nb_node)
+            self.pod_tiller_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+            for chart in ["heapster", "node-exporter", "prometheus"]:
+                self.create_helm_by_name(plan_k8s_2t.kubernetes_control_plane_ip_list[0], chart)
+
             self.write_ending(marker)
         finally:
             if os.getenv("TEST"):
-                self.iteractive_usage(api_server_uri="https://%s:6443" % sy.kubernetes_control_plane_ip_list[0])
+                self.iteractive_usage(
+                    api_server_uri="https://%s:6443" % plan_k8s_2t.kubernetes_control_plane_ip_list[0],
+                )
             for i in range(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 self.clean_up_virtual_machine(machine_marker)

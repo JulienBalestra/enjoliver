@@ -169,6 +169,30 @@ storage:
         inline: |
           REBOOT_STRATEGY=off
 
+    - path: /etc/rkt/paths.d/paths.json
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          {
+            "rktKind": "paths",
+            "rktVersion": "v1",
+            "stage1-images": "/usr/lib/rkt/stage1-images"
+          }
+
+    - path: /etc/rkt/stage1.d/coreos.json
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          {
+              "rktKind": "stage1",
+              "rktVersion": "v1",
+              "name": "coreos.com/rkt/stage1-coreos",
+              "version": "v1.27.0",
+              "location": "/usr/lib/rkt/stage1-images/stage1-coreos.aci"
+          }
+
 {{ if index . "ssh_authorized_keys" }}
 passwd:
   users:

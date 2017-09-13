@@ -167,13 +167,13 @@ storage:
               jq -e '.storage.files[] | select(.path == "/etc/discovery") | .contents.source' ${NEW_IGNITION}
               if [ $? -ne 0 ]
               then
-                  udevadm settle
+                  #udevadm settle
 
-                  until curl -f "${API_URI}/install-authorization/${QUERY}"
-                  do
-                    echo "install-authorization not aquired"
-                    sleep 10
-                  done
+                  #until curl -f "${API_URI}/install-authorization/${QUERY}"
+                  #do
+                  #  echo "install-authorization not aquired"
+                  #  sleep 10
+                  #done
 
                   #coreos-install -d /dev/sda -V current -C stable -i ${NEW_IGNITION} \
                   #  {{if index . "coreos_install_base_url"}} -b {{.coreos_install_base_url}}{{end}} || {
@@ -192,6 +192,30 @@ storage:
       contents:
         inline: |
           REBOOT_STRATEGY=off
+
+    - path: /etc/rkt/paths.d/paths.json
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          {
+            "rktKind": "paths",
+            "rktVersion": "v1",
+            "stage1-images": "/usr/lib/rkt/stage1-images"
+          }
+
+    - path: /etc/rkt/stage1.d/coreos.json
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          {
+              "rktKind": "stage1",
+              "rktVersion": "v1",
+              "name": "coreos.com/rkt/stage1-coreos",
+              "version": "v1.27.0",
+              "location": "/usr/lib/rkt/stage1-images/stage1-coreos.aci"
+          }
 
 {{ if index . "ssh_authorized_keys" }}
 passwd:
