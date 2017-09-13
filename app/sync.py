@@ -40,10 +40,10 @@ class ConfigSyncSchedules(object):
         self._reporting_ignitions()
         self.extra_selector = extra_selector_dict if extra_selector_dict else {}
         # inMemory cache for http queries
-        if EC.sync_cache_ttl == -1:
-            self._cache_query = NullCache()
-        else:
+        if EC.sync_cache_ttl > 0:
             self._cache_query = SimpleCache(default_timeout=EC.sync_cache_ttl)
+        else:
+            self._cache_query = NullCache()
 
     def _reporting_ignitions(self):
         for k, v in self.ignition_dict.items():
@@ -345,6 +345,7 @@ class ConfigSyncSchedules(object):
                 automatic_name="cp-%d-%s" % (i, m["ipv4"].replace(".", "-")),
                 update_extra_metadata=update_md,
             )
+        self.log.info("synced %d" % len(machine_roles))
         return len(machine_roles)
 
     def kubernetes_nodes(self):
@@ -364,6 +365,7 @@ class ConfigSyncSchedules(object):
                 automatic_name="no-%d-%s" % (i, m["ipv4"].replace(".", "-")),
                 update_extra_metadata=update_md,
             )
+        self.log.info("synced %d" % len(machine_roles))
         return len(machine_roles)
 
     def notify(self):
@@ -374,8 +376,8 @@ class ConfigSyncSchedules(object):
         pass
 
     def apply(self, nb_try=2, seconds_sleep=0):
+        self.log.info("start syncing...")
         for i in range(nb_try):
-            self.log.debug("start syncing...")
             try:
                 nb = self.etcd_member_kubernetes_control_plane()
                 nb += self.kubernetes_nodes()
@@ -397,6 +399,7 @@ class ConfigSyncSchedules(object):
         data = self._cache_query.get(url)
         if data is None:
             # not in cache or evicted
+            self.log.debug("cache is empty for %s" % url)
             req = requests.get("%s%s" % (self.api_uri, url))
             data = json.loads(req.content.decode())
             req.close()
@@ -410,6 +413,7 @@ class ConfigSyncSchedules(object):
         data = self._cache_query.get(url)
         if data is None:
             # not in cache or evicted
+            self.log.debug("cache is empty for %s" % url)
             req = requests.get("%s%s" % (self.api_uri, url))
             data = json.loads(req.content.decode())
             req.close()
