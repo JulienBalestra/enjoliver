@@ -359,7 +359,7 @@ class InjectDiscovery(object):
         try:
             if self.adds != 0 or self.updates != 0:
                 try:
-                    self.log.debug("commiting")
+                    self.log.debug("committing")
                     self.session.commit()
 
                 except Exception as e:
