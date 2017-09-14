@@ -39,6 +39,7 @@ gunicorn_bind: "0.0.0.0:5000"
 #ignition_journal_dir: '/var/lib/enjoliver/ignition_journal'
 #werkzeug_fs_cache_dir: '/var/lib/enjoliver/werkzeug_cache'
 #prometheus_multiproc_dir: "/tmp/prometheus_multiproc_dir"
+#sync_cache_ttl: 30
 
 etcd_member_kubernetes_control_plane_expected_nb: 3
 

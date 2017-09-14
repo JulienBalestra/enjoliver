@@ -285,7 +285,7 @@ class InjectDiscovery(object):
                             MachineDisk.path == disk["path"]).count() == 0:
                 m_disks.append(
                     MachineDisk(
-                        id=self.machine.id,
+                        machine_id=self.machine.id,
                         path=disk["path"],
                         size=disk["size-bytes"]
                     )
