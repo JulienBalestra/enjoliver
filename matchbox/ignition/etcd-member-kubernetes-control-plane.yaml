@@ -41,6 +41,9 @@ systemd:
         [Install]
         RequiredBy=multi-user.target
 
+    - name: rkt-metadata.service
+      enable: true
+
     - name: enjoliver-agent.service
       enable: true
       contents: |
@@ -519,8 +522,6 @@ systemd:
             [Service]
             EnvironmentFile=/etc/metadata.env
             ExecStartPre=/usr/bin/etcdctl --no-sync --endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} ls
-            ExecStart=
-            ExecStart=/usr/bin/fleetd
             Restart=always
             RestartSec=10
 
@@ -1327,8 +1328,6 @@ storage:
             systemctl stop ${service}.service
           done
 
-          rkt gc --grace-period=0s
-          rkt image gc --grace-period=0s
           set -e
 
           DEVICE=/dev/sda

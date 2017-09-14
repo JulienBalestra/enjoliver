@@ -182,6 +182,7 @@ storage:
                     exit 2
                   }
                   curl -f -XPOST "${API_URI}/lifecycle/coreos-install/success/${QUERY}"
+                  sync
                   systemctl reboot
               fi
           done
@@ -204,18 +205,6 @@ storage:
             "stage1-images": "/usr/lib/rkt/stage1-images"
           }
 
-    - path: /etc/rkt/stage1.d/coreos.json
-      filesystem: root
-      mode: 0644
-      contents:
-        inline: |
-          {
-              "rktKind": "stage1",
-              "rktVersion": "v1",
-              "name": "coreos.com/rkt/stage1-coreos",
-              "version": "v1.27.0",
-              "location": "/usr/lib/rkt/stage1-images/stage1-coreos.aci"
-          }
 
 {{ if index . "ssh_authorized_keys" }}
 passwd:
