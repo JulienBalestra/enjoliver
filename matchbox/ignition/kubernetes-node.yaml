@@ -417,17 +417,17 @@ systemd:
             ExecStartPre=-/bin/sleep 2
             ExecStartPre=-/usr/bin/rkt image gc --grace-period=12h
             # 1h because the run-prepared by kubernetes can be gc
-            ExecStart=/usr/bin/rkt gc --grace-period=1h
+            ExecStart=/usr/bin/rkt gc --grace-period=3m
 
     - name: rkt-gc.timer
       enable: true
       dropins:
         - name: 10-rkt.conf
           contents: |
-            [Service]
+            [Timer]
             # drop-in bugs if don't create an empty entry
             OnActiveSec=
-            OnActiveSec=5min
+            OnActiveSec=4min
             OnUnitActiveSec=
             OnUnitActiveSec=10min
 
