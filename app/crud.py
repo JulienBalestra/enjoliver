@@ -171,7 +171,7 @@ class InjectDiscovery(object):
     """
     log = logger.get_logger(__file__)
 
-    def __init__(self, session, ignition_journal, discovery):
+    def __init__(self, session: Session, ignition_journal, discovery: dict):
         """
 
         :param session:
@@ -274,7 +274,7 @@ class InjectDiscovery(object):
         return m_interfaces
 
     def _machine_disk(self):
-        m_disks = self.machine.disks
+        m_disks = []
 
         if not self.discovery["disks"]:
             self.log.error("machineID: %s haven't any disk" % self.machine.id)
@@ -283,13 +283,13 @@ class InjectDiscovery(object):
         for disk in self.discovery["disks"]:
             if self.session.query(MachineDisk).filter(MachineDisk.machine_id == self.machine.id).filter(
                             MachineDisk.path == disk["path"]).count() == 0:
-                m_disks.append(
-                    MachineDisk(
-                        machine_id=self.machine.id,
-                        path=disk["path"],
-                        size=disk["size-bytes"]
-                    )
+                md = MachineDisk(
+                    machine_id=self.machine.id,
+                    path=disk["path"],
+                    size=disk["size-bytes"]
                 )
+                self.session.add(md)
+                m_disks.append(md)
                 self.adds += 1
 
         return m_disks
