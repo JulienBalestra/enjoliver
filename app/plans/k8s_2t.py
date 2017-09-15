@@ -105,9 +105,7 @@ def is_health_for_plan(healthz: dict):
 
 if __name__ == '__main__':
     log = logger.get_logger(__file__)
-    wait = 30
     ec = EnjoliverConfig(importer=__file__)
-    Kubernetes2Tiers.wait = wait
 
     health = "%s/healthz" % ec.api_uri
     tries = 10
@@ -134,6 +132,11 @@ if __name__ == '__main__':
         api_uri=ec.api_uri,
         extra_selectors=ec.extra_selectors
     )
+
+    if ec.sync_cache_ttl > 0:
+        wait = ec.sync_cache_ttl + (ec.sync_cache_ttl * 0.1)
+    else:
+        wait = 10
     while True:
         k2t.apply()
-        time.sleep(k2t.wait)
+        time.sleep(10)
