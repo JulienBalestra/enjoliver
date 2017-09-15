@@ -9,10 +9,10 @@ set -o pipefail
 apt-get update -qq
 apt-get install -y dh-autoreconf cpio squashfs-tools wget libacl1-dev libsystemd-dev
 
-mkdir -pv /go/src/github.com/rkt
+mkdir -pv /go/src/github.com/rkt/rkt
 
-git clone https://github.com/rkt/rkt.git /go/src/github/rkt/rkt
-cd /go/src/github/rkt/rkt
+git clone https://github.com/rkt/rkt.git /go/src/github.com/rkt/rkt
+cd /go/src/github.com/rkt/rkt
 
 git checkout v${ACI_VERSION}
 
