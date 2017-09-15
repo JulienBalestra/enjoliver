@@ -52,34 +52,6 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
-    - name: discoveryC.service
-      enable: true
-      contents: |
-        [Unit]
-        After=lldpd.service
-        [Service]
-        TimeoutStartSec=10m
-        Environment=LLDP_VOLUME=/run/lldp
-        Environment=LLDP_FILE=/run/lldp/lldp.xml
-        Environment=IGNITION_FILE=/run/ignition.journal
-        EnvironmentFile=-/etc/metadata-endpoints.env
-        # Prepare the ignition logs
-        ExecStartPre=-/bin/bash -c "/usr/bin/journalctl --identifier=ignition -o short-iso > ${IGNITION_FILE}"
-        # LLDP export xml file
-        ExecStartPre=-/usr/bin/rkt run --insecure-options=all --mount volume=socket,target=/var/run \
-           --net=host \
-           {{.lldp_image_url}} \
-           --volume socket,kind=host,source=${LLDP_VOLUME} \
-           --exec opt/bin/lldp-export
-        # Clean the store to save space
-        ExecStartPre=-/usr/bin/rkt image gc --grace-period=0s
-        ExecStartPre=-/usr/bin/rkt gc --grace-period=0s
-        ExecStart=/usr/bin/discoveryC
-        Restart=on-failure
-        RestartSec=5s
-        [Install]
-        WantedBy=multi-user.target
-
     - name: installer.service
       enable: true
       contents: |
@@ -137,6 +109,30 @@ storage:
       contents:
         inline: |
           #!/bin/bash -x
+
+          export LLDP_VOLUME=/run/lldp
+          export LLDP_FILE=/run/lldp/lldp.xml
+          export IGNITION_FILE=/run/ignition.journal
+
+          # Prepare the ignition logs
+          journalctl --identifier=ignition -o short-iso > ${IGNITION_FILE}
+
+          # LLDP export xml file
+          rkt run --insecure-options=all --mount volume=socket,target=/var/run \
+             --net=host \
+             {{.lldp_image_url}} \
+             --volume socket,kind=host,source=${LLDP_VOLUME} \
+             --exec opt/bin/lldp-export
+
+          # Clean the store to save space
+          rkt image gc --grace-period=0s
+          rkt gc --grace-period=0s
+
+          for t in {1..6}
+          do
+            /usr/bin/discoveryC && break
+            sleep ${t}
+          done
 
           set -o pipefail
 
@@ -203,6 +199,19 @@ storage:
             "rktKind": "paths",
             "rktVersion": "v1",
             "stage1-images": "/usr/lib/rkt/stage1-images"
+          }
+
+    - path: /etc/rkt/stage1.d/coreos.json
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          {
+              "rktKind": "stage1",
+              "rktVersion": "v1",
+              "name": "coreos.com/rkt/stage1-coreos",
+              "version": "v1.27.0",
+              "location": "/usr/lib/rkt/stage1-images/stage1-coreos.aci"
           }
 
 
