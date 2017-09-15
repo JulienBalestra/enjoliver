@@ -1,0 +1,49 @@
+From 85ef827e5453ecdd5c06a4ba2f181375c18fdbe4 Mon Sep 17 00:00:00 2001
+From: JulienBalestra <julien.balestra@gmail.com>
+Date: Fri, 15 Sep 2017 16:42:16 +0200
+Subject: [PATCH] Force the pod fetching
+
+---
+ pkg/kubelet/rkt/rkt.go | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+diff --git a/pkg/kubelet/rkt/rkt.go b/pkg/kubelet/rkt/rkt.go
+index e1e6fd2..3afd57c 100644
+--- a/pkg/kubelet/rkt/rkt.go
++++ b/pkg/kubelet/rkt/rkt.go
+@@ -1406,6 +1406,20 @@ func (r *Runtime) basicBackoff(pod *v1.Pod) {
+ 	r.RunPodCalledLock.Unlock()
+ }
+ 
++// hack to be sure the images are really present in the rkt store
++func (r *Runtime) forcePodImageFetching(pod *v1.Pod) error {
++	for _, c := range pod.Spec.Containers {
++		cmd := r.execer.Command(r.config.Path, "fetch", "--insecure-options=all", "--pull-policy=new", c.Image)
++		err := cmd.Run()
++		if err != nil {
++			glog.Errorf("Failed to fetch: %v", err)
++			return fmt.Errorf("fail to fetch %s", c.Image)
++		}
++		glog.V(5).Infof("image %s fetched", c.Image)
++	}
++	return nil
++}
++
+ // RunPod first creates the unit file for a pod, and then
+ // starts the unit over d-bus.
+ func (r *Runtime) RunPod(pod *v1.Pod, pullSecrets []v1.Secret) error {
+@@ -1417,6 +1431,11 @@ func (r *Runtime) RunPod(pod *v1.Pod, pullSecrets []v1.Secret) error {
+ 
+ 	r.basicBackoff(pod)
+ 
++	err = r.forcePodImageFetching(pod)
++	if err != nil {
++		return err
++	}
++
+ 	err = createHostPathVolumes(pod)
+ 	if err != nil {
+ 		return err
+-- 
+2.7.4
+
