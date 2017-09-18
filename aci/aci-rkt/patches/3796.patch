@@ -1,0 +1,25 @@
+From 267fc72acde11e05e8e64cf8fc5f1622ae33be47 Mon Sep 17 00:00:00 2001
+From: JulienBalestra <julien.balestra@gmail.com>
+Date: Mon, 18 Sep 2017 15:53:54 +0200
+Subject: [PATCH] image: set the header instead of adding it
+
+---
+ rkt/image/resumablesession.go | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/rkt/image/resumablesession.go b/rkt/image/resumablesession.go
+index 5baf2bd..2c1c4fc 100644
+--- a/rkt/image/resumablesession.go
++++ b/rkt/image/resumablesession.go
+@@ -361,7 +361,7 @@ func (s *resumableSession) setHTTPHeaders(req *http.Request, stripAuth bool) {
+ 			continue
+ 		}
+ 		for _, e := range v {
+-			req.Header.Add(k, e)
++			req.Header.Set(k, e)
+ 		}
+ 	}
+ 	req.Header.Add("User-Agent", fmt.Sprintf("rkt/%s", version.Version))
+-- 
+2.7.4
+
