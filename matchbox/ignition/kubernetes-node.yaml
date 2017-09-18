@@ -441,7 +441,7 @@ storage:
           #!/bin/bash
           # legacy system could link to this file
           # ignition version is too old to use links
-          exec /usr/bin/rkt $@
+          exec /usr/bin/rkt "$@"
 
     - path: /etc/enjoliver
       filesystem: root

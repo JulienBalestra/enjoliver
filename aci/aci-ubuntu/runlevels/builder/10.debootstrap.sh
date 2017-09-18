@@ -8,6 +8,7 @@ export LANG=C
 export TERM=xterm
 export DEBIAN_FRONTEND=noninteractive
 
+apt-get update -qq
 apt-get install -y debootstrap
 
 ln -sfv /usr/share/debootstrap/scripts/gutsy /usr/share/debootstrap/scripts/xenial
