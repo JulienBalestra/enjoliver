@@ -1859,9 +1859,11 @@ networkd:
         [NetDev]
         Name=bond0
         Kind=bond
+        [Bond]
         Mode=802.3ad
+        TransmitHashPolicy=layer3+4
+        MIIMonitorSec=1s
         LACPTransmitRate=fast
-        MIIMonitorSec=100s
 
     - name: 00-vbond0.netdev
       contents: |
