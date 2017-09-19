@@ -8,6 +8,13 @@ import (
 	"github.com/golang/glog"
 )
 
+const (
+	RouteHealthz                      = "/healthz"
+	RouteVersion                      = "/version"
+	RouteHackRktFetch                 = "/hack/rkt/fetch"
+	RouteHackSystemdRestartKubernetes = "/hack/systemd/restart/kubernetes"
+)
+
 func (run *Runtime) handlerHealthz(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		health := run.GetComponentStatus()
@@ -16,6 +23,13 @@ func (run *Runtime) handlerHealthz(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(503)
 		}
 		writeResponse(w, &health)
+	}
+}
+
+func (run *Runtime) handlerRoot(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		routes := []string{RouteHealthz, RouteVersion, RouteHackRktFetch, RouteHackSystemdRestartKubernetes}
+		writeResponse(w, &routes)
 	}
 }
 

@@ -48,9 +48,10 @@ func main() {
 		sync.RWMutex{},
 	}
 	http.DefaultClient.Timeout = time.Second * 2
-	http.HandleFunc("/healthz", run.handlerHealthz)
-	http.HandleFunc("/version", run.handlerVersion)
-	http.HandleFunc("/hack/rkt/fetch", run.handlerHackRktFetch)
-	http.HandleFunc("/hack/systemd/restart/kubernetes", run.handlerHackSystemdRestartKubernetesStack)
+	http.HandleFunc("/", run.handlerRoot)
+	http.HandleFunc(RouteHealthz, run.handlerHealthz)
+	http.HandleFunc(RouteVersion, run.handlerVersion)
+	http.HandleFunc(RouteHackRktFetch, run.handlerHackRktFetch)
+	http.HandleFunc(RouteHackSystemdRestartKubernetes, run.handlerHackSystemdRestartKubernetesStack)
 	glog.Fatal(http.ListenAndServe("0.0.0.0:8000", nil))
 }
