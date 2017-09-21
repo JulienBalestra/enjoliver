@@ -497,13 +497,7 @@ systemd:
       enable: true
       contents: |
         [Service]
-        ExecStart=/usr/bin/rktlet \
-          --net=bond0 \
-          --stream-server-address={{.network.ip}}:10241 \
-          --rkt-data-dir=/var/lib/rkt
-        ExecStopPost=-/bin/rm -v /var/run/rktlet.sock
-        Restart=on-failure
-        RestartSec=5s
+        ExecStart=/usr/bin/rktlet --net=bond0
         [Install]
         WantedBy=multi-user.target
 
@@ -1309,7 +1303,7 @@ storage:
               "rktVersion": "v1",
               "name": "coreos.com/rkt/stage1-coreos",
               "version": "v1.27.0",
-              "location": "/usr/lib/rkt/stage1-images/stage1-src.aci"
+              "location": "/usr/lib/rkt/stage1-images/stage1-coreos.aci"
           }
 
     - path: /etc/rkt/net.d/10-k8s.conf
@@ -1606,7 +1600,6 @@ storage:
         inline: |
            export PATH=/opt/bin:$PATH
            export PRIVATE_IPV4={{.network.ip_or_fqdn}}
-           export RKT_EXPERIMENT_APP=true
            export VAULT_ADDR=http://127.0.0.1:{{.vault_port}}
 
     - path: /etc/modules-load.d/network.conf
