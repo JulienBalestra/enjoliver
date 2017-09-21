@@ -1,6 +1,7 @@
 """
 Configuration loading and storing inside EnjoliverConfig class
 """
+import logging
 import os
 
 import yaml
@@ -156,6 +157,7 @@ class EnjoliverConfig(object):
         # Logging level
         # DEBUG or INFO
         self.logging_level = self.config_override("logging_level", "DEBUG")
+        self.logging_formatter = logging.Formatter('%(levelname)-7s %(module)-8s %(funcName)s %(message)s')
 
         self.matchbox_logging_level = self.config_override("matchbox_logging_level", "debug")
         allowed = ["debug", "info", "warning", "error"]

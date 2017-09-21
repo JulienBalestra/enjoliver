@@ -1,6 +1,7 @@
 """
 Always give a working freshly connected session
 """
+import logging
 from contextlib import contextmanager
 
 import psycopg2
@@ -9,14 +10,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.orm import sessionmaker, Session
 
-import logger
 import model
 import monitoring
 
+logger = logging.getLogger(__name__)
+
 
 class SmartDatabaseClient(object):
-    log = logger.get_logger(__file__)
-
     engines = []
     lazy_engine = None
 
@@ -68,9 +68,9 @@ class SmartDatabaseClient(object):
         for single_uri in uri_list:
             e = create_engine(single_uri)
             if "%s" % e.url not in self.engine_urls:
-                self.log.info("%s %s" % (e.driver, e.url))
+                logger.info("%s %s" % (e.driver, e.url))
                 self.engines.append(e)
-        self.log.info("total: %d" % len(self.engines))
+        logger.info("total: %d" % len(self.engines))
 
     @contextmanager
     def connected_cockroach_session(self):
@@ -118,14 +118,14 @@ class SmartDatabaseClient(object):
                 conn = engine.connect()
                 if conn.closed is False:
                     if i > 0:
-                        self.log.info("moving reliable %s to index 0" % engine.url)
+                        logger.info("moving reliable %s to index 0" % engine.url)
                         self.engines[0], self.engines[i] = self.engines[i], self.engines[0]
                     return conn
-                self.log.warning("%d/%d could not connect to %s" % (i + 1, len(self.engines), engine.url))
+                logger.warning("%d/%d could not connect to %s" % (i + 1, len(self.engines), engine.url))
             except Exception as e:
-                self.log.warning("%d/%d could not connect to %s %s" % (i + 1, len(self.engines), engine.url, e))
+                logger.warning("%d/%d could not connect to %s %s" % (i + 1, len(self.engines), engine.url, e))
 
-        self.log.critical("could not connect to any of %s" % ",".join(self.engine_urls))
+        logger.critical("could not connect to any of %s" % ",".join(self.engine_urls))
         raise ConnectionError(",".join(["%s" % k.url for k in self.engines]))
 
     def create_base(self):

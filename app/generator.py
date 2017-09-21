@@ -5,10 +5,12 @@ import re
 
 import deepdiff
 
-import logger
+import logging
 from configs import EnjoliverConfig
 
 ec = EnjoliverConfig(importer=__file__)
+
+logger = logging.getLogger(__name__)
 
 
 class Generator(object):
@@ -56,13 +58,9 @@ class GenerateCommon(object):
     """
     Common set of methods used to generate groups and profiles
     """
-
     __metaclass__ = abc.ABCMeta
-
     _target_data = None
     _raise_enof = IOError
-
-    log = logger.get_logger("Generator")
 
     @abc.abstractmethod
     def generate(self):
@@ -84,7 +82,7 @@ class GenerateCommon(object):
             with open(file_path, 'r') as f:
                 on_disk = json.loads(f.read())
         except Exception as e:
-            self.log.warning("get data of %s raise: %s" % (file_path, e))
+            logger.warning("get data of %s raise: %s" % (file_path, e))
             on_disk = {}
 
         render = self.render()
@@ -92,9 +90,9 @@ class GenerateCommon(object):
         if diff:
             with open(file_path, "w") as fd:
                 fd.write(render)
-            self.log.info("replaced: %s" % file_path)
+            logger.info("replaced: %s" % file_path)
         else:
-            self.log.debug("no diff: %s" % file_path)
+            logger.debug("no diff: %s" % file_path)
 
     @staticmethod
     def ensure_directory(path):
@@ -125,7 +123,7 @@ class GenerateProfile(GenerateCommon):
         try:
             self.ensure_file("%s/ignition/%s" % (matchbox_path, ignition_id))
         except Warning:
-            self.log.warning("not here %s/ignition/%s\n" % (matchbox_path, ignition_id))
+            logger.warning("not here %s/ignition/%s\n" % (matchbox_path, ignition_id))
 
         self.target_path = self.ensure_directory("%s/profiles" % matchbox_path)
         self._target_data = {
@@ -138,7 +136,7 @@ class GenerateProfile(GenerateCommon):
 
     def _boot(self):
         if ec.assets_server_uri:
-            self.log.debug("custom assets_server_uri=%s" % ec.assets_server_uri)
+            logger.debug("custom assets_server_uri=%s" % ec.assets_server_uri)
             uri = ec.assets_server_uri
         else:
             uri = self.api_uri
@@ -157,7 +155,7 @@ class GenerateProfile(GenerateCommon):
 
     def generate(self):
         self._boot()
-        self.log.debug("done: %s" % self._target_data["name"])
+        logger.debug("done: %s" % self._target_data["name"])
         return self.target_data
 
 
@@ -201,7 +199,7 @@ class GenerateGroup(GenerateCommon):
             with open(fp, 'r') as key:
                 content = key.read()
             if len(content.split(" ")) < 2:
-                self.log.debug("%s not valid as ssh_authorized_keys" % fp)
+                logger.debug("%s not valid as ssh_authorized_keys" % fp)
                 continue
             keys.append(content)
 
@@ -212,7 +210,7 @@ class GenerateGroup(GenerateCommon):
         self._target_data["metadata"]["ssh_authorized_keys"] = self._get_ssh_authorized_keys()
 
         for k, v in self.extra_metadata.items():
-            self.log.debug("add %s: %s in metadata" % (k, v))
+            logger.debug("add %s: %s in metadata" % (k, v))
             self._target_data["metadata"][k] = v
 
     def _selector(self):
@@ -237,5 +235,5 @@ class GenerateGroup(GenerateCommon):
     def generate(self):
         self._metadata()
         self._selector()
-        self.log.debug("done: %s" % self._target_data["id"])
+        logger.debug("done: %s" % self._target_data["id"])
         return self.target_data
