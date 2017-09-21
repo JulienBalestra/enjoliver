@@ -7,11 +7,13 @@ import time
 
 import requests
 
-import logger
+import logging
 from configs import EnjoliverConfig
 from model import ScheduleRoles
 
 EC = EnjoliverConfig(importer=__file__)
+
+logger = logging.getLogger(__name__)
 
 
 class CommonScheduler(object):
@@ -19,9 +21,6 @@ class CommonScheduler(object):
     Base class to create profiles with deps
     """
     __metaclass__ = abc.ABCMeta
-
-    log = logger.get_logger(__file__)
-
     apply_deps_tries = EC.apply_deps_tries
     apply_deps_delay = EC.apply_deps_delay
 
@@ -33,15 +32,15 @@ class CommonScheduler(object):
         :return: list of interfaces
         """
         query = "%s/scheduler/available" % api_uri
-        CommonScheduler.log.debug("fetch %s" % query)
+        logger.debug("fetch %s" % query)
         try:
             r = requests.get(query)
             interfaces = json.loads(r.content.decode())
             r.close()
-            CommonScheduler.log.debug("fetch done with len(%d)" % len(interfaces))
+            logger.debug("fetch done with len(%d)" % len(interfaces))
             return interfaces
         except requests.exceptions.ConnectionError:
-            CommonScheduler.log.error("fetch failed: %s" % query)
+            logger.error("fetch failed: %s" % query)
             return []
 
     @abc.abstractmethod
@@ -55,13 +54,13 @@ class CommonScheduler(object):
         """
 
     def apply_dep(self, dep_instance):
-        self.log.info("tries:%d delay:%d" % (self.apply_deps_tries, self.apply_deps_delay))
+        logger.info("tries:%d delay:%d" % (self.apply_deps_tries, self.apply_deps_delay))
         for t in range(self.apply_deps_tries):
             if dep_instance.apply() is True:
                 return True
             time.sleep(self.apply_deps_delay)
 
-        self.log.error("timeout after %d" % (self.apply_deps_delay * self.apply_deps_tries))
+        logger.error("timeout after %d" % (self.apply_deps_delay * self.apply_deps_tries))
         raise RuntimeError("timeout after %d" % (
             self.apply_deps_delay * self.apply_deps_tries))
 
@@ -76,20 +75,20 @@ class CommonScheduler(object):
             }
         ))
         r.close()
-        self.log.info("mac:%s roles:%s" % (mac, str(self.roles)))
+        logger.info("mac:%s roles:%s" % (mac, str(self.roles)))
         return 1
 
     def __apply_available_budget(self):
         available_list = self.fetch_available(self.api_uri)
         if len(available_list) >= self.expected_nb:
-            self.log.info("starting...")
+            logger.info("starting...")
             available_list.sort(key=lambda k: k["mac"])
             for i in range(self.expected_nb):
                 self._affect(available_list[i])
             return True
 
         else:
-            self.log.info("not enough item %d/%d" % (len(available_list), self.expected_nb))
+            logger.info("not enough item %d/%d" % (len(available_list), self.expected_nb))
             return False
 
     def _apply_budget(self):
@@ -99,14 +98,14 @@ class CommonScheduler(object):
             done = json.loads(r.content.decode())
             r.close()
             if len(done) != self.expected_nb:
-                self.log.info("%s -> done:%d expected:%d" % ("&".join(self.roles), len(done), self.expected_nb))
+                logger.info("%s -> done:%d expected:%d" % ("&".join(self.roles), len(done), self.expected_nb))
             if len(done) < self.expected_nb:
-                self.log.debug("%d < %d" % (len(done), self.expected_nb))
+                logger.debug("%d < %d" % (len(done), self.expected_nb))
                 return self.__apply_available_budget()
 
             return True
         except (requests.exceptions.ConnectionError, ValueError):
-            self.log.error("ConnectionError %s" % url)
+            logger.error("ConnectionError %s" % url)
             return False
 
     def _apply_everything(self):
@@ -118,13 +117,13 @@ class CommonScheduler(object):
             available_list = self.fetch_available(self.api_uri)
             available_list.sort(key=lambda k: k["mac"])
             if available_list:
-                self.log.info("%s -> done:%d available:%d" % ("&".join(self.roles), done, len(available_list)))
+                logger.info("%s -> done:%d available:%d" % ("&".join(self.roles), done, len(available_list)))
             for available in available_list:
                 done += self._affect(available)
 
             return done
         except requests.exceptions.ConnectionError:
-            self.log.error("ConnectionError %s" % url)
+            logger.error("ConnectionError %s" % url)
             return 0
 
     def _apply_with_retry(self, apply_fn, nb_try: int, seconds_sleep: int):
@@ -132,11 +131,11 @@ class CommonScheduler(object):
             try:
                 return apply_fn()
             except Exception as e:
-                self.log.error("fail to apply the schedule %s %s" % (type(e), e))
+                logger.error("fail to apply the schedule %s %s" % (type(e), e))
                 if i + 1 == nb_try:
                     raise
 
-            self.log.warning("retry %d/%d in %d s" % (i + 1, nb_try, seconds_sleep))
+            logger.warning("retry %d/%d in %d s" % (i + 1, nb_try, seconds_sleep))
             time.sleep(seconds_sleep)
 
 
@@ -148,7 +147,7 @@ class EtcdMemberKubernetesControlPlane(CommonScheduler):
 
     def __init__(self,
                  api_uri: str):
-        self.log.info("with api_uri %s" % api_uri)
+        logger.info("with api_uri %s" % api_uri)
         self.api_uri = api_uri
 
     def apply(self, nb_try=2, seconds_sleep=0):
@@ -163,11 +162,11 @@ class KubernetesNode(CommonScheduler):
     def __init__(self,
                  api_uri: str,
                  apply_dep):
-        self.log.info("with api_uri %s" % api_uri)
+        logger.info("with api_uri %s" % api_uri)
         self.api_uri = api_uri
 
         if apply_dep is True:
-            self.log.info("applying deps by instancing %s" % EtcdMemberKubernetesControlPlane.__name__)
+            logger.info("applying deps by instancing %s" % EtcdMemberKubernetesControlPlane.__name__)
             sch_cp = EtcdMemberKubernetesControlPlane(self.api_uri)
             self.apply_dep(sch_cp)
 

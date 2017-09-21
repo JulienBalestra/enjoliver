@@ -1,10 +1,11 @@
 #! /usr/bin/env python3
 import json
+import logging
 import os
-import sys
-import time
 
 import requests
+import sys
+import time
 
 try:
     import generator
@@ -14,9 +15,10 @@ except ImportError:
 
 import schedulerv2
 import sync
-import logger
 
 from configs import EnjoliverConfig
+
+logger = logging.getLogger(__file__)
 
 
 class Kubernetes2Tiers(object):
@@ -104,8 +106,12 @@ def is_health_for_plan(healthz: dict):
 
 
 if __name__ == '__main__':
-    log = logger.get_logger(__file__)
     ec = EnjoliverConfig(importer=__file__)
+
+    CONSOLE_HANDLER = logging.StreamHandler()
+    CONSOLE_HANDLER.setLevel(logging.DEBUG) if ec.logging_level.upper() == "DEBUG" else CONSOLE_HANDLER.setLevel(
+        logging.INFO)
+    CONSOLE_HANDLER.setFormatter(ec.logging_formatter)
 
     health = "%s/healthz" % ec.api_uri
     tries = 10
@@ -117,11 +123,11 @@ if __name__ == '__main__':
             # we only want the database and matchbox be ready
             status = is_health_for_plan(s)
             if status is True:
-                log.info("%d/%d status for plan is %s" % (i, tries, status))
+                logger.info("%d/%d status for plan is %s" % (i, tries, status))
                 break
-            log.warning("%d/%d status for plan is %s" % (i, tries, status))
+            logger.warning("%d/%d status for plan is %s" % (i, tries, status))
         except Exception as e:
-            log.error("%d/%d [%s] returned -> %s" % (i, tries, health, e))
+            logger.error("%d/%d [%s] returned -> %s" % (i, tries, health, e))
             if i == tries - 1:
                 raise
         time.sleep(5)

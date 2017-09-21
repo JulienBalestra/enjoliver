@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 
 import requests
@@ -7,7 +8,6 @@ from flask import Flask, request, json, jsonify, render_template, Response
 from werkzeug.contrib.cache import FileSystemCache
 
 import crud
-import logger
 import model
 import monitoring
 import ops
@@ -19,7 +19,7 @@ EC = EnjoliverConfig(importer=__file__)
 
 CACHE = FileSystemCache(EC.werkzeug_fs_cache_dir)
 
-LOGGER = logger.get_logger(__file__)
+logger = logging.getLogger(__name__)
 
 APP = APPLICATION = Flask(__name__)
 jinja_options = APP.jinja_options.copy()
@@ -54,6 +54,10 @@ SMART = SmartDatabaseClient
 if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", ""):
     SMART = SmartDatabaseClient(APPLICATION.config["DB_URI"])
     monitoring.monitor_flask(APPLICATION)
+    CONSOLE_HANDLER = logging.StreamHandler()
+    CONSOLE_HANDLER.setLevel(logging.DEBUG) if EC.logging_level.upper() == "DEBUG" else CONSOLE_HANDLER.setLevel(
+        logging.INFO)
+    CONSOLE_HANDLER.setFormatter(EC.logging_formatter)
 
 
 @APPLICATION.route("/shutdown", methods=["POST"])
@@ -101,14 +105,14 @@ def submit_lifecycle_ignition(request_raw_query):
     try:
         machine_ignition = json.loads(request.get_data())
     except ValueError:
-        LOGGER.error("%s have incorrect content" % request.path)
+        logger.error("%s have incorrect content" % request.path)
         return jsonify({"message": "FlaskValueError"}), 406
     req = requests.get("%s/ignition?%s" % (EC.matchbox_uri, request_raw_query))
     try:
         matchbox_ignition = json.loads(req.content)
         req.close()
     except ValueError:
-        LOGGER.error("%s have incorrect matchbox return" % request.path)
+        logger.error("%s have incorrect matchbox return" % request.path)
         return jsonify({"message": "MatchboxValueError"}), 406
 
     @smartdb.cockroach_transaction
@@ -197,14 +201,14 @@ def change_lifecycle_rolling(request_raw_query):
         schema:
             type: dict
     """
-    LOGGER.info("%s %s" % (request.method, request.url))
+    logger.info("%s %s" % (request.method, request.url))
     try:
         strategy = json.loads(request.get_data())["strategy"]
-        LOGGER.info("%s %s rolling strategy: setting to %s" % (request.method, request.url, strategy))
+        logger.info("%s %s rolling strategy: setting to %s" % (request.method, request.url, strategy))
     except (KeyError, ValueError):
         # JSONDecodeError is a subclass of ValueError
         # Cannot use JSONDecodeError because the import is not consistent between python3.X
-        LOGGER.info("%s %s rolling strategy: setting default to kexec" % (request.method, request.url))
+        logger.info("%s %s rolling strategy: setting default to kexec" % (request.method, request.url))
         strategy = "kexec"
 
     @smartdb.cockroach_transaction
@@ -240,7 +244,7 @@ def lifecycle_rolling_delete(request_raw_query):
         schema:
             type: dict
     """
-    LOGGER.info("%s %s" % (request.method, request.url))
+    logger.info("%s %s" % (request.method, request.url))
 
     @smartdb.cockroach_transaction
     def op(caller=request.url_rule):
@@ -329,13 +333,13 @@ def report_lifecycle_coreos_install(status, request_raw_query):
         schema:
             type: dict
     """
-    LOGGER.info("%s %s" % (request.method, request.url))
+    logger.info("%s %s" % (request.method, request.url))
     if status.lower() == "success":
         success = True
     elif status.lower() == "fail":
         success = False
     else:
-        LOGGER.error("%s %s" % (request.method, request.url))
+        logger.error("%s %s" % (request.method, request.url))
         return "success or fail != %s" % status.lower(), 403
 
     @smartdb.cockroach_transaction
@@ -400,7 +404,7 @@ def discovery():
         schema:
             type: dict
     """
-    LOGGER.info("%s %s" % (request.method, request.url))
+    logger.info("%s %s" % (request.method, request.url))
     err = jsonify({u'boot-info': {}, u'lldp': {}, u'interfaces': [], u"disks": []}), 406
     try:
         req = json.loads(request.get_data())
@@ -795,7 +799,7 @@ def boot_ipxe():
         schema:
             type: string
     """
-    LOGGER.info("%s %s" % (request.method, request.url))
+    logger.info("%s %s" % (request.method, request.url))
     try:
         flask_uri = APPLICATION.config["API_URI"]
         if flask_uri is None:
@@ -887,14 +891,14 @@ def require_install_authorization(request_raw_query):
         schema:
             type: string
     """
-    LOGGER.info("%s %s %s" % (request.method, request.remote_addr, request.url))
+    logger.info("%s %s %s" % (request.method, request.remote_addr, request.url))
     if EC.coreos_install_lock_seconds > 0:
         lock = CACHE.get("lock-install")
         if lock is not None:
-            LOGGER.warning("Locked by %s" % lock)
+            logger.warning("Locked by %s" % lock)
             return Response(response="Locked by %s" % lock, status=403)
         CACHE.set("lock-install", request_raw_query, timeout=EC.coreos_install_lock_seconds)
-        LOGGER.info("Granted to %s" % request_raw_query)
+        logger.info("Granted to %s" % request_raw_query)
     return Response(response="Granted", status=200)
 
 
@@ -915,7 +919,7 @@ def assets(path):
         schema:
             type: string
     """
-    LOGGER.info("%s %s" % (request.method, request.url))
+    logger.info("%s %s" % (request.method, request.url))
     matchbox_uri = APPLICATION.config.get("MATCHBOX_URI")
     if matchbox_uri:
         url = "%s/assets/%s" % (matchbox_uri, path)
@@ -944,7 +948,7 @@ def ipxe():
         schema:
             type: string
     """
-    LOGGER.info("%s %s" % (request.method, request.url))
+    logger.info("%s %s" % (request.method, request.url))
     try:
         matchbox_resp = requests.get(
             "%s%s" % (

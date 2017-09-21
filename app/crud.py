@@ -8,13 +8,13 @@ import socket
 
 from sqlalchemy.orm import Session
 
-import logger
+import logging
 import sync
 from model import ChassisPort, Chassis, MachineInterface, Machine, MachineDisk, \
     Healthz, Schedule, ScheduleRoles, LifecycleIgnition, LifecycleCoreosInstall, LifecycleRolling
 from smartdb import SmartDatabaseClient as sc
 
-LOGGER = logger.get_logger(__file__)
+logger = logging.getLogger(__name__)
 
 
 class FetchDiscovery(object):
@@ -169,8 +169,6 @@ class InjectDiscovery(object):
     """
     Store the data provides during the discovery process
     """
-    log = logger.get_logger(__file__)
-
     def __init__(self, session: Session, ignition_journal, discovery: dict):
         """
 
@@ -196,17 +194,17 @@ class InjectDiscovery(object):
 
             self._ignition_journal()
         except Exception as e:
-            self.log.error("raise: %s %s %s -> %s" % (step, type(e), e, self.discovery))
+            logger.error("raise: %s %s %s -> %s" % (step, type(e), e, self.discovery))
             raise
 
     def _machine(self):
         uuid = self.discovery["boot-info"]["uuid"]
         if len(uuid) != 36:
-            self.log.error("uuid: %s in not len(36)")
+            logger.error("uuid: %s in not len(36)")
             raise TypeError("uuid: %s in not len(36)" % uuid)
         machine = self.session.query(Machine).filter(Machine.uuid == uuid).first()
         if machine:
-            self.log.debug("machine %s already in db" % uuid)
+            logger.debug("machine %s already in db" % uuid)
             machine.updated_date = datetime.datetime.utcnow()
             self.updates += 1
             return machine
@@ -226,21 +224,21 @@ class InjectDiscovery(object):
             for name in interface["fqdn"]:
                 try:
                     r = socket.gethostbyaddr(interface["ipv4"])[0]
-                    self.log.debug("succeed to make dns request for %s:%s" % (interface["ipv4"], r))
+                    logger.debug("succeed to make dns request for %s:%s" % (interface["ipv4"], r))
                     if name[-1] == ".":
                         name = name[:-1]
 
                     if name == r:
                         fqdn.append(name)
                     else:
-                        self.log.warning(
+                        logger.warning(
                             "fail to verify domain name discoveryC %s != %s socket.gethostbyaddr for %s %s" % (
                                 name, r, interface["ipv4"], interface["mac"]))
                 except socket.herror:
-                    self.log.error("Verify FAILED '%s':%s socket.herror returning None" % (name, interface["ipv4"]))
+                    logger.error("Verify FAILED '%s':%s socket.herror returning None" % (name, interface["ipv4"]))
 
         except (KeyError, TypeError):
-            self.log.warning("No fqdn for %s returning None" % interface["ipv4"])
+            logger.warning("No fqdn for %s returning None" % interface["ipv4"])
 
         if fqdn and len(fqdn) > 1:
             raise AttributeError("Should be only one: %s" % fqdn)
@@ -253,7 +251,7 @@ class InjectDiscovery(object):
             # TODO make only one query instead of many
             if interface["mac"] and self.session.query(MachineInterface).filter(
                             MachineInterface.mac == interface["mac"]).count() == 0:
-                self.log.debug("mac not in db: %s adding" % interface["mac"])
+                logger.debug("mac not in db: %s adding" % interface["mac"])
 
                 fqdn = self._get_verifed_dns_query(interface)
 
@@ -277,7 +275,7 @@ class InjectDiscovery(object):
         m_disks = []
 
         if not self.discovery["disks"]:
-            self.log.error("machineID: %s haven't any disk" % self.machine.id)
+            logger.error("machineID: %s haven't any disk" % self.machine.id)
             return m_disks
 
         for disk in self.discovery["disks"]:
@@ -301,7 +299,7 @@ class InjectDiscovery(object):
         for lldp_intefaces in self.discovery["lldp"]["data"]["interfaces"]:
             chassis = self.session.query(Chassis).filter(Chassis.mac == lldp_intefaces["chassis"]["id"]).count()
             if chassis == 0:
-                self.log.debug(
+                logger.debug(
                     "chassis %s %s not in db" % (lldp_intefaces["chassis"]["name"], lldp_intefaces["chassis"]["id"]))
                 chassis = Chassis(
                     name=lldp_intefaces["chassis"]["name"],
@@ -359,19 +357,19 @@ class InjectDiscovery(object):
         try:
             if self.adds != 0 or self.updates != 0:
                 try:
-                    self.log.debug("committing")
+                    logger.debug("committing")
                     self.session.commit()
 
                 except Exception as e:
-                    self.log.error("%s %s adds=%s updates=%s" % (type(e), e, self.adds, self.updates))
+                    logger.error("%s %s adds=%s updates=%s" % (type(e), e, self.adds, self.updates))
                     self.adds, self.updates = 0, 0
-                    self.log.warning("rollback the sessions")
+                    logger.warning("rollback the sessions")
                     self.session.rollback()
                     raise
         finally:
             if report:
                 machine_nb = self.session.query(Machine).count()
-                self.log.debug("closing")
+                logger.debug("closing")
                 return machine_nb, True if self.adds else False
 
 
@@ -492,8 +490,6 @@ class InjectSchedule(object):
     """
     Store the information of a schedule
     """
-    log = logger.get_logger(__file__)
-
     def __init__(self, session, data):
         self.session = session
         self.adds = 0
@@ -505,16 +501,16 @@ class InjectSchedule(object):
         self.interface = self.session.query(MachineInterface).filter(MachineInterface.mac == self.mac).first()
         if not self.interface:
             m = "mac: '%s' unknown in db" % self.mac
-            self.log.error(m)
+            logger.error(m)
             raise AttributeError(m)
-        self.log.info("InjectSchedule mac: %s" % self.mac)
+        logger.info("InjectSchedule mac: %s" % self.mac)
 
     def apply_roles(self):
         for role in self.data["roles"]:
             r = self.session.query(Schedule).filter(
                 Schedule.machine_id == self.interface.machine_id).filter(Schedule.role == role).first()
             if r:
-                self.log.info("mac %s already scheduled as %s" % (self.mac, role))
+                logger.info("mac %s already scheduled as %s" % (self.mac, role))
                 continue
 
             new = Schedule(
@@ -523,7 +519,7 @@ class InjectSchedule(object):
             )
             self.session.add(new)
             self.adds += 1
-            self.log.info("mac %s scheduling as %s" % (self.mac, role))
+            logger.info("mac %s scheduling as %s" % (self.mac, role))
 
         return
 
@@ -531,13 +527,13 @@ class InjectSchedule(object):
         try:
             if self.adds != 0 or self.updates != 0:
                 try:
-                    self.log.debug("commiting")
+                    logger.debug("commiting")
                     self.session.commit()
 
                 except Exception as e:
-                    self.log.error("%s %s adds=%s updates=%s" % (type(e), e, self.adds, self.updates))
+                    logger.error("%s %s adds=%s updates=%s" % (type(e), e, self.adds, self.updates))
                     self.adds, self.updates = 0, 0
-                    self.log.warning("rollback the sessions")
+                    logger.warning("rollback the sessions")
                     self.session.rollback()
                     raise
         finally:
@@ -545,7 +541,7 @@ class InjectSchedule(object):
                 roles_rapport = {}
                 for r in ScheduleRoles.roles:
                     roles_rapport[r] = self.session.query(Schedule).filter(Schedule.role == r).count()
-                self.log.debug("closing")
+                logger.debug("closing")
                 return roles_rapport, True if self.adds else False
 
 
@@ -553,8 +549,6 @@ class InjectLifecycle(object):
     """
     Store the data from the Lifecycle machine state
     """
-    log = logger.get_logger(__file__)
-
     def __init__(self, session, request_raw_query):
         self.session = session
         self.adds = 0
@@ -566,9 +560,9 @@ class InjectLifecycle(object):
             MachineInterface.mac == self.mac).first()
         if not self.machine:
             m = "InjectLifecycle mac: '%s' unknown in db" % self.mac
-            self.log.error(m)
+            logger.error(m)
             raise AttributeError(m)
-        self.log.debug("InjectLifecycle mac: %s" % self.mac)
+        logger.debug("InjectLifecycle mac: %s" % self.mac)
 
     @staticmethod
     def get_mac_from_raw_query(request_raw_query: str):
@@ -636,8 +630,6 @@ class FetchLifecycle(object):
     """
     Get the data of the Lifecycle state
     """
-    log = logger.get_logger(__file__)
-
     def __init__(self, session: Session):
         self.session = session
 
@@ -695,7 +687,7 @@ class FetchLifecycle(object):
           WHERE mi.mac = :mac""", {"mac": mac}):
             return bool(row["enable"]), row["strategy"]
 
-        self.log.debug("mac: %s return None" % mac)
+        logger.debug("mac: %s return None" % mac)
         return None, None
 
     def get_all_rolling_status(self):
@@ -719,8 +711,6 @@ class FetchView(object):
     """
     Get the data for the User Interface View
     """
-    log = logger.get_logger(__file__)
-
     def __init__(self, session: Session):
         self.session = session
 

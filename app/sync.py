@@ -11,18 +11,17 @@ import time
 from werkzeug.contrib.cache import SimpleCache, NullCache
 
 import generator
-import logger
+import logging
 import schedulerv2
 from configs import EnjoliverConfig
 
 EC = EnjoliverConfig(importer=__file__)
 
+logger = logging.getLogger(__name__)
+
 
 class ConfigSyncSchedules(object):
     __name__ = "ConfigSyncSchedules"
-
-    log = logger.get_logger(__file__)
-
     sub_ips = EC.sub_ips
     range_nb_ips = EC.range_nb_ips
     skip_ips = EC.skip_ips
@@ -49,7 +48,7 @@ class ConfigSyncSchedules(object):
         for k, v in self.ignition_dict.items():
             f = "%s/ignition/%s.yaml" % (self.matchbox_path, v)
             if os.path.isfile(f) is False:
-                self.log.error("%s:%s -> %s is not here" % (k, v, f))
+                logger.error("%s:%s -> %s is not here" % (k, v, f))
                 raise IOError(f)
             with open(f, 'rb') as ignition_file:
                 blob = ignition_file.read()
@@ -59,12 +58,12 @@ class ConfigSyncSchedules(object):
                 req = requests.post(url, data=json.dumps(data))
                 req.close()
                 response = json.loads(req.content.decode())
-                self.log.info("%s:%s -> %s is here content reported: %s" % (k, v, f, response))
+                logger.info("%s:%s -> %s is here content reported: %s" % (k, v, f, response))
             except requests.exceptions.ConnectionError as e:
-                self.log.error("%s:%s -> %s is here content NOT reported: %s" % (k, v, f, e))
+                logger.error("%s:%s -> %s is here content NOT reported: %s" % (k, v, f, e))
 
     @staticmethod
-    def get_dns_attr(log, fqdn: str):
+    def get_dns_attr(fqdn: str):
         """
         TODO: Use LLDP to avoid vendor specific usage
         :param fqdn: e.g: r13-srv3.dc-1.foo.bar.cr
@@ -82,7 +81,7 @@ class ConfigSyncSchedules(object):
         try:
             d["dc"] = s[1]
         except IndexError:
-            log.error("IndexError %s[1] after split(.)" % fqdn)
+            logger.error("IndexError %s[1] after split(.)" % fqdn)
             return d
         d["domain"] = ".".join(s[1:])
         try:
@@ -90,7 +89,7 @@ class ConfigSyncSchedules(object):
             d["rack"] = re.sub("[^0-9]+", "", rack)
             d["pos"] = re.sub("[^0-9]+", "", pos)
         except ValueError:
-            log.error("error during the split rack/pos %s" % s[0])
+            logger.error("error during the split rack/pos %s" % s[0])
         return d
 
     @staticmethod
@@ -120,7 +119,8 @@ class ConfigSyncSchedules(object):
         }
         return ipam
 
-    def get_extra_selectors(self, extra_selectors: dict):
+    @staticmethod
+    def get_extra_selectors(extra_selectors: dict):
         """
         Extra selectors are passed to Matchbox
         :param extra_selectors: dict
@@ -128,13 +128,13 @@ class ConfigSyncSchedules(object):
         """
         if extra_selectors:
             if type(extra_selectors) is dict:
-                self.log.debug("extra selectors: %s" % extra_selectors)
+                logger.debug("extra selectors: %s" % extra_selectors)
                 return extra_selectors
 
-            self.log.error("invalid extra selectors: %s" % extra_selectors)
+            logger.error("invalid extra selectors: %s" % extra_selectors)
             raise TypeError("%s %s is not type dict" % (extra_selectors, type(extra_selectors)))
 
-        self.log.debug("no extra selectors")
+        logger.debug("no extra selectors")
         return {}
 
     @property
@@ -223,10 +223,10 @@ class ConfigSyncSchedules(object):
             if m["fqdn"]:
                 fqdn = m["fqdn"]
         except KeyError as e:
-            self.log.warning("%s for %s" % (e, m["mac"]))
+            logger.warning("%s for %s" % (e, m["mac"]))
 
         etc_hosts = [k for k in EC.etc_hosts]
-        dns_attr = self.get_dns_attr(self.log, fqdn)
+        dns_attr = self.get_dns_attr(fqdn)
         etc_hosts.append("127.0.1.1 %s %s" % (fqdn, dns_attr["shortname"]))
         cni_attr = self.cni_ipam(m["cidrv4"], m["gateway"])
         extra_metadata = {
@@ -345,7 +345,7 @@ class ConfigSyncSchedules(object):
                 automatic_name="cp-%d-%s" % (i, m["ipv4"].replace(".", "-")),
                 update_extra_metadata=update_md,
             )
-        self.log.info("synced %d" % len(machine_roles))
+        logger.info("synced %d" % len(machine_roles))
         return len(machine_roles)
 
     def kubernetes_nodes(self):
@@ -365,7 +365,7 @@ class ConfigSyncSchedules(object):
                 automatic_name="no-%d-%s" % (i, m["ipv4"].replace(".", "-")),
                 update_extra_metadata=update_md,
             )
-        self.log.info("synced %d" % len(machine_roles))
+        logger.info("synced %d" % len(machine_roles))
         return len(machine_roles)
 
     def notify(self):
@@ -376,7 +376,7 @@ class ConfigSyncSchedules(object):
         pass
 
     def apply(self, nb_try=2, seconds_sleep=0):
-        self.log.info("start syncing...")
+        logger.info("start syncing...")
         for i in range(nb_try):
             try:
                 nb = self.etcd_member_kubernetes_control_plane()
@@ -384,22 +384,22 @@ class ConfigSyncSchedules(object):
                 self.notify()
                 return nb
             except Exception as e:
-                self.log.error("fail to apply the sync %s %s" % (type(e), e))
+                logger.error("fail to apply the sync %s %s" % (type(e), e))
                 if i + 1 == nb_try:
                     raise
 
-            self.log.warning("retry %d/%d in %d s" % (i + 1, nb_try, seconds_sleep))
+            logger.warning("retry %d/%d in %d s" % (i + 1, nb_try, seconds_sleep))
             time.sleep(seconds_sleep)
         raise RuntimeError("fail to apply after %d try" % nb_try)
 
     def _query_roles(self, *roles):
         roles = "&".join(roles)
         url = "/scheduler/%s" % roles
-        self.log.debug("roles='%s'" % roles)
+        logger.debug("roles='%s'" % roles)
         data = self._cache_query.get(url)
         if data is None:
             # not in cache or evicted
-            self.log.debug("cache is empty for %s" % url)
+            logger.debug("cache is empty for %s" % url)
             req = requests.get("%s%s" % (self.api_uri, url))
             data = json.loads(req.content.decode())
             req.close()
@@ -408,12 +408,12 @@ class ConfigSyncSchedules(object):
         return data
 
     def _query_ip_list(self, role):
-        self.log.debug("role='%s'" % role)
+        logger.debug("role='%s'" % role)
         url = "/scheduler/ip-list/%s" % role
         data = self._cache_query.get(url)
         if data is None:
             # not in cache or evicted
-            self.log.debug("cache is empty for %s" % url)
+            logger.debug("cache is empty for %s" % url)
             req = requests.get("%s%s" % (self.api_uri, url))
             data = json.loads(req.content.decode())
             req.close()

@@ -14,12 +14,12 @@ import time
 from flask import jsonify
 
 import crud
-import logger
+import logging
 import objs3
 import smartdb
 
 LIBC = ctypes.CDLL("libc.so.6")  # TODO deep inside the SQLITE sync
-LOGGER = logger.get_logger(__file__)
+logger = logging.getLogger(__name__)
 
 
 def backup_sqlite(cache, application):
@@ -36,7 +36,7 @@ def backup_sqlite(cache, application):
     """
     start = time.time()
     now_rounded = int(math.ceil(start))
-    LOGGER.info("start %s" % now_rounded)
+    logger.info("start %s" % now_rounded)
     dest_s3 = "%s/%s.db" % (application.config["BACKUP_BUCKET_DIRECTORY"], now_rounded)
     db_path = application.config["DB_PATH"]
     bucket_name = application.config["BACKUP_BUCKET_NAME"]
@@ -57,39 +57,39 @@ def backup_sqlite(cache, application):
     }
     if cache.get(application.config["BACKUP_LOCK_KEY"]):
         resp["already_locked"] = True
-        LOGGER.warning("already_locked")
+        logger.warning("already_locked")
         return jsonify(resp)
 
     try:
         source_st = os.stat(resp["source_fs"])
         timeout = math.ceil(source_st.st_size / (1024 * 1024.))
-        LOGGER.info("Backup lock key set with timeout == %ss" % timeout)
+        logger.info("Backup lock key set with timeout == %ss" % timeout)
         cache.set(application.config["BACKUP_LOCK_KEY"], resp["dest_fs"], timeout=timeout)
         LIBC.sync()
         shutil.copy2(db_path, resp["dest_fs"])
         dest_st = os.stat(resp["dest_fs"])
         resp["size"], resp["copy"] = dest_st.st_size, True
-        LOGGER.info("backup copy done %s size:%s" % (resp["dest_fs"], dest_st.st_size))
+        logger.info("backup copy done %s size:%s" % (resp["dest_fs"], dest_st.st_size))
     except Exception as e:
-        LOGGER.error("<%s %s>" % (e, type(e)))
+        logger.error("<%s %s>" % (e, type(e)))
     finally:
         cache.delete(application.config["BACKUP_LOCK_KEY"])
         resp["lock_duration"] = time.time() - start
-        LOGGER.debug("lock duration: %ss" % resp["lock_duration"])
+        logger.debug("lock duration: %ss" % resp["lock_duration"])
 
     try:
         if resp["copy"] is False:
-            LOGGER.error("copy is False: %s" % resp["dest_fs"])
+            logger.error("copy is False: %s" % resp["dest_fs"])
             raise IOError(resp["dest_fs"])
 
         s3op = objs3.S3Operator(resp["bucket_name"])
         s3op.upload(resp["dest_fs"], resp["dest_s3"])
         resp["upload"] = True
     except Exception as e:
-        LOGGER.error("<%s %s>" % (e, type(e)))
+        logger.error("<%s %s>" % (e, type(e)))
 
     resp["backup_duration"] = time.time() - start
-    LOGGER.info("backup duration: %ss" % resp["backup_duration"])
+    logger.info("backup duration: %ss" % resp["backup_duration"])
     return jsonify(resp)
 
 
@@ -119,7 +119,7 @@ def healthz(application, smart: smartdb.SmartDatabaseClient, request):
         except Exception as e:
             status["matchbox"][k] = False
             status["global"] = False
-            LOGGER.error(e)
+            logger.error(e)
 
     # Try a functional testing in discovery stages
     try:
@@ -130,7 +130,7 @@ def healthz(application, smart: smartdb.SmartDatabaseClient, request):
             raise AssertionError("/ipxe returned a bad status code: %d" % req.status_code)
         status["discovery"]["ipxe"] = True
     except Exception as e:
-        LOGGER.error(e)
+        logger.error(e)
         status["global"] = False
 
     try:
@@ -145,7 +145,7 @@ def healthz(application, smart: smartdb.SmartDatabaseClient, request):
             raise AssertionError("%s returned a bad status code: %d" % (ignition_url, req.status_code))
         status["discovery"]["ignition"] = True
     except Exception as e:
-        LOGGER.error(e)
+        logger.error(e)
         status["global"] = False
 
     @smartdb.cockroach_transaction
@@ -159,7 +159,7 @@ def healthz(application, smart: smartdb.SmartDatabaseClient, request):
             status["dbs"] = smart.engine_urls
     except Exception as e:
         status["global"] = False
-        LOGGER.error(e)
+        logger.error(e)
 
     application.logger.debug("%s" % status)
     return status
@@ -171,7 +171,7 @@ def shutdown(ec):
     :param ec:
     :return:
     """
-    LOGGER.warning("shutdown asked")
+    logger.warning("shutdown asked")
     pid_files = [ec.plan_pid_file, ec.matchbox_pid_file]
     gunicorn_pid = None
     pid_list = []
@@ -183,9 +183,9 @@ def shutdown(ec):
             os.remove(pid_file)
             pid_list.append(psutil.Process(pid_number))
         except IOError:
-            LOGGER.error("IOError -> %s" % pid_file)
+            logger.error("IOError -> %s" % pid_file)
         except psutil.NoSuchProcess as e:
-            LOGGER.error("%s NoSuchProcess: %s" % (e, pid_file))
+            logger.error("%s NoSuchProcess: %s" % (e, pid_file))
 
     try:
         with open(ec.gunicorn_pid_file) as f:
@@ -193,16 +193,16 @@ def shutdown(ec):
         os.remove(ec.gunicorn_pid_file)
         gunicorn_pid = psutil.Process(pid_number)
     except IOError:
-        LOGGER.error("IOError -> %s" % ec.gunicorn_pid_file)
+        logger.error("IOError -> %s" % ec.gunicorn_pid_file)
     except psutil.NoSuchProcess as e:
-        LOGGER.error("%s already dead: %s" % (e, ec.gunicorn_pid_file))
+        logger.error("%s already dead: %s" % (e, ec.gunicorn_pid_file))
 
     for pid in pid_list:
-        LOGGER.info("SIGTERM -> %s" % pid)
+        logger.info("SIGTERM -> %s" % pid)
         pid.terminate()
-        LOGGER.info("wait -> %s" % pid)
+        logger.info("wait -> %s" % pid)
         pid.wait()
-        LOGGER.info("%s running: %s " % (pid, pid.is_running()))
+        logger.info("%s running: %s " % (pid, pid.is_running()))
 
     pid_list.append(gunicorn_pid)
     resp = jsonify(["%s" % k for k in pid_list])
