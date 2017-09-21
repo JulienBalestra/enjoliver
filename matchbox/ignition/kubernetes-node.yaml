@@ -418,6 +418,8 @@ systemd:
             ExecStartPre=-/usr/bin/rkt image gc --grace-period=12h
             # 1h because the run-prepared by kubernetes can be gc
             ExecStart=/usr/bin/rkt gc --grace-period=3m
+            [Install]
+            WantedBy=multi-user.target
 
     - name: rkt-gc.timer
       enable: true
