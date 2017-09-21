@@ -1,0 +1,9 @@
+name: enjoliver.local/rktlet:latest
+
+builder:
+  dependencies:
+    - enjoliver.local/builder-hyperkube:latest
+
+aci:
+  dependencies:
+    - enjoliver.local/debian:latest

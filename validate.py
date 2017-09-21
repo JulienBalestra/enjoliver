@@ -88,6 +88,10 @@ class TestValidateAcserverStorage(unittest.TestCase):
         list_dir = os.listdir(os.path.join(self.acserver_d, "rkt"))
         self.assertEqual(1, len(list_dir))
 
+    def test_rktlet(self):
+        list_dir = os.listdir(os.path.join(self.acserver_d, "rktlet"))
+        self.assertEqual(1, len(list_dir))
+
     def test_vault(self):
         list_dir = os.listdir(os.path.join(self.acserver_d, "vault"))
         self.assertEqual(1, len(list_dir))

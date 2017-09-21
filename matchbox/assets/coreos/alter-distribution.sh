@@ -119,6 +119,10 @@ HYPERKUBE_ACI=$(ls ${ACI_PATH}/hyperkube/hyperkube-*-linux-amd64.aci | head -n 1
 tar -C squashfs-root/bin -xvf ${HYPERKUBE_ACI} rootfs/ --strip 1 ${EXCLUDES}
 tar -C ${USR_A}/bin -xvf ${HYPERKUBE_ACI} rootfs/ --strip 1 ${EXCLUDES}
 
+RKTLET_ACI=$(ls ${ACI_PATH}/rktlet/rktlet-*-linux-amd64.aci | head -n 1)
+tar -C squashfs-root/ -xvf ${RKTLET_ACI} rootfs/usr/bin --strip 2 ${EXCLUDES}
+tar -C ${USR_A}/ -xvf ${RKTLET_ACI} rootfs/usr/bin --strip 2 ${EXCLUDES}
+
 cp -v ${ASSETS_DIRECTORY}/enjoliver-agent/serve/enjoliver-agent squashfs-root/bin/
 cp -v ${ASSETS_DIRECTORY}/enjoliver-agent/serve/enjoliver-agent ${USR_A}/bin
 _upx_in_fs /bin/enjoliver-agent
@@ -165,7 +169,7 @@ umount ${BOOT}
 losetup -d ${LOOP}
 
 ${COREOS_DIRECTORY}/disk.py ro
-bzip2 -fzk ${VERSION_DIR}/coreos_production_image.bin -9
+bzip2 -fzk ${VERSION_DIR}/coreos_production_image.bin -1
 
 cp -v ${COREOS_DIRECTORY}/coreos-install squashfs-root/bin/coreos-install
 

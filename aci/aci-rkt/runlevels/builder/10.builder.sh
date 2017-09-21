@@ -11,10 +11,10 @@ apt-get install -y dh-autoreconf cpio squashfs-tools wget libacl1-dev libsystemd
 
 mkdir -pv /go/src/github.com/rkt/rkt
 
-git clone https://github.com/rkt/rkt.git /go/src/github.com/rkt/rkt
+git clone --depth=1 https://github.com/kinvolk/rkt.git -b iaguis/rktlet /go/src/github.com/rkt/rkt
 cd /go/src/github.com/rkt/rkt
 
-git checkout v${ACI_VERSION}
+#git checkout v${ACI_VERSION}
 
 # Apply custom patches
 PATCHES_DIR="${ACI_HOME}/patches"

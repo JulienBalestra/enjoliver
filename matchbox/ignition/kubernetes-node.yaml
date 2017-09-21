@@ -253,6 +253,14 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
+    - name: rktlet.service
+      enable: true
+      contents: |
+        [Service]
+        ExecStart=/usr/bin/rktlet --net=bond0
+        [Install]
+        WantedBy=multi-user.target
+
     - name: kubelet.service
       enable: true
       contents: |
@@ -282,8 +290,11 @@ systemd:
           --require-kubeconfig \
           --node-labels=node=true,diskProfile={{.disk_profile}} \
           --cloud-provider="" \
-          --container-runtime=rkt \
-          --rkt-path=/usr/bin/rkt \
+          --container-runtime=remote \
+          --runtime-request-timeout=15m \
+          --container-runtime-endpoint=unix:///var/run/rktlet.sock \
+          --cgroups-per-qos=false \
+          --enforce-node-allocatable= \
           --v=2 \
           --tls-cert-file=/etc/vault.d/kubernetes/kubelet.certificate \
           --tls-private-key-file=/etc/vault.d/kubernetes/kubelet.private_key \

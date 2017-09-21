@@ -1,0 +1,25 @@
+From 300a539330421477b8052eb0702a4643d14ec063 Mon Sep 17 00:00:00 2001
+From: JulienBalestra <julien.balestra@gmail.com>
+Date: Thu, 21 Sep 2017 17:54:41 +0200
+Subject: [PATCH] fetch insecure and remove docker prefix
+
+---
+ rktlet/image/imagestore.go | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/rktlet/image/imagestore.go b/rktlet/image/imagestore.go
+index fbcf389..26a8db5 100644
+--- a/rktlet/image/imagestore.go
++++ b/rktlet/image/imagestore.go
+@@ -209,7 +209,7 @@ func (s *ImageStore) PullImage(ctx context.Context, req *runtime.PullImageReques
+ 	}
+ 
+ 	// TODO auth
+-	output, err := s.RunCommand("image", "fetch", "--pull-policy=update", "--full=true", "docker://"+canonicalImageName)
++	output, err := s.RunCommand("image", "fetch", "--insecure-options=all","--pull-policy=update", "--full=true", canonicalImageName)
+ 	if err != nil {
+ 		return nil, fmt.Errorf("unable to fetch image %q: %v", canonicalImageName, err)
+ 	}
+-- 
+2.7.4
+
