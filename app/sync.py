@@ -115,7 +115,7 @@ class ConfigSyncSchedules(object):
             "rangeEnd": range_end.__str__(),
             "gateway": host_gateway,
             "routes": [{"dst": "0.0.0.0/0"}],
-            "dataDir": "/run/cni-ipam"
+            "dataDir": "/var/lib/cni/networks"
         }
         return ipam
 

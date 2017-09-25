@@ -29,6 +29,23 @@ systemd:
       enable: false
       mask: true
 
+    - name: cni-gc.service
+      enable: true
+      contents: |
+        [Unit]
+        Before=network.target
+        RefuseManualStart=true
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=true
+        ExecStartPre=-/bin/rm -Rfv /var/lib/cni
+        ExecStart=/bin/mkdir -pv /var/lib/cni/networks
+        Restart=never
+
+        [Install]
+        RequiredBy=multi-user.target
+
     - name: rkt-api.service
       enable: true
       contents: |
