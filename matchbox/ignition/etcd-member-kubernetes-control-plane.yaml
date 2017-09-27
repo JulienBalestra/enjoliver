@@ -41,7 +41,7 @@ systemd:
         RemainAfterExit=true
         ExecStartPre=-/bin/rm -Rfv /var/lib/cni
         ExecStart=/bin/mkdir -pv /var/lib/cni/networks
-        Restart=never
+        Restart=no
 
         [Install]
         RequiredBy=multi-user.target
