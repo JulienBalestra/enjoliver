@@ -9,8 +9,8 @@ export LC_ALL=C
 export GOPATH=/go
 export PATH=${GOPATH}/bin:/usr/local/go/bin:${PATH}
 
-mkdir -pv ${GOPATH}/src/github.com/kubernetes/kube-state-metrics
-cd ${GOPATH}/src/github.com/kubernetes/kube-state-metrics
+mkdir -pv ${GOPATH}/src/k8s.io/kube-state-metrics
+cd ${GOPATH}/src/k8s.io/kube-state-metrics
 
 curl -L https://github.com/kubernetes/kube-state-metrics/archive/v${ACI_VERSION}.tar.gz | tar -xzf - --strip-components=1
 make build

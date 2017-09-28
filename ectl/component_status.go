@@ -14,7 +14,7 @@ const (
 	AgentHealthzPath = "/healthz"
 )
 
-var eltInRowForComponentStatus = []string{"Fqdn", "fleet-etcd", "kubelet", "kube-apiserver", "rkt-api", "kube-etcd", "vault", "vault-etcd"}
+var eltInRowForComponentStatus = []string{"Fqdn", "fleet-etcd", "kubelet", "rkt-api", "kube-etcd", "kube-apiserver", "vault", "vault-etcd"}
 
 type ComponentHealthz struct {
 	FleetEtcdClient             bool
@@ -114,7 +114,6 @@ func (r *Runtime) createRowForComponentStatus(node EnjoliverAgentHealthz) []stri
 	for _, elt := range []bool{
 		node.LivenessStatus.FleetEtcdClient,
 		node.LivenessStatus.KubeletHealthz,
-		node.LivenessStatus.KubernetesApiserverInsecure,
 		node.LivenessStatus.RktApi} {
 		if node.Unreachable == true {
 			row = append(row, color.YellowString("unreachable"))
@@ -125,6 +124,7 @@ func (r *Runtime) createRowForComponentStatus(node EnjoliverAgentHealthz) []stri
 	if node.ControlPlane == true {
 		for _, elt := range []bool{
 			node.LivenessStatus.KubernetesEtcdClient,
+			node.LivenessStatus.KubernetesApiserverInsecure,
 			node.LivenessStatus.Vault,
 			node.LivenessStatus.VaultEtcdClient} {
 			if node.Unreachable == true {
@@ -133,15 +133,10 @@ func (r *Runtime) createRowForComponentStatus(node EnjoliverAgentHealthz) []stri
 				row = append(row, getColor(elt))
 			}
 		}
-	} else {
-		row = append(row, []string{"N/I", "N/A", "N/A"}...)
+		return row
 	}
+	row = append(row, []string{"N/A", "N/A", "N/A", "N/A"}...)
 	return row
-}
-
-func (r *Runtime) createHeaderForComponentStatus() []string {
-	header := []string{"Fqdn", "fleet-etcd", "kubelet", "kube-apiserver", "rkt-api", "kube-etcd", "vault", "vault-etcd"}
-	return header
 }
 
 type EnjoliverAgentHealthzList []EnjoliverAgentHealthz

@@ -2,7 +2,7 @@ CWD=$(shell pwd)
 
 ACI_DIR=$(CWD)
 
-CORE := cni etcd fleet hyperkube lldp rkt vault iproute2 ceph-tools dnsmasq
+CORE := cni etcd fleet hyperkube lldp rkt vault iproute2 ceph-tools dnsmasq haproxy
 KUBE := tiller heapster node-exporter kube-state-metrics prometheus
 EXTRA := kube-dashboard vault-ui
 

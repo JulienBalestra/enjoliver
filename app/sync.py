@@ -114,7 +114,10 @@ class ConfigSyncSchedules(object):
             "rangeStart": range_start.__str__(),
             "rangeEnd": range_end.__str__(),
             "gateway": host_gateway,
-            "routes": [{"dst": "0.0.0.0/0"}],
+            "routes": [
+                {"dst": "%s/32" % EC.perennial_local_host_ip, "gw": ipaddr.IPNetwork(host_cidrv4).ip.__str__()},
+                {"dst": "0.0.0.0/0"},
+            ],
             "dataDir": "/var/lib/cni/networks"
         }
         return ipam
@@ -287,7 +290,8 @@ class ConfigSyncSchedules(object):
                 "cidrv4": m["cidrv4"],
                 "gateway": m["gateway"],
                 "ip": m["ipv4"],
-                "subnet": cni_attr["subnet"]
+                "subnet": cni_attr["subnet"],
+                "perennial_host_ip": EC.perennial_local_host_ip,
             },
             # host
             "hostname": dns_attr["shortname"],

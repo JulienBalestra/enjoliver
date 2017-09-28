@@ -64,6 +64,11 @@ do
 done
 
 
+HAPROXY_ACI=$(ls ${ACI_PATH}/haproxy/haproxy-*-linux-amd64.aci | head -n 1)
+tar -C squashfs-root/ -xvf ${HAPROXY_ACI} rootfs/usr/sbin --strip 2 ${EXCLUDES}
+tar -C ${USR_A}/ -xvf ${HAPROXY_ACI} rootfs/usr/sbin --strip 2 ${EXCLUDES}
+
+
 _remove_in_fs /bin/etcd2
 _remove_in_fs /bin/etcdctl
 ETCD_ACI=$(ls ${ACI_PATH}/etcd/etcd-*-linux-amd64.aci | head -n 1)
@@ -140,7 +145,7 @@ umount ${BOOT}
 losetup -d ${LOOP}
 
 ${COREOS_DIRECTORY}/disk.py ro
-bzip2 -fz ${VERSION_DIR}/coreos_production_image.bin -9
+bzip2 -fzk ${VERSION_DIR}/coreos_production_image.bin -9
 
 cp -v ${COREOS_DIRECTORY}/coreos-install squashfs-root/bin/coreos-install
 

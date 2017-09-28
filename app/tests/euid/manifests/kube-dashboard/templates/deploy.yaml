@@ -25,9 +25,7 @@ spec:
         - /usr/bin/dashboard
         env:
         - name: KUBERNETES_SERVICE_HOST
-          valueFrom:
-            fieldRef:
-              fieldPath: status.hostIP
+          value: "172.31.255.255"
 
         - name: KUBERNETES_SERVICE_PORT
           value: "6443"

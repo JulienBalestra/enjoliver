@@ -88,4 +88,16 @@ Features: -TPM +SDJOURNAL
 		t.Errorf("fail to get version: %s", v)
 	}
 
+	haproxyOutput := `HA-Proxy version 1.7.5 2017/04/03
+Copyright 2000-2017 Willy Tarreau <willy@haproxy.org>
+
+`
+	v, err = getStringInTable(haproxyOutput, haproxyVersion)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	if v != "1.7.5" {
+		t.Errorf("fail to get version: %s", v)
+	}
+
 }

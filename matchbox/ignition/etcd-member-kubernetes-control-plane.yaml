@@ -1730,6 +1730,8 @@ storage:
         inline: |
           #!/usr/bin/env bash
 
+          set -x
+
           export PATH=/opt/bin:${PATH}
           export VAULT_CAPATH=/etc/vault.d/vault/server.issuing_ca
           set -o pipefail
@@ -1753,6 +1755,12 @@ storage:
             /opt/bin/vault-fetch-ca || exit $?
           }
 
+          # The common_name default is the ip address
+          test ${COMMON_NAME} || {
+            COMMON_NAME={{.network.ip}}
+            echo "setting COMMON_NAME=${COMMON_NAME}"
+          }
+
           while true
           do
             for ve in $(echo -n {{ .vault_ip_list }} | tr ',' '\n' | shuf)
@@ -1762,11 +1770,11 @@ storage:
               curl ${REQ} \
                 --cacert ${VAULT_CAPATH} -Lfs \
                 --header "X-Vault-Token: ${TOKEN}" \
-                -XPOST --data '{
-                  "common_name": "{{.network.ip}}",
-                  "ttl": "17520h",
-                  "ip_sans": "{{.network.ip}},127.0.0.1"
-                }' > /etc/vault.d/${1}/${2}-pki.json
+                -XPOST --data "{
+                  \"common_name\": \"${COMMON_NAME}\",
+                  \"ttl\": \"17520h\",
+                  \"ip_sans\": \"{{.network.ip}},127.0.0.1,{{.network.perennial_host_ip}}\"
+                }" > /etc/vault.d/${1}/${2}-pki.json
               if [ $? -eq 0 ]
               then
                 for item in certificate issuing_ca private_key
@@ -1839,7 +1847,13 @@ storage:
       filesystem: root
       contents:
         inline: |
-          #!/bin/bash
+          #!/bin/bash -x
+
+          # Create the RBAC clusterrolebinding for kubelet on kubernetes-node role
+          # Theses roles reach the kube-apiserver with vault certificates as common_name=node
+          kubectl get clusterrolebinding kubelet-node-binding || \
+            kubectl create clusterrolebinding kubelet-node-binding --clusterrole=system:node --user=node
+
           kubectl -s http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} get -f /etc/kubernetes/manifests && {
             kubectl -s http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} apply -f /etc/kubernetes/manifests
             exit $?
@@ -1873,6 +1887,13 @@ storage:
 
 networkd:
   units:
+    - name: lo.network
+      contents: |
+        [Match]
+        Name=lo
+        [Network]
+        Address={{.network.perennial_host_ip}}/32
+
     - name: 00-bond0.netdev
       contents: |
         [NetDev]

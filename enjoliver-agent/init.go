@@ -70,7 +70,6 @@ func getHttpLivenessProbesToQuery() ([]HttpLivenessProbe, error) {
 
 	probes := [][]string{
 		{"FLEET_ETCD_CLIENT_PORT", etcdLivenessPath},
-		{"KUBERNETES_APISERVER_INSECURE_PORT", kubernetesLivenessPath},
 		{"KUBELET_HEALTHZ_PORT", kubernetesLivenessPath},
 	}
 	if flag.Lookup(ControlPlaneFlagName).Value.String() == "true" {
@@ -79,6 +78,7 @@ func getHttpLivenessProbesToQuery() ([]HttpLivenessProbe, error) {
 			{"VAULT_PORT", vaultLivenessPath},
 			{"VAULT_ETCD_CLIENT_PORT", etcdLivenessPath},
 			{"KUBERNETES_ETCD_CLIENT_PORT", etcdLivenessPath},
+			{"KUBERNETES_APISERVER_INSECURE_PORT", kubernetesLivenessPath},
 		}...)
 	}
 

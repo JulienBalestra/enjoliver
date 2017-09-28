@@ -1,4 +1,4 @@
-name: enjoliver.local/kube-state-metrics:0.5.0
+name: enjoliver.local/kube-state-metrics:1.0.1
 
 builder:
   dependencies:

@@ -87,18 +87,6 @@ systemd:
       mask: true
       enable: false
 
-    - name: vault-token-client@etcd-kubernetes.service
-      enable: true
-      contents: |
-        [Service]
-        ExecStartPre=/bin/mkdir -pv /etc/vault.d/%i
-        ExecStart=/opt/bin/vault-token %i client
-        RestartSec={{.vault_polling_sec}}
-        Restart=on-failure
-
-        [Install]
-        WantedBy=multi-user.target
-
     - name: vault-token-kubelet@kubernetes.service
       enable: true
       contents: |
@@ -147,18 +135,6 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
-    - name: vault-pki-issue-client@etcd-kubernetes.service
-      enable: true
-      contents: |
-        [Service]
-        EnvironmentFile=/etc/vault.d/%i/client.token
-        ExecStart=/opt/bin/vault-pki-issue %i client
-        RestartSec={{.vault_polling_sec}}
-        Restart=on-failure
-
-        [Install]
-        WantedBy=multi-user.target
-
     - name: vault-pki-issue-kubelet@kubernetes.service
       enable: true
       contents: |
@@ -176,6 +152,8 @@ systemd:
       contents: |
         [Service]
         EnvironmentFile=/etc/vault.d/%i/kube-apiserver.token
+        # Setting a common_name for RBAC generic name
+        Environment=COMMON_NAME=node
         ExecStart=/opt/bin/vault-pki-issue %i kube-apiserver
         RestartSec={{.vault_polling_sec}}
         Restart=on-failure
@@ -219,28 +197,6 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
-    - name: etcd3@kubernetes.service
-      enable: true
-      contents: |
-        [Unit]
-        Conflicts=etcd.service etcd2.service
-
-        [Service]
-        Type=notify
-        ExecStartPre=/bin/ls -l \
-          /etc/vault.d/etcd-%i/client.issuing_ca
-        ExecStart=/usr/bin/etcd \
-          gateway start \
-          --endpoints={{ .kubernetes_etcd_member_client_uri_list }} \
-          --listen-addr="127.0.0.1:{{.kubernetes_etcd_client_port}}" \
-          --trusted-ca-file="/etc/vault.d/etcd-%i/client.issuing_ca"
-        RestartSec=10s
-        Restart=on-failure
-        LimitNOFILE=65826
-
-        [Install]
-        WantedBy=multi-user.target
-
     - name: etcd3@fleet.service
       enable: true
       contents: |
@@ -274,55 +230,15 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
-    - name: kube-apiserver.service
+    - name: haproxy.service
       enable: true
       contents: |
         [Unit]
-        After=etcd3@kubernetes.service
+        Requires=network.target
+        After=network.target
 
         [Service]
-        Environment=ETCDCTL_API=3
-        ExecStartPre=/bin/ls -l \
-          /etc/vault.d/kubernetes/kube-apiserver.certificate \
-          /etc/vault.d/kubernetes/kube-apiserver.private_key \
-          /etc/vault.d/kubernetes/kube-apiserver.issuing_ca \
-          /etc/vault.d/kubernetes/kubelet.certificate \
-          /etc/vault.d/kubernetes/kubelet.private_key \
-          /etc/vault.d/kubernetes/kubelet.issuing_ca \
-          /etc/vault.d/kubernetes/service-accounts.key \
-          /etc/vault.d/etcd-kubernetes/client.certificate \
-          /etc/vault.d/etcd-kubernetes/client.private_key \
-          /etc/vault.d/etcd-kubernetes/client.issuing_ca
-        ExecStartPre=/opt/bin/etcdctl3 --endpoints https://127.0.0.1:{{.kubernetes_etcd_client_port}} \
-          --cacert=/etc/vault.d/etcd-kubernetes/client.issuing_ca \
-          --cert=/etc/vault.d/etcd-kubernetes/client.certificate \
-          --key=/etc/vault.d/etcd-kubernetes/client.private_key \
-          endpoint status
-        ExecStart=/usr/bin/hyperkube apiserver proxy \
-          --advertise-address={{.network.ip}} \
-          --insecure-bind-address=127.0.0.1 \
-          --insecure-port={{.kubernetes_apiserver_insecure_port}} \
-          --allow-privileged=true \
-          --service-cluster-ip-range={{.kubernetes_service_cluster_ip_range}} \
-          --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota,PodPreset \
-          --runtime-config=batch/v2alpha1 \
-          --tls-ca-file=/etc/vault.d/kubernetes/kube-apiserver.issuing_ca \
-          --tls-cert-file=/etc/vault.d/kubernetes/kube-apiserver.certificate \
-          --tls-private-key-file=/etc/vault.d/kubernetes/kube-apiserver.private_key \
-          --client-ca-file=/etc/vault.d/kubernetes/kube-apiserver.issuing_ca \
-          --kubelet-certificate-authority=/etc/vault.d/kubernetes/kubelet.issuing_ca \
-          --kubelet-client-certificate=/etc/vault.d/kubernetes/kubelet.certificate \
-          --kubelet-client-key=/etc/vault.d/kubernetes/kubelet.private_key \
-          --kubelet-https=true \
-          --kubelet-preferred-address-types=InternalIP,LegacyHostIP,ExternalDNS,InternalDNS,Hostname \
-          --service-account-key-file=/etc/vault.d/kubernetes/service-accounts.key \
-          --service-account-lookup=true \
-          --authorization-mode=RBAC \
-          --anonymous-auth=false \
-          --etcd-servers=https://127.0.0.1:{{.kubernetes_etcd_client_port}} \
-          --etcd-cafile=/etc/vault.d/etcd-kubernetes/client.issuing_ca \
-          --etcd-certfile=/etc/vault.d/etcd-kubernetes/client.certificate \
-          --etcd-keyfile=/etc/vault.d/etcd-kubernetes/client.private_key
+        ExecStart=/usr/sbin/haproxy -f /etc/haproxy/haproxy.cfg
         Restart=always
         RestartSec=5s
 
@@ -335,7 +251,7 @@ systemd:
         [Unit]
         After=rkt-api.service
         Requires=rkt-api.service
-        After=kube-apiserver.service
+        After=haproxy.service
 
         [Service]
         Environment=PATH=/opt/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
@@ -343,7 +259,7 @@ systemd:
           /etc/vault.d/kubernetes/kubelet.certificate \
           /etc/vault.d/kubernetes/kubelet.private_key \
           /etc/vault.d/kubernetes/kubelet.issuing_ca
-        ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
+
         ExecStart=/usr/bin/hyperkube kubelet \
           --hairpin-mode=none \
           --non-masquerade-cidr={{.network.subnet}} \
@@ -355,7 +271,7 @@ systemd:
           --register-schedulable=false \
           --allow-privileged=true \
           --enable-custom-metrics \
-          --api-servers=http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} \
+          --require-kubeconfig \
           --node-labels=node=true,diskProfile={{.disk_profile}} \
           --cloud-provider="" \
           --container-runtime=rkt \
@@ -390,7 +306,6 @@ systemd:
       enable: true
       contents: |
         [Unit]
-        After=etcd3@kubernetes.service
         After=kubelet.service
 
         [Service]
@@ -407,7 +322,6 @@ systemd:
         [Unit]
         After=etcd3@vault.service
         After=etcd3@fleet.service
-        After=etcd3@kubernetes.service
         After=kubelet.service
         After=lifecycle-ready.service
 
@@ -717,7 +631,7 @@ storage:
             drain {{.kubernetes_node_name}} --force --ignore-daemonsets --delete-local-data
 
           set +e
-          for service in kubelet kube-apiserver etcd3@kubernetes etcd3@fleet
+          for service in kubelet haproxy etcd3@fleet
           do
             systemctl stop ${service}.service
           done
@@ -759,19 +673,11 @@ storage:
             done
           }
 
-          retry etcdctl3 \
-             --cert=/etc/vault.d/etcd-kubernetes/client.certificate \
-             --key=/etc/vault.d/etcd-kubernetes/client.private_key \
-             --cacert=/etc/vault.d/etcd-kubernetes/client.issuing_ca \
-             --endpoints https://127.0.0.1:{{.kubernetes_etcd_client_port}} endpoint status
-
           retry etcdctl \
              --cert-file /etc/vault.d/etcd-fleet/client.certificate \
              --key-file /etc/vault.d/etcd-fleet/client.private_key \
              --ca-file /etc/vault.d/etcd-fleet/client.issuing_ca \
              --endpoints http://127.0.0.1:{{.fleet_etcd_client_port}} cluster-health
-
-          retry kubectl -s http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} cluster-info
 
           retry curl -fs http://127.0.0.1:10248/healthz
 
@@ -786,7 +692,7 @@ storage:
             --driver etcd --endpoint https://{{.network.ip}}:{{.fleet_etcd_client_port}},{{.fleet_etcd_member_client_uri_list}} \
             list-machines --fields ip --no-legend | grep -c {{.network.ip}}
 
-          retry kubectl -s http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} uncordon {{.kubernetes_node_name}}
+          retry kubectl --kubeconfig /var/lib/kubelet/kubeconfig uncordon {{.kubernetes_node_name}}
 
           systemctl preset-all 2>&1 | tee -a /run/systemd-preset-all
 
@@ -876,6 +782,8 @@ storage:
         inline: |
           #!/usr/bin/env bash
 
+          set -x
+
           export PATH=/opt/bin:${PATH}
           export VAULT_CAPATH=/etc/vault.d/vault/server.issuing_ca
           set -o pipefail
@@ -899,6 +807,12 @@ storage:
             /opt/bin/vault-fetch-ca || exit $?
           }
 
+          # The common_name default is the ip address
+          test ${COMMON_NAME} || {
+            COMMON_NAME={{.network.ip}}
+            echo "setting COMMON_NAME=${COMMON_NAME}"
+          }
+
           while true
           do
             for ve in $(echo -n {{ .vault_ip_list }} | tr ',' '\n' | shuf)
@@ -908,11 +822,11 @@ storage:
               curl ${REQ} \
                 --cacert ${VAULT_CAPATH} -Lfs \
                 --header "X-Vault-Token: ${TOKEN}" \
-                -XPOST --data '{
-                  "common_name": "{{.network.ip}}",
-                  "ttl": "17520h",
-                  "ip_sans": "{{.network.ip}},127.0.0.1"
-                }' > /etc/vault.d/${1}/${2}-pki.json
+                -XPOST --data "{
+                  \"common_name\": \"${COMMON_NAME}\",
+                  \"ttl\": \"17520h\",
+                  \"ip_sans\": \"{{.network.ip}},127.0.0.1,{{.network.perennial_host_ip}}\"
+                }" > /etc/vault.d/${1}/${2}-pki.json
               if [ $? -eq 0 ]
               then
                 for item in certificate issuing_ca private_key
@@ -1017,8 +931,57 @@ storage:
           alias la='ls -la'
           alias ll='ls -ll'
 
+    - path: /etc/haproxy/haproxy.cfg
+      mode: 0755
+      filesystem: root
+      contents:
+        inline: |
+          frontend kube-secure
+            mode    tcp
+            option  tcplog
+            bind    0.0.0.0:6443
+            default_backend kubernetes-backend
+
+          backend kubernetes-backend
+            balance roundrobin
+            mode tcp
+            {{ range $i, $element := .etcd_member_kubernetes_control_plane_ip }}
+            server kubernetes-{{$i}} {{$element}}:6443 check
+            {{end}}
+
+    - path: /var/lib/kubelet/kubeconfig
+      mode: 0755
+      filesystem: root
+      contents:
+        inline: |
+          apiVersion: v1
+          kind: Config
+          clusters:
+            - cluster:
+                certificate-authority: /etc/vault.d/kubernetes/kube-apiserver.issuing_ca
+                server: https://127.0.0.1:6443
+              name: kubernetes
+          contexts:
+            - context:
+                cluster: kubernetes
+                user: kubelet
+              name: kubelet-to-kubernetes
+          current-context: kubelet-to-kubernetes
+          users:
+            - name: kubelet
+              user:
+                client-certificate: /etc/vault.d/kubernetes/kube-apiserver.certificate
+                client-key: /etc/vault.d/kubernetes/kube-apiserver.private_key
+
 networkd:
   units:
+    - name: lo.network
+      contents: |
+        [Match]
+        Name=lo
+        [Network]
+        Address={{.network.perennial_host_ip}}/32
+
     - name: 00-bond0.netdev
       contents: |
         [NetDev]

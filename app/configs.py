@@ -108,6 +108,11 @@ class EnjoliverConfig(object):
         self.sub_ips = int(self.config_override("sub_ips", 256))
         self.range_nb_ips = int(self.config_override("range_nb_ips", 253))
         self.skip_ips = int(self.config_override("skip_ips", 1))
+
+        # This host IP is set on all hosts
+        self.perennial_local_host_ip = str(self.config_override("perennial_local_host_ip", "172.31.255.255"))
+
+        # App cache level
         self.sync_cache_ttl = int(self.config_override("sync_cache_ttl", 0))
 
         # Application config

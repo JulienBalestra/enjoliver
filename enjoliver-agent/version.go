@@ -27,9 +27,10 @@ var (
 	systemdVersion   = ExecForVersion{"systemctl", []string{"--version"}, 3, 2, []int{0, 1}}
 	kernelVersion    = ExecForVersion{"uname", []string{"-r"}, 2, 1, []int{0, 0}}
 	fleetVersion     = ExecForVersion{"fleet", []string{"--version"}, 2, 3, []int{0, -1}}
+	haproxyVersion   = ExecForVersion{"haproxy", []string{"-v"}, 4, 4, []int{0, 2}}
 	binariesToExec   = []ExecForVersion{
-		rktVersion, etcdVersion, hyperkubeVersion, iproute2Version,
-		vaultVersion, systemdVersion, kernelVersion, fleetVersion,
+		rktVersion, etcdVersion, hyperkubeVersion, iproute2Version, vaultVersion, systemdVersion, kernelVersion,
+		fleetVersion, haproxyVersion,
 	}
 )
 
