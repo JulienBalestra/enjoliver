@@ -72,7 +72,11 @@ class TestConfigSyncSchedules(TestCase):
             'gateway': '172.20.0.1',
             'rangeStart': '172.20.10.1',
             'rangeEnd': '172.20.10.254',
-            'routes': [{'dst': '0.0.0.0/0'}],
+            'routes': [
+                {"dst": "172.31.255.255/32", "gw": "172.20.0.10"},
+                {'dst': '0.0.0.0/0'},
+
+            ],
             'subnet': '172.20.0.0/19',
             'type': 'host-local'}, indent=2, sort_keys=True),
             json.dumps(d, indent=2, sort_keys=True))
@@ -97,8 +101,10 @@ class TestConfigSyncSchedules(TestCase):
             "rangeStart": "10.99.33.2",
             "rangeEnd": "10.99.33.62",
             "gateway": "10.99.64.254",
-            "routes": [{"dst": "0.0.0.0/0"}]
-        }, indent=2, sort_keys=True), json.dumps(d, indent=2, sort_keys=True))
+            "routes": [
+                {"dst": "172.31.255.255/32", "gw": "10.99.33.1"},
+                {"dst": "0.0.0.0/0"},
+            ]}, indent=2, sort_keys=True), json.dumps(d, indent=2, sort_keys=True))
 
     def test_04_1(self):
         s = sync.ConfigSyncSchedules(
@@ -120,8 +126,10 @@ class TestConfigSyncSchedules(TestCase):
             "rangeStart": "10.99.39.130",
             "rangeEnd": "10.99.39.190",
             "gateway": "10.99.64.254",
-            "routes": [{"dst": "0.0.0.0/0"}]
-        }, indent=2, sort_keys=True), json.dumps(d, indent=2, sort_keys=True))
+            "routes": [
+                {"dst": "172.31.255.255/32", "gw": "10.99.39.129"},
+                {"dst": "0.0.0.0/0"},
+            ]}, indent=2, sort_keys=True), json.dumps(d, indent=2, sort_keys=True))
 
     def test_05(self):
         with self.assertRaises(IOError):
