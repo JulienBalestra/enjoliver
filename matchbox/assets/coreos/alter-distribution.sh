@@ -121,8 +121,8 @@ cp -v ${ASSETS_DIRECTORY}/enjoliver-agent/serve/enjoliver-agent ${USR_A}/bin
 _upx_in_fs /bin/enjoliver-agent
 
 cp -v ${ASSETS_DIRECTORY}/discoveryC/serve/discoveryC squashfs-root/bin
-upx -q squashfs-root/bin/discoveryC
-upx -t squashfs-root/bin/discoveryC
+cp -v ${ASSETS_DIRECTORY}/discoveryC/serve/discoveryC ${USR_A}/bin
+_upx_in_fs /bin/discoveryC
 
 for b in /bin/locksmithctl /bin/coreos-cloudinit
 do
