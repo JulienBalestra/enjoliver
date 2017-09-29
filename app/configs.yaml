@@ -40,7 +40,7 @@ gunicorn_bind: "0.0.0.0:5000"
 #werkzeug_fs_cache_dir: '/var/lib/enjoliver/werkzeug_cache'
 #prometheus_multiproc_dir: "/tmp/prometheus_multiproc_dir"
 #sync_cache_ttl: 30
-#notify_sync_ttl: 60
+#sync_notify_ttl: 60
 
 etcd_member_kubernetes_control_plane_expected_nb: 3
 

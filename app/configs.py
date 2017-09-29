@@ -116,7 +116,7 @@ class EnjoliverConfig(object):
         self.sync_cache_ttl = int(self.config_override("sync_cache_ttl", 0))
 
         # Notify in Sync
-        self.notify_sync_ttl = int(self.config_override("notify_sync_ttl", 60))
+        self.sync_notify_ttl = int(self.config_override("sync_notify_ttl", 60))
 
         # Application config
         self.kubernetes_apiserver_insecure_port = int(self.config_override("kubernetes_apiserver_insecure_port", 8080))
@@ -165,7 +165,7 @@ class EnjoliverConfig(object):
         # Logging level
         # DEBUG or INFO
         self.logging_level = self.config_override("logging_level", "DEBUG")
-        self.logging_formatter = logging.Formatter('%(levelname)-7s %(module)-8s %(funcName)s %(message)s')
+        self.logging_formatter = '%(levelname)-7s %(module)-8s %(funcName)s %(message)s'
 
         self.matchbox_logging_level = self.config_override("matchbox_logging_level", "debug")
         allowed = ["debug", "info", "warning", "error"]

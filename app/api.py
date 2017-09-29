@@ -3,6 +3,7 @@ import logging
 import os
 
 import requests
+import sys
 import time
 from flasgger import Swagger
 from flask import Flask, request, json, jsonify, render_template, Response
@@ -53,12 +54,9 @@ APPLICATION.config["BACKUP_LOCK_KEY"] = EC.backup_lock_key
 SMART = SmartDatabaseClient
 
 if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", ""):
+    logging.basicConfig(level=EC.logging_level, stream=sys.stderr, format=EC.logging_formatter)
     SMART = SmartDatabaseClient(APPLICATION.config["DB_URI"])
     monitoring.monitor_flask(APPLICATION)
-    CONSOLE_HANDLER = logging.StreamHandler()
-    CONSOLE_HANDLER.setLevel(logging.DEBUG) if EC.logging_level.upper() == "DEBUG" else CONSOLE_HANDLER.setLevel(
-        logging.INFO)
-    CONSOLE_HANDLER.setFormatter(EC.logging_formatter)
 
 
 @APPLICATION.route("/shutdown", methods=["POST"])
@@ -841,8 +839,9 @@ def sync_notify():
         schema:
             type: dict
     """
-    CACHE.set("sync-notify", time.time(), timeout=60)
-    return jsonify({}), 200
+    ts = time.time()
+    CACHE.set("sync-notify", ts, timeout=EC.sync_notify_ttl)
+    return jsonify({"ts": ts, "ttl": EC.sync_notify_ttl}), 200
 
 
 @APPLICATION.route("/ignition", methods=["GET"])

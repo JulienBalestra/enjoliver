@@ -108,11 +108,7 @@ def is_health_for_plan(healthz: dict):
 
 if __name__ == '__main__':
     ec = EnjoliverConfig(importer=__file__)
-
-    CONSOLE_HANDLER = logging.StreamHandler()
-    CONSOLE_HANDLER.setLevel(logging.DEBUG) if ec.logging_level.upper() == "DEBUG" else CONSOLE_HANDLER.setLevel(
-        logging.INFO)
-    CONSOLE_HANDLER.setFormatter(ec.logging_formatter)
+    logging.basicConfig(level=ec.logging_level, stream=sys.stderr, format=ec.logging_formatter)
 
     health = "%s/healthz" % ec.api_uri
     tries = 10
