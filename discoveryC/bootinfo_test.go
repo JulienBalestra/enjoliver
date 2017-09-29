@@ -6,7 +6,6 @@ import (
 )
 
 func Test0ParseCommandLine(t *testing.T) {
-	//var c Config
 	var err error
 	var discoAddress = "http://127.0.0.1:5000"
 
@@ -34,7 +33,6 @@ func Test0ParseCommandLine(t *testing.T) {
 }
 
 func Test1ParseCommandLine(t *testing.T) {
-	//var c Config
 	var err error
 	var discoAddress = "http://127.0.0.1:5000"
 
@@ -58,7 +56,6 @@ func Test1ParseCommandLine(t *testing.T) {
 }
 
 func Test2ParseCommandLine(t *testing.T) {
-	//var c Config
 	var err error
 	var discoAddress = "http://127.0.0.1:5000"
 
@@ -81,8 +78,30 @@ func Test2ParseCommandLine(t *testing.T) {
 	}
 }
 
+func Test3ParseCommandLine(t *testing.T) {
+	var err error
+	var discoAddress = "http://127.0.0.1:5000"
+
+	os.Setenv("DISCOVERY_ADDRESS", discoAddress)
+	c, err := CreateConfig()
+	if err != nil {
+		t.Fail()
+	}
+	c.ProcCmdline = "tests" + c.ProcCmdline + "3"
+
+	bi, err := c.ParseCommandLine()
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	if bi.Uuid != "62b58ffd-7960-419a-8359-91def082191a" {
+		t.Error(bi.Uuid)
+	}
+	if bi.Mac != "52:54:00:71:83:ea" {
+		t.Error(bi.Mac)
+	}
+}
+
 func Test3ParseMetadata(t *testing.T) {
-	//var c Config
 	var err error
 	var discoAddress = "http://127.0.0.1:5000"
 

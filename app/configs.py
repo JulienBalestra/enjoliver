@@ -115,6 +115,9 @@ class EnjoliverConfig(object):
         # App cache level
         self.sync_cache_ttl = int(self.config_override("sync_cache_ttl", 0))
 
+        # Notify in Sync
+        self.notify_sync_ttl = int(self.config_override("notify_sync_ttl", 60))
+
         # Application config
         self.kubernetes_apiserver_insecure_port = int(self.config_override("kubernetes_apiserver_insecure_port", 8080))
         self.kubernetes_service_cluster_ip_range = self.config_override("kubernetes_service_cluster_ip_range",

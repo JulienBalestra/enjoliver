@@ -180,6 +180,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 os.environ["ENJOLIVER_AWS_ACCESS_KEY_ID"] = conf["AWS_ACCESS_KEY_ID"]
                 os.environ["ENJOLIVER_AWS_SECRET_ACCESS_KEY"] = conf["AWS_SECRET_ACCESS_KEY"]
                 os.environ["ENJOLIVER_BACKUP_BUCKET_NAME"] = "bbcenjoliver-dev"
+                os.environ["ENJOLIVER_NOTIFY_SYNC_TTL"] = "0"
         except (IOError, ValueError):
             pass
 

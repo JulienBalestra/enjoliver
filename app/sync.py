@@ -377,7 +377,9 @@ class ConfigSyncSchedules(object):
         TODO if we need to notify the API for any reason
         :return:
         """
-        pass
+        req = requests.post("%s/sync-notify" % self.api_uri)
+        req.close()
+        logger.debug("notified API")
 
     def apply(self, nb_try=2, seconds_sleep=0):
         logger.info("start syncing...")

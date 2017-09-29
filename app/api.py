@@ -3,6 +3,7 @@ import logging
 import os
 
 import requests
+import time
 from flasgger import Swagger
 from flask import Flask, request, json, jsonify, render_template, Response
 from werkzeug.contrib.cache import FileSystemCache
@@ -827,7 +828,25 @@ def boot_ipxe():
     return Response(response, status=200, mimetype="text/plain")
 
 
+@APPLICATION.route("/sync-notify", methods=["POST"])
+def sync_notify():
+    """
+    Sync process notify POST to this route to tell everything is synced for matchbox
+    ---
+    tags:
+      - matchbox
+    responses:
+      200:
+        description: Notify received
+        schema:
+            type: dict
+    """
+    CACHE.set("sync-notify", time.time(), timeout=60)
+    return jsonify({}), 200
+
+
 @APPLICATION.route("/ignition", methods=["GET"])
+@APPLICATION.route("/ignition-pxe", methods=["GET"])
 def ignition():
     """
     Ignition
@@ -839,13 +858,36 @@ def ignition():
         description: Ignition configuration
         schema:
             type: dict
+      403:
+        description: Matchbox unavailable
+        schema:
+            type: text/plain
+      503:
+        description: Matchbox is out of sync
+        schema:
+            type: text/plain
     """
+    cache_key = "sync-notify"
+    last_sync_ts = CACHE.get(cache_key)
+    logger.debug("cacheKey: %s is set with value %s" % (cache_key, last_sync_ts))
+
+    # we ignore the sync status if we arrived from /ignition-pxe because it's a discovery PXE boot
+    if last_sync_ts is None and request.path != "/ignition-pxe":
+        logger.error("matchbox state is out of sync: cacheKey: %s is None" % cache_key)
+        return Response("matchbox is out of sync", status=503, mimetype="text/plain")
+
     matchbox_uri = APPLICATION.config.get("MATCHBOX_URI")
     if matchbox_uri:
-        matchbox_resp = requests.get("%s%s" % (matchbox_uri, request.full_path))
-        resp = matchbox_resp.content
-        matchbox_resp.close()
-        return Response(resp, status=matchbox_resp.status_code, mimetype="text/plain")
+        try:
+            # remove the -pxe from the path because matchbox only serve /ignition
+            path = request.full_path.replace("/ignition-pxe?", "/ignition?")
+            matchbox_resp = requests.get("%s%s" % (matchbox_uri, path))
+            resp = matchbox_resp.content
+            matchbox_resp.close()
+            return Response(resp, status=matchbox_resp.status_code, mimetype="text/plain")
+        except requests.RequestException as e:
+            logger.error("fail to query matchbox ignition %s" % e)
+            return Response("matchbox doesn't respond", status=502, mimetype="text/plain")
 
     return Response("matchbox=%s" % matchbox_uri, status=403, mimetype="text/plain")
 

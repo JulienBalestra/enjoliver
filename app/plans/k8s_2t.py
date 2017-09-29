@@ -62,7 +62,8 @@ class Kubernetes2Tiers(object):
                 "etc_hosts": local_ec.etc_hosts,
                 "extra_selectors": extra_selectors,
                 "coreos_install_base_url": local_ec.coreos_install_base_url,
-            }
+            },
+            pxe_redirect=True
         )
         gen.dumps()
 

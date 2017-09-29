@@ -1,11 +1,11 @@
 import abc
 import json
+import logging
 import os
 import re
 
 import deepdiff
 
-import logging
 from configs import EnjoliverConfig
 
 ec = EnjoliverConfig(importer=__file__)
@@ -26,13 +26,16 @@ class Generator(object):
                  matchbox_path: str,
                  selector=None,
                  group_id=None,
-                 extra_metadata=None):
+                 extra_metadata=None,
+                 pxe_redirect=False):
         self.profile = GenerateProfile(
             api_uri=api_uri,
             _id=profile_id,
             name=name,
             ignition_id=ignition_id,
-            matchbox_path=matchbox_path)
+            matchbox_path=matchbox_path,
+            pxe_redirect=pxe_redirect,
+        )
 
         self.group = GenerateGroup(
             api_uri=api_uri,
@@ -115,9 +118,11 @@ class GenerateProfile(GenerateCommon):
                  _id: str,
                  name: str,
                  ignition_id: str,
-                 matchbox_path: str):
+                 matchbox_path: str,
+                 pxe_redirect=False):
 
         self.api_uri = api_uri
+        self.pxe_redirect = pxe_redirect
         self.ensure_directory(matchbox_path)
         self.ensure_directory("%s/ignition" % matchbox_path)
         try:
@@ -140,13 +145,13 @@ class GenerateProfile(GenerateCommon):
             uri = ec.assets_server_uri
         else:
             uri = self.api_uri
+        path_for_ignition = "ignition" if self.pxe_redirect is False else "ignition-pxe"
         self._target_data["boot"] = {
             "kernel": "%s%s" % (uri, ec.kernel),
             "initrd": ["%s%s" % (uri, ec.initrd)],
             "cmdline": {
                 "coreos.config.url":
-                    "%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp}" % self.api_uri,
-                # "coreos.autologin": "",
+                    "%s/%s?uuid=${uuid}&mac=${net0/mac:hexhyp}" % (self.api_uri, path_for_ignition),
                 "coreos.first_boot": "",
                 "coreos.oem.id": "pxe",
                 "console": "tty0 console=ttyS0 console=ttyS1",

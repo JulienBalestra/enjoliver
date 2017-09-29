@@ -28,6 +28,7 @@ class TestAPI(unittest.TestCase):
         smart = api.SmartDatabaseClient(ec.db_uri)
         api.SMART = smart
         smart.create_base()
+        api.CACHE.clear()
 
         cls.app.testing = True
 
@@ -326,3 +327,22 @@ class TestAPI(unittest.TestCase):
         r = self.app.get("/ui/view/machine")
         json.loads(r.data.decode())
         self.assertEqual(200, r.status_code)
+
+    def test_sync_notify_00_outofsync(self):
+        r = self.app.get("/ignition")
+        r.close()
+        self.assertEqual(503, r.status_code)
+
+    def test_sync_notify_01_noneedsync(self):
+        r = self.app.get("/ignition-pxe")
+        r.close()
+        self.assertEqual(502, r.status_code)
+
+    def test_sync_notify_02_insync(self):
+        r = self.app.post("/sync-notify")
+        r.close()
+        self.assertEqual(200, r.status_code)
+        # cache is set but matchbox doesn't run so we expect a failure
+        r = self.app.get("/ignition")
+        r.close()
+        self.assertEqual(502, r.status_code)

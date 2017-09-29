@@ -49,10 +49,21 @@ func (c *Config) getRandomId() (string, error) {
 
 }
 
+// Retrieve the parameters from /proc/cmdline with which we booted
 func (c *Config) getBootInfoFromUrl(url string) (bootInfo BootInfo, err error) {
-	query := strings.SplitAfter(url, "/ignition?")
+	const ignitionPath = "/ignition?"
+	const ignitionPxePath = "/ignition-pxe?"
+
+	// split after the base url path to find the parameters
+	// we have two possible routes set in constant above
+	query := strings.SplitAfter(url, ignitionPxePath)
 	if len(query) != 2 {
-		return bootInfo, errors.New("incoherent SplitAfter(url, \"/ignition?\") != 2")
+		glog.Warningf("incoherent SplitAfter %s, trying %s", ignitionPxePath, ignitionPath)
+		query = strings.SplitAfter(url, ignitionPath)
+		if len(query) != 2 {
+			return bootInfo, errors.New(
+				fmt.Sprintf("incoherent SplitAfter(url, %s) || SplitAfter(url, %s)) != 2", ignitionPath, ignitionPxePath))
+		}
 	}
 	args := strings.Split(query[1], "&")
 	for _, arg := range args {
