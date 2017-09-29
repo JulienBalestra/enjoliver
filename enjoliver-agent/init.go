@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"strconv"
@@ -65,14 +64,14 @@ func constructLivenessProbe(envPortName string, path string) (HttpLivenessProbe,
 	return probe, nil
 }
 
-func getHttpLivenessProbesToQuery() ([]HttpLivenessProbe, error) {
+func getHttpLivenessProbesToQuery(controlPlane bool) ([]HttpLivenessProbe, error) {
 	var livenessProbes []HttpLivenessProbe
 
 	probes := [][]string{
 		{"FLEET_ETCD_CLIENT_PORT", etcdLivenessPath},
 		{"KUBELET_HEALTHZ_PORT", kubernetesLivenessPath},
 	}
-	if flag.Lookup(ControlPlaneFlagName).Value.String() == "true" {
+	if controlPlane {
 		glog.V(4).Infof("flag %s set to true", ControlPlaneFlagName)
 		probes = append(probes, [][]string{
 			{"VAULT_PORT", vaultLivenessPath},
@@ -115,4 +114,15 @@ func getLocksmithConfig(livenessProbes []HttpLivenessProbe) (string, string, err
 	errMsg := fmt.Sprintf("fail to find locksmith endpoint %s in probes", locksmithEtcd)
 	glog.Errorf(errMsg)
 	return "", "", fmt.Errorf(errMsg)
+}
+
+// Return the list of systemd units used to run Kubernetes
+func getKubernetesSystemdUnits(controlPlane bool) []string {
+	var nodeKubernetesUnits = []string{"kubelet.service", "rkt-api.service"}
+	controlPlaneKubernetesUnits := append(nodeKubernetesUnits, []string{"kube-apiserver.service", "etcd3@kubernetes.service"}...)
+
+	if controlPlane {
+		return controlPlaneKubernetesUnits
+	}
+	return nodeKubernetesUnits
 }

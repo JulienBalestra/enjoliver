@@ -10,8 +10,6 @@ import (
 	"github.com/golang/glog"
 )
 
-var k8s_units = []string{"kubelet.service", "rkt-api.service", "kube-apiserver.service", "etcd3@kubernetes.service"}
-
 const (
 	systemdUnitStopStartMode = "replace"
 )
@@ -57,7 +55,7 @@ func startUnitRetry(sd *dbus.Conn, name string) error {
 	return fmt.Errorf("unit %s fail to start with status %s", name, status)
 }
 
-func restartSystemdKubernetesStack() error {
+func (run *Runtime) restartSystemdKubernetesStack() error {
 	sd, err := dbus.New()
 	if err != nil {
 		glog.Errorf("fail to connect to dbus: %s", err)
@@ -65,7 +63,7 @@ func restartSystemdKubernetesStack() error {
 	}
 	defer sd.Close()
 
-	for _, u := range k8s_units {
+	for _, u := range run.KubernetesSystemdUnits {
 		glog.V(2).Infof("stopping %s", u)
 		_, err = sd.StopUnit(u, systemdUnitStopStartMode, nil)
 		if err != nil {
@@ -80,15 +78,15 @@ func restartSystemdKubernetesStack() error {
 	}
 
 	var badStart []error
-	for i := len(k8s_units) - 1; i != -1; i-- {
-		glog.V(2).Infof("starting %s", k8s_units[i])
-		err = startUnitRetry(sd, k8s_units[i])
+	for i := len(run.KubernetesSystemdUnits) - 1; i != -1; i-- {
+		glog.V(2).Infof("starting %s", run.KubernetesSystemdUnits[i])
+		err = startUnitRetry(sd, run.KubernetesSystemdUnits[i])
 		if err != nil {
-			glog.Errorf("fail to start unit %s", k8s_units[i])
+			glog.Errorf("fail to start unit %s", run.KubernetesSystemdUnits[i])
 		}
-		err = waitUnitIs(sd, k8s_units[i], []string{"active"})
+		err = waitUnitIs(sd, run.KubernetesSystemdUnits[i], []string{"active"})
 		if err != nil {
-			glog.Errorf("fail to have status %q on %s", "active", k8s_units[i])
+			glog.Errorf("fail to have status %q on %s", "active", run.KubernetesSystemdUnits[i])
 			badStart = append(badStart, err)
 		}
 	}
@@ -142,7 +140,7 @@ func (run *Runtime) RestartKubernetes() error {
 		return err
 	}
 
-	err = restartSystemdKubernetesStack()
+	err = run.restartSystemdKubernetesStack()
 	if err != nil {
 		glog.Errorf("fail to restart units", err)
 		return err

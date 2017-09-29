@@ -15,10 +15,11 @@ const (
 )
 
 type Runtime struct {
-	HttpLivenessProbes    []HttpLivenessProbe
-	LocksmithEndpoint     string
-	LocksmithLock         string
-	RestartKubernetesLock sync.RWMutex
+	HttpLivenessProbes     []HttpLivenessProbe
+	LocksmithEndpoint      string
+	LocksmithLock          string
+	RestartKubernetesLock  sync.RWMutex
+	KubernetesSystemdUnits []string
 }
 
 func main() {
@@ -29,7 +30,13 @@ func main() {
 	flag.Parse()
 	flag.Lookup("alsologtostderr").Value.Set("true")
 
-	p, err := getHttpLivenessProbesToQuery()
+	controlPlane := false
+	if flag.Lookup(ControlPlaneFlagName).Value.String() == "true" {
+		controlPlane = true
+		glog.Infof("node-agent is in control-plane mode")
+	}
+
+	p, err := getHttpLivenessProbesToQuery(controlPlane)
 	if err != nil {
 		glog.Errorf("fail to get HttpLivenessProbes to query: %s", err)
 		os.Exit(2)
@@ -46,6 +53,7 @@ func main() {
 		locksmithEndpoint,
 		locksmithLockName,
 		sync.RWMutex{},
+		getKubernetesSystemdUnits(controlPlane),
 	}
 	http.DefaultClient.Timeout = time.Second * 2
 	http.HandleFunc("/", run.handlerRoot)
