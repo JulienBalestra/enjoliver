@@ -40,6 +40,7 @@ class TestKVMK8SEnjolivageDiskLifecycleLifecycle0(TestKVMK8sEnjolivageDiskLifecy
             "etcd_member_kubernetes_control_plane": "%s-%s" % (marker, "etcd-member-control-plane"),
             "kubernetes_nodes": "%s-%s" % (marker, "k8s-node"),
         }
+        k8s_2t.EC.lldp_image_url = ""
         plan_k8s_2t = k8s_2t.Kubernetes2Tiers(
             ignitions,
             matchbox_path=self.test_matchbox_path,

@@ -34,6 +34,7 @@ class TestKVMK8SEtcdOperator0(TestKVMK8sEtcdOperator):
         nb_node = 3
         marker = "euid-%s-%s" % (TestKVMK8sEtcdOperator.__name__.lower(), self.test_00.__name__)
         nodes = ["%s-%d" % (marker, i) for i in range(nb_node)]
+        k8s_2t.EC.lldp_image_url = ""
         plan_k8s_2t = k8s_2t.Kubernetes2Tiers(
             {
                 "discovery": marker,

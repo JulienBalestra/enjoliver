@@ -179,16 +179,16 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 conf = json.load(f)
                 os.environ["ENJOLIVER_AWS_ACCESS_KEY_ID"] = conf["AWS_ACCESS_KEY_ID"]
                 os.environ["ENJOLIVER_AWS_SECRET_ACCESS_KEY"] = conf["AWS_SECRET_ACCESS_KEY"]
-                os.environ["ENJOLIVER_BACKUP_BUCKET_NAME"] = "bbcenjoliver-dev"
-                os.environ["ENJOLIVER_NOTIFY_SYNC_TTL"] = "0"
         except (IOError, ValueError):
             pass
 
+        os.environ["ENJOLIVER_BACKUP_BUCKET_NAME"] = "bbcenjoliver-dev"
+        os.environ["ENJOLIVER_SYNC_NOTIFY_TTL"] = "0"
         cmd = [
             "%s" % sys.executable,
             "%s/manage.py" % KernelVirtualMachinePlayer.project_path,
             "gunicorn",
-        ]
+            ]
         display("PID  -> %s\n"
                 "exec -> %s" % (os.getpid(), " ".join(cmd)))
         os.execve(cmd[0], cmd, os.environ)

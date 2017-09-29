@@ -34,6 +34,7 @@ class TestKVMK8sEnjolivage0(TestKVMK8sEnjolivage):
         nb_node = 4
         marker = "plans-%s-%s" % (TestKVMK8sEnjolivage.__name__.lower(), self.test_00.__name__)
         nodes = ["%s-%d" % (marker, i) for i in range(nb_node)]
+        k8s_2t.EC.lldp_image_url = ""
         plan_k8s_2t = k8s_2t.Kubernetes2Tiers(
             {
                 "discovery": marker,

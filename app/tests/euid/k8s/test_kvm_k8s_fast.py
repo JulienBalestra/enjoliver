@@ -34,6 +34,7 @@ class TestKVMK8SFast0(TestKVMK8sFast):
         nb_node = 2
         marker = "euid-%s-%s" % (TestKVMK8sFast.__name__.lower(), self.test_00.__name__)
         nodes = ["%s-%d" % (marker, i) for i in range(nb_node)]
+        k8s_2t.EC.lldp_image_url = ""
         plan_k8s_2t = k8s_2t.Kubernetes2Tiers(
             {
                 "discovery": marker,

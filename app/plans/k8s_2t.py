@@ -20,6 +20,8 @@ from configs import EnjoliverConfig
 
 logger = logging.getLogger(__file__)
 
+EC = EnjoliverConfig(importer=__file__)
+
 
 class Kubernetes2Tiers(object):
     """
@@ -46,23 +48,25 @@ class Kubernetes2Tiers(object):
                                               extra_selectors)
 
     def _init_discovery(self):
-        local_ec = EnjoliverConfig(importer=__file__)
-        if local_ec.extra_selectors:
-            extra_selectors = "&".join(["%s=%s" % (k, v) for k, v in local_ec.extra_selectors.items()])
+        if EC.extra_selectors:
+            extra_selectors = "&".join(["%s=%s" % (k, v) for k, v in EC.extra_selectors.items()])
         else:
             extra_selectors = ""
+        extra_md = {
+            "etc_hosts": EC.etc_hosts,
+            "extra_selectors": extra_selectors,
+            "coreos_install_base_url": EC.coreos_install_base_url,
+        }
+        if EC.lldp_image_url:
+            logger.debug("adding lldp_image_url: %s" % EC.lldp_image_url)
+            extra_md.update({"lldp_image_url": EC.lldp_image_url})
         gen = generator.Generator(
             api_uri=self.api_uri,
             profile_id="discovery",
             name="discovery",
             ignition_id="%s.yaml" % self.ignition_dict["discovery"],
             matchbox_path=self.matchbox_path,
-            extra_metadata={
-                "lldp_image_url": local_ec.lldp_image_url,
-                "etc_hosts": local_ec.etc_hosts,
-                "extra_selectors": extra_selectors,
-                "coreos_install_base_url": local_ec.coreos_install_base_url,
-            },
+            extra_metadata=extra_md,
             pxe_redirect=True
         )
         gen.dumps()
@@ -107,10 +111,9 @@ def is_health_for_plan(healthz: dict):
 
 
 if __name__ == '__main__':
-    ec = EnjoliverConfig(importer=__file__)
-    logging.basicConfig(level=ec.logging_level, stream=sys.stderr, format=ec.logging_formatter)
+    logging.basicConfig(level=EC.logging_level, stream=sys.stderr, format=EC.logging_formatter)
 
-    health = "%s/healthz" % ec.api_uri
+    health = "%s/healthz" % EC.api_uri
     tries = 10
     for i in range(tries):
         try:
@@ -130,14 +133,14 @@ if __name__ == '__main__':
         time.sleep(5)
 
     k2t = Kubernetes2Tiers(
-        ignition_dict=ec.ignition_dict,
-        matchbox_path=ec.matchbox_path,
-        api_uri=ec.api_uri,
-        extra_selectors=ec.extra_selectors
+        ignition_dict=EC.ignition_dict,
+        matchbox_path=EC.matchbox_path,
+        api_uri=EC.api_uri,
+        extra_selectors=EC.extra_selectors
     )
 
-    if ec.sync_cache_ttl > 0:
-        wait = ec.sync_cache_ttl + (ec.sync_cache_ttl * 0.1)
+    if EC.sync_cache_ttl > 0:
+        wait = EC.sync_cache_ttl + (EC.sync_cache_ttl * 0.1)
     else:
         wait = 10
     while True:

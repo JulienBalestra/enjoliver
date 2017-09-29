@@ -34,6 +34,26 @@ systemd:
       enable: false
       mask: true
 
+    {{ if index . "lldp_image_url" }}
+    - name: lldpd.service
+      enable: true
+      contents: |
+        [Unit]
+        Requires=network-online.target
+        After=network-online.target
+        [Service]
+        Environment=LLDP_VOLUME=/run/lldp
+        EnvironmentFile=-/etc/metadata-endpoints.env
+        ExecStartPre=/bin/mkdir -pv ${LLDP_VOLUME}
+        ExecStart=/usr/bin/rkt run --insecure-options=all --mount volume=socket,target=/var/run \
+          --net=host \
+          {{.lldp_image_url}} \
+          --volume socket,kind=host,source=${LLDP_VOLUME} \
+          --exec /usr/sbin/lldpd -- -ddd
+        [Install]
+        WantedBy=multi-user.target
+    {{end}}
+
     - name: installer.service
       enable: true
       contents: |
@@ -99,12 +119,14 @@ storage:
           # Prepare the ignition logs
           journalctl --identifier=ignition -o short-iso > ${IGNITION_FILE}
 
+          {{ if index . "lldp_image_url" }}
           # LLDP export xml file
           rkt run --insecure-options=all --mount volume=socket,target=/var/run \
              --net=host \
              {{.lldp_image_url}} \
              --volume socket,kind=host,source=${LLDP_VOLUME} \
              --exec opt/bin/lldp-export
+          {{end}}
 
           # Clean the store to save space
           rkt image gc --grace-period=0s
@@ -129,23 +151,36 @@ storage:
 
           while true
           do
-              sleep ${TIMER}
 
               curl -f ${API_URI}/scheduler | jq -e ". | has(${NORMALIZED_MAC})"
               if [ $? -ne 0 ]
               then
                 echo "${API_URI}/scheduler still not have ${NORMALIZED_MAC}"
+                sleep ${TIMER}
                 continue
               fi
 
-              curl -f ${API_URI}/ignition?${QUERY} -o ${NEW_IGNITION} || continue
+              curl -fv ${API_URI}/sync-notify
+              if [ $? -ne 0 ]
+              then
+                echo "${API_URI}/sync-notify is false"
+                sleep ${TIMER}
+                continue
+              fi
+
+              curl -f ${API_URI}/ignition?${QUERY} -o ${NEW_IGNITION}
+              if [ $? -ne 0 ]
+              then
+                echo "${API_URI}/ignition?${QUERY} still not serve ignition file"
+                sleep ${TIMER}
+                continue
+              fi
 
               # Be sure the returned Ignition is not a discovery one
               # We don't want installing discovery profile on disk
               jq -e '.storage.files[] | select(.path == "/etc/discovery") | .contents.source' ${NEW_IGNITION}
               if [ $? -ne 0 ]
               then
-                  #udevadm settle
 
                   #until curl -f "${API_URI}/install-authorization/${QUERY}"
                   #do
@@ -153,6 +188,7 @@ storage:
                   #  sleep 10
                   #done
 
+                  udevadm settle
                   #coreos-install -d /dev/sda -V current -C stable -i ${NEW_IGNITION} \
                   #  {{if index . "coreos_install_base_url"}} -b {{.coreos_install_base_url}}{{end}} || {
                   #  curl -f -XPOST \
@@ -163,6 +199,7 @@ storage:
                   sync
                   systemctl reboot
               fi
+              sleep ${TIMER}
           done
 
     - path: /etc/coreos/update.conf

@@ -844,6 +844,27 @@ def sync_notify():
     return jsonify({"ts": ts, "ttl": EC.sync_notify_ttl}), 200
 
 
+@APPLICATION.route("/sync-notify", methods=["GET"])
+def sync_notify_status():
+    """
+    Sync process notify POST to this route to tell everything is synced for matchbox
+    ---
+    tags:
+      - matchbox
+    responses:
+      200:
+        description: Notify received
+        schema:
+            type: dict
+    """
+    sync = CACHE.get("sync-notify")
+    if sync:
+        return jsonify({"sync-notify": sync}), 200
+
+    logger.warning("sync-notify is None")
+    return jsonify({"sync-notify": False}), 503
+
+
 @APPLICATION.route("/ignition", methods=["GET"])
 @APPLICATION.route("/ignition-pxe", methods=["GET"])
 def ignition():
