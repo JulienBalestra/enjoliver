@@ -936,6 +936,22 @@ storage:
       filesystem: root
       contents:
         inline: |
+          global
+            stats timeout 30s
+            stats socket /var/run/haproxy.sock mode 666 level admin
+
+          defaults
+            timeout client  100s
+            timeout server  100s
+            timeout connect 100s
+            timeout queue   100s
+
+          listen stats
+            mode http
+            bind {{.network.ip}}:1937
+            stats enable
+            stats uri /
+
           frontend kube-secure
             mode    tcp
             option  tcplog
