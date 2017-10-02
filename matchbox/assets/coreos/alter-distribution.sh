@@ -131,7 +131,7 @@ done
 
 mkdir -pv ${USR_A}/local/etc/ squashfs-root/local/etc/
 echo -n "{\"release\": \"${VERSION}\", \"alter_timestamp\": \"$(date +%s)\", \"commit\": \"${COMMIT_ID}\"}" | \
-    tee ${USR_A}/local/etc/alter-version | tee squashfs-root/local/etc/alter-version
+    tee ${USR_A}/local/etc/alter-version squashfs-root/local/etc/alter-version ${VERSION_DIR}/alter-version
 
 sync
 

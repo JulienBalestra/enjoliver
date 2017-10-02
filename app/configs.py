@@ -148,7 +148,7 @@ class EnjoliverConfig(object):
         # Use a real registry in production like:
         # enjoliver.local/hyperkube:latest
         self.lldp_image_url = self.config_override("lldp_image_url", "")
-        self.hyperkube_image_url = self.config_override("hyperkube_image_url", "enjoliver.local/hyperkube:1.7.6")
+        self.hyperkube_image_url = self.config_override("hyperkube_image_url", "enjoliver.local/hyperkube:1.7.7")
 
         # Ceph isn't ready yet
         self.cephtools_image_url = self.config_override("cephtools_image_url", 'enjoliver.local/ceph-tools:latest')
