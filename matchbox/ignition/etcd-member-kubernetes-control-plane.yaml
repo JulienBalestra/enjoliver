@@ -33,7 +33,7 @@ systemd:
       enable: true
       contents: |
         [Unit]
-        Before=network.target
+        Before=network-online.target
         RefuseManualStart=true
 
         [Service]
@@ -83,8 +83,8 @@ systemd:
       enable: true
       contents: |
         [Unit]
-        Requires=network.target
-        After=network.target
+        Requires=network-online.target
+        After=network-online.target
 
         [Service]
         EnvironmentFile=/etc/etcd-%i
@@ -100,8 +100,8 @@ systemd:
       enable: true
       contents: |
         [Unit]
-        Requires=network.target
-        After=network.target
+        Requires=network-online.target
+        After=network-online.target
 
         [Service]
         EnvironmentFile=/etc/etcd-%i
@@ -117,8 +117,8 @@ systemd:
       enable: true
       contents: |
         [Unit]
-        Requires=network.target
-        After=network.target
+        Requires=network-online.target
+        After=network-online.target
 
         [Service]
         EnvironmentFile=/etc/etcd-%i
