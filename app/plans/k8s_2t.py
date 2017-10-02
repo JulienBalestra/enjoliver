@@ -139,10 +139,13 @@ if __name__ == '__main__':
         extra_selectors=EC.extra_selectors
     )
 
+    wait = 10
     if EC.sync_cache_ttl > 0:
         wait = EC.sync_cache_ttl + (EC.sync_cache_ttl * 0.1)
+        logger.info("cache_ttl is set at %ds, using %ds as sleep interval" % (EC.sync_cache_ttl, wait))
     else:
-        wait = 10
+        logger.warning("no cache_ttl is set switching to default sleep %ds" % wait)
+
     while True:
         k2t.apply()
-        time.sleep(10)
+        time.sleep(wait)
