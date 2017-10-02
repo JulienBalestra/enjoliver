@@ -82,6 +82,10 @@ systemd:
     - name: etcd-operator@vault.service
       enable: true
       contents: |
+        [Unit]
+        Requires=network.target
+        After=network.target
+
         [Service]
         EnvironmentFile=/etc/etcd-%i
         Environment=ETCD_ENV_FILE=/etc/etcd-%i.env
@@ -95,6 +99,10 @@ systemd:
     - name: etcd-operator@kubernetes.service
       enable: true
       contents: |
+        [Unit]
+        Requires=network.target
+        After=network.target
+
         [Service]
         EnvironmentFile=/etc/etcd-%i
         Environment=ETCD_ENV_FILE=/etc/etcd-%i.env
@@ -108,6 +116,10 @@ systemd:
     - name: etcd-operator@fleet.service
       enable: true
       contents: |
+        [Unit]
+        Requires=network.target
+        After=network.target
+
         [Service]
         EnvironmentFile=/etc/etcd-%i
         Environment=ETCD_ENV_FILE=/etc/etcd-%i.env
