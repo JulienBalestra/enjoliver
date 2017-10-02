@@ -134,7 +134,6 @@ class TestValidateRuntime(unittest.TestCase):
         self.assertTrue(os.path.isfile(os.path.join(self.runtime_d, "rkt", "rkt")))
         self.assertTrue(os.path.isfile(os.path.join(self.runtime_d, "stage1.d", "coreos.json")))
         self.assertTrue(os.path.isfile(os.path.join(self.runtime_d, "paths.d", "paths.json")))
-        self.assertTrue(os.path.isdir(os.path.join(self.runtime_d, "data")))
 
     def test_helm(self):
         self.assertTrue(os.path.isfile(os.path.join(self.runtime_d, "helm", "helm")))
