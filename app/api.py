@@ -10,14 +10,17 @@ from flask import Flask, request, json, jsonify, render_template, Response
 from werkzeug.contrib.cache import FileSystemCache
 
 import crud
-from machine_state_repo import MachineStateRepository
 import model
 import monitoring
 import ops
 import smartdb
+import tools
 from configs import EnjoliverConfig
 from model import MachineStates
 from smartdb import SmartDatabaseClient
+
+from machine_state_repo import MachineStateRepository
+from user_interface_repo import UserInterfaceRepository
 
 EC = EnjoliverConfig(importer=__file__)
 CACHE = FileSystemCache(EC.werkzeug_fs_cache_dir)
@@ -48,7 +51,9 @@ application.config["BACKUP_BUCKET_DIRECTORY"] = EC.backup_bucket_directory
 application.config["BACKUP_LOCK_KEY"] = EC.backup_lock_key
 
 SMART = SmartDatabaseClient
+# repositories
 machine_state = MachineStateRepository
+view_user_interface = UserInterfaceRepository
 
 if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", ""):
     logging.basicConfig(level=EC.logging_level, stream=sys.stderr, format=EC.logging_formatter)
@@ -57,11 +62,12 @@ if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", ""):
     handler.setFormatter(fmt)
     app.logger.addHandler(handler)
     app.logger.setLevel(EC.logging_level)
-    SMART = SmartDatabaseClient(EC.db_uri)
     monitoring.monitor_flask(application)
 
+    SMART = SmartDatabaseClient(EC.db_uri)
     # repositories
     machine_state = MachineStateRepository(SMART)
+    view_user_interface = UserInterfaceRepository(SMART)
 
 
 @application.route("/shutdown", methods=["POST"])
@@ -167,7 +173,7 @@ def report_lifecycle_rolling(request_raw_query):
     with SMART.new_session() as session:
         life = crud.FetchLifecycle(session)
         try:
-            mac = crud.get_mac_from_raw_query(request_raw_query)
+            mac = tools.get_mac_from_raw_query(request_raw_query)
         except AttributeError as e:
             return jsonify({"enable": None, "request_raw_query": "%s:%s" % (request_raw_query, e)}), 403
 
@@ -355,7 +361,7 @@ def report_lifecycle_coreos_install(status, request_raw_query):
 
     op(caller=request.url_rule)
     machine_state.update(
-        mac=crud.get_mac_from_raw_query(request_raw_query),
+        mac=tools.get_mac_from_raw_query(request_raw_query),
         state=MachineStates.installation_succeed if success else MachineStates.installation_failed)
     return jsonify({"success": success, "request_raw_query": request_raw_query}), 200
 
@@ -969,12 +975,12 @@ def require_install_authorization(request_raw_query):
         lock = CACHE.get("lock-install")
         if lock is not None:
             app.logger.warning("Locked by %s" % lock)
-            machine_state.update(crud.get_mac_from_raw_query(request_raw_query), MachineStates.os_installation_denied)
+            machine_state.update(tools.get_mac_from_raw_query(request_raw_query), MachineStates.os_installation_denied)
             return Response(response="Locked by %s" % lock, status=403)
         CACHE.set("lock-install", request_raw_query, timeout=EC.coreos_install_lock_seconds)
         app.logger.info("Granted to %s" % request_raw_query)
 
-    machine_state.update(crud.get_mac_from_raw_query(request_raw_query), MachineStates.os_installation_granted)
+    machine_state.update(tools.get_mac_from_raw_query(request_raw_query), MachineStates.os_installation_granted)
     return Response(response="Granted", status=200)
 
 
@@ -1056,10 +1062,7 @@ def user_interface():
 
 @application.route('/ui/view/machine', methods=['GET'])
 def user_view_machine():
-    with SMART.new_session() as session:
-        view = crud.FetchView(session)
-        res = view.get_machines()
-
+    res = view_user_interface.get_machines_overview()
     return jsonify(res)
 
 

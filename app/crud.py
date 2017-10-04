@@ -7,31 +7,14 @@ import logging
 import os
 import socket
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
-import sync
+import tools
 from model import ChassisPort, Chassis, MachineInterface, Machine, MachineDisk, \
-    Healthz, Schedule, ScheduleRoles, LifecycleIgnition, LifecycleCoreosInstall, LifecycleRolling, MachineCurrentState
+    Schedule, ScheduleRoles, LifecycleIgnition, LifecycleCoreosInstall, LifecycleRolling
 from smartdb import SmartDatabaseClient as sc
 
 logger = logging.getLogger(__name__)
-
-
-def get_mac_from_raw_query(request_raw_query: str):
-    """
-    Get MAC address inside a matchbox "request raw query"
-    /path?<request_raw_query>
-    :param request_raw_query:
-    :return: mac address
-    """
-    mac = ""
-    raw_query_list = request_raw_query.split("&")
-    for param in raw_query_list:
-        if "mac=" in param:
-            mac = param.replace("mac=", "")
-    if not mac:
-        raise AttributeError("%s is not parsable" % request_raw_query)
-    return mac.replace("-", ":")
 
 
 class FetchDiscovery:
@@ -160,28 +143,6 @@ class FetchDiscovery:
         return all_data
 
 
-def health_check(session: Session, ts: int, who: str):
-    """
-    :param session: a constructed session
-    :param ts: timestamp
-    :param who: the host who asked for the check
-    :return:
-    """
-    health = session.query(Healthz).first()
-    if not health:
-        health = Healthz()
-        session.add(health)
-    health.ts = ts
-    health.host = who
-    session.commit()
-    return True
-
-
-def health_check_purge(session):
-    session.query(Healthz).delete()
-    session.commit()
-
-
 class InjectDiscovery:
     """
     Store the data provides during the discovery process
@@ -220,7 +181,9 @@ class InjectDiscovery:
         if len(uuid) != 36:
             logger.error("uuid: %s in not len(36)")
             raise TypeError("uuid: %s in not len(36)" % uuid)
-        machine = self.session.query(Machine).filter(Machine.uuid == uuid).first()
+        machine = self.session.query(Machine) \
+            .options(joinedload("interfaces")) \
+            .filter(Machine.uuid == uuid).first()
         if machine:
             logger.debug("machine %s already in db" % uuid)
             machine.updated_date = datetime.datetime.utcnow()
@@ -231,7 +194,8 @@ class InjectDiscovery:
         self.adds += 1
         return machine
 
-    def _get_verifed_dns_query(self, interface: dict):
+    @staticmethod
+    def _get_verifed_dns_query(interface: dict):
         """
         A discovery machine give a FQDN. This method will do the resolution before insert in the db
         :param interface:
@@ -267,8 +231,9 @@ class InjectDiscovery:
 
         for interface in self.discovery["interfaces"]:
             # TODO make only one query instead of many
-            if interface["mac"] and self.session.query(MachineInterface).filter(
-                            MachineInterface.mac == interface["mac"]).count() == 0:
+            if interface["mac"] and self.session.query(MachineInterface) \
+                    .filter(MachineInterface.mac == interface["mac"]) \
+                    .count() == 0:
                 logger.debug("mac not in db: %s adding" % interface["mac"])
 
                 fqdn = self._get_verifed_dns_query(interface)
@@ -298,8 +263,9 @@ class InjectDiscovery:
             return m_disks
 
         for disk in self.discovery["disks"]:
-            if self.session.query(MachineDisk).filter(MachineDisk.machine_id == self.machine.id).filter(
-                            MachineDisk.path == disk["path"]).count() == 0:
+            if self.session.query(MachineDisk) \
+                    .filter(MachineDisk.machine_id == self.machine.id) \
+                    .filter(MachineDisk.path == disk["path"]).count() == 0:
                 md = MachineDisk(
                     machine_id=self.machine.id,
                     path=disk["path"],
@@ -402,8 +368,11 @@ class FetchSchedule:
 
     def get_schedules(self):
         r = {}
-        for machine in self.session.query(Machine).join(
-                Schedule).filter(MachineInterface.as_boot == True):
+        for machine in self.session.query(Machine) \
+                .options(joinedload("interfaces")) \
+                .options(joinedload("schedules")) \
+                .join(Schedule) \
+                .filter(MachineInterface.as_boot == True):
             r[machine.interfaces[0].mac] = [k.role for k in machine.schedules]
 
         return r
@@ -439,7 +408,11 @@ class FetchSchedule:
 
     def get_machines_by_role(self, role: str):
         machines = []
-        for machine in self.session.query(Machine).join(Schedule).filter(Schedule.role == role):
+        for machine in self.session.query(Machine) \
+                .options(joinedload("interfaces")) \
+                .options(joinedload("disks")) \
+                .join(Schedule) \
+                .filter(Schedule.role == role):
             machines.append({
                 "mac": machine.interfaces[0].mac,
                 "ipv4": machine.interfaces[0].ipv4,
@@ -497,8 +470,11 @@ class FetchSchedule:
 
     def get_role_ip_list(self, role: str):
         ips = []
-        for machine in self.session.query(Machine).join(MachineInterface).join(Schedule).filter(
-                        Schedule.role == role, MachineInterface.as_boot == True):
+        for machine in self.session.query(Machine) \
+                .options(joinedload("interfaces")) \
+                .join(MachineInterface) \
+                .join(Schedule) \
+                .filter(Schedule.role == role, MachineInterface.as_boot == True):
             ips.append(
                 machine.interfaces[0].ipv4
             )
@@ -575,7 +551,7 @@ class InjectLifecycle:
         self.adds = 0
         self.updates = 0
 
-        self.mac = get_mac_from_raw_query(request_raw_query)
+        self.mac = tools.get_mac_from_raw_query(request_raw_query)
 
         self.machine = self.session.query(Machine).join(MachineInterface).filter(
             MachineInterface.mac == self.mac).first()
@@ -718,77 +694,6 @@ class FetchLifecycle:
         return life_roll_list
 
 
-class FetchView:
-    """
-    Get the data for the User Interface View
-    """
-
-    def __init__(self, session: Session):
-        self.session = session
-
-    def get_machines(self):
-        """
-        TODO refactor this ugly stuff
-        :return:
-        """
-        data = {
-            "gridColumns": [
-                "MAC",
-                "CIDR",
-                "FQDN",
-                "DiskProfile",
-                "Roles",
-                "LastState",
-                "UpdateStrategy",
-                "UpToDate",
-                "LastReport",
-                "LastChange",
-            ],
-            "gridData": []
-        }
-        for machine in self.session.query(Machine).outerjoin(
-                MachineInterface).outerjoin(LifecycleCoreosInstall).outerjoin(LifecycleIgnition).outerjoin(
-            Schedule).outerjoin(MachineDisk).filter(MachineInterface.as_boot == True):
-
-            last_state, ignition_updated_date, ignition_last_change = None, None, None
-            ignition_up_to_date, lifecycle_rolling = None, None
-
-            if machine.machine_state:
-                last_state = machine.machine_state[0].state_name
-
-            if machine.lifecycle_ignition:
-                ignition_updated_date = machine.lifecycle_ignition[0].updated_date
-                ignition_up_to_date = machine.lifecycle_ignition[0].up_to_date
-                ignition_last_change = machine.lifecycle_ignition[0].last_change_date
-
-            if machine.lifecycle_rolling:
-                lifecycle_rolling = machine.lifecycle_rolling[0].strategy if machine.lifecycle_rolling[
-                    0].enable else "Disable"
-
-            disks = []
-            if machine.disks:
-                for disk in machine.disks:
-                    disks.append({
-                        "path": disk.path,
-                        "size-bytes": disk.size
-                    })
-            row = {
-                "Roles": ",".join([r.role for r in machine.schedules]),
-                "FQDN": machine.interfaces[0].fqdn,
-                "CIDR": machine.interfaces[0].cidrv4,
-                "MAC": machine.interfaces[0].mac,
-                "LastState": last_state,
-                "LastReport": ignition_updated_date,
-                "LastChange": ignition_last_change,
-                "UpToDate": ignition_up_to_date,
-                "UpdateStrategy": lifecycle_rolling,
-                "DiskProfile": sync.ConfigSyncSchedules.compute_disks_size(disks)
-            }
-
-            data["gridData"].append(row)
-        return data
-
-
 class BackupExport:
     def __init__(self, session: Session):
         self.session = session
@@ -857,6 +762,11 @@ class BackupExport:
         }
 
     def get_playbook(self):
+        """
+        Get and reproduce the data sent inside the db from an API level
+        :return:
+        """
+        # TODO use the ORM loading
         for schedule_type in [ScheduleRoles.kubernetes_control_plane, ScheduleRoles.kubernetes_node]:
             for schedule in self.session.query(Schedule).filter(Schedule.role == schedule_type):
                 for machine in self.session.query(Machine).filter(Machine.id == schedule.machine_id):

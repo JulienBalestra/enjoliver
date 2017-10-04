@@ -3,6 +3,7 @@ import unittest
 
 import time
 
+import ops
 from app import configs
 from app import crud
 from app import model
@@ -22,7 +23,7 @@ class TestModel(unittest.TestCase):
         model.BASE.metadata.drop_all(smart.get_engine_connection())
         model.BASE.metadata.create_all(smart.get_engine_connection())
         with smart.new_session() as session:
-            crud.health_check(session, time.time(), "unittest")
+            ops.health_check(session, time.time(), "unittest")
         with smart.new_session() as session:
             fetch = crud.FetchDiscovery(session, ignition_journal_path)
             assert fetch.get_all_interfaces() == []
@@ -691,25 +692,6 @@ class TestModel(unittest.TestCase):
             self.assertIsNone(t[0])
             self.assertIsNone(t[1])
 
-    def test_38(self):
-        with self.smart.new_session() as session:
-            view = crud.FetchView(session)
-            result = view.get_machines()
-        self.assertEqual(24, len(result["gridData"]))
-        # Roles
-        for i in result["gridData"]:
-            roles = i["Roles"].split(",")
-            for r in roles:
-                self.assertIn(r, [
-                    "",
-                    model.ScheduleRoles.etcd_member,
-                    model.ScheduleRoles.kubernetes_control_plane,
-                    model.ScheduleRoles.kubernetes_node
-                ])
-        # CIDR
-        for i in result["gridData"]:
-            self.assertEqual(1, i["CIDR"].count("/"))
-
     def test_39(self):
         with self.smart.new_session() as session:
             export = crud.BackupExport(session)
@@ -724,10 +706,10 @@ class TestModel(unittest.TestCase):
     def test_99_healthz(self):
         for i in range(10):
             with self.smart.new_session() as session:
-                crud.health_check(session, time.time(), "unittest")
+                ops.health_check(session, time.time(), "unittest")
 
         with self.smart.new_session() as session:
-            crud.health_check_purge(session)
+            ops.health_check_purge(session)
 
         with self.smart.new_session() as session:
-            crud.health_check_purge(session)
+            ops.health_check_purge(session)

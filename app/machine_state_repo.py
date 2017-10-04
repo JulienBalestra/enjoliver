@@ -1,8 +1,10 @@
 import datetime
 import logging
 
+from sqlalchemy.orm import joinedload
+
 import smartdb
-from model import MachineCurrentState, MachineInterface
+from model import MachineCurrentState, MachineInterface, Machine
 
 logger = logging.getLogger(__file__)
 
@@ -29,14 +31,17 @@ class MachineStateRepository:
         time_limit = datetime.datetime.utcnow() - datetime.timedelta(minutes=finished_in_less_than_min)
         results = []
         with self.smart.new_session() as session:
-            for row in session.execute("""SELECT mi.fqdn, mcs.machine_mac, mcs.state_name, mcs.updated_date FROM 'machine-current-state' as mcs
-            LEFT JOIN 'machine-interface' AS mi ON mi.machine_id = mcs.machine_id
-            WHERE mcs.updated_date >= :date""", {"date": time_limit}):
+            for machine in session.query(Machine) \
+                    .options(joinedload("interfaces")) \
+                    .options(joinedload("machine_state")) \
+                    .join(MachineInterface) \
+                    .join(MachineCurrentState) \
+                    .filter(MachineCurrentState.updated_date > time_limit):
                 results.append({
-                    "fqdn": row[0],
-                    "mac": row[1],
-                    "state": row[2],
-                    "date": row[3]
+                    "fqdn": machine.interfaces[0].fqdn,
+                    "mac": machine.interfaces[0].mac,
+                    "state": machine.machine_state[0].state_name,
+                    "date": machine.machine_state[0].updated_date
                 })
             return results
 

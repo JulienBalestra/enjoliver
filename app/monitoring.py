@@ -59,6 +59,7 @@ class DatabaseMonitoring:
             yield
         except Exception as e:
             self.exception_count.labels(caller, type(e).__name__).inc()
+            raise
         finally:
             latency = time.time() - start
             self.request_latency.labels(caller).observe(latency)

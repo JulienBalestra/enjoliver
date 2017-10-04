@@ -25,13 +25,15 @@ class TestAPI(unittest.TestCase):
         api.ignition_journal = "%s/ignition_journal" % cls.unit_path
 
         shutil.rmtree(api.ignition_journal, ignore_errors=True)
+        api.CACHE.clear()
 
         cls.app = api.app.test_client()
         smart = api.SmartDatabaseClient(ec.db_uri)
         api.SMART = smart
-        api.machine_state = api.MachineStateRepository(smart)
         smart.create_base()
-        api.CACHE.clear()
+
+        api.machine_state = api.MachineStateRepository(smart)
+        api.view_user_interface = api.UserInterfaceRepository(smart)
 
         cls.app.testing = True
 

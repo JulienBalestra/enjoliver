@@ -4,6 +4,7 @@ Help the application to be more exploitable
 
 import ctypes
 import json
+import logging
 import os
 import shutil
 
@@ -12,11 +13,11 @@ import psutil
 import requests
 import time
 from flask import jsonify
+from sqlalchemy.orm import Session
 
-import crud
-import logging
 import objs3
 import smartdb
+from model import Healthz
 
 LIBC = ctypes.CDLL("libc.so.6")  # TODO deep inside the SQLITE sync
 logger = logging.getLogger(__name__)
@@ -151,7 +152,7 @@ def healthz(application, smart: smartdb.SmartDatabaseClient, request):
     @smartdb.cockroach_transaction
     def op(caller="/healthz"):
         with smart.new_session() as session:
-            return crud.health_check(session, ts=time.time(), who=request.remote_addr)
+            return health_check(session, ts=time.time(), who=request.remote_addr)
 
     try:
         status["db"] = op("/healthz")
@@ -208,3 +209,25 @@ def shutdown(ec):
     resp = jsonify(["%s" % k for k in pid_list])
     gunicorn_pid.terminate()
     return resp
+
+
+def health_check(session: Session, ts: int, who: str):
+    """
+    :param session: a constructed session
+    :param ts: timestamp
+    :param who: the host who asked for the check
+    :return:
+    """
+    health = session.query(Healthz).first()
+    if not health:
+        health = Healthz()
+        session.add(health)
+    health.ts = ts
+    health.host = who
+    session.commit()
+    return True
+
+
+def health_check_purge(session):
+    session.query(Healthz).delete()
+    session.commit()

@@ -7,6 +7,8 @@ import signal
 import sys
 import time
 
+import ops
+
 PROJECT_PATH = os.path.dirname(os.path.abspath(__file__))
 APP_PATH = os.path.join(PROJECT_PATH, "app")
 PYTHON = os.path.join(PROJECT_PATH, "env/bin/python3")
@@ -40,7 +42,7 @@ def init_db(ec):
             @smartdb.cockroach_transaction
             def op(caller=init_db.__name__):
                 with smart.new_session() as session:
-                    crud.health_check_purge(session)
+                    ops.health_check_purge(session)
 
             op(caller=init_db.__name__)
             return

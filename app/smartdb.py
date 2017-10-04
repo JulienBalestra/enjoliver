@@ -158,8 +158,5 @@ def cockroach_transaction(f):
                             not e.orig.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
                         raise
                     MONITOR_COCKROACHDB.cockroach_retry_count.labels(caller).inc()
-                except Exception as e:
-                    logger.error("error during db operation: %s", e)
-                    break
 
     return run_transaction

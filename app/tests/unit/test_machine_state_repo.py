@@ -74,3 +74,11 @@ class TestMachineStateRepo(unittest.TestCase):
             self.assertEqual(mac, res.machine_mac)
             self.assertEqual(new_state, res.state_name)
             self.assertEqual(machine_id, res.machine_id)
+
+        ret = msr.fetch(10)
+        self.assertEqual([{
+            "fqdn": None,
+            "mac": mac,
+            "state": new_state,
+            "date": res.updated_date
+        }], ret)
