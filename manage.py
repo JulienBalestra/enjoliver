@@ -7,8 +7,6 @@ import signal
 import sys
 import time
 
-import ops
-
 PROJECT_PATH = os.path.dirname(os.path.abspath(__file__))
 APP_PATH = os.path.join(PROJECT_PATH, "app")
 PYTHON = os.path.join(PROJECT_PATH, "env/bin/python3")
@@ -21,7 +19,7 @@ for p in os.listdir(os.path.join(PROJECT_PATH, "env/lib/")):
 from app import (
     configs,
     smartdb,
-    crud,
+    ops,
     gunicorn_conf
 )
 
