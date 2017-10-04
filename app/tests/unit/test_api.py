@@ -3,6 +3,8 @@ import os
 import shutil
 import unittest
 
+import time
+
 from app import api
 from app import configs
 from common import posts
@@ -24,9 +26,10 @@ class TestAPI(unittest.TestCase):
 
         shutil.rmtree(api.ignition_journal, ignore_errors=True)
 
-        cls.app = api.APP.test_client()
+        cls.app = api.app.test_client()
         smart = api.SmartDatabaseClient(ec.db_uri)
         api.SMART = smart
+        api.machine_state = api.MachineStateRepository(smart)
         smart.create_base()
         api.CACHE.clear()
 
@@ -342,7 +345,20 @@ class TestAPI(unittest.TestCase):
         r = self.app.post("/sync-notify")
         r.close()
         self.assertEqual(200, r.status_code)
+        r = self.app.get("/sync-notify")
+        ts = json.loads(r.data.decode())["sync-notify"]
+        self.assertGreater(time.time(), ts)
+        r.close()
+        self.assertEqual(200, r.status_code)
         # cache is set but matchbox doesn't run so we expect a failure
         r = self.app.get("/ignition")
         r.close()
         self.assertEqual(502, r.status_code)
+
+    def test_install_authorization(self):
+        r = self.app.get("/install-authorization/mac=01-02-03-04-05-06")
+        r.close()
+        self.assertEqual(200, r.status_code)
+        r = self.app.get("/install-authorization/mac=01-02-03-04-05-07")
+        r.close()
+        self.assertEqual(403, r.status_code)

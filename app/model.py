@@ -53,6 +53,8 @@ class Machine(BASE):
     lifecycle_coreos_install = relationship("LifecycleCoreosInstall")
     lifecycle_ignition = relationship("LifecycleIgnition")
 
+    machine_state = relationship("MachineCurrentState")
+
     @validates('uuid')
     def validate_uuid_field(self, key, uuid):
         """
@@ -176,6 +178,22 @@ class ChassisPort(BASE):
         return "<%s: mac:%s chassis_mac:%s>" % (ChassisPort.__name__, self.mac, self.chassis_id)
 
 
+class MachineStates:
+    """
+    States of Machine that can occurs while booting
+    """
+
+    booting = "booting"
+    discovery = "discovery"
+    os_installation_granted = "os_installation_granted"
+    os_installation_denied = "os_installation_denied"
+    installation_succeed = "installation_succeed"
+    installation_failed = "installation_failed"
+
+    states = [booting, discovery, os_installation_denied, os_installation_granted, installation_failed,
+              installation_succeed]
+
+
 class ScheduleRoles(object):
     """
     Roles available for the Scheduler
@@ -223,6 +241,28 @@ class LifecycleIgnition(BASE):
     updated_date = Column(DateTime, default=None)
     last_change_date = Column(DateTime, default=None)
     up_to_date = Column(Boolean)
+
+
+class MachineCurrentState(BASE):
+    __tablename__ = 'machine-current-state'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    machine_id = Column(Integer, ForeignKey('machine.id'), nullable=True)
+
+    machine_mac = Column(String(17), nullable=False, index=True, unique=True)
+    state_name = Column(String(len(max(MachineStates.states, key=len))), nullable=False)
+    created_date = Column(DateTime)
+    updated_date = Column(DateTime)
+
+    @validates('mac')
+    def validate_mac(self, key, machine_mac):
+        return MAC_REGEX(machine_mac)
+
+    @validates('state_name')
+    def validate_role(self, key, state_name):
+        if state_name not in MachineStates.states:
+            raise LookupError("%s not in %s" % (state_name, MachineStates.states))
+        return state_name
 
 
 class LifecycleCoreosInstall(BASE):

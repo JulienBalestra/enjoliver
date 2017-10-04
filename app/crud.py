@@ -3,26 +3,43 @@ Over the application Model, queries to the database
 """
 
 import datetime
+import logging
 import os
 import socket
 
 from sqlalchemy.orm import Session
 
-import logging
 import sync
 from model import ChassisPort, Chassis, MachineInterface, Machine, MachineDisk, \
-    Healthz, Schedule, ScheduleRoles, LifecycleIgnition, LifecycleCoreosInstall, LifecycleRolling
+    Healthz, Schedule, ScheduleRoles, LifecycleIgnition, LifecycleCoreosInstall, LifecycleRolling, MachineCurrentState
 from smartdb import SmartDatabaseClient as sc
 
 logger = logging.getLogger(__name__)
 
 
-class FetchDiscovery(object):
+def get_mac_from_raw_query(request_raw_query: str):
+    """
+    Get MAC address inside a matchbox "request raw query"
+    /path?<request_raw_query>
+    :param request_raw_query:
+    :return: mac address
+    """
+    mac = ""
+    raw_query_list = request_raw_query.split("&")
+    for param in raw_query_list:
+        if "mac=" in param:
+            mac = param.replace("mac=", "")
+    if not mac:
+        raise AttributeError("%s is not parsable" % request_raw_query)
+    return mac.replace("-", ":")
+
+
+class FetchDiscovery:
     """
     Get data created during the discovery phase
     """
 
-    def __init__(self, session, ignition_journal):
+    def __init__(self, session: Session, ignition_journal):
         self.session = session
         self.ignition_journal = ignition_journal
 
@@ -165,10 +182,11 @@ def health_check_purge(session):
     session.commit()
 
 
-class InjectDiscovery(object):
+class InjectDiscovery:
     """
     Store the data provides during the discovery process
     """
+
     def __init__(self, session: Session, ignition_journal, discovery: dict):
         """
 
@@ -268,6 +286,7 @@ class InjectDiscovery(object):
                         machine_id=self.machine.id)
                 )
                 self.adds += 1
+                self.adds += 1
 
         return m_interfaces
 
@@ -353,7 +372,7 @@ class InjectDiscovery(object):
         with open("%s/%s/%s" % (self.ignition_journal, uuid, boot_id), "w") as f:
             f.write("\n".join(self.discovery["ignition-journal"]))
 
-    def commit(self, report=True):
+    def apply(self, report=True):
         try:
             if self.adds != 0 or self.updates != 0:
                 try:
@@ -373,7 +392,7 @@ class InjectDiscovery(object):
                 return machine_nb, True if self.adds else False
 
 
-class FetchSchedule(object):
+class FetchSchedule:
     """
     Retrieve the information about schedules
     """
@@ -486,10 +505,11 @@ class FetchSchedule(object):
         return ips
 
 
-class InjectSchedule(object):
+class InjectSchedule:
     """
     Store the information of a schedule
     """
+
     def __init__(self, session, data):
         self.session = session
         self.adds = 0
@@ -545,16 +565,17 @@ class InjectSchedule(object):
                 return roles_rapport, True if self.adds else False
 
 
-class InjectLifecycle(object):
+class InjectLifecycle:
     """
     Store the data from the Lifecycle machine state
     """
+
     def __init__(self, session, request_raw_query):
         self.session = session
         self.adds = 0
         self.updates = 0
 
-        self.mac = self.get_mac_from_raw_query(request_raw_query)
+        self.mac = get_mac_from_raw_query(request_raw_query)
 
         self.machine = self.session.query(Machine).join(MachineInterface).filter(
             MachineInterface.mac == self.mac).first()
@@ -563,17 +584,6 @@ class InjectLifecycle(object):
             logger.error(m)
             raise AttributeError(m)
         logger.debug("InjectLifecycle mac: %s" % self.mac)
-
-    @staticmethod
-    def get_mac_from_raw_query(request_raw_query: str):
-        mac = ""
-        raw_query_list = request_raw_query.split("&")
-        for param in raw_query_list:
-            if "mac=" in param:
-                mac = param.replace("mac=", "")
-        if not mac:
-            raise AttributeError("%s is not parsable" % request_raw_query)
-        return mac.replace("-", ":")
 
     def refresh_lifecycle_ignition(self, up_to_date: bool):
         lifecycle = self.session.query(LifecycleIgnition).filter(
@@ -626,10 +636,11 @@ class InjectLifecycle(object):
         self.session.commit()
 
 
-class FetchLifecycle(object):
+class FetchLifecycle:
     """
     Get the data of the Lifecycle state
     """
+
     def __init__(self, session: Session):
         self.session = session
 
@@ -707,14 +718,19 @@ class FetchLifecycle(object):
         return life_roll_list
 
 
-class FetchView(object):
+class FetchView:
     """
     Get the data for the User Interface View
     """
+
     def __init__(self, session: Session):
         self.session = session
 
     def get_machines(self):
+        """
+        TODO refactor this ugly stuff
+        :return:
+        """
         data = {
             "gridColumns": [
                 "MAC",
@@ -722,7 +738,7 @@ class FetchView(object):
                 "FQDN",
                 "DiskProfile",
                 "Roles",
-                "Installation",
+                "LastState",
                 "UpdateStrategy",
                 "UpToDate",
                 "LastReport",
@@ -734,12 +750,11 @@ class FetchView(object):
                 MachineInterface).outerjoin(LifecycleCoreosInstall).outerjoin(LifecycleIgnition).outerjoin(
             Schedule).outerjoin(MachineDisk).filter(MachineInterface.as_boot == True):
 
-            coreos_install, ignition_updated_date, ignition_last_change = None, None, None
+            last_state, ignition_updated_date, ignition_last_change = None, None, None
             ignition_up_to_date, lifecycle_rolling = None, None
 
-            if machine.lifecycle_coreos_install:
-                coreos_install = "Success" if machine.lifecycle_coreos_install[
-                                                  0].success is True else "Failed"
+            if machine.machine_state:
+                last_state = machine.machine_state[0].state_name
 
             if machine.lifecycle_ignition:
                 ignition_updated_date = machine.lifecycle_ignition[0].updated_date
@@ -762,7 +777,7 @@ class FetchView(object):
                 "FQDN": machine.interfaces[0].fqdn,
                 "CIDR": machine.interfaces[0].cidrv4,
                 "MAC": machine.interfaces[0].mac,
-                "Installation": coreos_install,
+                "LastState": last_state,
                 "LastReport": ignition_updated_date,
                 "LastChange": ignition_last_change,
                 "UpToDate": ignition_up_to_date,
@@ -774,7 +789,7 @@ class FetchView(object):
         return data
 
 
-class BackupExport(object):
+class BackupExport:
     def __init__(self, session: Session):
         self.session = session
         self.playbook = []

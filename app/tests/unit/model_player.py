@@ -34,7 +34,7 @@ class TestModel(unittest.TestCase):
     def test_00(self):
         with self.smart.new_session() as session:
             inject = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M01)
-            inject.commit()
+            inject.apply()
 
         with self.smart.new_session() as session:
             fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
@@ -60,7 +60,7 @@ class TestModel(unittest.TestCase):
     def test_00_1(self):
         with self.smart.new_session() as session:
             i = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M01)
-            i.commit()
+            i.apply()
 
         with self.smart.new_session() as session:
             fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
@@ -88,7 +88,7 @@ class TestModel(unittest.TestCase):
     def test_01(self):
         with self.smart.new_session() as session:
             i = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M02)
-            i.commit()
+            i.apply()
             fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
             interfaces = fetch.get_all_interfaces()
             self.assertEqual(len(interfaces), 2)
@@ -124,11 +124,11 @@ class TestModel(unittest.TestCase):
     def test_02(self):
         with self.smart.new_session() as session:
             m1 = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M01)
-            m1.commit()
+            m1.apply()
             i = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M02)
-            i.commit()
+            i.apply()
             i = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M02)
-            i.commit()
+            i.apply()
             fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
             interfaces = fetch.get_all_interfaces()
             self.assertEqual(len(interfaces), 2)
@@ -149,7 +149,7 @@ class TestModel(unittest.TestCase):
     def test_03(self):
         with self.smart.new_session() as session:
             i = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M03)
-            i.commit()
+            i.apply()
             fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
             interfaces = fetch.get_all_interfaces()
             self.assertEqual(len(interfaces), 3)
@@ -159,7 +159,7 @@ class TestModel(unittest.TestCase):
         with self.smart.new_session() as session:
             for p in posts.ALL:
                 i = crud.InjectDiscovery(session, self.ignition_journal_path, p)
-                i.commit()
+                i.apply()
             fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
             interfaces = fetch.get_all_interfaces()
             self.assertEqual(len(posts.ALL), len(interfaces))
@@ -168,7 +168,7 @@ class TestModel(unittest.TestCase):
         with self.smart.new_session() as session:
             for p in posts.ALL:
                 i = crud.InjectDiscovery(session, self.ignition_journal_path, p)
-                i.commit()
+                i.apply()
 
             fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
             interfaces = fetch.get_all_interfaces()
@@ -177,7 +177,7 @@ class TestModel(unittest.TestCase):
     def test_06(self):
         with self.smart.new_session() as session:
             i = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M16)
-            i.commit()
+            i.apply()
 
     def test_07(self):
         with self.smart.new_session() as session:
@@ -187,7 +187,7 @@ class TestModel(unittest.TestCase):
                     u'lldp': {},
                     u'interfaces': []
                 })
-                i.commit()
+                i.apply()
             fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
             interfaces = fetch.get_all_interfaces()
             self.assertEqual(len(posts.ALL), len(interfaces))
@@ -211,7 +211,7 @@ class TestModel(unittest.TestCase):
     def test_09(self):
         with self.smart.new_session() as session:
             inject = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M01)
-            inject.commit()
+            inject.apply()
             fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
             all_data_new = fetch.get_all()
             self.assertEqual(all_data_new[0]["boot-info"]["uuid"], posts.M01["boot-info"]["uuid"])
@@ -245,7 +245,7 @@ class TestModel(unittest.TestCase):
         }
         with self.smart.new_session() as session:
             inject = crud.InjectDiscovery(session, self.ignition_journal_path, p)
-            inject.commit()
+            inject.apply()
             fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
             fetch.get_all()
 

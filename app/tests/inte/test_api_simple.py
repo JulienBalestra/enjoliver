@@ -54,11 +54,12 @@ class TestAPI(unittest.TestCase):
         smart = api.SmartDatabaseClient(ec.db_uri)
         smart.create_base()
         api.SMART = smart
+        api.machine_state = api.machine_state(smart)
         api.CACHE.clear()
 
         shutil.rmtree(ec.ignition_journal_dir, ignore_errors=True)
 
-        cls.app = api.APP.test_client()
+        cls.app = api.app.test_client()
         cls.app.testing = True
 
         cls.p_matchbox = Process(target=TestAPI.process_target_matchbox)

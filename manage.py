@@ -61,7 +61,7 @@ def gunicorn(ec):
         "%s/env/bin/gunicorn" % PROJECT_PATH,
         "--chdir",
         APP_PATH,
-        "api:APP",
+        "api:application",
         "--worker-class",
         ec.gunicorn_worker_type,
         "-b",
@@ -83,7 +83,7 @@ def gunicorn(ec):
         print("terminating %d" % p.pid)
         p.terminate()
 
-    print("starting gunicorn")
+    print("starting gunicorn: %s" % " ".join(cmd))
     p.start()
     with open(ec.gunicorn_pid_file, "w") as f:
         f.write("%d" % p.pid)

@@ -66,7 +66,7 @@ class SmartDatabaseClient(object):
 
     def _create_engines(self, uri_list: list):
         for single_uri in uri_list:
-            e = create_engine(single_uri)
+            e = create_engine(single_uri, echo=False)
             if "%s" % e.url not in self.engine_urls:
                 logger.info("%s %s" % (e.driver, e.url))
                 self.engines.append(e)
@@ -158,5 +158,8 @@ def cockroach_transaction(f):
                             not e.orig.pgcode == psycopg2.errorcodes.SERIALIZATION_FAILURE:
                         raise
                     MONITOR_COCKROACHDB.cockroach_retry_count.labels(caller).inc()
+                except Exception as e:
+                    logger.error("error during db operation: %s", e)
+                    break
 
     return run_transaction

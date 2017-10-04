@@ -10,21 +10,22 @@ from flask import Flask, request, json, jsonify, render_template, Response
 from werkzeug.contrib.cache import FileSystemCache
 
 import crud
+from machine_state_repo import MachineStateRepository
 import model
 import monitoring
 import ops
 import smartdb
 from configs import EnjoliverConfig
+from model import MachineStates
 from smartdb import SmartDatabaseClient
 
 EC = EnjoliverConfig(importer=__file__)
-
 CACHE = FileSystemCache(EC.werkzeug_fs_cache_dir)
 
 logger = logging.getLogger(__name__)
 
-APP = APPLICATION = Flask(__name__)
-jinja_options = APP.jinja_options.copy()
+app = application = Flask(__name__)
+jinja_options = app.jinja_options.copy()
 jinja_options.update(dict(
     block_start_string='<%',
     block_end_string='%>',
@@ -33,33 +34,37 @@ jinja_options.update(dict(
     comment_start_string='<#',
     comment_end_string='#>'
 ))
-APP.jinja_options = jinja_options
+app.jinja_options = jinja_options
 
-Swagger(APP)
+Swagger(app)
 
-APPLICATION.config["MATCHBOX_URI"] = EC.matchbox_uri
-APPLICATION.config["API_URI"] = EC.api_uri
-
-APPLICATION.config["MATCHBOX_URLS"] = EC.matchbox_urls
-
-APPLICATION.config["DB_PATH"] = EC.db_path
-APPLICATION.config["DB_URI"] = EC.db_uri
-
-ignition_journal = APPLICATION.config["IGNITION_JOURNAL_DIR"] = EC.ignition_journal_dir
-
-APPLICATION.config["BACKUP_BUCKET_NAME"] = EC.backup_bucket_name
-APPLICATION.config["BACKUP_BUCKET_DIRECTORY"] = EC.backup_bucket_directory
-APPLICATION.config["BACKUP_LOCK_KEY"] = EC.backup_lock_key
+application.config["MATCHBOX_URI"] = EC.matchbox_uri
+application.config["API_URI"] = EC.api_uri
+application.config["MATCHBOX_URLS"] = EC.matchbox_urls
+application.config["DB_PATH"] = EC.db_path
+ignition_journal = application.config["IGNITION_JOURNAL_DIR"] = EC.ignition_journal_dir
+application.config["BACKUP_BUCKET_NAME"] = EC.backup_bucket_name
+application.config["BACKUP_BUCKET_DIRECTORY"] = EC.backup_bucket_directory
+application.config["BACKUP_LOCK_KEY"] = EC.backup_lock_key
 
 SMART = SmartDatabaseClient
+machine_state = MachineStateRepository
 
 if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", ""):
     logging.basicConfig(level=EC.logging_level, stream=sys.stderr, format=EC.logging_formatter)
-    SMART = SmartDatabaseClient(APPLICATION.config["DB_URI"])
-    monitoring.monitor_flask(APPLICATION)
+    fmt = logging.Formatter(EC.logging_formatter)
+    handler = logging.StreamHandler(sys.stderr)
+    handler.setFormatter(fmt)
+    app.logger.addHandler(handler)
+    app.logger.setLevel(EC.logging_level)
+    SMART = SmartDatabaseClient(EC.db_uri)
+    monitoring.monitor_flask(application)
+
+    # repositories
+    machine_state = MachineStateRepository(SMART)
 
 
-@APPLICATION.route("/shutdown", methods=["POST"])
+@application.route("/shutdown", methods=["POST"])
 def shutdown():
     """
     Shutdown
@@ -74,8 +79,8 @@ def shutdown():
     return ops.shutdown(EC)
 
 
-@APPLICATION.route("/configs", methods=["GET"])
-@APPLICATION.route("/config", methods=["GET"])
+@application.route("/configs", methods=["GET"])
+@application.route("/config", methods=["GET"])
 def configs():
     """
     Configs
@@ -90,7 +95,7 @@ def configs():
     return jsonify(EC.__dict__)
 
 
-@APPLICATION.route("/lifecycle/ignition/<string:request_raw_query>", methods=["POST"])
+@application.route("/lifecycle/ignition/<string:request_raw_query>", methods=["POST"])
 def submit_lifecycle_ignition(request_raw_query):
     """
     Lifecycle Ignition
@@ -104,14 +109,14 @@ def submit_lifecycle_ignition(request_raw_query):
     try:
         machine_ignition = json.loads(request.get_data())
     except ValueError:
-        logger.error("%s have incorrect content" % request.path)
+        app.logger.error("%s have incorrect content" % request.path)
         return jsonify({"message": "FlaskValueError"}), 406
     req = requests.get("%s/ignition?%s" % (EC.matchbox_uri, request_raw_query))
     try:
         matchbox_ignition = json.loads(req.content)
         req.close()
     except ValueError:
-        logger.error("%s have incorrect matchbox return" % request.path)
+        app.logger.error("%s have incorrect matchbox return" % request.path)
         return jsonify({"message": "MatchboxValueError"}), 406
 
     @smartdb.cockroach_transaction
@@ -131,7 +136,7 @@ def submit_lifecycle_ignition(request_raw_query):
     return op(caller=request.url_rule)
 
 
-@APPLICATION.route("/lifecycle/rolling/<string:request_raw_query>", methods=["GET"])
+@application.route("/lifecycle/rolling/<string:request_raw_query>", methods=["GET"])
 def report_lifecycle_rolling(request_raw_query):
     """
     Lifecycle Rolling Update
@@ -162,7 +167,7 @@ def report_lifecycle_rolling(request_raw_query):
     with SMART.new_session() as session:
         life = crud.FetchLifecycle(session)
         try:
-            mac = crud.InjectLifecycle.get_mac_from_raw_query(request_raw_query)
+            mac = crud.get_mac_from_raw_query(request_raw_query)
         except AttributeError as e:
             return jsonify({"enable": None, "request_raw_query": "%s:%s" % (request_raw_query, e)}), 403
 
@@ -176,7 +181,7 @@ def report_lifecycle_rolling(request_raw_query):
     return jsonify({"enable": False, "request_raw_query": request_raw_query, "strategy": None}), 401
 
 
-@APPLICATION.route("/lifecycle/rolling/<string:request_raw_query>", methods=["POST"])
+@application.route("/lifecycle/rolling/<string:request_raw_query>", methods=["POST"])
 def change_lifecycle_rolling(request_raw_query):
     """
     Lifecycle Rolling Update
@@ -200,14 +205,15 @@ def change_lifecycle_rolling(request_raw_query):
         schema:
             type: dict
     """
-    logger.info("%s %s" % (request.method, request.url))
+
+    app.logger.info("%s %s" % (request.method, request.url))
     try:
         strategy = json.loads(request.get_data())["strategy"]
-        logger.info("%s %s rolling strategy: setting to %s" % (request.method, request.url, strategy))
+        app.logger.info("%s %s rolling strategy: setting to %s" % (request.method, request.url, strategy))
     except (KeyError, ValueError):
         # JSONDecodeError is a subclass of ValueError
         # Cannot use JSONDecodeError because the import is not consistent between python3.X
-        logger.info("%s %s rolling strategy: setting default to kexec" % (request.method, request.url))
+        app.logger.info("%s %s rolling strategy: setting default to kexec" % (request.method, request.url))
         strategy = "kexec"
 
     @smartdb.cockroach_transaction
@@ -223,7 +229,7 @@ def change_lifecycle_rolling(request_raw_query):
     return op(caller=request.url_rule)
 
 
-@APPLICATION.route("/lifecycle/rolling/<string:request_raw_query>", methods=["DELETE"])
+@application.route("/lifecycle/rolling/<string:request_raw_query>", methods=["DELETE"])
 def lifecycle_rolling_delete(request_raw_query):
     """
     Lifecycle Rolling Update
@@ -243,7 +249,7 @@ def lifecycle_rolling_delete(request_raw_query):
         schema:
             type: dict
     """
-    logger.info("%s %s" % (request.method, request.url))
+    app.logger.info("%s %s" % (request.method, request.url))
 
     @smartdb.cockroach_transaction
     def op(caller=request.url_rule):
@@ -255,7 +261,7 @@ def lifecycle_rolling_delete(request_raw_query):
     return op(caller=request.url_rule)
 
 
-@APPLICATION.route("/lifecycle/rolling", methods=["GET"])
+@application.route("/lifecycle/rolling", methods=["GET"])
 def lifecycle_rolling_all():
     """
     Lifecycle Rolling Update
@@ -276,7 +282,7 @@ def lifecycle_rolling_all():
     return jsonify(rolling_status_list), 200
 
 
-@APPLICATION.route("/lifecycle/ignition", methods=["GET"])
+@application.route("/lifecycle/ignition", methods=["GET"])
 def lifecycle_get_ignition_status():
     """
     Lifecycle Ignition Update
@@ -297,7 +303,7 @@ def lifecycle_get_ignition_status():
     return jsonify(updated_status_list), 200
 
 
-@APPLICATION.route("/lifecycle/coreos-install", methods=["GET"])
+@application.route("/lifecycle/coreos-install", methods=["GET"])
 def lifecycle_get_coreos_install_status():
     """
     Lifecycle CoreOS Install
@@ -318,7 +324,7 @@ def lifecycle_get_coreos_install_status():
     return jsonify(install_status_list)
 
 
-@APPLICATION.route("/lifecycle/coreos-install/<string:status>/<string:request_raw_query>", methods=["POST"])
+@application.route("/lifecycle/coreos-install/<string:status>/<string:request_raw_query>", methods=["POST"])
 def report_lifecycle_coreos_install(status, request_raw_query):
     """
     Lifecycle CoreOS Install
@@ -332,13 +338,13 @@ def report_lifecycle_coreos_install(status, request_raw_query):
         schema:
             type: dict
     """
-    logger.info("%s %s" % (request.method, request.url))
+    app.logger.info("%s %s" % (request.method, request.url))
     if status.lower() == "success":
         success = True
     elif status.lower() == "fail":
         success = False
     else:
-        logger.error("%s %s" % (request.method, request.url))
+        app.logger.error("%s %s" % (request.method, request.url))
         return "success or fail != %s" % status.lower(), 403
 
     @smartdb.cockroach_transaction
@@ -348,10 +354,13 @@ def report_lifecycle_coreos_install(status, request_raw_query):
             inject.refresh_lifecycle_coreos_install(success)
 
     op(caller=request.url_rule)
+    machine_state.update(
+        mac=crud.get_mac_from_raw_query(request_raw_query),
+        state=MachineStates.installation_succeed if success else MachineStates.installation_failed)
     return jsonify({"success": success, "request_raw_query": request_raw_query}), 200
 
 
-@APPLICATION.route('/', methods=['GET'])
+@application.route('/', methods=['GET'])
 def root():
     """
     Map the API
@@ -365,13 +374,13 @@ def root():
         schema:
             type: list
     """
-    rules = [k.rule for k in APPLICATION.url_map.iter_rules()]
+    rules = [k.rule for k in application.url_map.iter_rules()]
     rules = list(set(rules))
     rules.sort()
     return jsonify(rules)
 
 
-@APPLICATION.route('/healthz', methods=['GET'])
+@application.route('/healthz', methods=['GET'])
 def healthz():
     """
     Health
@@ -385,11 +394,11 @@ def healthz():
         schema:
             type: dict
     """
-    resp = ops.healthz(APPLICATION, SMART, request)
+    resp = ops.healthz(application, SMART, request)
     return jsonify(resp), 503 if resp["global"] is False else 200
 
 
-@APPLICATION.route('/discovery', methods=['POST'])
+@application.route('/discovery', methods=['POST'])
 def discovery():
     """
     Discovery
@@ -403,7 +412,7 @@ def discovery():
         schema:
             type: dict
     """
-    logger.info("%s %s" % (request.method, request.url))
+    app.logger.info("%s %s" % (request.method, request.url))
     err = jsonify({u'boot-info': {}, u'lldp': {}, u'interfaces': [], u"disks": []}), 406
     try:
         req = json.loads(request.get_data())
@@ -417,17 +426,19 @@ def discovery():
                 session,
                 ignition_journal=ignition_journal,
                 discovery=req)
-            new = inject.commit()
+            new = inject.apply()
             CACHE.delete(request.path)
             return jsonify({"total_elt": new[0], "new": new[1]})
 
     try:
-        return op(caller=request.url_rule)
+        ret = op(caller=request.url_rule)
+        machine_state.update(req["boot-info"]["mac"], MachineStates.discovery)
+        return ret
     except TypeError:
         return err
 
 
-@APPLICATION.route('/discovery', methods=['GET'])
+@application.route('/discovery', methods=['GET'])
 def discovery_get():
     """
     Discovery
@@ -450,7 +461,7 @@ def discovery_get():
     return jsonify(all_data)
 
 
-@APPLICATION.route('/scheduler', methods=['GET'])
+@application.route('/scheduler', methods=['GET'])
 def scheduler_get():
     """
     Scheduler
@@ -474,7 +485,7 @@ def scheduler_get():
     return jsonify(all_data)
 
 
-@APPLICATION.route('/scheduler/<string:role>', methods=['GET'])
+@application.route('/scheduler/<string:role>', methods=['GET'])
 def get_schedule_by_role(role):
     """
     Scheduler
@@ -502,7 +513,7 @@ def get_schedule_by_role(role):
     return jsonify(data)
 
 
-@APPLICATION.route('/scheduler/available', methods=['GET'])
+@application.route('/scheduler/available', methods=['GET'])
 def get_available_machine():
     """
     Scheduler
@@ -523,7 +534,7 @@ def get_available_machine():
     return jsonify(data)
 
 
-@APPLICATION.route('/scheduler/ip-list/<string:role>', methods=['GET'])
+@application.route('/scheduler/ip-list/<string:role>', methods=['GET'])
 def get_schedule_role_ip_list(role):
     """
     Scheduler
@@ -550,7 +561,7 @@ def get_schedule_role_ip_list(role):
     return jsonify(ip_list_role)
 
 
-@APPLICATION.route('/scheduler', methods=['POST'])
+@application.route('/scheduler', methods=['POST'])
 def scheduler_post():
     """
     Scheduler
@@ -591,7 +602,7 @@ def scheduler_post():
     return jsonify(req)
 
 
-@APPLICATION.route('/backup/db', methods=['POST'])
+@application.route('/backup/db', methods=['POST'])
 def backup_database():
     """
     Backup
@@ -610,11 +621,11 @@ def backup_database():
             type: dict
     """
     if "sqlite://" in EC.db_uri:
-        return ops.backup_sqlite(cache=CACHE, application=APPLICATION)
+        return ops.backup_sqlite(cache=CACHE, application=application)
     return jsonify({"NotImplementedError": "%s" % EC.db_uri}), 404
 
 
-@APPLICATION.route('/backup/export', methods=['GET'])
+@application.route('/backup/export', methods=['GET'])
 def backup_as_export():
     """
     Backup by exporting a playbook of what discovery client and schedulers sent to the API
@@ -636,7 +647,7 @@ def backup_as_export():
     return jsonify(playbook), 200
 
 
-@APPLICATION.route('/discovery/interfaces', methods=['GET'])
+@application.route('/discovery/interfaces', methods=['GET'])
 def discovery_interfaces():
     """
     Discovery
@@ -657,7 +668,7 @@ def discovery_interfaces():
     return jsonify(interfaces)
 
 
-@APPLICATION.route('/ignition/version', methods=['GET'])
+@application.route('/ignition/version', methods=['GET'])
 def get_ignition_versions():
     """
     Ignition version
@@ -674,7 +685,7 @@ def get_ignition_versions():
     return jsonify(CACHE.get("ignition-version"))
 
 
-@APPLICATION.route('/ignition/version/<string:filename>', methods=['POST'])
+@application.route('/ignition/version/<string:filename>', methods=['POST'])
 def report_ignition_version(filename):
     """
     Ignition version
@@ -701,7 +712,7 @@ def report_ignition_version(filename):
     return jsonify({"new": new_entry, "total": len(versions)})
 
 
-@APPLICATION.route('/discovery/ignition-journal/<string:uuid>/<string:boot_id>', methods=['GET'])
+@application.route('/discovery/ignition-journal/<string:uuid>/<string:boot_id>', methods=['GET'])
 def discovery_ignition_journal_by_boot_id(uuid, boot_id):
     """
     Discovery
@@ -734,7 +745,7 @@ def discovery_ignition_journal_by_boot_id(uuid, boot_id):
     return jsonify(lines)
 
 
-@APPLICATION.route('/discovery/ignition-journal/<string:uuid>', methods=['GET'])
+@application.route('/discovery/ignition-journal/<string:uuid>', methods=['GET'])
 def discovery_ignition_journal_by_uuid(uuid):
     """
     Discovery
@@ -762,7 +773,7 @@ def discovery_ignition_journal_by_uuid(uuid):
     return jsonify(lines)
 
 
-@APPLICATION.route('/discovery/ignition-journal', methods=['GET'])
+@application.route('/discovery/ignition-journal', methods=['GET'])
 def discovery_ignition_journal_summary():
     """
     Discovery
@@ -784,8 +795,8 @@ def discovery_ignition_journal_summary():
     return jsonify(lines)
 
 
-@APPLICATION.route('/boot.ipxe', methods=['GET'])
-@APPLICATION.route('/boot.ipxe.0', methods=['GET'])
+@application.route('/boot.ipxe', methods=['GET'])
+@application.route('/boot.ipxe.0', methods=['GET'])
 def boot_ipxe():
     """
     iPXE
@@ -798,17 +809,17 @@ def boot_ipxe():
         schema:
             type: string
     """
-    logger.info("%s %s" % (request.method, request.url))
+    app.logger.info("%s %s" % (request.method, request.url))
     try:
-        flask_uri = APPLICATION.config["API_URI"]
+        flask_uri = application.config["API_URI"]
         if flask_uri is None:
             raise AttributeError("API_URI is None")
-        APP.logger.debug("%s" % flask_uri)
+        app.logger.debug("%s" % flask_uri)
 
     except Exception as e:
-        flask_uri = APPLICATION.config["MATCHBOX_URI"]
-        APP.logger.error("<%s %s>" % (e, type(e)))
-        APP.logger.warning("Fall back to MATCHBOX_URI: %s" % flask_uri)
+        flask_uri = application.config["MATCHBOX_URI"]
+        app.logger.error("<%s %s>" % (e, type(e)))
+        app.logger.warning("Fall back to MATCHBOX_URI: %s" % flask_uri)
         if flask_uri is None:
             raise AttributeError("BOTH API_URI and MATCHBOX_URI are None")
 
@@ -826,7 +837,7 @@ def boot_ipxe():
     return Response(response, status=200, mimetype="text/plain")
 
 
-@APPLICATION.route("/sync-notify", methods=["POST"])
+@application.route("/sync-notify", methods=["POST"])
 def sync_notify():
     """
     Sync process notify POST to this route to tell everything is synced for matchbox
@@ -844,7 +855,7 @@ def sync_notify():
     return jsonify({"ts": ts, "ttl": EC.sync_notify_ttl}), 200
 
 
-@APPLICATION.route("/sync-notify", methods=["GET"])
+@application.route("/sync-notify", methods=["GET"])
 def sync_notify_status():
     """
     Sync process notify POST to this route to tell everything is synced for matchbox
@@ -861,12 +872,12 @@ def sync_notify_status():
     if sync:
         return jsonify({"sync-notify": sync}), 200
 
-    logger.warning("sync-notify is None")
+    app.logger.warning("sync-notify is None")
     return jsonify({"sync-notify": False}), 503
 
 
-@APPLICATION.route("/ignition", methods=["GET"])
-@APPLICATION.route("/ignition-pxe", methods=["GET"])
+@application.route("/ignition", methods=["GET"])
+@application.route("/ignition-pxe", methods=["GET"])
 def ignition():
     """
     Ignition
@@ -889,14 +900,14 @@ def ignition():
     """
     cache_key = "sync-notify"
     last_sync_ts = CACHE.get(cache_key)
-    logger.debug("cacheKey: %s is set with value %s" % (cache_key, last_sync_ts))
+    app.logger.debug("cacheKey: %s is set with value %s" % (cache_key, last_sync_ts))
 
     # we ignore the sync status if we arrived from /ignition-pxe because it's a discovery PXE boot
     if last_sync_ts is None and request.path != "/ignition-pxe":
-        logger.error("matchbox state is out of sync: cacheKey: %s is None" % cache_key)
+        app.logger.error("matchbox state is out of sync: cacheKey: %s is None" % cache_key)
         return Response("matchbox is out of sync", status=503, mimetype="text/plain")
 
-    matchbox_uri = APPLICATION.config.get("MATCHBOX_URI")
+    matchbox_uri = application.config.get("MATCHBOX_URI")
     if matchbox_uri:
         try:
             # remove the -pxe from the path because matchbox only serve /ignition
@@ -906,13 +917,13 @@ def ignition():
             matchbox_resp.close()
             return Response(resp, status=matchbox_resp.status_code, mimetype="text/plain")
         except requests.RequestException as e:
-            logger.error("fail to query matchbox ignition %s" % e)
+            app.logger.error("fail to query matchbox ignition %s" % e)
             return Response("matchbox doesn't respond", status=502, mimetype="text/plain")
 
     return Response("matchbox=%s" % matchbox_uri, status=403, mimetype="text/plain")
 
 
-@APPLICATION.route("/metadata", methods=["GET"])
+@application.route("/metadata", methods=["GET"])
 def metadata():
     """
     Metadata
@@ -925,7 +936,7 @@ def metadata():
         schema:
             type: string
     """
-    matchbox_uri = APPLICATION.config.get("MATCHBOX_URI")
+    matchbox_uri = application.config.get("MATCHBOX_URI")
     if matchbox_uri:
         matchbox_resp = requests.get("%s%s" % (matchbox_uri, request.full_path))
         resp = matchbox_resp.content
@@ -935,7 +946,7 @@ def metadata():
     return Response("matchbox=%s" % matchbox_uri, status=403, mimetype="text/plain")
 
 
-@APPLICATION.route('/install-authorization/<string:request_raw_query>')
+@application.route('/install-authorization/<string:request_raw_query>')
 def require_install_authorization(request_raw_query):
     """
     Install Authorization
@@ -953,19 +964,22 @@ def require_install_authorization(request_raw_query):
         schema:
             type: string
     """
-    logger.info("%s %s %s" % (request.method, request.remote_addr, request.url))
+    app.logger.info("%s %s %s" % (request.method, request.remote_addr, request.url))
     if EC.coreos_install_lock_seconds > 0:
         lock = CACHE.get("lock-install")
         if lock is not None:
-            logger.warning("Locked by %s" % lock)
+            app.logger.warning("Locked by %s" % lock)
+            machine_state.update(crud.get_mac_from_raw_query(request_raw_query), MachineStates.os_installation_denied)
             return Response(response="Locked by %s" % lock, status=403)
         CACHE.set("lock-install", request_raw_query, timeout=EC.coreos_install_lock_seconds)
-        logger.info("Granted to %s" % request_raw_query)
+        app.logger.info("Granted to %s" % request_raw_query)
+
+    machine_state.update(crud.get_mac_from_raw_query(request_raw_query), MachineStates.os_installation_granted)
     return Response(response="Granted", status=200)
 
 
-@APPLICATION.route('/assets', defaults={'path': ''})
-@APPLICATION.route('/assets/<path:path>')
+@application.route('/assets', defaults={'path': ''})
+@application.route('/assets/<path:path>')
 def assets(path):
     """
     Assets server
@@ -981,8 +995,8 @@ def assets(path):
         schema:
             type: string
     """
-    logger.info("%s %s" % (request.method, request.url))
-    matchbox_uri = APPLICATION.config.get("MATCHBOX_URI")
+    app.logger.info("%s %s" % (request.method, request.url))
+    matchbox_uri = application.config.get("MATCHBOX_URI")
     if matchbox_uri:
         url = "%s/assets/%s" % (matchbox_uri, path)
         matchbox_resp = requests.get(url)
@@ -993,7 +1007,7 @@ def assets(path):
     return Response("matchbox=%s" % matchbox_uri, status=404, mimetype="text/plain")
 
 
-@APPLICATION.route('/ipxe', methods=['GET'])
+@application.route('/ipxe', methods=['GET'])
 def ipxe():
     """
     iPXE
@@ -1010,32 +1024,37 @@ def ipxe():
         schema:
             type: string
     """
-    logger.info("%s %s" % (request.method, request.url))
+    app.logger.info("%s %s" % (request.method, request.url))
     try:
         matchbox_resp = requests.get(
             "%s%s" % (
-                APP.config["MATCHBOX_URI"],
+                app.config["MATCHBOX_URI"],
                 request.full_path))
         matchbox_resp.close()
         response = matchbox_resp.content.decode()
+
+        mac = request.args.get("mac")
+        if mac:
+            machine_state.update(mac.replace("-", ":"), MachineStates.booting)
+
         return Response(response, status=200, mimetype="text/plain")
 
     except requests.exceptions.ConnectionError:
-        APP.logger.warning("404 for /ipxe")
+        app.logger.warning("404 for /ipxe")
         return "404", 404
 
 
-@APPLICATION.errorhandler(404)
+@application.errorhandler(404)
 def page_not_found(error):
     return Response("404", status=404, mimetype="text/plain")
 
 
-@APPLICATION.route('/ui', methods=['GET'])
+@application.route('/ui', methods=['GET'])
 def user_interface():
     return render_template("index.html")
 
 
-@APPLICATION.route('/ui/view/machine', methods=['GET'])
+@application.route('/ui/view/machine', methods=['GET'])
 def user_view_machine():
     with SMART.new_session() as session:
         view = crud.FetchView(session)
@@ -1044,6 +1063,11 @@ def user_view_machine():
     return jsonify(res)
 
 
+@application.route('/ui/view/states', methods=['GET'])
+def user_view_machine_statuses():
+    res = machine_state.fetch(finished_in_less_than_min=30)
+    return jsonify(res)
+
+
 if __name__ == "__main__":
-    APP.logger.setLevel("DEBUG")
-    APPLICATION.run(debug=True)
+    application.run(debug=True)
