@@ -36,7 +36,8 @@ class MachineStateRepository:
                     .options(joinedload("machine_state")) \
                     .join(MachineInterface) \
                     .join(MachineCurrentState) \
-                    .filter(MachineCurrentState.updated_date > time_limit):
+                    .filter(MachineCurrentState.updated_date > time_limit) \
+                    .order_by(MachineCurrentState.updated_date.desc()):
                 results.append({
                     "fqdn": machine.interfaces[0].fqdn,
                     "mac": machine.interfaces[0].mac,
