@@ -183,20 +183,28 @@ This is the available routes:
 
     [
       "/", 
-      "/apidocs/<path:filename>", 
+      "/apidocs/", 
+      "/apidocs/index.html", 
+      "/apispec_1.json", 
       "/assets", 
       "/assets/<path:path>", 
       "/backup/db", 
+      "/backup/export", 
       "/boot.ipxe", 
       "/boot.ipxe.0", 
+      "/config", 
       "/configs", 
       "/discovery", 
       "/discovery/ignition-journal", 
       "/discovery/ignition-journal/<string:uuid>", 
       "/discovery/ignition-journal/<string:uuid>/<string:boot_id>", 
       "/discovery/interfaces", 
+      "/flasgger_static/<path:filename>", 
       "/healthz", 
       "/ignition", 
+      "/ignition-pxe", 
+      "/ignition/version", 
+      "/ignition/version/<string:filename>", 
       "/install-authorization/<string:request_raw_query>", 
       "/ipxe", 
       "/lifecycle/coreos-install", 
@@ -206,17 +214,19 @@ This is the available routes:
       "/lifecycle/rolling", 
       "/lifecycle/rolling/<string:request_raw_query>", 
       "/metadata", 
+      "/metrics", 
       "/scheduler", 
       "/scheduler/<string:role>", 
       "/scheduler/available", 
       "/scheduler/ip-list/<string:role>", 
       "/shutdown", 
-      "/spec", 
-      "/specs", 
       "/static/<path:filename>", 
+      "/sync-notify", 
       "/ui", 
-      "/ui/view/machine"
+      "/ui/view/machine", 
+      "/ui/view/states"
     ]
+
 
 
 A Swagger UI is available at `/apidocs/index.html`
@@ -262,7 +272,10 @@ Requirements:
 
 All in one dev setup:
 
-
+    # Clone the project inside a valid GOPATH
+    git clone https://github.com/JulienBalestra/enjoliver.git ${GOPATH}/src/github.com/JulienBalestra/enjoliver
+    
+    # Be sure the GOPATH is fowarded across Makefiles !
     sudo -E make dev_setup
     
     
