@@ -275,9 +275,31 @@ All in one dev setup:
     # Clone the project inside a valid GOPATH
     git clone https://github.com/JulienBalestra/enjoliver.git ${GOPATH}/src/github.com/JulienBalestra/enjoliver
     
-    # Be sure the GOPATH is fowarded across Makefiles !
+    # Be sure the GOPATH is fowarded across Makefiles or do it step by step
     sudo -E make dev_setup
     
+Step-by-step:
+
+    make submodules
+    make -C runtime dev_setup
+    make -C app/tests testing.id_rsa
+    make front
+    make pip
+    make -C matchbox/assets/discoveryC
+    make -C matchbox/assets/enjoliver-agent
+    
+    # Very long:
+    sudo -E make aci
+    sudo -E make container_linux
+    
+    # misc
+    make config
+    sudo -E chown -R ${SUDO_USER}: $(CWD)
+    
+    # Validate
+    make validate
+    
+        
     
 Start an interactive Kubernetes deployment of 2 nodes:
 
