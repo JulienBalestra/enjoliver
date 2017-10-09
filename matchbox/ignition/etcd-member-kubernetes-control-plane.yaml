@@ -89,6 +89,7 @@ systemd:
         [Service]
         EnvironmentFile=/etc/etcd-%i
         Environment=ETCD_ENV_FILE=/etc/etcd-%i.env
+        ExecStartPre=/opt/bin/ping-one-cp
         ExecStart=/opt/bin/etcd-operator
         RestartSec=15s
         Restart=on-failure
@@ -106,6 +107,7 @@ systemd:
         [Service]
         EnvironmentFile=/etc/etcd-%i
         Environment=ETCD_ENV_FILE=/etc/etcd-%i.env
+        ExecStartPre=/opt/bin/ping-one-cp
         ExecStart=/opt/bin/etcd-operator
         RestartSec=15s
         Restart=on-failure
@@ -123,6 +125,7 @@ systemd:
         [Service]
         EnvironmentFile=/etc/etcd-%i
         Environment=ETCD_ENV_FILE=/etc/etcd-%i.env
+        ExecStartPre=/opt/bin/ping-one-cp
         ExecStart=/opt/bin/etcd-operator
         RestartSec=15s
         Restart=on-failure
@@ -1196,6 +1199,28 @@ storage:
         inline: |
           #!/bin/bash
           ETCDCTL_API=3 exec /usr/bin/etcdctl $@
+
+    - path: /opt/bin/ping-one-cp
+      filesystem: root
+      mode: 0544
+      contents:
+        inline: |
+          #!/bin/bash
+
+          # try to ping other etcd_member_kubernetes_control_plane_ip_list
+          # exit 0 when at least one reply
+          # exit 2 if no one are reachable
+          set -x
+          for i in {0..2}
+          do
+            for ip in $(echo -n {{ .etcd_member_kubernetes_control_plane_ip_list }} | tr ',' '\n' | grep -v {{.network.ip}} | shuf )
+            do
+              ping -c 1 ${ip} && exit 0
+              sleep ${i}
+            done
+          done
+
+          exit 2
 
     - path: /opt/bin/etcd-operator
       filesystem: root
