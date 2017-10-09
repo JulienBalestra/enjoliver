@@ -56,7 +56,7 @@ _upx_in_fs() {
 
 EXCLUDES="--exclude rootfs/dgr --exclude rootfs/etc --exclude rootfs/tmp --exclude rootfs/run --exclude rootfs/sys"
 
-for useless in /bin/docker /bin/coreos-metadata /bin/containerd /bin/containerd-shim /bin/dockerd /bin/runc \
+for useless in /bin/docker /bin/containerd /bin/containerd-shim /bin/dockerd /bin/runc \
     /bin/docker-containerd-shim /bin/docker-containerd /bin/docker-runc /bin/ctr /bin/docker-proxy /bin/mayday \
     /bin/actool /bin/tpmd
 do
