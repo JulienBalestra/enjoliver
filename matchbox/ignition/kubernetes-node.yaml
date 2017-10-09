@@ -627,7 +627,7 @@ storage:
           systemctl stop fleet.service
 
           echo "draining node..."
-          kubectl -s http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} \
+          kubectl --kubeconfig /var/lib/kubelet/kubeconfig \
             drain {{.kubernetes_node_name}} --force --ignore-daemonsets --delete-local-data
 
           set +e
