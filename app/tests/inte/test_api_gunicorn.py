@@ -260,25 +260,7 @@ class TestAPIGunicorn(unittest.TestCase):
         self.assertEqual(200, req.status_code)
         response = req.content.decode()
         req.close()
-        self.assertEqual(json.loads(response), {u'total_elt': 1, u'new': True})
-        req = requests.get("%s/discovery/interfaces" % ec.api_uri)
-        self.assertEqual(200, req.status_code)
-        response = json.loads(req.content.decode())
-        expect = [
-            {
-                "as_boot": True,
-                "chassis_name": "rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4",
-                "cidrv4": "172.20.0.65/21",
-                "ipv4": "172.20.0.65",
-                "mac": "52:54:00:e8:32:5b",
-                "machine": "b7f5f93a-b029-475f-b3a4-479ba198cb8a",
-                "name": "eth0",
-                "netmask": 21,
-                "gateway": "172.20.0.1",
-                u'fqdn': None,
-            }
-        ]
-        self.assertEqual(expect, response)
+        self.assertEqual(json.loads(response), {'new-discovery': True})
 
         req = requests.get("%s/discovery" % ec.api_uri)
         self.assertEqual(200, req.status_code)
@@ -309,26 +291,20 @@ class TestAPIGunicorn(unittest.TestCase):
         self.assertEqual(first["interfaces"][0]["mac"], expect["interfaces"][0]["mac"])
         self.assertEqual(first["interfaces"][0]["as_boot"], expect["interfaces"][0]["as_boot"])
 
-        req = requests.get("%s/discovery/ignition-journal/b7f5f93a-b029-475f-b3a4-479ba198cb8a" % ec.api_uri)
-        self.assertEqual(200, req.status_code)
-        response = json.loads(req.content.decode())
-        self.assertEqual(39, len(response))
-        req.close()
-
     def test_06_discovery_01(self):
         req = requests.post("%s/discovery" % ec.api_uri, json.dumps(posts.M02))
         self.assertEqual(200, req.status_code)
         response = req.content.decode()
         req.close()
         r = json.loads(response)
-        self.assertEqual({u'total_elt': 2, u'new': True}, r)
+        self.assertEqual({'new-discovery': True}, r)
 
     def test_06_discovery_02(self):
         req = requests.post("%s/discovery" % ec.api_uri, json.dumps(posts.M03))
         self.assertEqual(200, req.status_code)
         response = req.content.decode()
         req.close()
-        self.assertEqual(json.loads(response), {u'total_elt': 3, u'new': True})
+        self.assertEqual(json.loads(response), {'new-discovery': True})
         all_machines = requests.get("%s/discovery" % ec.api_uri)
         content = json.loads(all_machines.content.decode())
         all_machines.close()
@@ -337,24 +313,24 @@ class TestAPIGunicorn(unittest.TestCase):
         self.assertEqual(200, req.status_code)
         response = req.content
         req.close()
-        self.assertEqual(json.loads(response.decode()), {u'total_elt': 3, u'new': False})
+        self.assertEqual(json.loads(response.decode()), {'new-discovery': False})
         self.assertEqual(posts.M01["boot-info"]["uuid"], content[0]["boot-info"]["uuid"])
 
     def test_06_discovery_03(self):
-        """
-        The db have already M01, M02, M03
-        :return:
-        """
-        for i, p in enumerate(posts.ALL):
+        for p in posts.ALL:
+            req = requests.post("%s/discovery" % ec.api_uri, json.dumps(p))
+            self.assertEqual(200, req.status_code)
+            req.close()
             req = requests.post("%s/discovery" % ec.api_uri, json.dumps(p))
             self.assertEqual(200, req.status_code)
             response = req.content.decode()
+            self.assertEqual({'new-discovery': False}, json.loads(response))
             req.close()
-            pn = i + 1
-            if pn == 1 or pn == 2 or pn == 3:
-                self.assertEqual(json.loads(response), {u'total_elt': 3, u'new': False})
-            else:
-                self.assertEqual(json.loads(response), {u'total_elt': pn, u'new': True})
+
+        r = requests.get("%s/discovery" % ec.api_uri)
+        nb_elt = len(json.loads(r.content.decode()))
+        r.close()
+        self.assertEqual(len(posts.ALL), nb_elt)
 
     def test_07_get(self):
         """

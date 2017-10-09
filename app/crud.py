@@ -183,6 +183,7 @@ class InjectDiscovery:
             raise TypeError("uuid: %s in not len(36)" % uuid)
         machine = self.session.query(Machine) \
             .options(joinedload("interfaces")) \
+            .options(joinedload("disks")) \
             .filter(Machine.uuid == uuid).first()
         if machine:
             logger.debug("machine %s already in db" % uuid)
@@ -250,7 +251,6 @@ class InjectDiscovery:
                         fqdn=fqdn,
                         machine_id=self.machine.id)
                 )
-                self.adds += 1
                 self.adds += 1
 
         return m_interfaces

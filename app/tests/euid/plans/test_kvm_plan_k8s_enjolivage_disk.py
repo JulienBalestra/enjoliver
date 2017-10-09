@@ -31,7 +31,7 @@ class TestKVMK8sEnjolivageDisk(kvm_player.KernelVirtualMachinePlayer):
 class TestKVMK8sEnjolivageDisk0(TestKVMK8sEnjolivageDisk):
     # @unittest.skip("just skip")
     def test_00(self):
-        self.assertEqual(self.fetch_discovery_interfaces(), [])
+        self.assertEqual(self.fetch_discovery(), [])
         nb_node = 4
         marker = "plans-%s-%s" % (TestKVMK8sEnjolivageDisk.__name__.lower(), self.test_00.__name__)
         nodes = ["%s-%d" % (marker, i) for i in range(nb_node)]
@@ -131,7 +131,7 @@ class TestKVMK8sEnjolivageDisk0(TestKVMK8sEnjolivageDisk):
 class TestKVMK8sEnjolivageDisk1(TestKVMK8sEnjolivageDisk):
     # @unittest.skip("just skip")
     def test_01(self):
-        self.assertEqual(self.fetch_discovery_interfaces(), [])
+        self.assertEqual(self.fetch_discovery(), [])
         nb_node = 2
         marker = "plans-%s-%s" % (TestKVMK8sEnjolivageDisk.__name__.lower(), self.test_01.__name__)
         nodes = ["%s-%d" % (marker, i) for i in range(nb_node)]

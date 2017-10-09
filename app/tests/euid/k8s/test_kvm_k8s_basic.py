@@ -31,7 +31,7 @@ class TestKVMK8sBasic(kvm_player.KernelVirtualMachinePlayer):
 class TestKVMK8SBasic0(TestKVMK8sBasic):
     # @unittest.skip("just skip")
     def test_00(self):
-        self.assertEqual(self.fetch_discovery_interfaces(), [])
+        self.assertEqual(self.fetch_discovery(), [])
         nb_node = 2
         marker = "euid-%s-%s" % (TestKVMK8sBasic.__name__.lower(), self.test_00.__name__)
         nodes = ["%s-%d" % (marker, i) for i in range(nb_node)]
@@ -113,7 +113,7 @@ class TestKVMK8SBasic0(TestKVMK8sBasic):
 class TestKVMK8SBasic1(TestKVMK8sBasic):
     # @unittest.skip("just skip")
     def test_01(self):
-        self.assertEqual(self.fetch_discovery_interfaces(), [])
+        self.assertEqual(self.fetch_discovery(), [])
         nb_node = 3
         marker = "euid-%s-%s" % (TestKVMK8sBasic.__name__.lower(), self.test_01.__name__)
         nodes = ["%s-%d" % (marker, i) for i in range(nb_node)]

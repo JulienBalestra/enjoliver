@@ -34,6 +34,7 @@ class TestAPI(unittest.TestCase):
 
         api.machine_state = api.MachineStateRepository(smart)
         api.view_user_interface = api.UserInterfaceRepository(smart)
+        api.discovery_repo = api.DiscoveryRepository(smart)
 
         cls.app.testing = True
 
@@ -108,11 +109,11 @@ class TestAPI(unittest.TestCase):
         result = self.app.post('/discovery', data=json.dumps(posts.M01),
                                content_type='application/json')
         self.assertEqual(result.status_code, 200)
-        self.assertEqual(json.loads(result.data.decode()), {u'total_elt': 1, u'new': True})
+        self.assertEqual(json.loads(result.data.decode()), {'new-discovery': True})
         result = self.app.post('/discovery', data=json.dumps(posts.M02),
                                content_type='application/json')
         self.assertEqual(result.status_code, 200)
-        self.assertEqual(json.loads(result.data.decode()), {u'total_elt': 2, u'new': True})
+        self.assertEqual(json.loads(result.data.decode()), {'new-discovery': True})
 
     def test_discovery_01(self):
         pass
@@ -130,57 +131,6 @@ class TestAPI(unittest.TestCase):
             self.assertEqual(200, r.status_code)
             data = json.loads(r.data.decode())
             self.assertEqual(2, len(data))
-
-    def test_discovery_03(self):
-        r = self.app.get("/discovery/interfaces")
-        self.assertEqual(200, r.status_code)
-        data = json.loads(r.data.decode())
-        self.assertEqual(2, len(data))
-
-    def test_discovery_04(self):
-        uuid = posts.M01["boot-info"]["uuid"]
-        r = self.app.get("/discovery/ignition-journal/%s" % uuid)
-        self.assertEqual(200, r.status_code)
-        data = json.loads(r.data.decode())
-        self.assertEqual(39, len(data))
-
-    def test_discovery_06(self):
-        r = self.app.get("/discovery/ignition-journal")
-        self.assertEqual(200, r.status_code)
-        data = json.loads(r.data.decode())
-        self.assertEqual(2, len(data))
-        self.assertEqual(1, len(data[0]["boot_id_list"]))
-        self.assertEqual(1, len(data[1]["boot_id_list"]))
-
-    def test_discovery_06_more(self):
-        r = self.app.get("/discovery/ignition-journal")
-        self.assertEqual(200, r.status_code)
-        data = json.loads(r.data.decode())
-        self.assertEqual(2, len(data))
-        self.assertEqual(1, len(data[0]["boot_id_list"]))
-        self.assertEqual(1, len(data[1]["boot_id_list"]))
-
-        uuid = data[0]["uuid"]
-        boot_id = data[0]["boot_id_list"][0]["boot_id"]
-        r = self.app.get("/discovery/ignition-journal/%s/%s" % (uuid, boot_id))
-        self.assertEqual(200, r.status_code)
-        new_data = json.loads(r.data.decode())
-        self.assertEqual(39, len(new_data))
-
-        uuid = data[1]["uuid"]
-        boot_id = data[1]["boot_id_list"][0]["boot_id"]
-        r = self.app.get("/discovery/ignition-journal/%s/%s" % (uuid, boot_id))
-        self.assertEqual(200, r.status_code)
-        new_data = json.loads(r.data.decode())
-        self.assertEqual(39, len(new_data))
-
-    def test_discovery_05(self):
-        r = self.app.get("/discovery")
-
-        for m in json.loads(r.data.decode()):
-            uuid = m["boot-info"]["uuid"]
-            r = self.app.get("/discovery/ignition-journal/%s" % uuid)
-            self.assertEqual(200, r.status_code)
 
     def test_scheduler_00(self):
         r = self.app.get("/scheduler")

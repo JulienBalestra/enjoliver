@@ -49,10 +49,10 @@ def get_kvm_sleep(f="/tmp/virt-host-validate"):
 
 
 def display(message):
-    for i in range(3):
+    for i in range(5):
         try:
             print(message)
-            break
+            return
         except BlockingIOError:
             time.sleep(0.01)
 
@@ -486,11 +486,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             raise RuntimeError("\"%s\"" % " ".join(cmd))
 
     def fetch_discovery_interfaces(self):
-        request = requests.get("%s/discovery/interfaces" % self.api_uri)
-        response_body = request.content
-        request.close()
-        self.assertEqual(request.status_code, 200)
-        interfaces = json.loads(response_body.decode())
+        request = self.fetch_discovery()
+        interfaces = [k["interfaces"] for k in request if request]
         return interfaces
 
     def fetch_discovery(self):

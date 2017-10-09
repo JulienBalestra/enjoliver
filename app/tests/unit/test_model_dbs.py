@@ -10,7 +10,7 @@ from unit import model_player
 EC = configs.EnjoliverConfig()
 
 
-# @unittest.skip("")
+@unittest.skip("")
 class TestModelSQLiteMemory(model_player.TestModel):
     unit_path = os.path.dirname(os.path.abspath(__file__))
     dbs_path = "%s/dbs" % unit_path
@@ -29,7 +29,7 @@ class TestModelSQLiteMemory(model_player.TestModel):
         cls.set_up_class_checks(cls.smart, cls.ignition_journal_path)
 
 
-@unittest.skip("TODO")
+# @unittest.skip("TODO")
 class TestModelSQLiteFS(model_player.TestModel):
     unit_path = os.path.dirname(os.path.abspath(__file__))
     dbs_path = "%s/dbs" % unit_path

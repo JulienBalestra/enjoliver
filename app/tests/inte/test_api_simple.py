@@ -69,6 +69,10 @@ class TestAPI(unittest.TestCase):
 
         cls.matchbox_running(ec.matchbox_uri, cls.p_matchbox)
 
+        api.machine_state = api.MachineStateRepository(smart)
+        api.view_user_interface = api.UserInterfaceRepository(smart)
+        api.discovery_repo = api.DiscoveryRepository(smart)
+
     @classmethod
     def tearDownClass(cls):
         print("TERM -> %d\n" % cls.p_matchbox.pid)
@@ -212,53 +216,26 @@ class TestAPI(unittest.TestCase):
         result = self.app.post('/discovery', data="ok")
         self.assertEqual(result.status_code, 406)
 
-    def test_06_discovery(self):
-        result = self.app.get("/discovery/interfaces")
-        self.assertEqual(json.loads(result.data.decode()), [])
-
     def test_06_discovery_00(self):
         result = self.app.post('/discovery', data=json.dumps(posts.M01),
                                content_type='application/json')
-        self.assertEqual(json.loads(result.data.decode()), {u'total_elt': 1, u'new': True})
+        self.assertEqual(json.loads(result.data.decode()), {'new-discovery': True})
         self.assertEqual(result.status_code, 200)
 
     def test_06_discovery_01(self):
         result = self.app.post('/discovery', data=json.dumps(posts.M02),
                                content_type='application/json')
-        self.assertEqual(json.loads(result.data.decode()), {u'total_elt': 2, u'new': True})
+        self.assertEqual(json.loads(result.data.decode()), {'new-discovery': True})
         self.assertEqual(result.status_code, 200)
 
         result = self.app.post('/discovery', data=json.dumps(posts.M02),
                                content_type='application/json')
-        self.assertEqual(json.loads(result.data.decode()), {u'total_elt': 2, u'new': False})
+        self.assertEqual(json.loads(result.data.decode()), {'new-discovery': False})
         self.assertEqual(result.status_code, 200)
 
-        result = self.app.get("/discovery/interfaces")
-        expect = [
-            {u'name': u'eth0',
-             u'as_boot': True,
-             u'netmask': 21,
-             u'mac': u'52:54:00:e8:32:5b',
-             u'ipv4': u'172.20.0.65',
-             u'machine': u'b7f5f93a-b029-475f-b3a4-479ba198cb8a',
-             'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
-             u'cidrv4': u'172.20.0.65/21',
-             u'fqdn': None,
-             "gateway": "172.20.0.1"},
-
-            {u'name': u'eth0',
-             u'as_boot': True,
-             u'machine': u'a21a9123-302d-488d-976c-5d6ded84a32d',
-             'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
-             u'netmask': 21,
-             u'mac': u'52:54:00:a5:24:f5',
-             u'ipv4': u'172.20.0.51',
-             u'cidrv4': u'172.20.0.51/21',
-             u'fqdn': None,
-             "gateway": "172.20.0.1"}
-        ]
+        result = self.app.get("/discovery")
         result_data = json.loads(result.data.decode())
-        self.assertEqual(expect, result_data)
+        self.assertEqual(2, len(result_data))
 
     def test_07_404_fake(self):
         result = self.app.get('/fake')

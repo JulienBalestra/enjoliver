@@ -16,10 +16,10 @@ import ops
 import smartdb
 import tools
 from configs import EnjoliverConfig
+from machine_discovery_repo import DiscoveryRepository
+from machine_state_repo import MachineStateRepository
 from model import MachineStates
 from smartdb import SmartDatabaseClient
-
-from machine_state_repo import MachineStateRepository
 from user_interface_repo import UserInterfaceRepository
 
 EC = EnjoliverConfig(importer=__file__)
@@ -54,6 +54,7 @@ SMART = SmartDatabaseClient
 # repositories
 machine_state = MachineStateRepository
 view_user_interface = UserInterfaceRepository
+discovery_repo = DiscoveryRepository
 
 if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", ""):
     logging.basicConfig(level=EC.logging_level, stream=sys.stderr, format=EC.logging_formatter)
@@ -68,6 +69,7 @@ if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", ""):
     # repositories
     machine_state = MachineStateRepository(SMART)
     view_user_interface = UserInterfaceRepository(SMART)
+    discovery_repo = DiscoveryRepository(SMART)
 
 
 @application.route("/shutdown", methods=["POST"])
@@ -367,10 +369,10 @@ def report_lifecycle_coreos_install(status, request_raw_query):
 
 
 @application.route('/', methods=['GET'])
-def root():
+def api_mapper():
     """
     Map the API
-    List all the avaiable routes
+    List all the available routes
     ---
     tags:
       - ops
@@ -405,7 +407,7 @@ def healthz():
 
 
 @application.route('/discovery', methods=['POST'])
-def discovery():
+def record_discovery_data():
     """
     Discovery
     Report the current facts of a machine
@@ -421,31 +423,23 @@ def discovery():
     app.logger.info("%s %s" % (request.method, request.url))
     err = jsonify({u'boot-info': {}, u'lldp': {}, u'interfaces': [], u"disks": []}), 406
     try:
-        req = json.loads(request.get_data())
+        discovery_data = json.loads(request.get_data())
     except (KeyError, TypeError, ValueError):
+        logger.error("fail to parse discovery data: %s" % request.get_data())
         return err
 
-    @smartdb.cockroach_transaction
-    def op(caller=request.url_rule):
-        with SMART.new_session() as session:
-            inject = crud.InjectDiscovery(
-                session,
-                ignition_journal=ignition_journal,
-                discovery=req)
-            new = inject.apply()
-            CACHE.delete(request.path)
-            return jsonify({"total_elt": new[0], "new": new[1]})
-
     try:
-        ret = op(caller=request.url_rule)
-        machine_state.update(req["boot-info"]["mac"], MachineStates.discovery)
-        return ret
-    except TypeError:
+        new = discovery_repo.upsert(discovery_data)
+        machine_state.update(discovery_data["boot-info"]["mac"], MachineStates.discovery)
+        CACHE.delete(request.path)
+        return jsonify({"new-discovery": new}), 200
+    except TypeError as e:
+        logger.error("fail to store discovery data: %s -> %s" % (request.get_data(), e))
         return err
 
 
 @application.route('/discovery', methods=['GET'])
-def discovery_get():
+def get_discovery_data():
     """
     Discovery
     List
@@ -459,11 +453,9 @@ def discovery_get():
             type: list
     """
     all_data = CACHE.get(request.path)
-    if all_data is None:
-        with SMART.new_session() as session:
-            fetch = crud.FetchDiscovery(session, ignition_journal=ignition_journal)
-            all_data = fetch.get_all()
-            CACHE.set(request.path, all_data, timeout=30)
+    if not all_data:
+        all_data = discovery_repo.fetch_all_discovery()
+        CACHE.set(request.path, all_data, timeout=30)
     return jsonify(all_data)
 
 
@@ -653,27 +645,6 @@ def backup_as_export():
     return jsonify(playbook), 200
 
 
-@application.route('/discovery/interfaces', methods=['GET'])
-def discovery_interfaces():
-    """
-    Discovery
-    List only the interfaces
-    ---
-    tags:
-      - discovery
-    responses:
-      200:
-        description: Discovery interfaces
-        schema:
-            type: list
-    """
-    with SMART.new_session() as session:
-        fetch = crud.FetchDiscovery(session, ignition_journal=ignition_journal)
-        interfaces = fetch.get_all_interfaces()
-
-    return jsonify(interfaces)
-
-
 @application.route('/ignition/version', methods=['GET'])
 def get_ignition_versions():
     """
@@ -709,96 +680,11 @@ def report_ignition_version(filename):
     if not versions:
         versions = dict()
 
+    new_entry = False if filename in versions.keys() else True
     data = json.loads(request.data)
-    new_entry = True
-    if filename in versions.keys():
-        new_entry = False
     versions.update({filename: data[filename]})
     CACHE.set("ignition-version", versions, timeout=0)
     return jsonify({"new": new_entry, "total": len(versions)})
-
-
-@application.route('/discovery/ignition-journal/<string:uuid>/<string:boot_id>', methods=['GET'])
-def discovery_ignition_journal_by_boot_id(uuid, boot_id):
-    """
-    Discovery
-    Get the Ignition journal
-    ---
-    tags:
-      - discovery
-    parameters:
-      - name: uuid
-        in: path
-        description: uuid of the machine
-        required: true
-        type: string
-      - name: boot_id
-        in: path
-        description: boot-id of the machine
-        required: true
-        type: string
-    responses:
-      200:
-        description: Lines of the journal
-        schema:
-            type: list
-    """
-    with SMART.new_session() as session:
-        fetch = crud.FetchDiscovery(session,
-                                    ignition_journal=ignition_journal)
-        lines = fetch.get_ignition_journal(uuid, boot_id=boot_id)
-
-    return jsonify(lines)
-
-
-@application.route('/discovery/ignition-journal/<string:uuid>', methods=['GET'])
-def discovery_ignition_journal_by_uuid(uuid):
-    """
-    Discovery
-    Get the Ignition journal
-    ---
-    tags:
-      - discovery
-    parameters:
-      - name: uuid
-        in: path
-        description: uuid of the machine
-        required: true
-        type: string
-    responses:
-      200:
-        description: Lines of the journal
-        schema:
-            type: list
-    """
-    with SMART.new_session() as session:
-        fetch = crud.FetchDiscovery(session,
-                                    ignition_journal=ignition_journal)
-        lines = fetch.get_ignition_journal(uuid)
-
-    return jsonify(lines)
-
-
-@application.route('/discovery/ignition-journal', methods=['GET'])
-def discovery_ignition_journal_summary():
-    """
-    Discovery
-    Get the available Ignition journal
-    ---
-    tags:
-      - discovery
-    responses:
-      200:
-        description: Lines available journals
-        schema:
-            type: list
-    """
-    with SMART.new_session() as session:
-        fetch = crud.FetchDiscovery(session,
-                                    ignition_journal=ignition_journal)
-        lines = fetch.get_ignition_journal_summary()
-
-    return jsonify(lines)
 
 
 @application.route('/boot.ipxe', methods=['GET'])
