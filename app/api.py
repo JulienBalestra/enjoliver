@@ -6,7 +6,7 @@ import requests
 import sys
 import time
 from flasgger import Swagger
-from flask import Flask, request, json, jsonify, render_template, Response
+from flask import Flask, request, json, jsonify, render_template, Response, make_response
 from werkzeug.contrib.cache import FileSystemCache
 
 import crud
@@ -1062,14 +1062,20 @@ def user_interface():
 
 @application.route('/ui/view/machine', methods=['GET'])
 def user_view_machine():
-    res = view_user_interface.get_machines_overview()
-    return jsonify(res)
+    res = jsonify(view_user_interface.get_machines_overview())
+    resp = make_response(res)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+
+    return (resp)
 
 
 @application.route('/ui/view/states', methods=['GET'])
 def user_view_machine_statuses():
-    res = machine_state.fetch(finished_in_less_than_min=30)
-    return jsonify(res)
+    res = jsonify(machine_state.fetch(finished_in_less_than_min=30000000))
+    resp = make_response(res)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+
+    return (resp)
 
 
 if __name__ == "__main__":

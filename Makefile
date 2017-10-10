@@ -105,7 +105,7 @@ prod_setup_runtime:
 	make -C runtime prod_setup
 
 front:
-	make -C app/static
+	make -C enjoliver-ui
 
 config:
 	mkdir -pv $(HOME)/.config/enjoliver
