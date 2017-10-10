@@ -5,6 +5,14 @@ systemd:
       enable: false
       mask: true
 
+    - name: oem-cloudinit.service
+      enable: false
+      mask: true
+
+    - name: coreos-metadata-sshkeys@.service
+      enable: false
+      mask: true
+
     - name: locksmithd.service
       enable: false
       mask: true

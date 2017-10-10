@@ -13,10 +13,11 @@ export VERSION_DIR=${COREOS_DIRECTORY}/${VERSION}
 
 cd ${VERSION_DIR}
 export USR_A=${VERSION_DIR}/usr-a
+export ROOTFS=${VERSION_DIR}/rootfs
 export BOOT=${VERSION_DIR}/boot
 export VERSION
 
-mkdir -pv {squashfs,initrd} ${USR_A} ${BOOT}
+mkdir -pv {squashfs,initrd} ${USR_A} ${BOOT} ${ROOTFS}
 
 bzip2 -fdk coreos_production_image.bin.bz2
 ${COREOS_DIRECTORY}/disk.py rw
@@ -25,10 +26,12 @@ LOOP=$(losetup --find --show coreos_production_image.bin)
 partprobe ${LOOP}
 
 set +e
+umount ${LOOP}p9 ${ROOTFS}
 umount ${LOOP}p3 ${USR_A}
 umount ${LOOP}p1 ${BOOT}
 set -e
 
+mount ${LOOP}p9 ${ROOTFS}
 mount ${LOOP}p3 ${USR_A}
 mount ${LOOP}p1 ${BOOT}
 gunzip -c --force coreos_production_pxe_image.cpio.gz > coreos_production_pxe_image.cpio
@@ -133,7 +136,24 @@ mkdir -pv ${USR_A}/local/etc/ squashfs-root/local/etc/
 echo -n "{\"release\": \"${VERSION}\", \"alter_timestamp\": \"$(date +%s)\", \"commit\": \"${COMMIT_ID}\"}" | \
     tee ${USR_A}/local/etc/alter-version squashfs-root/local/etc/alter-version ${VERSION_DIR}/alter-version
 
+
+# Cloud requirements
+
+mkdir -pv ${ROOTFS}/etc/systemd/system/multi-user.target.wants ${ROOTFS}/etc/systemd/system/multi-user.target.requires
+
+cp -v ${COREOS_DIRECTORY}/oem-cloudinit.service ${ROOTFS}/etc/systemd/system/oem-cloudinit.service
+cd ${ROOTFS}/etc/systemd/system/multi-user.target.wants
+ln -svf /etc/systemd/system/oem-cloudinit.service oem-cloudinit.service
+cd -
+
+cp -v ${COREOS_DIRECTORY}/coreos-metadata-sshkeys@.service ${ROOTFS}/etc/systemd/system/coreos-metadata-sshkeys@.service
+cd ${ROOTFS}/etc/systemd/system/multi-user.target.requires
+ln -svf /etc/systemd/system/coreos-metadata-sshkeys@.service coreos-metadata-sshkeys@core.service
+cd -
+
 sync
+
+umount ${ROOTFS}
 
 umount ${USR_A}
 ${COREOS_DIRECTORY}/disk_util --disk_layout=base verity --root_hash=${VERSION_DIR}/coreos_production_image_verity.txt ${VERSION_DIR}/coreos_production_image.bin
