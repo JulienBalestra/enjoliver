@@ -54,7 +54,7 @@
         timer: null,
         columns: [
           {
-            label: 'Mac adress',
+            label: 'Mac address',
             field: 'MAC'
           },
 
