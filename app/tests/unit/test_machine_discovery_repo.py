@@ -3,8 +3,8 @@ import unittest
 
 from app import smartdb, model
 from common import posts
-from machine_discovery_repo import DiscoveryRepository
 from model import MachineInterface, Machine, MachineDisk, Chassis, ChassisPort
+from repositories.machine_discovery_repo import DiscoveryRepository
 
 
 class TestMachineStateRepo(unittest.TestCase):

@@ -1,9 +1,9 @@
+import copy
 import unittest
 
-import copy
-
-from app import user_interface_repo, smartdb, model
+from app import smartdb, model
 from model import MachineCurrentState, MachineInterface, Machine, MachineStates, MachineDisk
+from repositories import user_interface_repo
 
 
 class TestMachineStateRepo(unittest.TestCase):

@@ -1,7 +1,8 @@
 import unittest
 
-from app import machine_state_repo, smartdb, model
+from app import smartdb, model
 from model import MachineCurrentState, MachineInterface, Machine, MachineStates
+from repositories import machine_state_repo
 
 
 class TestMachineStateRepo(unittest.TestCase):

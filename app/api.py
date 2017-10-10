@@ -16,11 +16,11 @@ import ops
 import smartdb
 import tools
 from configs import EnjoliverConfig
-from machine_discovery_repo import DiscoveryRepository
-from machine_state_repo import MachineStateRepository
 from model import MachineStates
+from repositories.machine_discovery_repo import DiscoveryRepository
+from repositories.machine_state_repo import MachineStateRepository
+from repositories.user_interface_repo import UserInterfaceRepository
 from smartdb import SmartDatabaseClient
-from user_interface_repo import UserInterfaceRepository
 
 EC = EnjoliverConfig(importer=__file__)
 CACHE = FileSystemCache(EC.werkzeug_fs_cache_dir)
