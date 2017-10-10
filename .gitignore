@@ -92,3 +92,6 @@ image.aci
 /matchbox/assets/keys
 /runtime/stage1.d
 /app/prometheus_multiproc_dir
+/matchbox/assets/coreos/task-import-snapshot.json
+/matchbox/assets/coreos/image-id.json
+/matchbox/assets/coreos/container.json
