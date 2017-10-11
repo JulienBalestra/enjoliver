@@ -1216,9 +1216,12 @@ storage:
           #!/bin/bash
 
           # try to ping other etcd_member_kubernetes_control_plane_ip_list
-          # exit 0 when at least one reply
+          # exit 0 when at least one reply or if we are in single node
           # exit 2 if no one are reachable
           set -x
+
+          echo -n {{ .etcd_member_kubernetes_control_plane_ip_list }} | grep -c , || exit 0
+
           for i in {0..2}
           do
             for ip in $(echo -n {{ .etcd_member_kubernetes_control_plane_ip_list }} | tr ',' '\n' | grep -v {{.network.ip}} | shuf )
