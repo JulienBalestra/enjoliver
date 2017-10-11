@@ -4,28 +4,13 @@ from sqlalchemy.orm import joinedload
 
 import smartdb
 import sync
-from model import Machine, MachineInterface
+from model import Machine, MachineInterface, Schedule, MachineDisk, MachineCurrentState, LifecycleIgnition, LifecycleRolling
 
 
 class UserInterfaceRepository:
     """
     Get the data for the User Interface View
     """
-    vuejs_data = {
-        "gridColumns": [
-            "MAC",
-            "CIDR",
-            "FQDN",
-            "DiskProfile",
-            "Roles",
-            "LastState",
-            "UpdateStrategy",
-            "UpToDate",
-            "LastReport",
-            "LastChange",
-        ],
-        "gridData": []
-    }
 
     def __init__(self, smart: smartdb.SmartDatabaseClient):
         self.smart = smart
@@ -35,46 +20,48 @@ class UserInterfaceRepository:
         TODO refactor this ugly stuff
         :return:
         """
-        data = copy.deepcopy(self.vuejs_data)
         with self.smart.new_session() as session:
-            for machine in session.query(Machine) \
-                    .options(joinedload("interfaces")) \
-                    .options(joinedload("lifecycle_ignition")) \
-                    .options(joinedload("schedules")) \
-                    .options(joinedload("disks")) \
-                    .options(joinedload("machine_state")) \
-                    .options(joinedload("lifecycle_rolling")) \
-                    .filter(MachineInterface.as_boot == True):
+            # Fetching data
+            mis = session.query(MachineInterface).filter(MachineInterface.as_boot == True).all()
+            mds = session.query(MachineDisk).all()
+            mss = session.query(MachineCurrentState).all()
+            lis = session.query(LifecycleIgnition).all()
+            lrs = session.query(LifecycleRolling).all()
+            srs = session.query(Schedule).all()
 
-                last_state = machine.machine_state[0].state_name if machine.machine_state else None
-                lifecycle_rolling = machine.lifecycle_rolling[0].strategy if machine.lifecycle_rolling else "Disable"
+        data = list()
+        for machine in session.query(Machine):
+            row = {}
 
-                if machine.lifecycle_ignition:
-                    ignition_updated_date = machine.lifecycle_ignition[0].updated_date
-                    ignition_up_to_date = machine.lifecycle_ignition[0].up_to_date
-                    ignition_last_change = machine.lifecycle_ignition[0].last_change_date
-                else:
-                    ignition_updated_date, ignition_up_to_date, ignition_last_change = None, None, None
+            # Filtering data
+            md = [md for md in mds if md.machine_id == machine.id]
+            mi = [mi for mi in mis if mi.machine_id == machine.id]
+            ms = [ms for ms in mss if ms.machine_id == machine.id]
+            li = [li for li in lis if li.machine_id == machine.id]
+            lr = [lr for lr in lrs if lr.machine_id == machine.id]
+            sr = [sr for sr in srs if sr.machine_id == machine.id]
 
-                disks = list()
-                if machine.disks:
-                    for disk in machine.disks:
-                        disks.append({
-                            "path": disk.path,
-                            "size-bytes": disk.size
-                        })
-                row = {
-                    "Roles": ",".join([r.role for r in machine.schedules]),
-                    "FQDN": machine.interfaces[0].fqdn,
-                    "CIDR": machine.interfaces[0].cidrv4,
-                    "MAC": machine.interfaces[0].mac,
-                    "LastState": last_state,
-                    "LastReport": ignition_updated_date,
-                    "LastChange": ignition_last_change,
-                    "UpToDate": ignition_up_to_date,
-                    "UpdateStrategy": lifecycle_rolling,
-                    "DiskProfile": sync.ConfigSyncSchedules.compute_disks_size(disks)
-                }
-                data["gridData"].append(row)
+            # Processing data
+            disks = list()
+            if md:
+                for disk in md:
+                    disks.append({
+                        "path": disk.path,
+                        "size-bytes": disk.size
+                    })
+
+            # Adding data
+            row['LastState'] = ms[0].state_name if ms else None
+            row['FQDN'] = mi[0].fqdn if mi else None
+            row['CIDR'] = mi[0].cidrv4 if mi else None
+            row['MAC'] = mi[0].mac if mi else None
+            row['Roles'] = ",".join([r.role for r in sr])
+            row['DiskProfile'] = sync.ConfigSyncSchedules.compute_disks_size(disks)
+            row['LastReport'] = li[0].updated_date if li else None
+            row['UpToDate'] = li[0].up_to_date if li else None
+            row['LastChange'] = li[0].last_change_date if li else None
+            row['UpdateStrategy'] = lr[0].strategy if lr else "Disable"
+
+            data.append(row)
 
         return data

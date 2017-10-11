@@ -29,7 +29,7 @@
         this.$http.get('/ui/view/machine')
           .then(function (response) {
             this.loading = false
-            this.rows = response.data.gridData
+            this.rows = response.data
           }, function (err) {
             this.error = err
           })

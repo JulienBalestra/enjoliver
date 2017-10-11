@@ -19,7 +19,7 @@ class TestMachineStateRepo(unittest.TestCase):
 
     def test_empty(self):
         ui = user_interface_repo.UserInterfaceRepository(self.smart)
-        self.assertEqual(ui.vuejs_data, ui.get_machines_overview())
+        self.assertEqual([], ui.get_machines_overview())
 
     def test_one_machine_with_only_interfaces(self):
         mac = "00:00:00:00:00:00"
@@ -34,8 +34,8 @@ class TestMachineStateRepo(unittest.TestCase):
                                  as_boot=True, gateway="1.1.1.1", name="lol"))
             session.commit()
 
-        expect = copy.deepcopy(user_interface_repo.UserInterfaceRepository.vuejs_data)
-        expect["gridData"] = [
+        expect = list()
+        expect.append(
             {
                 'CIDR': '127.0.0.1/8',
                 'LastReport': None,
@@ -47,9 +47,9 @@ class TestMachineStateRepo(unittest.TestCase):
                 'DiskProfile': 'inMemory',
                 'LastState': None,
                 'Roles': ''}
-        ]
+        )
         ui = user_interface_repo.UserInterfaceRepository(self.smart)
-        self.assertEqual(expect, ui.get_machines_overview())
+        self.assertCountEqual(expect, ui.get_machines_overview())
 
     def test_one_machine_full(self):
         mac = "00:00:00:00:00:00"
@@ -70,8 +70,8 @@ class TestMachineStateRepo(unittest.TestCase):
             )
             session.commit()
 
-        expect = copy.deepcopy(user_interface_repo.UserInterfaceRepository.vuejs_data)
-        expect["gridData"] = [
+        expect = list()
+        expect.append(
             {
                 'CIDR': '127.0.0.1/8',
                 'LastReport': None,
@@ -83,7 +83,7 @@ class TestMachineStateRepo(unittest.TestCase):
                 'DiskProfile': 'S',
                 'LastState': MachineStates.discovery,
                 'Roles': ''}
-        ]
+        )
         ui = user_interface_repo.UserInterfaceRepository(self.smart)
         data = ui.get_machines_overview()
-        self.assertEqual(expect, data)
+        self.assertCountEqual(expect, data)
