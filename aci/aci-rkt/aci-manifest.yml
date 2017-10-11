@@ -1,4 +1,4 @@
-name: enjoliver.local/rkt:1.29.0
+name: enjoliver.local/rkt:latest
 
 builder:
   dependencies:
