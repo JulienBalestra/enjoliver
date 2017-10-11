@@ -10,14 +10,11 @@ apt-get update -qq
 
 mkdir -pv /go/src/github.com/kubernetes-incubator/rktlet
 
-git clone https://github.com/kinvolk/rktlet -b iaguis/rktlet-fixes /go/src/github.com/kubernetes-incubator/rktlet
+git clone https://github.com/kubernetes-incubator/rktlet /go/src/github.com/kubernetes-incubator/rktlet
 cd /go/src/github.com/kubernetes-incubator/rktlet
 
 git config --global user.email "julien.balestra@gmail.com"
 git config --global user.name "JulienBalestra"
-
-git fetch --all
-git cherry-pick ed78af132317567038f59c563b8e854e71e41dac
 
 # Apply custom patches
 PATCHES_DIR="${ACI_HOME}/patches"

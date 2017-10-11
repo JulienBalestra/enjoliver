@@ -497,7 +497,13 @@ systemd:
       enable: true
       contents: |
         [Service]
-        ExecStart=/usr/bin/rktlet --net=bond0
+        ExecStart=/usr/bin/rktlet \
+          --net=bond0 \
+          --stream-server-address={{.network.ip}}:10241 \
+          --rkt-data-dir=/var/lib/rkt
+        ExecStopPost=-/bin/rm -v /var/run/rktlet.sock
+        Restart=on-failure
+        RestartSec=5s
         [Install]
         WantedBy=multi-user.target
 
