@@ -1,7 +1,6 @@
 import datetime
-import unittest
-
 import time
+import unittest
 
 import ops
 from app import configs
@@ -19,236 +18,63 @@ class TestModel(unittest.TestCase):
         raise NotImplementedError
 
     @staticmethod
-    def set_up_class_checks(smart, ignition_journal_path):
+    def set_up_class_checks(smart):
         model.BASE.metadata.drop_all(smart.get_engine_connection())
         model.BASE.metadata.create_all(smart.get_engine_connection())
         with smart.new_session() as session:
             ops.health_check(session, time.time(), "unittest")
-        with smart.new_session() as session:
-            fetch = crud.FetchDiscovery(session, ignition_journal_path)
-            assert fetch.get_all_interfaces() == []
-            assert fetch.get_all() == []
-            assert fetch.get_ignition_journal("") == []
-            assert fetch.get_ignition_journal(posts.M01["boot-info"]["uuid"]) == []
 
     # @unittest.skip("")
     def test_00(self):
-        with self.smart.new_session() as session:
-            inject = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M01)
-            inject.apply()
-
-        with self.smart.new_session() as session:
-            fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
-            interfaces = fetch.get_all_interfaces()
-            self.assertEqual([
-                {
-                    'name': u'eth0',
-                    'as_boot': True,
-                    'netmask': 21,
-                    'mac': u'52:54:00:e8:32:5b',
-                    'ipv4': u'172.20.0.65',
-                    'machine': u'b7f5f93a-b029-475f-b3a4-479ba198cb8a',
-                    'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
-                    'cidrv4': u'172.20.0.65/21',
-                    "gateway": "172.20.0.1",
-                    'fqdn': None,
-                }
-            ], interfaces)
-            journal = fetch.get_ignition_journal(posts.M01["boot-info"]["uuid"])
-            self.assertEqual(len(journal), len(posts.M01["ignition-journal"]))
-
-    # @unittest.skip("")
-    def test_00_1(self):
-        with self.smart.new_session() as session:
-            i = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M01)
-            i.apply()
-
-        with self.smart.new_session() as session:
-            fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
-            interfaces = fetch.get_all_interfaces()
-            self.assertEqual([
-                {
-                    'name': u'eth0',
-                    'as_boot': True,
-                    'netmask': 21,
-                    'mac': u'52:54:00:e8:32:5b',
-                    'ipv4': u'172.20.0.65',
-                    'machine': u'b7f5f93a-b029-475f-b3a4-479ba198cb8a',
-                    'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
-                    'cidrv4': u'172.20.0.65/21',
-                    "gateway": "172.20.0.1",
-                    'fqdn': None,
-                }
-            ], interfaces)
-
-        with self.smart.new_session() as session:
-            fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
-            journal = fetch.get_ignition_journal(posts.M01["boot-info"]["uuid"])
-            self.assertEqual(len(journal), len(posts.M01["ignition-journal"]))
+        for _ in range(3):
+            self.repositories.discovery.upsert(posts.M01)
+            disco = self.repositories.discovery.fetch_all_discovery()
+            expect = {'boot-info': {'uuid': 'b7f5f93a-b029-475f-b3a4-479ba198cb8a',
+                                    'mac': '52:54:00:e8:32:5b'},
+                      'disks': [{'path': '/dev/sda', 'size-bytes': 21474836480}],
+                      'interfaces': [
+                          {'gateway': '172.20.0.1', 'as_boot': True, 'fqdn': None, 'mac': '52:54:00:e8:32:5b',
+                           'netmask': 21, 'name': 'eth0', 'cidrv4': '172.20.0.65/21', 'ipv4': '172.20.0.65'}]}
+            self.assertEqual(1, len(disco))
+            machine = disco[0]
+            self.assertEqual(expect["boot-info"]["uuid"], machine["boot-info"]["uuid"])
+            self.assertEqual(expect["boot-info"]["mac"], machine["boot-info"]["mac"])
+            self.assertListEqual(expect["interfaces"], machine["interfaces"])
+            self.assertListEqual(expect["disks"], machine["disks"])
 
     def test_01(self):
-        with self.smart.new_session() as session:
-            i = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M02)
-            i.apply()
-            fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
-            interfaces = fetch.get_all_interfaces()
-            self.assertEqual(len(interfaces), 2)
-            self.assertEqual(len(fetch.get_ignition_journal(posts.M02["boot-info"]["uuid"])), 39)
-            self.assertEqual([
-                {
-                    'machine': u'b7f5f93a-b029-475f-b3a4-479ba198cb8a',
-                    'mac': u'52:54:00:e8:32:5b',
-                    'name': u'eth0',
-                    'cidrv4': u'172.20.0.65/21',
-                    'as_boot': True,
-                    'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
-                    'netmask': 21,
-                    'ipv4': u'172.20.0.65',
-                    "gateway": "172.20.0.1",
-                    'fqdn': None,
-
-                },
-                {
-                    'machine': u'a21a9123-302d-488d-976c-5d6ded84a32d',
-                    'mac': u'52:54:00:a5:24:f5',
-                    'name': u'eth0',
-                    'cidrv4': u'172.20.0.51/21',
-                    'as_boot': True,
-                    'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
-                    'netmask': 21,
-                    'ipv4': u'172.20.0.51',
-                    "gateway": "172.20.0.1",
-                    'fqdn': None,
-                }
-            ], interfaces)
-
-    def test_02(self):
-        with self.smart.new_session() as session:
-            m1 = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M01)
-            m1.apply()
-            i = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M02)
-            i.apply()
-            i = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M02)
-            i.apply()
-            fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
-            interfaces = fetch.get_all_interfaces()
-            self.assertEqual(len(interfaces), 2)
-            self.assertEqual(len(fetch.get_ignition_journal(posts.M02["boot-info"]["uuid"])), 39)
-            self.assertEqual([
-                {'machine': u'b7f5f93a-b029-475f-b3a4-479ba198cb8a', 'mac': u'52:54:00:e8:32:5b', 'name': u'eth0',
-                 'cidrv4': u'172.20.0.65/21', 'as_boot': True,
-                 'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
-                 'netmask': 21, 'ipv4': u'172.20.0.65', 'fqdn': None,
-                 "gateway": "172.20.0.1"},
-                {'machine': u'a21a9123-302d-488d-976c-5d6ded84a32d', 'mac': u'52:54:00:a5:24:f5', 'name': u'eth0',
-                 'cidrv4': u'172.20.0.51/21', 'as_boot': True,
-                 'chassis_name': u'rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4',
-                 'netmask': 21, 'ipv4': u'172.20.0.51', 'fqdn': None,
-                 "gateway": "172.20.0.1"}
-            ], interfaces)
+        for _ in range(3):
+            self.repositories.discovery.upsert(posts.M02)
+            disco = self.repositories.discovery.fetch_all_discovery()
+            self.assertEqual(2, len(disco))
+            disco.sort(key=lambda x: x["boot-info"]["created-date"])
+            expects = [{'boot-info': {'uuid': 'b7f5f93a-b029-475f-b3a4-479ba198cb8a',
+                                      'mac': '52:54:00:e8:32:5b'},
+                        'disks': [{'path': '/dev/sda', 'size-bytes': 21474836480}],
+                        'interfaces': [
+                            {'gateway': '172.20.0.1', 'as_boot': True, 'fqdn': None, 'mac': '52:54:00:e8:32:5b',
+                             'netmask': 21, 'name': 'eth0', 'cidrv4': '172.20.0.65/21', 'ipv4': '172.20.0.65'}]},
+                       {'boot-info': {
+                           'mac': '52:54:00:a5:24:f5', 'uuid': 'a21a9123-302d-488d-976c-5d6ded84a32d',
+                       },
+                           'interfaces': [
+                               {'gateway': '172.20.0.1', 'fqdn': None, 'ipv4': '172.20.0.51', 'name': 'eth0',
+                                'as_boot': True,
+                                'mac': '52:54:00:a5:24:f5', 'cidrv4': '172.20.0.51/21', 'netmask': 21}],
+                           'disks': [{'size-bytes': 21474836480, 'path': '/dev/sda'}]}
+                       ]
+            for i, expect in enumerate(expects):
+                machine = disco[i]
+                self.assertEqual(expect["boot-info"]["uuid"], machine["boot-info"]["uuid"])
+                self.assertEqual(expect["boot-info"]["mac"], machine["boot-info"]["mac"])
+                self.assertListEqual(expect["interfaces"], machine["interfaces"])
+                self.assertListEqual(expect["disks"], machine["disks"])
 
     def test_03(self):
-        with self.smart.new_session() as session:
-            i = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M03)
-            i.apply()
-            fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
-            interfaces = fetch.get_all_interfaces()
-            self.assertEqual(len(interfaces), 3)
-            self.assertEqual(len(fetch.get_ignition_journal(posts.M03["boot-info"]["uuid"])), 39)
-
-    def test_04(self):
-        with self.smart.new_session() as session:
-            for p in posts.ALL:
-                i = crud.InjectDiscovery(session, self.ignition_journal_path, p)
-                i.apply()
-            fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
-            interfaces = fetch.get_all_interfaces()
-            self.assertEqual(len(posts.ALL), len(interfaces))
-
-    def test_05(self):
-        with self.smart.new_session() as session:
-            for p in posts.ALL:
-                i = crud.InjectDiscovery(session, self.ignition_journal_path, p)
-                i.apply()
-
-            fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
-            interfaces = fetch.get_all_interfaces()
-            self.assertEqual(len(posts.ALL), len(interfaces))
-
-    def test_06(self):
-        with self.smart.new_session() as session:
-            i = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M16)
-            i.apply()
-
-    def test_07(self):
-        with self.smart.new_session() as session:
-            with self.assertRaises(KeyError):
-                i = crud.InjectDiscovery(session, self.ignition_journal_path, {
-                    u'boot-info': {},
-                    u'lldp': {},
-                    u'interfaces': []
-                })
-                i.apply()
-            fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
-            interfaces = fetch.get_all_interfaces()
-            self.assertEqual(len(posts.ALL), len(interfaces))
-            machines = fetch.get_all()
-
-            self.assertEqual(len(posts.ALL), len(fetch.get_all()))
-            line_nb = 0
-            for m in machines:
-                line_nb += len(fetch.get_ignition_journal(m["boot-info"]["uuid"]))
-
-            self.assertEqual(587, line_nb)
-
-    def test_08(self):
-        with self.smart.new_session() as session:
-            fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
-            all_data = fetch.get_all_interfaces()
-            chassis_names = [k["chassis_name"] for k in all_data]
-            self.assertEqual(4, chassis_names.count(None))
-            self.assertEqual(19, chassis_names.count("rkt-fe037484-d9c1-4f73-be5e-2c6a7b622fb4"))
-
-    def test_09(self):
-        with self.smart.new_session() as session:
-            inject = crud.InjectDiscovery(session, self.ignition_journal_path, posts.M01)
-            inject.apply()
-            fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
-            all_data_new = fetch.get_all()
-            self.assertEqual(all_data_new[0]["boot-info"]["uuid"], posts.M01["boot-info"]["uuid"])
-
-    def test_091(self):
-        p = {
-            u'boot-info': {
-                u'random-id': u'618e2763-7ff6-4493-babd-54503896bbe0',
-                u'mac': u'40:a8:f0:3d:ed:a0',
-                u'uuid': u'30343536-3998-5a00-4a34-343630353047'
-            },
-            u'lldp': {
-                u'data': {
-                    u'interfaces': None
-                }, u'is_file': True
-            },
-            'disks': [{'size-bytes': 21474836480, 'path': '/dev/sda'}],
-            u'interfaces': [
-                {u'name': u'lo', u'netmask': 8, u'mac': u'', u'ipv4': u'127.0.0.1', u'cidrv4': u'127.0.0.1/8',
-                 u'gateway': u'10.99.63.254'},
-                {u'name': u'eno1', u'netmask': 19, u'mac': u'40:a8:f0:3d:ed:a0', u'ipv4': u'10.99.34.1',
-                 u'cidrv4': u'10.99.34.1/19', u'gateway': u'10.99.63.254'},
-                {u'name': u'eno2', u'netmask': 19, u'mac': u'40:a8:f0:3d:ed:a1', u'ipv4': u'10.99.34.1',
-                 u'cidrv4': u'10.99.34.1/19', u'gateway': u'10.99.63.254'},
-                {u'name': u'eno3', u'netmask': 19, u'mac': u'40:a8:f0:3d:ed:a2', u'ipv4': u'10.99.34.1',
-                 u'cidrv4': u'10.99.34.1/19', u'gateway': u'10.99.63.254'},
-                {u'name': u'eno4', u'netmask': 19, u'mac': u'40:a8:f0:3d:ed:a3', u'ipv4': u'10.99.34.1',
-                 u'cidrv4': u'10.99.34.1/19', u'gateway': u'10.99.63.254'}
-            ],
-            u'ignition-journal': None
-        }
-        with self.smart.new_session() as session:
-            inject = crud.InjectDiscovery(session, self.ignition_journal_path, p)
-            inject.apply()
-            fetch = crud.FetchDiscovery(session, self.ignition_journal_path)
-            fetch.get_all()
+        for m in posts.ALL:
+            self.repositories.discovery.upsert(m)
+        disco = self.repositories.discovery.fetch_all_discovery()
+        self.assertEqual(len(posts.ALL), len(disco))
 
     def test_10(self):
         mac = posts.M01["boot-info"]["mac"]
@@ -578,7 +404,7 @@ class TestModel(unittest.TestCase):
     def test_28(self):
         with self.smart.new_session() as session:
             a = crud.FetchSchedule(session)
-            self.assertEqual(16, len(a.get_available_machines()))
+            self.assertEqual(15, len(a.get_available_machines()))
 
     def test_30(self):
         with self.smart.new_session() as session:
