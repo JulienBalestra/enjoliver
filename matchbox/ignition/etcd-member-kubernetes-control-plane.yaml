@@ -466,7 +466,7 @@ systemd:
         ExecStartPre=/usr/bin/etcdctl --endpoints http://127.0.0.1:{{.kubernetes_etcd_client_port}} endpoint status
         ExecStart=/usr/bin/hyperkube apiserver \
           --apiserver-count={{.kubernetes_apiserver_count}} \
-          --advertise-address={{.network.ip}} \
+          --advertise-address={{.network.ip_or_fqdn}} \
           --insecure-bind-address={{.kubernetes_apiserver_insecure_bind_address}} \
           --insecure-port={{.kubernetes_apiserver_insecure_port}} \
           --allow-privileged=true \
@@ -973,7 +973,7 @@ storage:
           MAC='{{.mac}}'
           NETWORK_CIDRV4='{{.network.cidrv4}}'
           NETWORK_GATEWAY='{{.network.gateway}}'
-          NETWORK_IP='{{.network.ip}}'
+          NETWORK_IP='{{.network.ip_or_fqdn}}'
           REQUEST_QUERY_MAC='{{.request.query.mac}}'
           REQUEST_QUERY_UUID='{{.request.query.uuid}}'
           REQUEST_RAW_QUERY='{{.request.raw_query}}'
@@ -1066,7 +1066,7 @@ storage:
             sync = "false"
           }
           listener "tcp" {
-            address     = "{{.network.ip}}:{{.vault_port}}"
+            address     = "{{.network.ip_or_fqdn}}:{{.vault_port}}"
             tls_cert_file = "/etc/vault.d/vault/server.certificate"
             tls_key_file  = "/etc/vault.d/vault/server.private_key"
           }
@@ -1150,10 +1150,10 @@ storage:
           ETCD_MEMBER_CLIENT_URI_LIST={{.vault_etcd_member_client_uri_list}}
           ETCD_MEMBER_PEER_URI_LIST={{.vault_etcd_member_peer_uri_list}}
           ETCD_DATA_DIR={{.vault_etcd_data_dir}}
-          ETCD_LISTEN_CLIENT_URLS="http://127.0.0.1:{{.vault_etcd_client_port}},https://{{.network.ip}}:{{.vault_etcd_client_port}}"
+          ETCD_LISTEN_CLIENT_URLS="http://127.0.0.1:{{.vault_etcd_client_port}},https://{{.network.ip_or_fqdn}}:{{.vault_etcd_client_port}}"
           ETCD_LISTEN_PEER_URLS="https://0.0.0.0:{{.vault_etcd_peer_port}}"
 
-          NETWORK_IP={{.network.ip}}
+          NETWORK_IP={{.network.ip_or_fqdn}}
           ETCD_FLAGS="--insecure-transport=false --insecure-skip-tls-verify=true"
 
     - path: /etc/etcd-kubernetes
@@ -1168,10 +1168,10 @@ storage:
           ETCD_MEMBER_CLIENT_URI_LIST={{.kubernetes_etcd_member_client_uri_list}}
           ETCD_MEMBER_PEER_URI_LIST={{.kubernetes_etcd_member_peer_uri_list}}
           ETCD_DATA_DIR={{.kubernetes_etcd_data_dir}}
-          ETCD_LISTEN_CLIENT_URLS="http://127.0.0.1:{{.kubernetes_etcd_client_port}},https://{{.network.ip}}:{{.kubernetes_etcd_client_port}}"
+          ETCD_LISTEN_CLIENT_URLS="http://127.0.0.1:{{.kubernetes_etcd_client_port}},https://{{.network.ip_or_fqdn}}:{{.kubernetes_etcd_client_port}}"
           ETCD_LISTEN_PEER_URLS="https://0.0.0.0:{{.kubernetes_etcd_peer_port}}"
 
-          NETWORK_IP={{.network.ip}}
+          NETWORK_IP={{.network.ip_or_fqdn}}
           ETCD_FLAGS="--cert=/etc/vault.d/etcd-kubernetes/client.certificate \
           --key=/etc/vault.d/etcd-kubernetes/client.private_key \
           --cacert=/etc/vault.d/etcd-kubernetes/client.issuing_ca \
@@ -1190,10 +1190,10 @@ storage:
           ETCD_MEMBER_CLIENT_URI_LIST={{.fleet_etcd_member_client_uri_list}}
           ETCD_MEMBER_PEER_URI_LIST={{.fleet_etcd_member_peer_uri_list}}
           ETCD_DATA_DIR={{.fleet_etcd_data_dir}}
-          ETCD_LISTEN_CLIENT_URLS="http://127.0.0.1:{{.fleet_etcd_client_port}},https://{{.network.ip}}:{{.fleet_etcd_client_port}},http://{{.network.ip}}:2379"
+          ETCD_LISTEN_CLIENT_URLS="http://127.0.0.1:{{.fleet_etcd_client_port}},https://{{.network.ip_or_fqdn}}:{{.fleet_etcd_client_port}},http://{{.network.ip_or_fqdn}}:2379"
           ETCD_LISTEN_PEER_URLS="https://0.0.0.0:{{.fleet_etcd_peer_port}}"
 
-          NETWORK_IP={{.network.ip}}
+          NETWORK_IP={{.network.ip_or_fqdn}}
           ETCD_FLAGS="--cert=/etc/vault.d/etcd-fleet/client.certificate \
           --key=/etc/vault.d/etcd-fleet/client.private_key \
           --cacert=/etc/vault.d/etcd-fleet/client.issuing_ca \
@@ -1224,7 +1224,7 @@ storage:
 
           for i in {0..2}
           do
-            for ip in $(echo -n {{ .etcd_member_kubernetes_control_plane_ip_list }} | tr ',' '\n' | grep -v {{.network.ip}} | shuf )
+            for ip in $(echo -n {{ .etcd_member_kubernetes_control_plane_ip_list }} | tr ',' '\n' | grep -v {{.network.ip_or_fqdn}} | shuf )
             do
               ping -c 1 ${ip} && exit 0
               sleep ${i}
@@ -1268,7 +1268,7 @@ storage:
 
                 # Check if this new member make a replacement
                 REMOVE=$(etcdctl ${ETCD_FLAGS} --endpoints ${ETCD_MEMBER_CLIENT_URI_LIST} member list | \
-                  grep {{.network.ip}} | cut -f1 -d ',')
+                  grep {{.network.ip_or_fqdn}} | cut -f1 -d ',')
 
                 if [ $REMOVE ]
                 then
@@ -1321,7 +1321,7 @@ storage:
       contents:
         inline: |
            export PATH=/opt/bin:$PATH
-           export PRIVATE_IPV4={{.network.ip}}
+           export PRIVATE_IPV4={{.network.ip_or_fqdn}}
            export VAULT_ADDR=http://127.0.0.1:{{.vault_port}}
 
     - path: /etc/modules-load.d/network.conf
@@ -1466,14 +1466,14 @@ storage:
 
           retry fleetctl --endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} \
             --driver etcd list-machines \
-            --fields ip --no-legend | grep -c {{.network.ip}}
+            --fields ip --no-legend | grep -c {{.network.ip_or_fqdn}}
 
           retry fleetctl \
             --ca-file /etc/vault.d/etcd-fleet/client.issuing_ca \
             --cert-file /etc/vault.d/etcd-fleet/client.certificate \
             --key-file /etc/vault.d/etcd-fleet/client.private_key \
-            --driver etcd --endpoint https://{{.network.ip}}:{{.fleet_etcd_client_port}},{{.fleet_etcd_member_client_uri_list}} \
-            list-machines --fields ip --no-legend | grep -c {{.network.ip}}
+            --driver etcd --endpoint https://{{.network.ip_or_fqdn}}:{{.fleet_etcd_client_port}},{{.fleet_etcd_member_client_uri_list}} \
+            list-machines --fields ip --no-legend | grep -c {{.network.ip_or_fqdn}}
 
           retry kubectl -s http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} uncordon {{.kubernetes_node_name}}
 
@@ -1483,7 +1483,7 @@ storage:
 
           echo "remove the lock"
           locksmithctl -endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} unlock "{{.request.raw_query}}" || true
-          echo "$(hostname) {{.network.ip}} is ready"
+          echo "$(hostname) {{.network.ip_or_fqdn}} is ready"
 
     - path: /opt/bin/vault-config
       mode: 0544
@@ -1492,7 +1492,7 @@ storage:
         inline: |
           #!/bin/bash
 
-          KEY="https://{{.network.ip}}:{{.vault_port}}"
+          KEY="https://{{.network.ip_or_fqdn}}:{{.vault_port}}"
           ls -l /etc/vault.d/vault/server.certificate /etc/vault.d/vault/server.private_key || {
             curl -f "http://127.0.0.1:{{.vault_etcd_client_port}}/v2/keys/initier?prevExist=false" -XPUT -d "value=${KEY}" || \
               curl -f "http://127.0.0.1:{{.vault_etcd_client_port}}/v2/keys/initier?prevValue=${KEY}" -XPUT -d "value=${KEY}" && {
@@ -1527,8 +1527,8 @@ storage:
           curl http://127.0.0.1:{{.vault_port}}/v1/ | jq -re .errors || exit 1
 
           vault init -check && {
-            echo "GET vault: https://{{.network.ip}}:{{.vault_port}}/v1/"
-            curl --insecure https://{{.network.ip}}:{{.vault_port}}/v1/ || {
+            echo "GET vault: https://{{.network.ip_or_fqdn}}:{{.vault_port}}/v1/"
+            curl --insecure https://{{.network.ip_or_fqdn}}:{{.vault_port}}/v1/ || {
               echo "vault already init but not running with TLS"
               retry ls -l /etc/vault.d/vault/server.certificate /etc/vault.d/vault/server.private_key
               systemctl restart vault
@@ -1584,8 +1584,8 @@ storage:
 
           vault write -format=json pki/vault/issue/server \
             ttl=17520h \
-            common_name={{.network.ip}} \
-            ip_sans={{.network.ip}} \
+            common_name={{.network.ip_or_fqdn}} \
+            ip_sans={{.network.ip_or_fqdn}} \
               > /etc/vault.d/vault/server-pki.json
 
           for item in certificate issuing_ca private_key
@@ -1805,7 +1805,7 @@ storage:
 
           # The common_name default is the ip address
           test ${COMMON_NAME} || {
-            COMMON_NAME={{.network.ip}}
+            COMMON_NAME={{.network.ip_or_fqdn}}
             echo "setting COMMON_NAME=${COMMON_NAME}"
           }
 
@@ -1821,7 +1821,7 @@ storage:
                 -XPOST --data "{
                   \"common_name\": \"${COMMON_NAME}\",
                   \"ttl\": \"17520h\",
-                  \"ip_sans\": \"{{.network.ip}},127.0.0.1,{{.network.perennial_host_ip}}\"
+                  \"ip_sans\": \"{{.network.ip_or_fqdn}},127.0.0.1,{{.network.perennial_host_ip}}\"
                 }" > /etc/vault.d/${1}/${2}-pki.json
               if [ $? -eq 0 ]
               then

@@ -430,7 +430,7 @@ storage:
           MAC='{{.mac}}'
           NETWORK_CIDRV4='{{.network.cidrv4}}'
           NETWORK_GATEWAY='{{.network.gateway}}'
-          NETWORK_IP='{{.network.ip}}'
+          NETWORK_IP='{{.network.ip_or_fqdn}}'
           REQUEST_QUERY_MAC='{{.request.query.mac}}'
           REQUEST_QUERY_UUID='{{.request.query.uuid}}'
           REQUEST_RAW_QUERY='{{.request.raw_query}}'
@@ -553,10 +553,10 @@ storage:
           ETCD_NAME={{.etcd_name}}
           ETCD_PROXY=on
           ETCD_INITIAL_CLUSTER={{.fleet_etcd_initial_cluster}}
-          ETCD_ADVERTISE_CLIENT_URLS=https://{{.network.ip}}:{{.fleet_etcd_client_port}}
+          ETCD_ADVERTISE_CLIENT_URLS=https://{{.network.ip_or_fqdn}}:{{.fleet_etcd_client_port}}
           ETCD_MEMBER_CLIENT_URI_LIST={{.fleet_etcd_member_client_uri_list}}
           ETCD_DATA_DIR={{.fleet_etcd_data_dir}}
-          ETCD_LISTEN_CLIENT_URLS="http://127.0.0.1:{{.fleet_etcd_client_port}},https://{{.network.ip}}:{{.fleet_etcd_client_port}},http://{{.network.ip}}:2379"
+          ETCD_LISTEN_CLIENT_URLS="http://127.0.0.1:{{.fleet_etcd_client_port}},https://{{.network.ip_or_fqdn}}:{{.fleet_etcd_client_port}},http://{{.network.ip_or_fqdn}}:2379"
 
     - path: /opt/bin/etcdctl3
       filesystem: root
@@ -572,7 +572,7 @@ storage:
       contents:
         inline: |
            export PATH=/opt/bin:$PATH
-           export PRIVATE_IPV4={{.network.ip}}
+           export PRIVATE_IPV4={{.network.ip_or_fqdn}}
 
     - path: /etc/modules-load.d/network.conf
       mode: 0644
@@ -691,14 +691,14 @@ storage:
 
           retry fleetctl --endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} \
             --driver etcd list-machines \
-            --fields ip --no-legend | grep -c {{.network.ip}}
+            --fields ip --no-legend | grep -c {{.network.ip_or_fqdn}}
 
           retry fleetctl \
             --ca-file /etc/vault.d/etcd-fleet/client.issuing_ca \
             --cert-file /etc/vault.d/etcd-fleet/client.certificate \
             --key-file /etc/vault.d/etcd-fleet/client.private_key \
-            --driver etcd --endpoint https://{{.network.ip}}:{{.fleet_etcd_client_port}},{{.fleet_etcd_member_client_uri_list}} \
-            list-machines --fields ip --no-legend | grep -c {{.network.ip}}
+            --driver etcd --endpoint https://{{.network.ip_or_fqdn}}:{{.fleet_etcd_client_port}},{{.fleet_etcd_member_client_uri_list}} \
+            list-machines --fields ip --no-legend | grep -c {{.network.ip_or_fqdn}}
 
           retry kubectl --kubeconfig /var/lib/kubelet/kubeconfig uncordon {{.kubernetes_node_name}}
 
@@ -708,7 +708,7 @@ storage:
 
           echo "remove the lock"
           locksmithctl -endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} unlock "{{.request.raw_query}}" || true
-          echo "$(hostname) {{.network.ip}} is ready"
+          echo "$(hostname) {{.network.ip_or_fqdn}} is ready"
 
     - path: /opt/bin/vault-token
       mode: 0544
@@ -817,7 +817,7 @@ storage:
 
           # The common_name default is the ip address
           test ${COMMON_NAME} || {
-            COMMON_NAME={{.network.ip}}
+            COMMON_NAME={{.network.ip_or_fqdn}}
             echo "setting COMMON_NAME=${COMMON_NAME}"
           }
 
@@ -833,7 +833,7 @@ storage:
                 -XPOST --data "{
                   \"common_name\": \"${COMMON_NAME}\",
                   \"ttl\": \"17520h\",
-                  \"ip_sans\": \"{{.network.ip}},127.0.0.1,{{.network.perennial_host_ip}}\"
+                  \"ip_sans\": \"{{.network.ip_or_fqdn}},127.0.0.1,{{.network.perennial_host_ip}}\"
                 }" > /etc/vault.d/${1}/${2}-pki.json
               if [ $? -eq 0 ]
               then
@@ -956,7 +956,7 @@ storage:
 
           listen stats
             mode http
-            bind {{.network.ip}}:1937
+            bind {{.network.ip_or_fqdn}}:1937
             stats enable
             stats uri /
 

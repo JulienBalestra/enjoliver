@@ -83,3 +83,6 @@ fallbackntp: ["0.pool.ntp.org", "1.pool.ntp.org", "0.fr.pool.ntp.org"]
 
 vault_polling_sec: 30
 disks_ladder_gb: {S: 10, M: 20, L: 30}
+
+discovery_fqdn_verify: true
+sync_replace_ip_by_fqdn: false

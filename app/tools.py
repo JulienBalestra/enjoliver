@@ -1,7 +1,10 @@
-import socket
 import logging
+import socket
+
+from configs import EnjoliverConfig
 
 logger = logging.getLogger(__file__)
+EC = EnjoliverConfig()
 
 
 def get_mac_from_raw_query(request_raw_query: str):
@@ -43,6 +46,9 @@ def get_verified_dns_query(interface: dict):
                         name, r, interface["ipv4"], interface["mac"]))
             except socket.herror:
                 logger.error("Verify FAILED '%s':%s socket.herror returning None" % (name, interface["ipv4"]))
+                if EC.discovery_fqdn_verify is False:
+                    logger.warning("Adding a non verified fqdn entry: %s" % name)
+                    fqdn.append(name)
 
     except (KeyError, TypeError):
         logger.warning("No fqdn for %s returning None" % interface["ipv4"])

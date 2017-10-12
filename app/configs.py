@@ -10,7 +10,7 @@ APP_PATH = os.path.dirname(os.path.abspath(__file__))
 PROJECT_PATH = os.path.dirname(APP_PATH)
 
 
-class EnjoliverConfig(object):
+class EnjoliverConfig:
     """
     Used to propagate easily the configuration inside the application
     """
@@ -200,6 +200,9 @@ class EnjoliverConfig(object):
 
         if self.logging_level.lower() == "debug":
             print("configs file: %s for %s" % (yaml_full_path, importer))
+
+        self.discovery_fqdn_verify = self.config_override("discovery_fqdn_verify", True)
+        self.sync_replace_ip_by_fqdn = self.config_override("sync_replace_ip_by_fqdn", False)
 
 
 if __name__ == '__main__':

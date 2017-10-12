@@ -292,6 +292,7 @@ class ConfigSyncSchedules(object):
                 "ip": m["ipv4"],
                 "subnet": cni_attr["subnet"],
                 "perennial_host_ip": EC.perennial_local_host_ip,
+                "ip_or_fqdn": fqdn if EC.sync_replace_ip_by_fqdn else m["ipv4"],
             },
             # host
             "hostname": dns_attr["shortname"],
