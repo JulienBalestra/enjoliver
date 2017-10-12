@@ -1,10 +1,10 @@
 import json
 import logging
 import os
-
-import requests
 import sys
 import time
+
+import requests
 from flasgger import Swagger
 from flask import Flask, request, json, jsonify, render_template, Response, make_response
 from werkzeug.contrib.cache import FileSystemCache
@@ -17,9 +17,7 @@ import smartdb
 import tools
 from configs import EnjoliverConfig
 from model import MachineStates
-from repositories.machine_discovery_repo import DiscoveryRepository
-from repositories.machine_state_repo import MachineStateRepository
-from repositories.user_interface_repo import UserInterfaceRepository
+from repositories.register import RepositoriesRegister
 from smartdb import SmartDatabaseClient
 
 EC = EnjoliverConfig(importer=__file__)
@@ -52,9 +50,7 @@ application.config["BACKUP_LOCK_KEY"] = EC.backup_lock_key
 
 SMART = SmartDatabaseClient
 # repositories
-machine_state = MachineStateRepository
-view_user_interface = UserInterfaceRepository
-discovery_repo = DiscoveryRepository
+repositories = RepositoriesRegister
 
 if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", ""):
     logging.basicConfig(level=EC.logging_level, stream=sys.stderr, format=EC.logging_formatter)
@@ -67,9 +63,7 @@ if __name__ == '__main__' or "gunicorn" in os.getenv("SERVER_SOFTWARE", ""):
 
     SMART = SmartDatabaseClient(EC.db_uri)
     # repositories
-    machine_state = MachineStateRepository(SMART)
-    view_user_interface = UserInterfaceRepository(SMART)
-    discovery_repo = DiscoveryRepository(SMART)
+    repositories = RepositoriesRegister(SMART)
 
 
 @application.route("/shutdown", methods=["POST"])
@@ -362,7 +356,7 @@ def report_lifecycle_coreos_install(status, request_raw_query):
             inject.refresh_lifecycle_coreos_install(success)
 
     op(caller=request.url_rule)
-    machine_state.update(
+    repositories.machine_state.update(
         mac=tools.get_mac_from_raw_query(request_raw_query),
         state=MachineStates.installation_succeed if success else MachineStates.installation_failed)
     return jsonify({"success": success, "request_raw_query": request_raw_query}), 200
@@ -429,8 +423,8 @@ def record_discovery_data():
         return err
 
     try:
-        new = discovery_repo.upsert(discovery_data)
-        machine_state.update(discovery_data["boot-info"]["mac"], MachineStates.discovery)
+        new = repositories.discovery.upsert(discovery_data)
+        repositories.machine_state.update(discovery_data["boot-info"]["mac"], MachineStates.discovery)
         CACHE.delete(request.path)
         return jsonify({"new-discovery": new}), 200
     except TypeError as e:
@@ -454,7 +448,7 @@ def get_discovery_data():
     """
     all_data = CACHE.get(request.path)
     if not all_data:
-        all_data = discovery_repo.fetch_all_discovery()
+        all_data = repositories.discovery.fetch_all_discovery()
         CACHE.set(request.path, all_data, timeout=30)
     return jsonify(all_data)
 
@@ -861,12 +855,14 @@ def require_install_authorization(request_raw_query):
         lock = CACHE.get("lock-install")
         if lock is not None:
             app.logger.warning("Locked by %s" % lock)
-            machine_state.update(tools.get_mac_from_raw_query(request_raw_query), MachineStates.os_installation_denied)
+            repositories.machine_state.update(tools.get_mac_from_raw_query(request_raw_query),
+                                              MachineStates.os_installation_denied)
             return Response(response="Locked by %s" % lock, status=403)
         CACHE.set("lock-install", request_raw_query, timeout=EC.coreos_install_lock_seconds)
         app.logger.info("Granted to %s" % request_raw_query)
 
-    machine_state.update(tools.get_mac_from_raw_query(request_raw_query), MachineStates.os_installation_granted)
+    repositories.machine_state.update(tools.get_mac_from_raw_query(request_raw_query),
+                                      MachineStates.os_installation_granted)
     return Response(response="Granted", status=200)
 
 
@@ -927,7 +923,7 @@ def ipxe():
 
         mac = request.args.get("mac")
         if mac:
-            machine_state.update(mac.replace("-", ":"), MachineStates.booting)
+            repositories.machine_state.update(mac.replace("-", ":"), MachineStates.booting)
 
         return Response(response, status=200, mimetype="text/plain")
 
@@ -948,20 +944,20 @@ def user_interface():
 
 @application.route('/ui/view/machine', methods=['GET'])
 def user_view_machine():
-    res = jsonify(view_user_interface.get_machines_overview())
+    res = jsonify(repositories.user_interface.get_machines_overview())
     resp = make_response(res)
     resp.headers['Access-Control-Allow-Origin'] = '*'
 
-    return (resp)
+    return resp
 
 
 @application.route('/ui/view/states', methods=['GET'])
 def user_view_machine_statuses():
-    res = jsonify(machine_state.fetch(finished_in_less_than_min=30000000))
+    res = jsonify(repositories.machine_state.fetch(finished_in_less_than_min=30000000))
     resp = make_response(res)
     resp.headers['Access-Control-Allow-Origin'] = '*'
 
-    return (resp)
+    return resp
 
 
 if __name__ == "__main__":

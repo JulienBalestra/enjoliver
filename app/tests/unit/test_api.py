@@ -32,9 +32,7 @@ class TestAPI(unittest.TestCase):
         api.SMART = smart
         smart.create_base()
 
-        api.machine_state = api.MachineStateRepository(smart)
-        api.view_user_interface = api.UserInterfaceRepository(smart)
-        api.discovery_repo = api.DiscoveryRepository(smart)
+        api.repositories = api.RepositoriesRegister(smart)
 
         cls.app.testing = True
 

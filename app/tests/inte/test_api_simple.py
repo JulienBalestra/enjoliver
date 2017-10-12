@@ -54,7 +54,7 @@ class TestAPI(unittest.TestCase):
         smart = api.SmartDatabaseClient(ec.db_uri)
         smart.create_base()
         api.SMART = smart
-        api.machine_state = api.machine_state(smart)
+        api.repositories = api.RepositoriesRegister(smart)
         api.CACHE.clear()
 
         shutil.rmtree(ec.ignition_journal_dir, ignore_errors=True)
@@ -68,10 +68,6 @@ class TestAPI(unittest.TestCase):
         assert cls.p_matchbox.is_alive() is True
 
         cls.matchbox_running(ec.matchbox_uri, cls.p_matchbox)
-
-        api.machine_state = api.MachineStateRepository(smart)
-        api.view_user_interface = api.UserInterfaceRepository(smart)
-        api.discovery_repo = api.DiscoveryRepository(smart)
 
     @classmethod
     def tearDownClass(cls):
