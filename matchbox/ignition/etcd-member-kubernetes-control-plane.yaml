@@ -1466,14 +1466,14 @@ storage:
 
           retry fleetctl --endpoint http://127.0.0.1:{{.fleet_etcd_client_port}} \
             --driver etcd list-machines \
-            --fields ip --no-legend | grep -c {{.network.ip_or_fqdn}}
+            --fields ip --no-legend | grep -c {{.network.ip}}
 
           retry fleetctl \
             --ca-file /etc/vault.d/etcd-fleet/client.issuing_ca \
             --cert-file /etc/vault.d/etcd-fleet/client.certificate \
             --key-file /etc/vault.d/etcd-fleet/client.private_key \
             --driver etcd --endpoint https://{{.network.ip_or_fqdn}}:{{.fleet_etcd_client_port}},{{.fleet_etcd_member_client_uri_list}} \
-            list-machines --fields ip --no-legend | grep -c {{.network.ip_or_fqdn}}
+            list-machines --fields ip --no-legend | grep -c {{.network.ip}}
 
           retry kubectl -s http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} uncordon {{.kubernetes_node_name}}
 
