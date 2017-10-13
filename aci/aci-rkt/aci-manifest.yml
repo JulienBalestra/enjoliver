@@ -2,7 +2,7 @@ name: enjoliver.local/rkt:latest
 
 builder:
   dependencies:
-    - enjoliver.local/builder-hyperkube:latest
+    - enjoliver.local/ubuntu:latest
 
 aci:
   dependencies:

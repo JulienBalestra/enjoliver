@@ -6,13 +6,41 @@ set -ex
 
 set -o pipefail
 
+cat << EOF > /etc/apt/sources.list
+deb http://fr.archive.ubuntu.com/ubuntu/ xenial main restricted
+deb http://fr.archive.ubuntu.com/ubuntu/ xenial multiverse
+deb http://fr.archive.ubuntu.com/ubuntu/ xenial universe
+deb http://fr.archive.ubuntu.com/ubuntu/ xenial-backports main restricted universe multiverse
+deb http://fr.archive.ubuntu.com/ubuntu/ xenial-updates main restricted
+deb http://fr.archive.ubuntu.com/ubuntu/ xenial-updates multiverse
+deb http://fr.archive.ubuntu.com/ubuntu/ xenial-updates universe
+deb http://security.ubuntu.com/ubuntu xenial-security main restricted
+deb http://security.ubuntu.com/ubuntu xenial-security multiverse
+deb http://security.ubuntu.com/ubuntu xenial-security universe
+EOF
+
 apt-get update -qq
 apt-get install -y dh-autoreconf cpio squashfs-tools wget libacl1-dev libsystemd-dev \
-   pkg-config intltool shtool pkgconf gperf libcap-dev bison unzip xsltproc
+   pkg-config intltool shtool libcap-dev bison unzip xsltproc build-essential git gperf
 
-echo "deb http://deb.debian.org/debian stretch main" >> /etc/apt/sources.list
-apt-get update -qq
-apt-get install -y libmount-dev=2.29.2-1 libmount1=2.29.2-1
+TARGET=/tmp/go.tar.gz
+curl -L https://storage.googleapis.com/golang/go1.8.3.linux-amd64.tar.gz -o ${TARGET}
+tar -C /usr/local -xzf ${TARGET}
+
+export GOROOT=/usr/local/go
+export GOPATH=/go
+
+mkdir -pv ${GOPATH}
+
+
+for b in $(ls ${GOROOT}/bin/ )
+do
+    ln -sv ${GOROOT}/bin/${b} /usr/local/bin/${b}
+done
+
+#echo "deb http://deb.debian.org/debian stretch main" >> /etc/apt/sources.list
+#apt-get update -qq
+apt-get install -y libmount-dev libmount1
 
 
 cd /opt

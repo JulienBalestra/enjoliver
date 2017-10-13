@@ -5,31 +5,17 @@ RUNTIME=$(PROJECT)/runtime
 RKT=$(RUNTIME)/rkt/rkt
 ACI=$(PROJECT)/aci
 
-
-DEBIAN=debian
-GO=go
-BUILDER_HYPERKUBE=builder-hyperkube
+UBUNTU=ubuntu
 RKT_ACI=rkt
-
 
 default: push
 
-$(DEBIAN):
-	@echo ENV IMAGE=$(ACI)/aci-$(DEBIAN)
-	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) install
-	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) push
+$(UBUNTU):
+	@echo ENV IMAGE=$(ACI)/aci-$(UBUNTU)
+	IMAGE=$(ACI)/aci-$(UBUNTU) make -C $(RUNTIME) install
+	IMAGE=$(ACI)/aci-$(UBUNTU) make -C $(RUNTIME) push
 
-$(GO): $(DEBIAN)
-	@echo ENV IMAGE=$(ACI)/aci-$(GO)
-	IMAGE=$(ACI)/aci-$(GO) make -C $(RUNTIME) install
-	IMAGE=$(ACI)/aci-$(GO) make -C $(RUNTIME) push
-
-$(BUILDER_HYPERKUBE): $(GO)
-	@echo ENV IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE)
-	IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE) make -C $(RUNTIME) install
-	IMAGE=$(ACI)/aci-$(DEBIAN) make -C $(RUNTIME) push
-
-test: $(BUILDER_HYPERKUBE)
+test: $(UBUNTU)
 	@echo ENV IMAGE=$(ACI)/aci-$(RKT_ACI)
 	IMAGE=$(ACI)/aci-$(RKT_ACI) make -C $(RUNTIME) test
 
@@ -45,7 +31,5 @@ clean: gc
 	IMAGE=$(ACI)/aci-$(RKT_ACI) make -C $(RUNTIME) clean
 
 fclean: clean
-	IMAGE=$(ACI)/aci-$(BUILDER_HYPERKUBE) make -C $(RUNTIME) clean
-	IMAGE=$(ACI)/aci-$(GO) make -C $(RUNTIME) clean
 
 re: clean default
