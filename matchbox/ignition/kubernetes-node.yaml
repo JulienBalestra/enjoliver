@@ -581,6 +581,7 @@ storage:
         inline: |
            export PATH=/opt/bin:$PATH
            export PRIVATE_IPV4={{.network.ip_or_fqdn}}
+           export RKT_EXPERIMENT_APP=true
 
     - path: /etc/modules-load.d/network.conf
       mode: 0644

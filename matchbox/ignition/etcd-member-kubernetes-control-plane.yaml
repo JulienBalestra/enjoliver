@@ -1606,6 +1606,7 @@ storage:
         inline: |
            export PATH=/opt/bin:$PATH
            export PRIVATE_IPV4={{.network.ip_or_fqdn}}
+           export RKT_EXPERIMENT_APP=true
            export VAULT_ADDR=http://127.0.0.1:{{.vault_port}}
 
     - path: /etc/modules-load.d/network.conf
