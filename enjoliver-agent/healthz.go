@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 
 const (
 	defaultRktAPIServiceAddr = "localhost:15441"
+	defaultRktletSocketPath  = "/var/run/rktlet.sock"
 	timeout                  = 1 * time.Second
 )
 
@@ -85,6 +87,22 @@ func probeRktApi(ch chan ProbeStatus) {
 	glog.V(2).Infof("%s at %s Healthy: %t", probeResult.Name, defaultRktAPIServiceAddr, probeResult.Healthy)
 }
 
+func probeRktlet(ch chan ProbeStatus) {
+	var probeResult ProbeStatus
+	defer func() { ch <- probeResult }()
+
+	probeResult.Name = "Rktlet"
+
+	_, err := os.Stat(defaultRktletSocketPath)
+	if err != nil {
+		probeResult.Error = err
+		glog.Errorf(probeResult.Error.Error())
+		return
+	}
+	probeResult.Healthy = true
+	glog.V(2).Infof("%s at %s Healthy: %t", probeResult.Name, defaultRktletSocketPath, probeResult.Healthy)
+}
+
 func (run *Runtime) GetComponentStatus() AllProbesStatus {
 	var allProbes AllProbesStatus
 	allProbes.LivenessStatus = make(map[string]bool)
@@ -97,9 +115,12 @@ func (run *Runtime) GetComponentStatus() AllProbesStatus {
 		go queryHttpLivenessProbe(probe, ch)
 	}
 	go probeRktApi(ch)
-
+	go probeRktlet(ch)
 	glog.V(3).Infof("all queries sent")
-	for i := 0; i < len(run.HttpLivenessProbes)+1; i++ {
+
+	// nbProbe is the number of http probes + specifics (rktapi, rktlet)
+	nbProbes := len(run.HttpLivenessProbes) + 2
+	for i := 0; i < nbProbes; i++ {
 		probeResult := <-ch
 		glog.V(3).Infof("received %s: %t", probeResult.Name, probeResult.Healthy)
 		allProbes.LivenessStatus[probeResult.Name] = probeResult.Healthy
