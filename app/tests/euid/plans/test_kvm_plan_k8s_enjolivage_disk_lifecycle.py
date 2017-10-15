@@ -115,6 +115,8 @@ class TestKVMK8SEnjolivageDiskLifecycleLifecycle0(TestKVMK8sEnjolivageDiskLifecy
 
                 if i == 0:
                     self.create_tiller(plan_k8s_2t.kubernetes_control_plane_ip_list[i % 3])
+                self.healthz_enjoliver_agent(
+                    plan_k8s_2t.kubernetes_control_plane_ip_list + plan_k8s_2t.kubernetes_nodes_ip_list)
 
                 ips = copy.deepcopy(plan_k8s_2t.kubernetes_control_plane_ip_list + plan_k8s_2t.kubernetes_nodes_ip_list)
                 self.pod_tiller_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[i % 3])

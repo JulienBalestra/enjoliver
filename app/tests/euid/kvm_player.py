@@ -663,6 +663,24 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     t, tries, parent, component, ip, self.vault_self_certs.__name__))
                 time.sleep(self.testing_sleep_seconds)
 
+    def healthz_enjoliver_agent(self, ips: list):
+        health_list = []
+
+        for ip in ips:
+            for t in range(10):
+                try:
+                    req = requests.get("http://%s:8000/healthz" % ip)
+                    health = json.loads(req.content.decode())
+                    req.close()
+                    self.assertEqual({}, health["Errors"])
+                    health_list.append(health)
+                    break
+                except Exception as e:
+                    display("fail: %s" % e)
+                    time.sleep(self.testing_sleep_seconds)
+
+        self.assertEqual(len(ips), len(health_list))
+
     def _get_certificates(self, certs_name: str):
         verify, certs = True, tuple()
         if certs_name:

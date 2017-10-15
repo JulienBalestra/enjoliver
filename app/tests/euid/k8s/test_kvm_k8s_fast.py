@@ -93,6 +93,8 @@ class TestKVMK8SFast0(TestKVMK8sFast):
             self.kube_apiserver_health(plan_k8s_2t.kubernetes_control_plane_ip_list)
             self.create_tiller(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
             self.kubernetes_node_nb(plan_k8s_2t.kubernetes_control_plane_ip_list[0], nb_node)
+            self.healthz_enjoliver_agent(
+                plan_k8s_2t.kubernetes_control_plane_ip_list + plan_k8s_2t.kubernetes_nodes_ip_list)
 
             self.pod_tiller_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
             for chart in ["heapster", "node-exporter", "prometheus"]:

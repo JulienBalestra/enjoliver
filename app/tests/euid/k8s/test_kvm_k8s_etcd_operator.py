@@ -100,6 +100,8 @@ class TestKVMK8SEtcdOperator0(TestKVMK8sEtcdOperator):
                 if i == 0:
                     self.create_tiller(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
                 self.kubernetes_node_nb(plan_k8s_2t.kubernetes_control_plane_ip_list[0], nb_node)
+                self.healthz_enjoliver_agent(
+                    plan_k8s_2t.kubernetes_control_plane_ip_list + plan_k8s_2t.kubernetes_nodes_ip_list)
                 self.pod_tiller_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
                 m = "%s-%d" % (marker, i)
                 self.virsh(["virsh", "reset", m])

@@ -100,6 +100,8 @@ class TestKVMK8sEnjolivageDisk0(TestKVMK8sEnjolivageDisk):
             self.kubernetes_node_nb(plan_k8s_2t.etcd_member_ip_list[0], nb_node)
 
             self.create_tiller(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+            self.healthz_enjoliver_agent(
+                plan_k8s_2t.kubernetes_control_plane_ip_list + plan_k8s_2t.kubernetes_nodes_ip_list)
             self.pod_tiller_is_running(plan_k8s_2t.kubernetes_control_plane_ip_list[0])
 
             for etcd in ["vault", "kubernetes"]:
