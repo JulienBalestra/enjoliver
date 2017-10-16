@@ -1,0 +1,73 @@
+From d6c114bfde3c0f36c3dc074df5f2f280971a7faa Mon Sep 17 00:00:00 2001
+From: JulienBalestra <julien.balestra@gmail.com>
+Date: Mon, 16 Oct 2017 16:00:41 +0200
+Subject: [PATCH] Host network pods have a dedicated writable etc-hosts file in
+ each container
+
+---
+ rktlet/runtime/helpers.go | 28 +++++++++++++++++++++++++++-
+ 1 file changed, 27 insertions(+), 1 deletion(-)
+
+diff --git a/rktlet/runtime/helpers.go b/rktlet/runtime/helpers.go
+index 545bf24..6602356 100644
+--- a/rktlet/runtime/helpers.go
++++ b/rktlet/runtime/helpers.go
+@@ -23,6 +23,8 @@ import (
+ 	"strconv"
+ 	"strings"
+ 
++	"io/ioutil"
++
+ 	actypes "github.com/appc/spec/schema/types"
+ 	"github.com/golang/glog"
+ 	"github.com/pborman/uuid"
+@@ -208,6 +210,14 @@ func generateSeccompArg(annotations map[string]string, containerName string) (st
+ 	return "", fmt.Errorf("seccomp profile %q not supported", profile)
+ }
+ 
++func copyfile(src, dst string) error {
++	data, err := ioutil.ReadFile(src)
++	if err != nil {
++		return err
++	}
++	return ioutil.WriteFile(dst, data, 0644)
++}
++
+ func generateAppAddCommand(req *runtimeApi.CreateContainerRequest, imageID string) ([]string, error) {
+ 	config := req.Config
+ 
+@@ -351,6 +361,22 @@ func generateAppAddCommand(req *runtimeApi.CreateContainerRequest, imageID strin
+ 		cmd = append(cmd, "--working-dir="+config.WorkingDir)
+ 	}
+ 
++	if hasHostNetwork(req.SandboxConfig) {
++		podEtcHost := path.Join("/var/lib/kubelet/pods", req.SandboxConfig.Metadata.Uid, "containers", config.Metadata.Name, "etc-hosts")
++		err := copyfile("/etc/hosts", podEtcHost)
++		if err != nil {
++			glog.Errorf("fail to copy host file /etc/hosts %s: %s", podEtcHost, err)
++			return nil, err
++		}
++		m := runtimeApi.Mount{
++			ContainerPath:  "/etc/hosts",
++			HostPath:       podEtcHost,
++			Readonly:       false,
++			SelinuxRelabel: false,
++		}
++		config.Mounts = append(config.Mounts, &m)
++	}
++
+ 	for _, mnt := range config.GetMounts() {
+ 		if mnt == nil {
+ 			glog.Warningf("unexpected nil mount: %v, %+v", mnt, config)
+@@ -467,7 +493,7 @@ func generateAppSandboxCommand(req *runtimeApi.RunPodSandboxRequest, uuidfile, s
+ 
+ 	// Add hostnetwork
+ 	if hasHostNetwork(req.GetConfig()) {
+-		cmd = append(cmd, "--net=host", "--hosts-entry=host")
++		cmd = append(cmd, "--net=host")
+ 		if hn, err := os.Hostname(); err == nil {
+ 			cmd = append(cmd, fmt.Sprintf("--hostname=%s", hn))
+ 		}
+-- 
+2.7.4
+
