@@ -104,7 +104,7 @@ class MachineInterface(BASE):
     __tablename__ = 'machine-interface'
     id = Column(Integer, primary_key=True, autoincrement=True)
 
-    mac = Column(String(17), nullable=False, index=True)
+    mac = Column(String(17), nullable=False, index=True, unique=True)
     name = Column(String, nullable=False)
     netmask = Column(Integer, nullable=False)
     ipv4 = Column(String(15), nullable=False)

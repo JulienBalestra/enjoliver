@@ -325,11 +325,12 @@ class FetchLifecycle:
         return life_status_list
 
     def get_rolling_status(self, mac: str):
-        for row in self.session.execute("""SELECT lr.enable, lr.strategy FROM "machine-interface" AS mi
-          JOIN machine AS m ON m.id = mi.machine_id
-          JOIN "lifecycle-rolling" AS lr ON lr.machine_id = mi.machine_id
-          WHERE mi.mac = :mac""", {"mac": mac}):
-            return bool(row["enable"]), row["strategy"]
+        for m in self.session.query(Machine) \
+                .join(MachineInterface) \
+                .filter(MachineInterface.mac == mac) \
+                .join(LifecycleRolling):
+            rolling = m.lifecycle_rolling[0]
+            return rolling.enable, rolling.strategy
 
         logger.debug("mac: %s return None" % mac)
         return None, None
