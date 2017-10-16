@@ -118,7 +118,7 @@ func getLocksmithConfig(livenessProbes []HttpLivenessProbe) (string, string, err
 
 // Return the list of systemd units used to run Kubernetes
 func getKubernetesSystemdUnits(controlPlane bool) []string {
-	var nodeKubernetesUnits = []string{"kubelet.service", "rkt-api.service"}
+	var nodeKubernetesUnits = []string{"kubelet.service", "rkt-api.service", "rktlet.service"}
 	controlPlaneKubernetesUnits := append(nodeKubernetesUnits, []string{"kube-apiserver.service", "etcd3@kubernetes.service"}...)
 
 	if controlPlane {
