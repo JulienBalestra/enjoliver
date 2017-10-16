@@ -329,8 +329,11 @@ class FetchLifecycle:
                 .join(MachineInterface) \
                 .filter(MachineInterface.mac == mac) \
                 .join(LifecycleRolling):
-            rolling = m.lifecycle_rolling[0]
-            return rolling.enable, rolling.strategy
+            try:
+                rolling = m.lifecycle_rolling[0]
+                return rolling.enable, rolling.strategy
+            except IndexError:
+                pass
 
         logger.debug("mac: %s return None" % mac)
         return None, None
