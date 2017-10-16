@@ -496,6 +496,10 @@ systemd:
     - name: rktlet.service
       enable: true
       contents: |
+        [Unit]
+        After=network-online.target
+        Requires=network-online.target
+
         [Service]
         ExecStart=/usr/bin/rktlet \
           --net=bond0 \
