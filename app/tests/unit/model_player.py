@@ -517,6 +517,8 @@ class TestModel(unittest.TestCase):
             t = f.get_rolling_status(posts.M04["boot-info"]["mac"])
             self.assertIsNone(t[0])
             self.assertIsNone(t[1])
+            r = f.get_all_rolling_status()
+            self.assertEqual(1, len(r))
 
     def test_39(self):
         with self.smart.new_session() as session:

@@ -340,18 +340,23 @@ class FetchLifecycle:
 
     def get_all_rolling_status(self):
         life_roll_list = []
-        for machine in self.session.query(Machine).join(LifecycleRolling).join(MachineInterface).filter(
-                        MachineInterface.as_boot == True):
-            life_roll_list.append(
-                {
+        for machine in self.session.query(Machine) \
+                .join(LifecycleRolling) \
+                .join(MachineInterface) \
+                .options(joinedload("interfaces")) \
+                .options(joinedload("lifecycle_rolling")) \
+                .filter(MachineInterface.as_boot == True):
+            try:
+                life_roll_list.append({
                     "mac": machine.interfaces[0].mac,
                     "fqdn": machine.interfaces[0].fqdn,
                     "cidrv4": machine.interfaces[0].cidrv4,
                     "enable": bool(machine.lifecycle_rolling[0].enable),
                     "created_date": machine.lifecycle_rolling[0].created_date,
                     "updated_date": machine.lifecycle_rolling[0].updated_date
-                }
-            )
+                })
+            except IndexError:
+                pass
         return life_roll_list
 
 
