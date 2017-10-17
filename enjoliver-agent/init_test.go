@@ -25,12 +25,12 @@ func TestFormatProbeName(t *testing.T) {
 
 func TestGetKubernetesSystemdUnits(t *testing.T) {
 	units := getKubernetesSystemdUnits(false)
-	if len(units) != 2 {
+	if len(units) != 3 {
 		t.Errorf("fail")
 	}
 
 	units = getKubernetesSystemdUnits(true)
-	if len(units) != 4 {
+	if len(units) != 5 {
 		t.Errorf("fail")
 	}
 }
