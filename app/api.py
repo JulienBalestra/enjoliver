@@ -953,7 +953,8 @@ def user_view_machine():
 
 @application.route('/ui/view/states', methods=['GET'])
 def user_view_machine_statuses():
-    res = jsonify(repositories.machine_state.fetch(finished_in_less_than_min=30000000))
+    data_since_last_min=request.args.get('data_since_last_min') if request.args.get('data_since_last_min') else 30
+    res = jsonify(repositories.machine_state.fetch(finished_in_less_than_min=int(data_since_last_min)))
     resp = make_response(res)
     resp.headers['Access-Control-Allow-Origin'] = '*'
 
