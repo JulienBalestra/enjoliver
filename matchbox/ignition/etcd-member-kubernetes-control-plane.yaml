@@ -70,7 +70,7 @@ systemd:
 
         [Service]
         Type=oneshot
-        ExecStart=-/bin/bash -c '/usr/bin/docker rm $(/usr/bin/docker ps -aq)'
+        ExecStart=/bin/bash -c '/usr/bin/docker rm $(/usr/bin/docker ps -aq)'
         Restart=no
 
         [Install]
