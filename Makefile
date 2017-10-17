@@ -96,7 +96,7 @@ submodules:
 	git submodule update --init --recursive
 
 validate:
-	@./validate.py
+	@SKIP_ACSERVER=y ./validate.py
 
 dev_setup_runtime: submodules
 	make -C runtime dev_setup

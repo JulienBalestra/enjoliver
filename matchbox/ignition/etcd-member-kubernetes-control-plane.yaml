@@ -52,6 +52,30 @@ systemd:
         [Install]
         RequiredBy=multi-user.target
 
+    - name: docker-gc.timer
+      enable: true
+      contents: |
+        [Timer]
+        OnBootSec=2min
+        OnUnitActiveSec=5min
+        [Install]
+        WantedBy=timers.target
+
+    - name: docker-gc.service
+      enable: true
+      contents: |
+        [Unit]
+        Requires=docker.service
+        After=docker.service
+
+        [Service]
+        Type=oneshot
+        ExecStart=/bin/bash -c '/usr/bin/docker rm $(/usr/bin/docker ps -aq)'
+        Restart=no
+
+        [Install]
+        RequiredBy=multi-user.target
+
     - name: rkt-api.service
       enable: true
       contents: |
