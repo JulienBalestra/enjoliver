@@ -1,0 +1,25 @@
+From 672cab5145721f15cd72223c4fb56e2565a208ca Mon Sep 17 00:00:00 2001
+From: JulienBalestra <julien.balestra@gmail.com>
+Date: Mon, 16 Oct 2017 18:42:42 +0200
+Subject: [PATCH] Change the dependency
+
+---
+ stage1/init/common/units.go | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/stage1/init/common/units.go b/stage1/init/common/units.go
+index 9e29e16..a3d522c 100644
+--- a/stage1/init/common/units.go
++++ b/stage1/init/common/units.go
+@@ -323,7 +323,7 @@ func (uw *UnitWriter) SetupAppIO(p *stage1commontypes.Pod, ra *schema.RuntimeApp
+ 		if needsIOMux {
+ 			// streaming mode brings in a `iomux@.service` before-dependency
+ 			opts = append(opts, unit.NewUnitOption("Unit", "Requires", fmt.Sprintf("iomux@%s.service", ra.Name)))
+-			opts = append(opts, unit.NewUnitOption("Unit", "Before", fmt.Sprintf("iomux@%s.service", ra.Name)))
++			opts = append(opts, unit.NewUnitOption("Unit", "After", fmt.Sprintf("iomux@%s.service", ra.Name)))
+ 			logMode, ok := p.Manifest.Annotations.Get("coreos.com/rkt/experiment/logmode")
+ 			if ok {
+ 				file.WriteString(fmt.Sprintf("STAGE1_LOGMODE=%s\n", logMode))
+-- 
+2.7.4
+

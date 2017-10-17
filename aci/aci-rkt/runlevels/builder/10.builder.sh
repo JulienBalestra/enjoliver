@@ -63,6 +63,19 @@ mkdir -pv /go/src/github.com/rkt/rkt
 git clone --depth=1 https://github.com/rkt/rkt.git /go/src/github.com/rkt/rkt
 cd /go/src/github.com/rkt/rkt
 
+# Apply custom patches
+PATCHES_DIR="${ACI_HOME}/patches"
+for patch in $(ls $PATCHES_DIR)
+do
+    echo "${PATCHES_DIR}/${patch}"
+    head -4 "${PATCHES_DIR}/${patch}"
+    patch -p1 < "${PATCHES_DIR}/${patch}" || {
+        echo >&2 "Unable to apply patch ${patch}"
+        exit 1
+    }
+    echo ""
+done
+
 ./autogen.sh
 ./configure --with-stage1-flavors=src,fly \
     --with-stage1-default-flavor=src --with-stage1-systemd-src=https://github.com/kinvolk/systemd.git \
