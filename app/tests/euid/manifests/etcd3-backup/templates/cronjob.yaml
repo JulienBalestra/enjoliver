@@ -23,7 +23,7 @@ spec:
             image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
             imagePullPolicy: {{ .Values.image.pullPolicy }}
             command:
-            - /usr/bin/etcdctl
+            - /usr/local/bin/etcdctl
             - --endpoints
             - "127.0.0.1:{{ .Values.etcd.port }}"
             - snapshot

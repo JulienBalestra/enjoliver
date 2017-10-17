@@ -19,7 +19,7 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         command:
-        - /usr/bin/prometheus
+        - /bin/prometheus
         - -config.file
         - /etc/prometheus/prometheus.yml
         - -storage.local.path

@@ -2,8 +2,7 @@
 systemd:
   units:
     - name: docker.service
-      enable: false
-      mask: true
+      enable: true
 
     - name: oem-cloudinit.service
       enable: false
@@ -18,8 +17,7 @@ systemd:
       mask: true
 
     - name: containerd.service
-      enable: false
-      mask: true
+      enable: true
 
     - name: update-engine.service
       enable: false
@@ -282,8 +280,7 @@ systemd:
           --require-kubeconfig \
           --node-labels=node=true,diskProfile={{.disk_profile}} \
           --cloud-provider="" \
-          --container-runtime=rkt \
-          --rkt-path=/usr/bin/rkt \
+          --container-runtime=docker \
           --v=2 \
           --tls-cert-file=/etc/vault.d/kubernetes/kubelet.certificate \
           --tls-private-key-file=/etc/vault.d/kubernetes/kubelet.private_key \

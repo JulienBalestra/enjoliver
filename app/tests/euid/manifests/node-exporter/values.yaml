@@ -1,6 +1,6 @@
 image:
-  repository: enjoliver.local/node-exporter
-  tag: 0.14.0
+  repository: prom/node-exporter
+  tag: v0.14.0
   pullPolicy: IfNotPresent
 namespace: kube-system
 appPort: 9100

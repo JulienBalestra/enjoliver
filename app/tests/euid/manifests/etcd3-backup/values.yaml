@@ -1,6 +1,6 @@
 schedule: "*/1 * * * *"
 image:
-  repository: enjoliver.local/etcd
-  tag: 3.2.7
+  repository: quay.io/coreos/etcd
+  tag: v3.2.7
   pullPolicy: IfNotPresent
 namespace: backup

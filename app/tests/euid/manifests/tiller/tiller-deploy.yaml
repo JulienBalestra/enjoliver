@@ -23,10 +23,16 @@ spec:
       serviceAccount: tiller
       containers:
       - name: tiller
-        image: enjoliver.local/tiller:2.5.0
+        image: gcr.io/kubernetes-helm/tiller:v2.5.0
         imagePullPolicy: IfNotPresent
         command:
         - /usr/bin/tiller
+        env:
+        - name: KUBERNETES_SERVICE_HOST
+          value: "172.31.255.255"
+
+        - name: KUBERNETES_SERVICE_PORT
+          value: "6443"
 
         livenessProbe:
           httpGet:

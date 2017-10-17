@@ -27,7 +27,7 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         command:
-        - /usr/bin/heapster
+        - /heapster
         - --bind-address=0.0.0.0
         - --profiling=false
         - "--source=kubernetes:https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT}?useServiceAccount=true"

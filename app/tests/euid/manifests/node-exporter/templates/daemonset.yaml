@@ -20,7 +20,7 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         command:
-        - /usr/bin/node_exporter
+        - /bin/node_exporter
         - -collector.procfs
         - /host/proc
         - -collector.sysfs
