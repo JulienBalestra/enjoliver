@@ -29,6 +29,6 @@ do
 done
 
 ./configure
-make
+make -j
 
 mv -v ip/ip ${ROOTFS}/usr/bin/ip
