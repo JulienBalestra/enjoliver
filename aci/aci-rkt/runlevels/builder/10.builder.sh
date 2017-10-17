@@ -78,10 +78,10 @@ done
 
 ./autogen.sh
 ./configure --with-stage1-flavors=src,fly \
-    --with-stage1-default-flavor=src --with-stage1-systemd-src=https://github.com/kinvolk/systemd.git \
+    --with-stage1-default-flavor=src --with-stage1-systemd-src=https://github.com/blablacar/systemd.git \
     --with-stage1-systemd-revision=iaguis/pass-fds-pre-post-backport-v234 --with-stage1-systemd-version=v234 \
     --disable-tpm --enable-functional-tests
-make V=3
+make V=3 -j2
 
 mkdir -pv ${ROOTFS}/usr/lib/rkt/stage1-images/
 
