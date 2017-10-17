@@ -1,0 +1,25 @@
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: {{ .Chart.Name }}
+rules:
+- nonResourceURLs:
+  - "/version"  # Used to get apiserver version metadata
+  - "/healthz"  # Healthcheck
+  verbs: ["get"]
+- apiGroups: [""]
+  resources:
+    - "nodes"
+    - "namespaces"  #
+    - "events"      # Cluster events + kube_service cache invalidation
+    - "services"    # kube_service tag
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources:
+    - "configmaps"
+  resourceNames: ["datadog-leader-elector"]
+  verbs: ["get", "delete", "update"]
+- apiGroups: [""]
+  resources:
+    - "configmaps"
+  verbs: ["create"]

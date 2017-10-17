@@ -1,0 +1,4 @@
+apiVersion: v1
+description: Datadog agent
+name: dd-agent
+version: 0.1
