@@ -5,9 +5,9 @@ import datetime
 import re
 
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, Index
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, validates
+from sqlalchemy.orm import relationship, validates, remote, foreign
 
 BASE = declarative_base()
 
@@ -253,6 +253,11 @@ class MachineCurrentState(BASE):
     state_name = Column(String(len(max(MachineStates.states, key=len))), nullable=False)
     created_date = Column(DateTime)
     updated_date = Column(DateTime)
+
+    machine = relationship("Machine")
+    interfaces = relationship("MachineInterface", primaryjoin=machine_id==foreign(MachineInterface.machine_id))
+
+    Index('idx_update_date_desc', updated_date.desc())
 
     @validates('mac')
     def validate_mac(self, key, machine_mac):

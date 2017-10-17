@@ -31,18 +31,15 @@ class MachineStateRepository:
         time_limit = datetime.datetime.utcnow() - datetime.timedelta(minutes=finished_in_less_than_min)
         results = []
         with self.smart.new_session() as session:
-            for machine in session.query(Machine) \
+            for machine in session.query(MachineCurrentState) \
                     .options(joinedload("interfaces")) \
-                    .options(joinedload("machine_state")) \
-                    .join(MachineInterface) \
-                    .join(MachineCurrentState) \
                     .filter(MachineCurrentState.updated_date > time_limit) \
                     .order_by(MachineCurrentState.updated_date.desc()):
                 results.append({
-                    "fqdn": machine.interfaces[0].fqdn,
-                    "mac": machine.interfaces[0].mac,
-                    "state": machine.machine_state[0].state_name,
-                    "date": machine.machine_state[0].updated_date
+                    "fqdn": machine.interfaces[0].fqdn if machine.interfaces else None,
+                    "mac": machine.interfaces[0].mac if machine.interfaces else None,
+                    "state": machine.state_name,
+                    "date": machine.updated_date
                 })
             return results
 
