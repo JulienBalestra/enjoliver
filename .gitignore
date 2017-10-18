@@ -97,3 +97,4 @@ image.aci
 /matchbox/assets/coreos/task-import-snapshot.json
 /matchbox/assets/coreos/image-id.json
 /matchbox/assets/coreos/container.json
+/app/tests/testing_kubeconfig.yaml

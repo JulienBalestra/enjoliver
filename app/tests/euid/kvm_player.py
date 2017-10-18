@@ -13,7 +13,7 @@ import requests
 import sys
 import time
 import yaml
-from kubernetes import client as kc
+from kubernetes import client as kubeclient
 
 from app import generator, configs
 
@@ -188,7 +188,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             "%s" % sys.executable,
             "%s/manage.py" % KernelVirtualMachinePlayer.project_path,
             "gunicorn",
-            ]
+        ]
         display("PID  -> %s\n"
                 "exec -> %s" % (os.getpid(), " ".join(cmd)))
         os.execve(cmd[0], cmd, os.environ)
@@ -612,7 +612,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                     headers={'X-Vault-Token': token},
                     verify=verify,
                     data=json.dumps({
-                        "common_name": "%s" % self.api_ip,
+                        "common_name": "enjoliver.local",
                         "ttl": "17520h",
                         "ip_sans": "%s" % self.api_ip,
                     }))
@@ -751,8 +751,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         self.assertEqual(len(result["members"]), members_nb)
 
     def kubernetes_node_nb(self, api_server_ip: str, nodes_nb: int, tries=200):
-        c = kc.ApiClient(host="%s:%d" % (api_server_ip, self.ec.kubernetes_apiserver_insecure_port))
-        core = kc.CoreV1Api(c)
+        c = kubeclient.ApiClient(host="%s:%d" % (api_server_ip, self.ec.kubernetes_apiserver_insecure_port))
+        core = kubeclient.CoreV1Api(c)
         items = []
         for t in range(tries):
             try:
@@ -795,7 +795,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         self.assertEqual(len(ips), 0)
 
     def create_tiller(self, api_server_ip: str):
-        c = kc.ApiClient(host="%s:%d" % (api_server_ip, self.ec.kubernetes_apiserver_insecure_port))
+        c = kubeclient.ApiClient(host="http://%s:%d" % (api_server_ip, self.ec.kubernetes_apiserver_insecure_port))
 
         with open("%s/manifests/tiller/tiller-service.yaml" % self.euid_path) as f:
             service_manifest = yaml.load(f)
@@ -809,8 +809,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         with open("%s/manifests/tiller/clusterrolebinding.yaml" % self.euid_path) as f:
             clusterrolebinding_manifest = yaml.load(f)
 
-        core, beta = kc.CoreV1Api(c), kc.ExtensionsV1beta1Api(c)
-        rbac = kc.RbacAuthorizationV1beta1Api(c)
+        core, beta = kubeclient.CoreV1Api(c), kubeclient.ExtensionsV1beta1Api(c)
+        rbac = kubeclient.RbacAuthorizationV1beta1Api(c)
 
         core.create_namespaced_service("kube-system", service_manifest)
         rbac.create_cluster_role_binding(clusterrolebinding_manifest)
@@ -819,8 +819,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     def pod_tiller_is_running(self, api_server_ip: str, tries=100):
         code = 0
-        c = kc.ApiClient(host="%s:%d" % (api_server_ip, self.ec.kubernetes_apiserver_insecure_port))
-        core = kc.CoreV1Api(c)
+        c = kubeclient.ApiClient(host="http://%s:%d" % (api_server_ip, self.ec.kubernetes_apiserver_insecure_port))
+        core = kubeclient.CoreV1Api(c)
         for t in range(tries):
             if code == 200:
                 break
@@ -856,8 +856,9 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         return tiller_containers == 1
 
     def tiller_can_restart(self, api_server_ip: str):
-        c = kc.ApiClient(host="%s:%d" % (api_server_ip, self.ec.kubernetes_apiserver_insecure_bind_address))
-        core = kc.CoreV1Api(c)
+        c = kubeclient.ApiClient(
+            host="http://%s:%d" % (api_server_ip, self.ec.kubernetes_apiserver_insecure_bind_address))
+        core = kubeclient.CoreV1Api(c)
         r = core.list_namespaced_pod("kube-system", label_selector="app=tiller")
         pod_ip, node_ip, req, tiller_endpoint = "", "", "", ""
         for p in r.items:
@@ -911,8 +912,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         raise AssertionError("tiller is not gc on node %s" % node_ip)
 
     def _get_tiller_grpc_endpoint(self, api_server_ip: str):
-        c = kc.ApiClient(host="%s:%d" % (api_server_ip, self.ec.kubernetes_apiserver_insecure_port))
-        core = kc.CoreV1Api(c)
+        c = kubeclient.ApiClient(host="http://%s:%d" % (api_server_ip, self.ec.kubernetes_apiserver_insecure_port))
+        core = kubeclient.CoreV1Api(c)
         r = core.list_namespaced_pod("kube-system", label_selector="app=tiller")
         exception = None
         for p in r.items:
@@ -929,8 +930,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
     def create_helm_etcd_backup(self, api_server_ip: str, etcd_app_name: str):
         tiller = self._get_tiller_grpc_endpoint(api_server_ip)
-        c = kc.ApiClient(host="%s:%d" % (api_server_ip, self.ec.kubernetes_apiserver_insecure_port))
-        core = kc.CoreV1Api(c)
+        c = kubeclient.ApiClient(host="http://%s:%d" % (api_server_ip, self.ec.kubernetes_apiserver_insecure_port))
+        core = kubeclient.CoreV1Api(c)
         try:
             core.create_namespace(body={"kind": "Namespace", "apiVersion": "v1", "metadata": {"name": "backup"}})
         except Exception as e:
@@ -958,7 +959,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         ])
         self.assertEqual(0, ret)
 
-    def _snapshot_status(self, core: kc.CoreV1Api, etcd_app_name: str, tries: int):
+    def _snapshot_status(self, core: kubeclient.CoreV1Api, etcd_app_name: str, tries: int):
         for t in range(tries):
             r = core.list_namespaced_pod("backup", label_selector="etcd=%s" % etcd_app_name)
             for p in r.items:
@@ -982,8 +983,8 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
             time.sleep(self.testing_sleep_seconds)
 
     def etcd_backup_done(self, api_server_ip: str, etcd_app_name: str, tries=120):
-        c = kc.ApiClient(host="%s:%d" % (api_server_ip, self.ec.kubernetes_apiserver_insecure_port))
-        core = kc.CoreV1Api(c)
+        c = kubeclient.ApiClient(host="%s:%d" % (api_server_ip, self.ec.kubernetes_apiserver_insecure_port))
+        core = kubeclient.CoreV1Api(c)
         summary = self._snapshot_status(core, etcd_app_name, tries)
         for k in ["revision", "totalKey", "totalSize"]:
             self.assertGreater(summary[k], 0)
@@ -1026,19 +1027,13 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
         cores = cpu / nb_nodes
         return int(round(cores))
 
-    def kubectl_proxy(self, api_server_uri: str, proxy_port: int):
+    def kubectl_proxy(self, proxy_port: int):
         def run():
             cmd = [
                 "%s/hyperkube/hyperkube" % self.project_path,
                 "kubectl",
-                "--certificate-authority",
-                "%s/kubernetes_kube-apiserver.issuing_ca" % self.test_certs_path,
-                "--client-certificate",
-                "%s/kubernetes_kube-apiserver.certificate" % self.test_certs_path,
-                "--client-key",
-                "%s/kubernetes_kube-apiserver.private_key" % self.test_certs_path,
-                "-s",
-                "%s" % api_server_uri,
+                "--kubeconfig",
+                os.path.join(self.tests_path, "testing_kubeconfig.yaml"),
                 "proxy",
                 "-p",
                 "%d" % proxy_port
@@ -1048,11 +1043,57 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
 
         return run
 
-    def iteractive_usage(self, stop="/tmp/e.stop", api_server_uri=None, fns=None):
+    def create_kubeconfig(self, api_server_ip: str):
+        with open("%s/manifests/kubeconfig/clusterrolebinding.yaml" % self.euid_path) as f:
+            clusterrolebinding_manifest = yaml.load(f)
+
+        c = kubeclient.ApiClient(host="http://%s:%d" % (api_server_ip, self.ec.kubernetes_apiserver_insecure_port))
+        rbac = kubeclient.RbacAuthorizationV1beta1Api(c)
+        rbac.create_cluster_role_binding(clusterrolebinding_manifest)
+
+        kube_config = {
+            'preferences': {'colors': True},
+            'users': [
+                {
+                    'user': {
+                        'client-key': '%s/kubernetes_kubelet.private_key' % self.test_certs_path,
+                        'client-certificate': '%s/kubernetes_kubelet.certificate' % self.test_certs_path
+                    },
+                    'name': 'enjoliver.local'
+                }
+            ],
+            'kind': 'Config',
+            'apiVersion': 'v1',
+            'clusters': [
+                {
+                    'cluster': {
+                        'server': "https://%s:6443" % api_server_ip,
+                        'certificate-authority': '%s/kubernetes_kubelet.issuing_ca' % self.test_certs_path
+                    },
+                    'name': 'enjoliver'
+                }
+            ],
+            'contexts': [
+                {
+                    'name': 'e',
+                    'context': {
+                        'cluster': 'enjoliver',
+                        'namespace': 'kube-system',
+                        'user': 'enjoliver.local'
+                    }
+                }
+            ],
+            'current-context': 'e'
+        }
+        with open(os.path.join(self.tests_path, "testing_kubeconfig.yaml"), "w") as kc:
+            yaml.dump(kube_config, kc)
+
+    def iteractive_usage(self, stop="/tmp/e.stop", api_server_ip=None, fns=None):
         display("-> Starting %s" % self.iteractive_usage.__name__)
         kp, proxy_port = None, 8001
-        if api_server_uri:
-            kp = multiprocessing.Process(target=self.kubectl_proxy(api_server_uri, proxy_port=proxy_port))
+        if api_server_ip:
+            self.create_kubeconfig(api_server_ip)
+            kp = multiprocessing.Process(target=self.kubectl_proxy(proxy_port=proxy_port))
             kp.start()
             maxi = 12
             for i in range(maxi):
@@ -1100,7 +1141,7 @@ class KernelVirtualMachinePlayer(unittest.TestCase):
                 if int(time.time()) % 120 == 0:
                     display("-> Stop with \"sudo rm -v\" %s or \"echo 1 > %s\"" % (stop, stop))
                 time.sleep(self.wait_setup_teardown)
-            if api_server_uri and kp.is_alive():
+            if api_server_ip and kp.is_alive():
                 kp.terminate()
                 kp.join(timeout=5)
         finally:

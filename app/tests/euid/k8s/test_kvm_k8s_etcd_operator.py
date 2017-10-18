@@ -108,7 +108,7 @@ class TestKVMK8SEtcdOperator0(TestKVMK8sEtcdOperator):
         finally:
             if os.getenv("TEST"):
                 self.iteractive_usage(
-                    api_server_uri="https://%s:6443" % plan_k8s_2t.kubernetes_control_plane_ip_list[0])
+                    api_server_ip=plan_k8s_2t.kubernetes_control_plane_ip_list[0])
             for i in range(nb_node):
                 machine_marker = "%s-%d" % (marker, i)
                 self.clean_up_virtual_machine(machine_marker)
