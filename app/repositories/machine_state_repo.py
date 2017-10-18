@@ -37,7 +37,7 @@ class MachineStateRepository:
                     .order_by(MachineCurrentState.updated_date.desc()):
                 results.append({
                     "fqdn": machine.interfaces[0].fqdn if machine.interfaces else None,
-                    "mac": machine.interfaces[0].mac if machine.interfaces else None,
+                    "mac": machine.interfaces[0].mac if machine.interfaces else machine.machine_mac,
                     "state": machine.state_name,
                     "date": machine.updated_date
                 })
