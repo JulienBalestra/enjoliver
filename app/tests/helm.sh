@@ -10,6 +10,6 @@ fi
 
 cd $(dirname $0)
 
-TILLER=$(${KUBECTL} get ep -l app=tiller -n kube-system \
+TILLER=$(${KUBECTL} -s 127.0.0.1:8001 get ep -l app=tiller -n kube-system \
     -o jsonpath='{.items[*].subsets[*].addresses[0].ip}:{.items[*].subsets[*].ports[0].port}')
 exec ../../runtime/helm/helm --host ${TILLER} $@
