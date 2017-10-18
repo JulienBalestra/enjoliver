@@ -41,7 +41,7 @@ systemd:
       enable: true
       contents: |
         [Unit]
-        Before=network.target
+        Before=network-online.target
         RefuseManualStart=true
 
         [Service]
@@ -358,19 +358,27 @@ systemd:
             # 1h because the run-prepared by kubernetes can be gc
             ExecStart=/usr/bin/rkt gc --grace-period=3m
             [Install]
-            WantedBy=multi-user.target
+            RequiredBy=multi-user.target
+
+    - name: rkt-gc.service
+      enable: true
+      contents: |
+        [Service]
+        ExecStartPre=-/bin/bash -c '/opt/bin/rkt image list | tail -n +1 | awk \'$8 ~ /(day|week|month)s?/ { system("/opt/bin/rkt image rm " $1) }\''
+        ExecStartPre=-/bin/sleep 1
+        ExecStartPre=-/usr/bin/rkt image gc --grace-period=12h
+        ExecStart=/usr/bin/rkt gc --grace-period=3m
+        [Install]
+        RequiredBy=multi-user.target
 
     - name: rkt-gc.timer
       enable: true
-      dropins:
-        - name: 10-rkt.conf
-          contents: |
-            [Timer]
-            # drop-in bugs if don't create an empty entry
-            OnActiveSec=
-            OnActiveSec=4min
-            OnUnitActiveSec=
-            OnUnitActiveSec=10min
+      contents: |
+        [Timer]
+        OnActiveSec=4min
+        OnUnitActiveSec=10min
+        [Install]
+        WantedBy=timers.target
 
 storage:
   files:
