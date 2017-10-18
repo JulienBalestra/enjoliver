@@ -4,6 +4,8 @@ metadata:
   name: {{ .Chart.Name }}
   namespace: {{ .Values.namespace }}
 spec:
+  updateStrategy:
+    type: RollingUpdate
   template:
     metadata:
       labels:
@@ -11,7 +13,7 @@ spec:
     spec:
       serviceAccount: {{ .Chart.Name }}
       containers:
-      - image: datadog/docker-dd-agent:latest
+      - image: datadog/docker-dd-agent:latest-alpine
         imagePullPolicy: Always
         name: dd-agent
         ports:
@@ -23,6 +25,12 @@ spec:
             value: {{ .Values.apikey }}
           - name: KUBERNETES
             value: "yes"
+          - name: KUBERNETES_LEADER_CANDIDATE
+            value: "true"
+          - name: KUBERNETES_COLLECT_EVENTS
+            value: "true"
+          - name: KUBERNETES_NAMESPACE_NAME_REGEX
+            value: "*"
           - name: SD_BACKEND
             value: docker
           - name: KUBERNETES_KUBELET_HOST
