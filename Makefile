@@ -125,16 +125,16 @@ dev_setup:
 	test $(MY_USER)
 	test $(shell id -u -r) -eq 0
 	chown -R $(MY_USER): $(CWD)
-	su - $(MY_USER) -c "make -C $(CWD) submodules"
-	su - $(MY_USER) -c "make -C $(CWD) dev_setup_runtime"
-	su - $(MY_USER) -c "make -C $(CWD)/app/tests testing.id_rsa"
-	su - $(MY_USER) -c "make -C $(CWD) front"
-	su - $(MY_USER) -c "make -C $(CWD) pip"
-	su - $(MY_USER) -c "make -C $(CWD) assets"
+	su -m $(MY_USER) -c "make -C $(CWD) submodules"
+	su -m $(MY_USER) -c "make -C $(CWD) dev_setup_runtime"
+	su -m $(MY_USER) -c "make -C $(CWD)/app/tests testing.id_rsa"
+	su -m $(MY_USER) -c "make -C $(CWD) front"
+	su -m $(MY_USER) -c "make -C $(CWD) pip"
+	su -m $(MY_USER) -c "make -C $(CWD) assets"
 	make -C $(CWD) aci
 	make -C $(CWD) container_linux
-	su - $(MY_USER) -c "make -C $(CWD) validate"
-	su - $(MY_USER) -c "make -C $(CWD) config"
+	su -m $(MY_USER) -c "make -C $(CWD) validate"
+	su -m $(MY_USER) -c "make -C $(CWD) config"
 	chown -R $(MY_USER): $(CWD)
 
 prod_setup:
