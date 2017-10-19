@@ -60,7 +60,7 @@ class UserInterfaceRepository:
             row['LastReport'] = li[0].updated_date if li else None
             row['UpToDate'] = li[0].up_to_date if li else None
             row['LastChange'] = li[0].last_change_date if li else None
-            row['UpdateStrategy'] = lr[0].strategy if lr else "Disable"
+            row['UpdateStrategy'] = lr[0].strategy if lr and lr[0].enable else "Disable"
 
             data.append(row)
 
