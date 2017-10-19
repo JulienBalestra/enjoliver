@@ -46,7 +46,7 @@
     methods: {
       fetchData: function () {
         this.loading = true
-        this.$http.get('http://localhost:5000/healthz')
+        this.$http.get('/healthz')
           .then(function (response) {
             this.loading = false
 //            let obj = response.data
