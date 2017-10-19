@@ -396,8 +396,12 @@ def healthz():
         schema:
             type: dict
     """
-    resp = ops.healthz(application, SMART, request)
-    return jsonify(resp), 503 if resp["global"] is False else 200
+    data = ops.healthz(application, SMART, request)
+    res = jsonify(data), 503 if data["global"] is False else 200
+    resp = make_response(res)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+
+    return resp
 
 
 @application.route('/discovery', methods=['POST'])

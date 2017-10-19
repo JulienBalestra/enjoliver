@@ -10,6 +10,12 @@ Vue.use(VueGoodTable)
 Vue.use(VueResources)
 Vue.config.productionTip = false
 
+Vue.mixin({
+  methods: {
+    formatResponseError: err => 'Cannot fetch data. Error code ' + err.status + ', message: ' + err.statusText + '.'
+  }
+})
+
 /* eslint-disable no-new */
 new Vue({
   el: '#app',
