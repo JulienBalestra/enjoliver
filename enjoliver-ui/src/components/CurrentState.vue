@@ -31,7 +31,7 @@ export default {
           this.loading = false
           this.rows = response.data
         }, function (err) {
-          this.error = err
+          this.error = this.formatResponseError(err)
         })
     }
   },
