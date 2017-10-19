@@ -14,6 +14,7 @@ core: $(CORE)
 
 kube: $(KUBE)
 kube_deps: core $(KUBE)
+kube_deps_only: $(KUBE)
 
 extra: $(EXTRA)
 extra_deps: kube_deps $(EXTRA)
