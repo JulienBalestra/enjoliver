@@ -214,7 +214,7 @@ class TestAPIGunicorn(unittest.TestCase):
         expect = "#!ipxe\n" \
                  "kernel " \
                  "%s/assets/coreos/serve/coreos_production_pxe.vmlinuz " \
-                 "console=tty0 console=ttyS0 console=ttyS1 " \
+                 "console=ttyS0 console=ttyS1 " \
                  "coreos.config.url=%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp} " \
                  "coreos.first_boot " \
                  "coreos.oem.id=pxe\n" \
@@ -246,7 +246,7 @@ class TestAPIGunicorn(unittest.TestCase):
         request.close()
         expect = "#!ipxe\n" \
                  "kernel %s/assets/coreos/serve/coreos_production_pxe.vmlinuz " \
-                 "console=tty0 console=ttyS0 console=ttyS1 " \
+                 "console=ttyS0 console=ttyS1 " \
                  "coreos.config.url=%s/ignition?uuid=${uuid}&mac=${net0/mac:hexhyp} " \
                  "coreos.first_boot coreos.oem.id=pxe\n" \
                  "initrd %s/assets/coreos/serve/coreos_production_pxe_image.cpio.gz \n" \
