@@ -780,6 +780,9 @@ def ignition():
         app.logger.error("matchbox state is out of sync: cacheKey: %s is None" % cache_key)
         return Response("matchbox is out of sync", status=503, mimetype="text/plain")
 
+    if request.path == "/ignition-pxe":
+        app.logger.info("%s %s" % (request.method, request.url))
+
     matchbox_uri = application.config.get("MATCHBOX_URI")
     if matchbox_uri:
         try:
@@ -920,7 +923,8 @@ def ipxe():
 
 
 @application.errorhandler(404)
-def page_not_found(error):
+def not_found(error):
+    app.logger.warning("404 on %s" % request.path)
     return Response("404", status=404, mimetype="text/plain")
 
 

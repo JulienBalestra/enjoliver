@@ -88,9 +88,9 @@ class GenerateCommon(object):
             logger.warning("get data of %s raise: %s" % (file_path, e))
             on_disk = {}
 
-        render = self.render()
         diff = deepdiff.DeepDiff(self._target_data, on_disk, ignore_order=True)
         if diff:
+            render = self.render()
             with open(file_path, "w") as fd:
                 fd.write(render)
             logger.info("replaced: %s" % file_path)
@@ -154,7 +154,7 @@ class GenerateProfile(GenerateCommon):
                     "%s/%s?uuid=${uuid}&mac=${net0/mac:hexhyp}" % (self.api_uri, path_for_ignition),
                 "coreos.first_boot": "",
                 "coreos.oem.id": "pxe",
-                "console": "tty0 console=ttyS0 console=ttyS1",
+                "console": "ttyS0 console=ttyS1",
             }
         }
 

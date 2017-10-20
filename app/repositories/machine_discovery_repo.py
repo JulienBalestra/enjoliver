@@ -77,7 +77,7 @@ class DiscoveryRepository:
 
         session.flush()
 
-        if discovery_data["lldp"]["is_file"]:
+        if discovery_data["lldp"]["is_file"] and discovery_data["lldp"]["data"]["interfaces"]:
             for lldp_interface in discovery_data["lldp"]["data"]["interfaces"]:
                 chassis = session.query(Chassis) \
                     .filter(Chassis.name == lldp_interface["chassis"]["name"] and
@@ -93,6 +93,7 @@ class DiscoveryRepository:
                 machine_interface_id = machine_interfaces[lldp_interface["name"]].id
                 session.add(
                     ChassisPort(
+                        # TODO on some vendor it's not a MAC but a string like Ethernet1/22
                         mac=lldp_interface["port"]["id"],
                         machine_interface=machine_interface_id,
                         chassis_id=chassis.id
