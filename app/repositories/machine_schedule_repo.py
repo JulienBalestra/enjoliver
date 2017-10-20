@@ -1,12 +1,70 @@
+import logging
+
 from sqlalchemy.orm import joinedload
 
 import smartdb
 from model import Machine, Schedule, MachineInterface
 
+logger = logging.getLogger(__file__)
+
 
 class ScheduleRepository:
+    __name__ = "ScheduleRepository"
+
     def __init__(self, smart: smartdb.SmartDatabaseClient):
         self.smart = smart
+
+    @staticmethod
+    def _lint_schedule_data(schedule_data: dict):
+        # {
+        #     "roles": ["kubernetes-control-plane", "etcd-member"],
+        #     "selector": {
+        #         "mac": mac
+        #     }
+        # }
+        try:
+            _ = schedule_data["selector"]["mac"]
+            _ = schedule_data["roles"]
+        except KeyError as e:
+            err_msg = "missing keys in schedule data: '%s'" % e
+            logger.error(err_msg)
+            raise TypeError(err_msg)
+
+        return schedule_data
+
+    def create_schedule(self, schedule_data: dict):
+        caller = "%s.%s" % (self.__name__, self.create_schedule.__name__)
+        schedule_data = self._lint_schedule_data(schedule_data)
+
+        @smartdb.cockroach_transaction
+        def callback(caller=caller):
+            commit = False
+            with self.smart.new_session() as session:
+                machine = session.query(Machine) \
+                    .join(MachineInterface) \
+                    .options(joinedload("schedules")) \
+                    .filter(MachineInterface.mac == schedule_data["selector"]["mac"]) \
+                    .first()
+
+                if not machine:
+                    logger.error("machine mac %s not in db", schedule_data["selector"]["mac"])
+                    return commit
+                else:
+                    machine_already_scheduled = [s.role for s in machine.schedules]
+                    for role in schedule_data["roles"]:
+                        if role in machine_already_scheduled:
+                            logger.info("machine mac %s already scheduled with role %s",
+                                        schedule_data["selector"]["mac"], role)
+                            continue
+                        session.add(Schedule(machine_id=machine.id, role=role))
+                        logger.info("scheduling machine mac %s as role %s", schedule_data["selector"]["mac"], role)
+                        commit = True
+
+                    session.commit() if commit else None
+
+            return commit
+
+        return callback(caller)
 
     def get_all_schedules(self):
         result = dict()
@@ -16,7 +74,8 @@ class ScheduleRepository:
                     .options(joinedload("schedules")) \
                     .join(Schedule) \
                     .filter(MachineInterface.as_boot == True):
-                result[machine.interfaces[0].mac] = [k.role for k in machine.schedules]
+                if machine.schedules:
+                    result[machine.interfaces[0].mac] = [k.role for k in machine.schedules]
 
         return result
 

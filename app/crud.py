@@ -15,66 +15,6 @@ from smartdb import SmartDatabaseClient as sc
 logger = logging.getLogger(__name__)
 
 
-class InjectSchedule:
-    """
-    Store the information of a schedule
-    """
-
-    def __init__(self, session, data):
-        self.session = session
-        self.adds = 0
-        self.updates = 0
-
-        self.data = data
-        self.mac = self.data["selector"]["mac"]
-
-        self.interface = self.session.query(MachineInterface).filter(MachineInterface.mac == self.mac).first()
-        if not self.interface:
-            m = "mac: '%s' unknown in db" % self.mac
-            logger.error(m)
-            raise AttributeError(m)
-        logger.info("InjectSchedule mac: %s" % self.mac)
-
-    def apply_roles(self):
-        for role in self.data["roles"]:
-            r = self.session.query(Schedule).filter(
-                Schedule.machine_id == self.interface.machine_id).filter(Schedule.role == role).first()
-            if r:
-                logger.info("mac %s already scheduled as %s" % (self.mac, role))
-                continue
-
-            new = Schedule(
-                machine_id=self.interface.machine_id,
-                role=role
-            )
-            self.session.add(new)
-            self.adds += 1
-            logger.info("mac %s scheduling as %s" % (self.mac, role))
-
-        return
-
-    def commit(self, report=True):
-        try:
-            if self.adds != 0 or self.updates != 0:
-                try:
-                    logger.debug("commiting")
-                    self.session.commit()
-
-                except Exception as e:
-                    logger.error("%s %s adds=%s updates=%s" % (type(e), e, self.adds, self.updates))
-                    self.adds, self.updates = 0, 0
-                    logger.warning("rollback the sessions")
-                    self.session.rollback()
-                    raise
-        finally:
-            if report:
-                roles_rapport = {}
-                for r in ScheduleRoles.roles:
-                    roles_rapport[r] = self.session.query(Schedule).filter(Schedule.role == r).count()
-                logger.debug("closing")
-                return roles_rapport, True if self.adds else False
-
-
 class InjectLifecycle:
     """
     Store the data from the Lifecycle machine state

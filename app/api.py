@@ -576,14 +576,7 @@ def scheduler_post():
                 }
             }), 406
 
-    @smartdb.cockroach_transaction
-    def op(caller=request.url_rule):
-        with SMART.new_session() as session:
-            inject = crud.InjectSchedule(session, data=req)
-            inject.apply_roles()
-            inject.commit()
-
-    op(caller=request.url_rule)
+    repositories.machine_schedule.create_schedule(req)
     CACHE.delete(request.path)
     return jsonify(req)
 
