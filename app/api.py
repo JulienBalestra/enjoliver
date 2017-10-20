@@ -499,11 +499,8 @@ def get_schedule_by_role(role):
         schema:
             type: list
     """
-    with SMART.new_session() as session:
-        fetch = crud.FetchSchedule(session)
-        multi = role.split("&")
-        data = fetch.get_machines_by_roles(*multi)
-
+    multi = role.split("&")
+    data = repositories.machine_schedule.get_machines_by_roles(*multi)
     return jsonify(data)
 
 
@@ -950,7 +947,7 @@ def user_view_machine():
 
 @application.route('/ui/view/states', methods=['GET'])
 def user_view_machine_statuses():
-    data_since_last_min=request.args.get('data_since_last_min') if request.args.get('data_since_last_min') else 30
+    data_since_last_min = request.args.get('data_since_last_min') if request.args.get('data_since_last_min') else 30
     res = jsonify(repositories.machine_state.fetch(finished_in_less_than_min=int(data_since_last_min)))
     resp = make_response(res)
     resp.headers['Access-Control-Allow-Origin'] = '*'

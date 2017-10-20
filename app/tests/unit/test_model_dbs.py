@@ -1,12 +1,11 @@
-import shutil
+import os
 import unittest
 
-import os
+from unit import model_player
 
 from app import configs
 from app import smartdb
 from repositories.register import RepositoriesRegister
-from unit import model_player
 
 EC = configs.EnjoliverConfig()
 

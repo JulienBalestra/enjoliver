@@ -57,6 +57,21 @@ class ScheduleRepository:
 
         return available_machines
 
+    def _construct_machine_dict(self, machine: Machine, role):
+        return {
+            "mac": machine.interfaces[0].mac,
+            "ipv4": machine.interfaces[0].ipv4,
+            "cidrv4": machine.interfaces[0].cidrv4,
+            "gateway": machine.interfaces[0].gateway,
+            "as_boot": machine.interfaces[0].as_boot,
+            "name": machine.interfaces[0].name,
+            "netmask": machine.interfaces[0].netmask,
+            "roles": role,
+            "created_date": machine.created_date,
+            "fqdn": machine.interfaces[0].fqdn,
+            "disks": [{"path": k.path, "size-bytes": k.size} for k in machine.disks],
+        }
+
     def get_machines_by_role(self, role: str):
         machines = []
         with self.smart.new_session() as session:
@@ -66,27 +81,27 @@ class ScheduleRepository:
                     .join(Schedule) \
                     .filter(MachineInterface.as_boot == True) \
                     .filter(Schedule.role == role):
-                machines.append({
-                    "mac": machine.interfaces[0].mac,
-                    "ipv4": machine.interfaces[0].ipv4,
-                    "cidrv4": machine.interfaces[0].cidrv4,
-                    "gateway": machine.interfaces[0].gateway,
-                    "as_boot": machine.interfaces[0].as_boot,
-                    "name": machine.interfaces[0].name,
-                    "netmask": machine.interfaces[0].netmask,
-                    "roles": role,
-                    "created_date": machine.created_date,
-                    "fqdn": machine.interfaces[0].fqdn,
-                    "disks": [{"path": k.path, "size-bytes": k.size} for k in machine.disks],
-                })
+                machines.append(self._construct_machine_dict(machine, role))
 
         return machines
 
     def get_machines_by_roles(self, *roles):
         if len(roles) == 1:
             return self.get_machines_by_role(roles[0])
+        machines = []
+        roles = list(roles)
 
-        raise NotImplemented
+        with self.smart.new_session() as session:
+            for machine in session.query(Machine) \
+                    .options(joinedload("interfaces")) \
+                    .options(joinedload("disks")) \
+                    .join(Schedule) \
+                    .filter(MachineInterface.as_boot == True):
+                # TODO Maybe do this with a sqlalchemy filter func
+                if len(roles) == len(roles) and set(k.role for k in machine.schedules) == set(roles):
+                    machines.append(self._construct_machine_dict(machine, roles))
+
+        return machines
 
     def get_role_ip_list(self, role: str):
         ips = []

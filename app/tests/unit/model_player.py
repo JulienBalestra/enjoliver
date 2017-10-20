@@ -301,11 +301,18 @@ class TestModel(unittest.TestCase):
 
             self.assertEqual(["kubernetes-node"],
                              self.repositories.machine_schedule.get_roles_by_mac_selector(i["mac"]))
-            with self.smart.new_session() as session:
-                fetch = crud.FetchSchedule(session)
-                r = fetch.get_machines_by_roles(
-                    model.ScheduleRoles.etcd_member, model.ScheduleRoles.kubernetes_control_plane)
-                self.assertEqual(1, len(r))
+
+            r = self.repositories.machine_schedule.get_machines_by_roles(
+                model.ScheduleRoles.etcd_member)
+            self.assertEqual(4, len(r))
+
+            r = self.repositories.machine_schedule.get_machines_by_roles(
+                model.ScheduleRoles.kubernetes_control_plane)
+            self.assertEqual(1, len(r))
+
+            r = self.repositories.machine_schedule.get_machines_by_roles(
+                model.ScheduleRoles.etcd_member, model.ScheduleRoles.kubernetes_control_plane)
+            self.assertEqual(1, len(r))
 
     def test_23a(self):
         r = self.repositories.machine_schedule.get_machines_by_role("kubernetes-control-plane")
@@ -368,10 +375,8 @@ class TestModel(unittest.TestCase):
         self.assertEqual(["kubernetes-control-plane", "etcd-member"],
                          self.repositories.machine_schedule.get_roles_by_mac_selector(mac))
 
-        with self.smart.new_session() as session:
-            fetch = crud.FetchSchedule(session)
-            r = fetch.get_machines_by_roles(
-                model.ScheduleRoles.etcd_member, model.ScheduleRoles.kubernetes_control_plane)
+        r = self.repositories.machine_schedule.get_machines_by_roles(
+            model.ScheduleRoles.etcd_member, model.ScheduleRoles.kubernetes_control_plane)
         self.assertEqual(2, len(r))
 
     def test_28(self):
