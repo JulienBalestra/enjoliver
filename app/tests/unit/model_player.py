@@ -178,7 +178,8 @@ class TestModel(unittest.TestCase):
             inject.apply_roles()
             self.assertEqual(inject.commit(), (e, False))
 
-        self.assertEqual([u"kubernetes-control-plane", "etcd-member"], self.repositories.machine_schedule.get_roles_by_mac_selector(mac))
+        self.assertEqual([u"kubernetes-control-plane", "etcd-member"],
+                         self.repositories.machine_schedule.get_roles_by_mac_selector(mac))
 
     def test_15(self):
         mac = posts.M05["boot-info"]["mac"]
@@ -298,7 +299,8 @@ class TestModel(unittest.TestCase):
             self.assertEqual(str, type(i["roles"]))
             self.assertEqual(datetime.datetime, type(i["created_date"]))
 
-            self.assertEqual(["kubernetes-node"], self.repositories.machine_schedule.get_roles_by_mac_selector(i["mac"]))
+            self.assertEqual(["kubernetes-node"],
+                             self.repositories.machine_schedule.get_roles_by_mac_selector(i["mac"]))
             with self.smart.new_session() as session:
                 fetch = crud.FetchSchedule(session)
                 r = fetch.get_machines_by_roles(
@@ -362,9 +364,12 @@ class TestModel(unittest.TestCase):
             inject = crud.InjectSchedule(session, s)
             inject.apply_roles()
             self.assertEqual(inject.commit(), (e, False))
+
+        self.assertEqual(["kubernetes-control-plane", "etcd-member"],
+                         self.repositories.machine_schedule.get_roles_by_mac_selector(mac))
+
         with self.smart.new_session() as session:
             fetch = crud.FetchSchedule(session)
-            self.assertEqual(["kubernetes-control-plane", "etcd-member"], fetch.get_roles_by_mac_selector(mac))
             r = fetch.get_machines_by_roles(
                 model.ScheduleRoles.etcd_member, model.ScheduleRoles.kubernetes_control_plane)
         self.assertEqual(2, len(r))

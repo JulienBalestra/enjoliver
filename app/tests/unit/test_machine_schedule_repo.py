@@ -1,6 +1,6 @@
 import unittest
 
-import posts
+from common import posts
 from app import smartdb, model
 from model import MachineInterface, Machine
 from repositories.machine_discovery_repo import DiscoveryRepository

@@ -23,46 +23,6 @@ class FetchSchedule:
     def __init__(self, session: Session):
         self.session = session
 
-    def get_schedules(self):
-        r = {}
-        for machine in self.session.query(Machine) \
-                .options(joinedload("interfaces")) \
-                .options(joinedload("schedules")) \
-                .join(Schedule) \
-                .filter(MachineInterface.as_boot == True):
-            r[machine.interfaces[0].mac] = [k.role for k in machine.schedules]
-
-        return r
-
-    def get_roles_by_mac_selector(self, mac: str):
-        r = []
-        for s in self.session.query(Schedule).join(Machine).join(MachineInterface).filter(MachineInterface.mac == mac):
-            r.append(s.role)
-        return r
-
-    def get_available_machines(self):
-        available_machines = []
-
-        for row in self.session.execute("""SELECT mi.id, mi.mac, mi.ipv4, mi.cidrv4, mi.gateway, mi.as_boot, mi.name, mi.netmask, mi.fqdn, mi.machine_id FROM machine AS m
-            LEFT JOIN schedule AS s ON m.id = s.machine_id
-            INNER JOIN  "machine-interface" AS mi ON mi.machine_id = m.id AND mi.as_boot = :as_boot
-            WHERE s.role IS NULL""", {"as_boot": sc.get_bool_by_session(self.session, True)}):
-            available_machines.append({
-                "mac": row["mac"],
-                "ipv4": row["ipv4"],
-                "cidrv4": row["cidrv4"],
-                "gateway": row["gateway"],
-                "as_boot": row["as_boot"],
-                "name": row["name"],
-                "netmask": row["netmask"],
-                "created_date": self.session.query(Machine).filter(
-                    Machine.id == row["machine_id"]).first().created_date,
-                "fqdn": row["fqdn"],
-                "disks": [{"path": k.path, "size-bytes": k.size}
-                          for k in self.session.query(MachineDisk).filter(MachineDisk.id == row["machine_id"])],
-            })
-        return available_machines
-
     def get_machines_by_role(self, role: str):
         machines = []
         for machine in self.session.query(Machine) \
@@ -124,18 +84,6 @@ class FetchSchedule:
             return machines
 
         return self.get_machines_by_role(*args)
-
-    def get_role_ip_list(self, role: str):
-        ips = []
-        for machine in self.session.query(Machine) \
-                .options(joinedload("interfaces")) \
-                .join(MachineInterface) \
-                .join(Schedule) \
-                .filter(Schedule.role == role, MachineInterface.as_boot == True):
-            ips.append(
-                machine.interfaces[0].ipv4
-            )
-        return ips
 
 
 class InjectSchedule:

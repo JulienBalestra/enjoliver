@@ -473,10 +473,8 @@ def scheduler_get():
     """
     all_data = CACHE.get(request.path)
     if all_data is None:
-        with SMART.new_session() as session:
-            fetch = crud.FetchSchedule(session)
-            all_data = fetch.get_schedules()
-            CACHE.set(request.path, all_data, timeout=30)
+        all_data = repositories.machine_schedule.get_all_schedules()
+        CACHE.set(request.path, all_data, timeout=10)
 
     return jsonify(all_data)
 
@@ -523,10 +521,7 @@ def get_available_machine():
         schema:
             type: list
     """
-    with SMART.new_session() as session:
-        fetch = crud.FetchSchedule(session)
-        data = fetch.get_available_machines()
-
+    data = repositories.machine_schedule.get_available_machines()
     return jsonify(data)
 
 
@@ -534,7 +529,7 @@ def get_available_machine():
 def get_schedule_role_ip_list(role):
     """
     Scheduler
-    List all the IP addresse of a given schedules role
+    List all the IP addresses of a given schedules role
     ---
     tags:
       - scheduler
@@ -550,9 +545,7 @@ def get_schedule_role_ip_list(role):
         schema:
             type: list
     """
-    with SMART.new_session() as session:
-        fetch = crud.FetchSchedule(session)
-        ip_list_role = fetch.get_role_ip_list(role)
+    ip_list_role = repositories.machine_schedule.get_role_ip_list(role)
 
     return jsonify(ip_list_role)
 
