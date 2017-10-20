@@ -85,4 +85,11 @@ class TestMachineScheduleRepo(unittest.TestCase):
         ret = ms.get_roles_by_mac_selector(posts.M01["boot-info"]["mac"])
         self.assertEqual(0, len(ret))
 
-
+    def test_machine_without_role4(self):
+        mds = DiscoveryRepository(self.smart)
+        mds.upsert(posts.M01)
+        mds.upsert(posts.M02)
+        ms = ScheduleRepository(self.smart)
+        for role in model.ScheduleRoles.roles:
+            ret = ms.get_role_ip_list(role)
+            self.assertEqual(0, len(ret))

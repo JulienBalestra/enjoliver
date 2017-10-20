@@ -81,3 +81,21 @@ class ScheduleRepository:
                 })
 
         return machines
+
+    def get_machines_by_roles(self, *roles):
+        if len(roles) == 1:
+            return self.get_machines_by_role(roles[0])
+
+        raise NotImplemented
+
+    def get_role_ip_list(self, role: str):
+        ips = []
+        with self.smart.new_session() as session:
+            for machine in session.query(Machine) \
+                    .options(joinedload("interfaces")) \
+                    .join(MachineInterface) \
+                    .join(Schedule) \
+                    .filter(Schedule.role == role, MachineInterface.as_boot == True):
+                ips.append(machine.interfaces[0].ipv4)
+
+        return ips
