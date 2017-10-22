@@ -69,8 +69,10 @@ systemd:
         After=docker.service
 
         [Service]
+        EnvironmentFile=/run/metadata/torcx
         Type=oneshot
-        ExecStart=-/bin/bash -c '/usr/bin/docker rm $(/usr/bin/docker ps -aq)'
+        ExecStart=-/usr/bin/env PATH=${TORCX_BINDIR}:${PATH} /bin/bash -c 'docker rm $(docker ps -aq)'
+        SuccessExitStatus=1
         Restart=no
 
         [Install]
