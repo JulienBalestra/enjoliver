@@ -95,12 +95,13 @@ class ScheduleRepository:
         with self.smart.new_session() as session:
             for m in session.query(Machine) \
                     .join(MachineInterface) \
+                    .options(joinedload("schedules")) \
                     .options(joinedload("interfaces")) \
                     .options(joinedload("disks")) \
-                    .filter(MachineInterface.as_boot == True) \
-                    .filter(Machine.schedules == None):
-                available_machines.append(
-                    {
+                    .filter(MachineInterface.as_boot == True):
+                # TODO find a way to support cockroach and SQLite without this if
+                if not m.schedules:
+                    available_machines.append({
                         "mac": m.interfaces[0].mac,
                         "ipv4": m.interfaces[0].ipv4,
                         "cidrv4": m.interfaces[0].cidrv4,
@@ -110,9 +111,7 @@ class ScheduleRepository:
                         "netmask": m.interfaces[0].netmask,
                         "created_date": m.created_date,
                         "disks": [{"path": k.path, "size-bytes": k.size} for k in m.disks],
-
-                    }
-                )
+                    })
 
         return available_machines
 
