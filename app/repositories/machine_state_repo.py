@@ -45,12 +45,15 @@ class MachineStateRepository:
 
     def update(self, mac: str, state: str):
         with self.smart.new_session() as session:
-            state_machine = session.query(MachineCurrentState).filter(
-                MachineCurrentState.machine_mac == mac).first()
+            state_machine = session.query(MachineCurrentState) \
+                .filter(MachineCurrentState.machine_mac == mac) \
+                .first()
 
-            machine = session.query(MachineInterface).filter(MachineInterface.mac == mac).first()
+            machine_interface = session.query(MachineInterface) \
+                .filter(MachineInterface.mac == mac) \
+                .first()
 
-        machine_id = None if not machine else machine.id
+        machine_id = None if not machine_interface else machine_interface.id
         now = datetime.datetime.utcnow()
 
         if not state_machine:
