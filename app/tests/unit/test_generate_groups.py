@@ -1,6 +1,8 @@
 import os
 from unittest import TestCase
 
+import time
+
 from app import generator
 
 
@@ -66,10 +68,12 @@ class TestGenerateGroups(TestCase):
             profile="etcd-test.yaml",
             matchbox_path=self.test_matchbox_path
         )
-        new.dump()
+        self.assertTrue(new.dump())
         self.assertTrue(os.path.isfile("%s/groups/%s.json" % (self.test_matchbox_path, _id)))
-        new.dump()
+
+        self.assertFalse(new.dump())
         self.assertTrue(os.path.isfile("%s/groups/%s.json" % (self.test_matchbox_path, _id)))
+
         new = generator.GenerateGroup(
             api_uri=self.api_uri,
             _id=_id,
@@ -78,7 +82,7 @@ class TestGenerateGroups(TestCase):
             matchbox_path=self.test_matchbox_path,
             selector={"one": "selector"}
         )
-        new.dump()
+        self.assertTrue(new.dump())
         self.assertTrue(os.path.isfile("%s/groups/%s.json" % (self.test_matchbox_path, _id)))
         os.remove("%s/groups/%s.json" % (self.test_matchbox_path, _id))
 
@@ -154,7 +158,7 @@ class TestGenerateGroupsSelectorLower(TestCase):
             matchbox_path=self.test_matchbox_path,
             selector={"mac": "08:00:27:37:28:2e"}
         )
-        new.dump()
+        self.assertTrue(new.dump())
         self.assertTrue(os.path.isfile("%s/groups/%s.json" % (self.test_matchbox_path, _id)))
         os.remove("%s/groups/%s.json" % (self.test_matchbox_path, _id))
 
@@ -303,6 +307,12 @@ class TestGenerateGroupsExtraMetadata(TestCase):
             matchbox_path=self.test_matchbox_path,
             selector={"mac": "08:00:27:37:28:2e"}
         )
-        new.dump()
+        self.assertTrue(new.dump())
         self.assertTrue(os.path.isfile("%s/groups/%s.json" % (self.test_matchbox_path, _id)))
         os.remove("%s/groups/%s.json" % (self.test_matchbox_path, _id))
+        self.assertTrue(new.dump())
+        for i in range(10):
+            self.assertFalse(new.dump())
+        new.api_uri = "http://google.com"
+        self.assertTrue(new.dump())
+        self.assertFalse(new.dump())

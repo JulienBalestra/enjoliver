@@ -86,16 +86,21 @@ class GenerateCommon(object):
                 on_disk = json.loads(f.read())
         except Exception as e:
             logger.warning("get data of %s raise: %s" % (file_path, e))
-            on_disk = {}
+            on_disk = dict()
 
+        render = self.render()
         diff = deepdiff.DeepDiff(self._target_data, on_disk, ignore_order=True)
-        if diff:
-            render = self.render()
-            with open(file_path, "w") as fd:
-                fd.write(render)
-            logger.info("replaced: %s" % file_path)
-        else:
+        if not diff:
             logger.debug("no diff: %s" % file_path)
+            return False
+
+        if on_disk:
+            logger.info("diff on %s: %s" % (file_path, diff))
+
+        with open(file_path, "w") as fd:
+            fd.write(render)
+        logger.info("replaced: %s" % file_path)
+        return True
 
     @staticmethod
     def ensure_directory(path):
