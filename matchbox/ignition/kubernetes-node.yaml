@@ -644,7 +644,7 @@ storage:
 
           echo "draining node..."
           kubectl --kubeconfig /var/lib/kubelet/kubeconfig \
-            drain {{.kubernetes_node_name}} --force --ignore-daemonsets --delete-local-data
+            drain {{.kubernetes_node_name}} --force --ignore-daemonsets --delete-local-data || true
 
           set +e
           for service in kubelet haproxy etcd3@fleet
