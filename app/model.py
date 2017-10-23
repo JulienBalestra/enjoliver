@@ -255,7 +255,7 @@ class MachineCurrentState(BASE):
     updated_date = Column(DateTime)
 
     machine = relationship("Machine")
-    interfaces = relationship("MachineInterface", primaryjoin=machine_id==foreign(MachineInterface.machine_id))
+    interfaces = relationship("MachineInterface", primaryjoin=machine_id == foreign(MachineInterface.machine_id))
 
     Index('idx_update_date_desc', updated_date.desc())
 
