@@ -149,6 +149,14 @@ storage:
 
           QUERY="${REQUEST_RAW_QUERY}{{if index . "extra_selectors"}}&{{.extra_selectors}}{{end}}"
 
+          # Disk safety
+          #test -b /dev/sdb || {
+          #  echo "We should have at least 2 drives: sda + sdb: exiting to avoid destroying data drive"
+          #  ls -l /dev/sd*
+          #  curl -f -XPOST "${API_URI}/lifecycle/coreos-install/fail/${QUERY}"
+          #  exit 2
+          #}
+
           while true
           do
 
