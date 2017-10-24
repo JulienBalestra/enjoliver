@@ -11,7 +11,10 @@ import (
 func main() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath(".")
+
+	for _, p := range []string{os.Getenv("ECTL_CONFIG_PATH"), ".", "/etc/ectl", "~/.ectl", "~/.config/ectl"} {
+		viper.AddConfigPath(p)
+	}
 
 	err := viper.ReadInConfig()
 	if err != nil {
