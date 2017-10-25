@@ -89,7 +89,7 @@ storage:
         inline: |
           discovery
 
-    - path: /etc/discovery
+    - path: /discovery
       filesystem: root
 
     - path: /etc/metadata-endpoints.env
@@ -160,6 +160,7 @@ storage:
           while true
           do
 
+              # if the machine have no role, we don't want to install discovery profile on disk
               curl -f ${API_URI}/scheduler | jq -e ". | has(${NORMALIZED_MAC})"
               if [ $? -ne 0 ]
               then
@@ -168,6 +169,7 @@ storage:
                 continue
               fi
 
+              # skip if matchbox files are not synchronised
               curl -fv ${API_URI}/sync-notify
               if [ $? -ne 0 ]
               then
@@ -176,6 +178,7 @@ storage:
                 continue
               fi
 
+              # get ignition configuration of this machine
               curl -f ${API_URI}/ignition?${QUERY} -o ${NEW_IGNITION}
               if [ $? -ne 0 ]
               then
@@ -186,7 +189,7 @@ storage:
 
               # Be sure the returned Ignition is not a discovery one
               # We don't want installing discovery profile on disk
-              jq -e '.storage.files[] | select(.path == "/etc/discovery") | .contents.source' ${NEW_IGNITION}
+              jq -e '.storage.files[] | select(.path == "/discovery") | .contents.source' ${NEW_IGNITION}
               if [ $? -ne 0 ]
               then
 

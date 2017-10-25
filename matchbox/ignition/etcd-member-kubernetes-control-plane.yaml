@@ -1276,9 +1276,9 @@ storage:
 
                 # Check if this new member make a replacement
                 REMOVE=$(etcdctl ${ETCD_FLAGS} --endpoints ${ETCD_MEMBER_CLIENT_URI_LIST} member list | \
-                  grep {{.network.ip_or_fqdn}} | cut -f1 -d ',')
+                  grep {{.network.ip_or_fqdn}}: | cut -f1 -d ',')
 
-                if [ $REMOVE ]
+                if [[ x"$REMOVE" != "x" ]]
                 then
                   echo "Remove ${REMOVE}"
                   etcdctl ${ETCD_FLAGS} --endpoints ${ETCD_MEMBER_CLIENT_URI_LIST} member remove ${REMOVE}
