@@ -12,7 +12,11 @@ func main() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 
-	for _, p := range []string{os.Getenv("ECTL_CONFIG_PATH"), ".", "/etc/ectl", "~/.ectl", "~/.config/ectl"} {
+	envConfig := os.Getenv("ECTL_CONFIG_PATH")
+	if envConfig != "" {
+		viper.AddConfigPath(envConfig)
+	}
+	for _, p := range []string{".", "/etc/ectl", "~/.ectl", "~/.config/ectl"} {
 		viper.AddConfigPath(p)
 	}
 
