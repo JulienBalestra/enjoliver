@@ -8,6 +8,8 @@ import (
 	"os"
 )
 
+var configPath = []string{".", "/etc/ectl", fmt.Sprintf("%s/.ectl", os.Getenv("HOME")), fmt.Sprintf("%s/.config/ectl", os.Getenv("HOME"))}
+
 func main() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
@@ -16,13 +18,14 @@ func main() {
 	if envConfig != "" {
 		viper.AddConfigPath(envConfig)
 	}
-	for _, p := range []string{".", "/etc/ectl", "~/.ectl", "~/.config/ectl"} {
+	for _, p := range configPath {
+		glog.V(4).Infof("add in configPath: %q", p)
 		viper.AddConfigPath(p)
 	}
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		glog.Errorf("Fatal error config file: %s \n", err)
+		glog.Errorf("Fatal error config file: %q \n", err)
 		os.Exit(1)
 	}
 
