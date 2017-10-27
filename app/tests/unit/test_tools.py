@@ -20,8 +20,3 @@ class TestTools(TestCase):
                 "1.host.enjoliver.local"
             ]
         }))
-
-    def test_01(self):
-        self.assertEqual("localhost", tools.get_verified_dns_query({
-            u'ipv4': u'127.0.0.1', u'cidrv4': u'127.0.0.1/21', u'name': u'eth0',
-            "gateway": "127.0.0.1", "fqdn": ["localhost"]}))
