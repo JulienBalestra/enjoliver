@@ -40,24 +40,28 @@ def get_verified_dns_query(interface: dict):
                 fqdn_list.append(name)
                 continue
 
-            # Do 4 tries
-            for i in range(4):
+            # Do 5 tries
+            max_tries = 5
+            for i in range(max_tries):
+                if i > 0:
+                    time.sleep(i / 10)
                 try:
-                    r = socket.gethostbyaddr(interface["ipv4"])[0]
-                    logger.debug("succeed to make dns request for %s:%s" % (interface["ipv4"], r))
+                    first_name = socket.gethostbyaddr(interface["ipv4"])[0]
+                    logger.debug("succeed to make dns request for %s:%s" % (interface["ipv4"], first_name))
+
                     if name[-1] == ".":
                         name = name[:-1]
 
-                    if name == r:
+                    if name == first_name:
                         fqdn_list.append(name)
                         break
                     else:
                         logger.warning(
-                            "fail to verify domain name discoveryC %s != %s socket.gethostbyaddr for %s %s" % (
-                                name, r, interface["ipv4"], interface["mac"]))
-                except socket.herror:
-                    logger.error("Verify FAILED '%s':%s socket.herror returning None" % (name, interface["ipv4"]))
-                    time.sleep(i // 10)
+                            "%d/%d fail to verify domain name discoveryC %s != %s socket.gethostbyaddr for %s %s"
+                            % (i + 1, max_tries, name, first_name, interface["ipv4"], interface["mac"]))
+                except socket.herror as e:
+                    logger.error(
+                        "%d/%d fail to verify name:%s ipv4:%s err: %s" % (i + 1, max_tries, name, interface["ipv4"], e))
 
     except (KeyError, TypeError):
         logger.warning("No fqdn for %s returning None" % interface["ipv4"])
