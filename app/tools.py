@@ -1,6 +1,8 @@
 import logging
 import socket
 
+import time
+
 from configs import EnjoliverConfig
 
 logger = logging.getLogger(__file__)
@@ -30,29 +32,36 @@ def get_verified_dns_query(interface: dict):
     :param interface:
     :return:
     """
-    fqdn = []
+    fqdn_list = []
     try:
         for name in interface["fqdn"]:
-            try:
-                r = socket.gethostbyaddr(interface["ipv4"])[0]
-                logger.debug("succeed to make dns request for %s:%s" % (interface["ipv4"], r))
-                if name[-1] == ".":
-                    name = name[:-1]
+            if EC.discovery_fqdn_verify is False:
+                logger.warning("Adding a non verified fqdn entry: %s" % name)
+                fqdn_list.append(name)
+                continue
 
-                if name == r:
-                    fqdn.append(name)
-                else:
-                    logger.warning("fail to verify domain name discoveryC %s != %s socket.gethostbyaddr for %s %s" % (
-                        name, r, interface["ipv4"], interface["mac"]))
-            except socket.herror:
-                logger.error("Verify FAILED '%s':%s socket.herror returning None" % (name, interface["ipv4"]))
-                if EC.discovery_fqdn_verify is False:
-                    logger.warning("Adding a non verified fqdn entry: %s" % name)
-                    fqdn.append(name)
+            # Do 4 tries
+            for i in range(4):
+                try:
+                    r = socket.gethostbyaddr(interface["ipv4"])[0]
+                    logger.debug("succeed to make dns request for %s:%s" % (interface["ipv4"], r))
+                    if name[-1] == ".":
+                        name = name[:-1]
+
+                    if name == r:
+                        fqdn_list.append(name)
+                        break
+                    else:
+                        logger.warning(
+                            "fail to verify domain name discoveryC %s != %s socket.gethostbyaddr for %s %s" % (
+                                name, r, interface["ipv4"], interface["mac"]))
+                except socket.herror:
+                    logger.error("Verify FAILED '%s':%s socket.herror returning None" % (name, interface["ipv4"]))
+                    time.sleep(i // 10)
 
     except (KeyError, TypeError):
         logger.warning("No fqdn for %s returning None" % interface["ipv4"])
 
-    if fqdn and len(fqdn) > 1:
-        raise AttributeError("Should be only one: %s" % fqdn)
-    return fqdn[0] if fqdn else None
+    if fqdn_list and len(fqdn_list) > 1:
+        raise AttributeError("Should be only one: %s" % fqdn_list)
+    return fqdn_list[0] if fqdn_list else None
