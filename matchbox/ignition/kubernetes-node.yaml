@@ -242,7 +242,6 @@ systemd:
       enable: true
       contents: |
         [Unit]
-        Requires=network.target
         After=network.target
 
         [Service]
@@ -484,7 +483,7 @@ storage:
         inline: |
           {
             "name": "bond0",
-            "type": "macvlan",
+            "type": "ipvlan",
             "master": "bond0",
             "ipam": {{ .cni }}
           }
@@ -1029,9 +1028,9 @@ networkd:
       contents: |
         [NetDev]
         Name=vbond0
-        Kind=macvlan
-        [MACVLAN]
-        Mode=bridge
+        Kind=ipvlan
+        [IPVLAN]
+        Mode=L2
 
     - name: 01-ethernet.network
       contents: |
@@ -1054,7 +1053,7 @@ networkd:
         [Match]
         Name=bond0
         [Network]
-        MACVLAN=vbond0
+        IPVLAN=vbond0
         LLMNR=false
 
     - name: 03-vbond0.network
