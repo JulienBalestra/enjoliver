@@ -73,7 +73,7 @@ class TestConfigSyncSchedules(TestCase):
             'rangeStart': '172.20.10.1',
             'rangeEnd': '172.20.10.254',
             'routes': [
-                {"dst": "172.31.255.255/32", "gw": "172.20.0.10"},
+                {"dst": "172.30.0.0/24", "gw": "172.20.0.10"},
                 {'dst': '0.0.0.0/0'},
 
             ],
@@ -102,7 +102,7 @@ class TestConfigSyncSchedules(TestCase):
             "rangeEnd": "10.99.33.62",
             "gateway": "10.99.64.254",
             "routes": [
-                {"dst": "172.31.255.255/32", "gw": "10.99.33.1"},
+                {"dst": "172.30.0.0/24", "gw": "10.99.33.1"},
                 {"dst": "0.0.0.0/0"},
             ]}, indent=2, sort_keys=True), json.dumps(d, indent=2, sort_keys=True))
 
@@ -127,7 +127,7 @@ class TestConfigSyncSchedules(TestCase):
             "rangeEnd": "10.99.39.190",
             "gateway": "10.99.64.254",
             "routes": [
-                {"dst": "172.31.255.255/32", "gw": "10.99.39.129"},
+                {"dst": "172.30.0.0/24", "gw": "10.99.39.129"},
                 {"dst": "0.0.0.0/0"},
             ]}, indent=2, sort_keys=True), json.dumps(d, indent=2, sort_keys=True))
 
@@ -167,3 +167,13 @@ class TestConfigSyncSchedules(TestCase):
             },
         ])
         self.assertEqual("S", r)
+
+    def test_07(self):
+        ip_address = sync.ConfigSyncSchedules.get_first_ip_address("172.30.0.0/24")
+        self.assertEqual("172.30.0.1", ip_address)
+
+        ip_address = sync.ConfigSyncSchedules.get_first_ip_address("172.30.0.0/26")
+        self.assertEqual("172.30.0.1", ip_address)
+
+        ip_address = sync.ConfigSyncSchedules.get_first_ip_address("172.30.30.30/32")
+        self.assertEqual("172.30.30.30", ip_address)

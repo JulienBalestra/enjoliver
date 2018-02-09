@@ -1,6 +1,6 @@
-From 5a7a5743b1c39672650615aa5935eafd61f719dd Mon Sep 17 00:00:00 2001
+From d77421cf49d3c786f3490ce066662eab89a24ffc Mon Sep 17 00:00:00 2001
 From: JulienBalestra <julien.balestra@gmail.com>
-Date: Mon, 28 Aug 2017 16:21:54 +0200
+Date: Sun, 4 Feb 2018 15:52:57 +0100
 Subject: [PATCH] Backoff sleep for RunPod
 
 ---
@@ -8,18 +8,18 @@ Subject: [PATCH] Backoff sleep for RunPod
  1 file changed, 54 insertions(+), 2 deletions(-)
 
 diff --git a/pkg/kubelet/rkt/rkt.go b/pkg/kubelet/rkt/rkt.go
-index d16c92d..e1e6fd2 100644
+index b35288b4aa..dffb7b1a86 100644
 --- a/pkg/kubelet/rkt/rkt.go
 +++ b/pkg/kubelet/rkt/rkt.go
 @@ -66,6 +66,7 @@ import (
- 	"k8s.io/kubernetes/pkg/util/selinux"
  	utilstrings "k8s.io/kubernetes/pkg/util/strings"
  	"k8s.io/kubernetes/pkg/util/term"
+ 	utilexec "k8s.io/utils/exec"
 +	"k8s.io/apimachinery/pkg/util/rand"
  )
  
  const (
-@@ -140,8 +141,11 @@ const (
+@@ -142,8 +143,11 @@ const (
  	// constant recognizable.
  	defaultRequestTimeout = 2*time.Minute - 1*time.Second
  
@@ -33,7 +33,7 @@ index d16c92d..e1e6fd2 100644
  )
  
  // Runtime implements the Containerruntime for rkt. The implementation
-@@ -185,6 +189,9 @@ type Runtime struct {
+@@ -187,6 +191,9 @@ type Runtime struct {
  	requestTimeout time.Duration
  
  	unitGetter unitServiceGetter
@@ -43,7 +43,7 @@ index d16c92d..e1e6fd2 100644
  }
  
  // Field of the X-Kubernetes directive of a systemd service file
-@@ -275,6 +282,8 @@ func New(
+@@ -277,6 +284,8 @@ func New(
  		requestTimeout = defaultRequestTimeout
  	}
  
@@ -52,7 +52,7 @@ index d16c92d..e1e6fd2 100644
  	rkt := &Runtime{
  		os:                  kubecontainer.RealOS{},
  		systemd:             systemd,
-@@ -292,6 +301,7 @@ func New(
+@@ -294,6 +303,7 @@ func New(
  		touchPath:           touchPath,
  		nsenterPath:         nsenterPath,
  		requestTimeout:      requestTimeout,
@@ -60,7 +60,7 @@ index d16c92d..e1e6fd2 100644
  	}
  
  	rkt.config, err = rkt.getConfig(rkt.config)
-@@ -1356,6 +1366,46 @@ func createHostPathVolumes(pod *v1.Pod) (err error) {
+@@ -1388,6 +1398,46 @@ func createHostPathVolumes(pod *v1.Pod) (err error) {
  	return nil
  }
  
@@ -107,7 +107,7 @@ index d16c92d..e1e6fd2 100644
  // RunPod first creates the unit file for a pod, and then
  // starts the unit over d-bus.
  func (r *Runtime) RunPod(pod *v1.Pod, pullSecrets []v1.Secret) error {
-@@ -1365,6 +1415,8 @@ func (r *Runtime) RunPod(pod *v1.Pod, pullSecrets []v1.Secret) error {
+@@ -1397,6 +1447,8 @@ func (r *Runtime) RunPod(pod *v1.Pod, pullSecrets []v1.Secret) error {
  	var networkNamespace kubecontainer.ContainerID
  	var podIP string
  
@@ -117,5 +117,5 @@ index d16c92d..e1e6fd2 100644
  	if err != nil {
  		return err
 -- 
-2.7.4
+2.11.0
 

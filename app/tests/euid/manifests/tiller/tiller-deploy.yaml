@@ -27,12 +27,6 @@ spec:
         imagePullPolicy: IfNotPresent
         command:
         - /usr/bin/tiller
-        env:
-        - name: KUBERNETES_SERVICE_HOST
-          value: "172.31.255.255"
-
-        - name: KUBERNETES_SERVICE_PORT
-          value: "6443"
 
         livenessProbe:
           httpGet:

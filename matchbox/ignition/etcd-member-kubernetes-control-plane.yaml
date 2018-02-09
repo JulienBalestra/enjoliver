@@ -471,7 +471,7 @@ systemd:
           --insecure-port={{.kubernetes_apiserver_insecure_port}} \
           --allow-privileged=true \
           --service-cluster-ip-range={{.kubernetes_service_cluster_ip_range}} \
-          --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota,PodPreset \
+          --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota \
           --runtime-config=batch/v2alpha1 \
           --tls-ca-file=/etc/vault.d/kubernetes/kube-apiserver.issuing_ca \
           --tls-cert-file=/etc/vault.d/kubernetes/kube-apiserver.certificate \
@@ -507,7 +507,7 @@ systemd:
           /etc/vault.d/kubernetes/kubelet.certificate \
           /etc/vault.d/kubernetes/kubelet.private_key \
           /etc/vault.d/kubernetes/kubelet.issuing_ca
-        ExecStartPre=/bin/mkdir -pv /var/lib/kubelet/kubeconfig
+
         ExecStart=/usr/bin/hyperkube kubelet \
           --hairpin-mode=none \
           --non-masquerade-cidr={{.network.subnet}} \
@@ -519,7 +519,7 @@ systemd:
           --register-schedulable=false \
           --allow-privileged=true \
           --enable-custom-metrics \
-          --api-servers=http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} \
+          --kubeconfig=/var/lib/kubelet/kubeconfig \
           --node-labels=control-plane=true,diskProfile={{.disk_profile}} \
           --cloud-provider="" \
           --container-runtime=rkt \
@@ -937,6 +937,282 @@ storage:
                     timeoutSeconds: 10
                     periodSeconds: 1
 
+    - path: /etc/kubernetes/manifests/node-proxy.yaml
+      filesystem: root
+      contents:
+        inline: |
+          ---
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRole
+          metadata:
+            name: system:node-proxy
+          rules:
+          - apiGroups:
+            - authentication.k8s.io
+            resources:
+            - tokenreviews
+            verbs:
+            - create
+          - apiGroups:
+            - authorization.k8s.io
+            resources:
+            - localsubjectaccessreviews
+            - subjectaccessreviews
+            verbs:
+            - create
+          - apiGroups:
+            - ""
+            resources:
+            - services
+            verbs:
+            - get
+            - list
+            - watch
+          - apiGroups:
+            - ""
+            resources:
+            - nodes
+            verbs:
+            - create
+            - get
+            - list
+            - watch
+          - apiGroups:
+            - ""
+            resources:
+            - nodes/status
+            verbs:
+            - patch
+            - update
+          - apiGroups:
+            - ""
+            resources:
+            - nodes
+            verbs:
+            - delete
+            - patch
+            - update
+          - apiGroups:
+            - ""
+            resources:
+            - events
+            verbs:
+            - create
+            - patch
+            - update
+          - apiGroups:
+            - ""
+            resources:
+            - pods
+            verbs:
+            - get
+            - list
+            - watch
+          - apiGroups:
+            - ""
+            resources:
+            - pods
+            verbs:
+            - create
+            - delete
+          - apiGroups:
+            - ""
+            resources:
+            - pods/status
+            verbs:
+            - update
+          - apiGroups:
+            - ""
+            resources:
+            - pods/eviction
+            verbs:
+            - create
+          - apiGroups:
+            - ""
+            resources:
+            - configmaps
+            - secrets
+            verbs:
+            - get
+          - apiGroups:
+            - ""
+            resources:
+            - persistentvolumeclaims
+            - persistentvolumes
+            verbs:
+            - get
+          - apiGroups:
+            - ""
+            resources:
+            - endpoints
+            verbs:
+            - get
+          - apiGroups:
+            - certificates.k8s.io
+            resources:
+            - certificatesigningrequests
+            verbs:
+            - create
+            - get
+            - list
+            - watch
+
+          - apiGroups:
+            - ""
+            resources:
+            - endpoints
+            - services
+            verbs:
+            - list
+            - watch
+          - apiGroups:
+            - ""
+            resources:
+            - nodes
+            verbs:
+            - get
+          - apiGroups:
+            - ""
+            resources:
+            - events
+            verbs:
+            - create
+            - patch
+            - update
+          ---
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRoleBinding
+          metadata:
+            name: container-linux
+          roleRef:
+            apiGroup: rbac.authorization.k8s.io
+            kind: ClusterRole
+            name: system:node-proxy
+          subjects:
+          - apiGroup: rbac.authorization.k8s.io
+            kind: User
+            name: node
+          ---
+
+    - path: /etc/kubernetes/manifests/kube-proxy.yaml
+      filesystem: root
+      contents:
+        inline: |
+          kind: Service
+          apiVersion: v1
+          metadata:
+            name: kube-proxy
+            namespace: kube-system
+          spec:
+            selector:
+              app: kube-proxy
+            ports:
+            - port: 10256
+              protocol: TCP
+            clusterIP: "None"
+          ---
+          apiVersion: extensions/v1beta1
+          kind: DaemonSet
+          metadata:
+            name: kube-proxy
+            namespace: kube-system
+          spec:
+            template:
+              metadata:
+                labels:
+                  app: kube-proxy
+                annotations:
+                  scheduler.alpha.kubernetes.io/critical-pod: ''
+                  prometheus.io/scrape: "true"
+                  prometheus.io/path: "/metrics"
+                  prometheus.io/port: "10256"
+              spec:
+                hostNetwork: true
+                containers:
+                - name: kube-proxy
+                  image: {{.hyperkube_image_url}}
+                  imagePullPolicy: IfNotPresent
+                  command:
+                  - /hyperkube
+                  - proxy
+                  - --kubeconfig=/etc/kubernetes/kube-proxy/kubeconfig
+                  - --masquerade-all
+                  resources:
+                    requests:
+                      cpu: 100m
+                  livenessProbe:
+                    httpGet:
+                      host: 127.0.0.1
+                      path: /healthz
+                      port: 10256
+                    initialDelaySeconds: 15
+                    timeoutSeconds: 15
+                  readinessProbe:
+                    failureThreshold: 3
+                    httpGet:
+                      host: 127.0.0.1
+                      path: /healthz
+                      port: 10256
+                    initialDelaySeconds: 5
+                    timeoutSeconds: 10
+                    periodSeconds: 1
+                  securityContext:
+                    privileged: true
+                  volumeMounts:
+                  - name: secrets
+                    mountPath: /etc/secrets
+                    readOnly: true
+                  - name: config
+                    mountPath: /etc/kubernetes/kube-proxy
+                    readOnly: true
+                volumes:
+                - name: secrets
+                  hostPath:
+                    path: /etc/vault.d/kubernetes
+                - name: config
+                  hostPath:
+                    path: /etc/kubernetes/kube-proxy
+
+    - path: /etc/kubernetes/kube-proxy/kubeconfig
+      mode: 0400
+      filesystem: root
+      contents:
+        inline: |
+          apiVersion: v1
+          kind: Config
+          clusters:
+            - cluster:
+                server: http://127.0.0.1:8080
+              name: kubernetes
+          contexts:
+            - context:
+                cluster: kubernetes
+                user: proxy
+              name: proxy-to-kubernetes
+          current-context: proxy-to-kubernetes
+          users:
+            - name: proxy
+
+    - path: /var/lib/kubelet/kubeconfig
+      mode: 0400
+      filesystem: root
+      contents:
+        inline: |
+          apiVersion: v1
+          kind: Config
+          clusters:
+            - cluster:
+                server: http://127.0.0.1:8080
+              name: kubernetes
+          contexts:
+            - context:
+                cluster: kubernetes
+                user: kubelet
+              name: kubelet-to-kubernetes
+          current-context: kubelet-to-kubernetes
+          users:
+            - name: kubelet
+
     - path: /etc/metadata.env
       filesystem: root
       mode: 0644
@@ -1256,7 +1532,7 @@ storage:
 
           set +e
           # Check if the data-dir is empty: First boot
-          if [ ! -d ${ETCD_DATA_DIR}/member ]
+          if [[ ! -d ${ETCD_DATA_DIR}/member ]]
           then
 
               echo "${ETCD_DATA_DIR}/member is empty"
@@ -1264,12 +1540,12 @@ storage:
               etcdctl ${ETCD_FLAGS} --endpoints ${ETCD_MEMBER_CLIENT_URI_LIST} endpoint status
               RET=$?
 
-              if [ ${RET} -eq 128 ]
+              if [[ ${RET} -eq 128 ]]
               then
                 echo "certs in ETCD_FLAGS=${ETCD_FLAGS} unavailables" >&2
                 exit 2
 
-              elif [ ${RET} -eq 1 ]
+              elif [[ ${RET} -eq 1 ]]
               then
                 echo "Existing cluster"
                 ETCD_INITIAL_CLUSTER_STATE=existing
@@ -1289,7 +1565,7 @@ storage:
                   ${ETCD_NAME} --peer-urls=${ETCD_INITIAL_ADVERTISE_PEER_URLS} | grep "ETCD_INITIAL_CLUSTER=" | \
                   sed 's/ETCD_INITIAL_CLUSTER=//')
 
-                if [ -z $ETCD_INITIAL_CLUSTER ]
+                if [[ -z $ETCD_INITIAL_CLUSTER ]]
                 then
                   echo "Fail to extend original cluster: ETCD_INITIAL_CLUSTER=${ETCD_INITIAL_CLUSTER}"
                 fi
@@ -1306,7 +1582,7 @@ storage:
 
           set -e
 
-          if [ -z ${ETCD_INITIAL_CLUSTER} ]
+          if [[ -z ${ETCD_INITIAL_CLUSTER} ]]
           then
               echo '${ETCD_INITIAL_CLUSTER} is empty'
               exit 2
@@ -1358,12 +1634,12 @@ storage:
                 -w "%{http_code}" -o /dev/null)
 
           set +e
-          if [ ${STATUS} -ne 210 ]
+          if [[ ${STATUS} -ne 210 ]]
           then
               PRESET=/run/systemd-preset-all
               echo "Checking if preset on hold"
               grep -c "^Created symlink" ${PRESET}
-              if [ $? -ne 0 ]
+              if [[ $? -ne 0 ]]
               then
                 echo "Nothing to do: ${STATUS}, no preset in ${PRESET}"
                 exit 0
@@ -1410,7 +1686,7 @@ storage:
           sgdisk --disk-guid=${DISK_GUID} ${DEVICE}
           cgpt show -v ${DEVICE} | grep -c ${DISK_GUID}
 
-          if [ ${STRATEGY} == "kexec" ]
+          if [[ ${STRATEGY} == "kexec" ]]
           then
             kexec --reuse-cmdline \
                   --append="coreos.first_boot=1 coreos.randomize_disk_guid=${DISK_GUID}" \
@@ -1733,12 +2009,12 @@ storage:
               echo ${REQ}
 
               TOKEN=$(curl --insecure -fL ${REQ} | jq -re .node.value)
-              if [ $? -eq 0 ]
+              if [[ $? -eq 0 ]]
               then
                 echo "TOKEN=${TOKEN}" > /etc/vault.d/${1}/${2}.new
 
                 cmp /etc/vault.d/${1}/${2}.token /etc/vault.d/${1}/${2}.new
-                if [ $? -eq 0 ]
+                if [[ $? -eq 0 ]]
                 then
                   echo "/etc/vault.d/${1}/${2}.token is up-to-date"
                   exit 0
@@ -1829,9 +2105,9 @@ storage:
                 -XPOST --data "{
                   \"common_name\": \"${COMMON_NAME}\",
                   \"ttl\": \"17520h\",
-                  \"ip_sans\": \"{{.network.ip_or_fqdn}},127.0.0.1,{{.network.perennial_host_ip}}\"
+                  \"ip_sans\": \"{{.network.ip_or_fqdn}},127.0.0.1,{{.kubernetes_service_cluster_ip}}\"
                 }" > /etc/vault.d/${1}/${2}-pki.json
-              if [ $? -eq 0 ]
+              if [[ $? -eq 0 ]]
               then
                 for item in certificate issuing_ca private_key
                 do
@@ -1882,7 +2158,7 @@ storage:
               curl ${REQ} -Lfs \
                 --cacert ${VAULT_CAPATH} \
                 --header "X-Vault-Token: ${TOKEN}" > /etc/vault.d/${1}/${2}-secret.json
-              if [ $? -eq 0 ]
+              if [[ $? -eq 0 ]]
               then
                 for item in key
                 do
@@ -1904,11 +2180,6 @@ storage:
       contents:
         inline: |
           #!/bin/bash -x
-
-          # Create the RBAC clusterrolebinding for kubelet on kubernetes-node role
-          # Theses roles reach the kube-apiserver with vault certificates as common_name=node
-          kubectl get clusterrolebinding kubelet-node-binding || \
-            kubectl create clusterrolebinding kubelet-node-binding --clusterrole=system:node --user=node
 
           kubectl -s http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} get -f /etc/kubernetes/manifests && {
             kubectl -s http://127.0.0.1:{{.kubernetes_apiserver_insecure_port}} apply -f /etc/kubernetes/manifests
@@ -1948,7 +2219,7 @@ networkd:
         [Match]
         Name=lo
         [Network]
-        Address={{.network.perennial_host_ip}}/32
+        Address={{.kubernetes_service_cluster_ip_range}}
 
     - name: 00-bond0.netdev
       contents: |

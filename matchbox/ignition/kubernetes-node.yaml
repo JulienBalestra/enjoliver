@@ -607,12 +607,12 @@ storage:
                 -w "%{http_code}" -o /dev/null)
 
           set +e
-          if [ ${STATUS} -ne 210 ]
+          if [[ ${STATUS} -ne 210 ]]
           then
               PRESET=/run/systemd-preset-all
               echo "Checking if preset on hold"
               grep -c "^Created symlink" ${PRESET}
-              if [ $? -ne 0 ]
+              if [[ $? -ne 0 ]]
               then
                 echo "Nothing to do: ${STATUS}, no preset in ${PRESET}"
                 exit 0
@@ -659,7 +659,7 @@ storage:
           sgdisk --disk-guid=${DISK_GUID} ${DEVICE}
           cgpt show -v ${DEVICE} | grep -c ${DISK_GUID}
 
-          if [ ${STRATEGY} == "kexec" ]
+          if [[ ${STRATEGY} == "kexec" ]]
           then
             kexec --reuse-cmdline \
                   --append="coreos.first_boot=1 coreos.randomize_disk_guid=${DISK_GUID}" \
@@ -745,12 +745,12 @@ storage:
               echo ${REQ}
 
               TOKEN=$(curl --insecure -fL ${REQ} | jq -re .node.value)
-              if [ $? -eq 0 ]
+              if [[ $? -eq 0 ]]
               then
                 echo "TOKEN=${TOKEN}" > /etc/vault.d/${1}/${2}.new
 
                 cmp /etc/vault.d/${1}/${2}.token /etc/vault.d/${1}/${2}.new
-                if [ $? -eq 0 ]
+                if [[ $? -eq 0 ]]
                 then
                   echo "/etc/vault.d/${1}/${2}.token is up-to-date"
                   exit 0
@@ -841,9 +841,9 @@ storage:
                 -XPOST --data "{
                   \"common_name\": \"${COMMON_NAME}\",
                   \"ttl\": \"17520h\",
-                  \"ip_sans\": \"{{.network.ip_or_fqdn}},127.0.0.1,{{.network.perennial_host_ip}}\"
+                  \"ip_sans\": \"{{.network.ip_or_fqdn}},127.0.0.1,{{.kubernetes_service_cluster_ip}}\"
                 }" > /etc/vault.d/${1}/${2}-pki.json
-              if [ $? -eq 0 ]
+              if [[ $? -eq 0 ]]
               then
                 for item in certificate issuing_ca private_key
                 do
@@ -894,7 +894,7 @@ storage:
               curl ${REQ} -Lfs \
                 --cacert ${VAULT_CAPATH} \
                 --header "X-Vault-Token: ${TOKEN}" > /etc/vault.d/${1}/${2}-secret.json
-              if [ $? -eq 0 ]
+              if [[ $? -eq 0 ]]
               then
                 for item in key
                 do
@@ -981,6 +981,30 @@ storage:
             server kubernetes-{{$i}} {{$element}}:6443 check
             {{end}}
 
+    - path: /etc/kubernetes/kube-proxy/kubeconfig
+      mode: 0755
+      filesystem: root
+      contents:
+        inline: |
+          apiVersion: v1
+          kind: Config
+          clusters:
+            - cluster:
+                certificate-authority: /etc/secrets/kube-apiserver.issuing_ca
+                server: https://127.0.0.1:6443
+              name: kubernetes
+          contexts:
+            - context:
+                cluster: kubernetes
+                user: proxy
+              name: proxy-to-kubernetes
+          current-context: proxy-to-kubernetes
+          users:
+            - name: proxy
+              user:
+                client-certificate: /etc/secrets/kube-apiserver.certificate
+                client-key: /etc/secrets/kube-apiserver.private_key
+
     - path: /var/lib/kubelet/kubeconfig
       mode: 0755
       filesystem: root
@@ -1012,7 +1036,7 @@ networkd:
         [Match]
         Name=lo
         [Network]
-        Address={{.network.perennial_host_ip}}/32
+        Address={{.kubernetes_service_cluster_ip_range}}
 
     - name: 00-bond0.netdev
       contents: |

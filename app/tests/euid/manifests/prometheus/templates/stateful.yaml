@@ -24,12 +24,6 @@ spec:
         - /etc/prometheus/prometheus.yml
         - -storage.local.path
         - /data
-        env:
-        - name: KUBERNETES_SERVICE_HOST
-          value: "172.31.255.255"
-
-        - name: KUBERNETES_SERVICE_PORT
-          value: "6443"
 
         volumeMounts:
           - name: config

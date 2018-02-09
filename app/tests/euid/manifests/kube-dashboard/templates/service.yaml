@@ -11,4 +11,3 @@ spec:
   ports:
   - port: {{ .Values.appPort }}
     protocol: TCP
-  clusterIP: "None"

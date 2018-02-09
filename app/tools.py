@@ -40,11 +40,8 @@ def get_verified_dns_query(interface: dict):
                 fqdn_list.append(name)
                 continue
 
-            # Do 5 tries
-            max_tries = 5
+            max_tries = 2
             for i in range(max_tries):
-                if i > 0:
-                    time.sleep(i / 10)
                 try:
                     first_name = socket.gethostbyaddr(interface["ipv4"])[0]
                     logger.debug("succeed to make dns request for %s:%s" % (interface["ipv4"], first_name))

@@ -11,4 +11,3 @@ spec:
   ports:
   - port: 44134
     protocol: TCP
-  clusterIP: "None"

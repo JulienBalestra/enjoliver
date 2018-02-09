@@ -1,4 +1,4 @@
-name: enjoliver.local/hyperkube:1.7.7
+name: enjoliver.local/hyperkube:1.9.2
 
 builder:
   dependencies:
@@ -6,7 +6,6 @@ builder:
 
   mountPoints:
     - {from: ../../, to: /opt/source-project}
-    - {from: /tmp/go, to: /go}
 
 tester:
   aci:

@@ -14,8 +14,8 @@ export PATH=$PATH:/go/bin:/usr/local/go/bin
 
 # Fetch sources
 WORK_DIR="${GOPATH}/src/k8s.io/kubernetes"
-mkdir -p ${WORK_DIR}
-curl -sLf "https://github.com/kubernetes/kubernetes/archive/v${ACI_VERSION}.tar.gz" \
+mkdir -pv ${WORK_DIR}
+curl -Lf "https://github.com/kubernetes/kubernetes/archive/v${ACI_VERSION}.tar.gz" \
     | tar xzf - -C ${WORK_DIR} --strip 1
 cd ${WORK_DIR}
 
@@ -45,7 +45,7 @@ upx -t _output/local/go/bin/hyperkube
 # Small hack to check if the travis instance have enough space
 # Keep the current build state for dev rebuild
 AVAIL=$(df /dgr/aci-home --output=avail | tail -1)
-if [ ${AVAIL} -gt 100000000 ]
+if [[ ${AVAIL} -gt 100000000 ]]
 then
     cp -v _output/local/go/bin/hyperkube ${ROOTFS}
     cp -v _output/local/go/bin/hyperkube /opt/source-project/hyperkube || true

@@ -115,12 +115,29 @@ class ConfigSyncSchedules(object):
             "rangeEnd": range_end.__str__(),
             "gateway": host_gateway,
             "routes": [
-                {"dst": "%s/32" % EC.perennial_local_host_ip, "gw": ipaddr.IPNetwork(host_cidrv4).ip.__str__()},
+                {
+                    "dst": "%s" % EC.kubernetes_service_cluster_ip_range,
+                    "gw": ipaddr.IPNetwork(host_cidrv4).ip.__str__()
+                },
                 {"dst": "0.0.0.0/0"},
             ],
             "dataDir": "/var/lib/cni/networks"
         }
         return ipam
+
+    @staticmethod
+    def get_first_ip_address(ip_range: str):
+        """
+        Take the first IPaddress of the IPNetwork in parameter
+        :param ip_range:
+        :return:
+        """
+        ip_range = ipaddr.IPNetwork(ip_range)
+        for i in ip_range.iterhosts():
+            return i.__str__()
+
+        # /32
+        return ip_range.ip.__str__()
 
     @staticmethod
     def get_extra_selectors(extra_selectors: dict):
@@ -272,6 +289,7 @@ class ConfigSyncSchedules(object):
             "kubernetes_node_ip": "%s" % m["ipv4"],
             "kubernetes_node_name": "%s" % m["ipv4"] if fqdn == automatic_name else fqdn,
             "kubernetes_service_cluster_ip_range": EC.kubernetes_service_cluster_ip_range,
+            "kubernetes_service_cluster_ip": self.get_first_ip_address(EC.kubernetes_service_cluster_ip_range),
 
             # Vault are located with the etcd members
             "vault_ip_list": ",".join(self.etcd_member_ip_list),

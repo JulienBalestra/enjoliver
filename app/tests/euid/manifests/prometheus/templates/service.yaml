@@ -9,4 +9,3 @@ spec:
   ports:
   - port: 9090
     protocol: TCP
-  clusterIP: "None"
