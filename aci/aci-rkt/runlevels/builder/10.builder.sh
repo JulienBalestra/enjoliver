@@ -38,25 +38,6 @@ do
     ln -sv ${GOROOT}/bin/${b} /usr/local/bin/${b}
 done
 
-#echo "deb http://deb.debian.org/debian stretch main" >> /etc/apt/sources.list
-#apt-get update -qq
-apt-get install -y libmount-dev libmount1
-
-
-cd /opt
-
-LIBSECCOM_VERSION=2.3.2
-curl -Lf https://github.com/seccomp/libseccomp/archive/v${LIBSECCOM_VERSION}.zip -o libseccomp.zip
-unzip libseccomp.zip
-cd libseccomp-${LIBSECCOM_VERSION}
-chmod +x autogen.sh
-./autogen.sh
-./configure
-make
-make install
-
-cd /opt
-
 
 mkdir -pv /go/src/github.com/rkt/rkt
 
@@ -77,10 +58,9 @@ do
 done
 
 ./autogen.sh
-./configure --with-stage1-flavors=src,fly \
-    --with-stage1-default-flavor=src --with-stage1-systemd-src=https://github.com/blablacar/systemd.git \
-    --with-stage1-systemd-revision=iaguis/pass-fds-pre-post-backport-v234 --with-stage1-systemd-version=v234 \
-    --disable-tpm --enable-functional-tests
+./configure --with-stage1-flavors=coreos,fly \
+    --disable-tpm
+
 make V=3 -j2
 
 mkdir -pv ${ROOTFS}/usr/lib/rkt/stage1-images/
