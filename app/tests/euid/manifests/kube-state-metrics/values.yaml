@@ -1,6 +1,6 @@
 image:
   repository: quay.io/coreos/kube-state-metrics
-  tag: v1.0.1
+  tag: v1.2.0
   pullPolicy: IfNotPresent
 namespace: kube-system
 appPort: 80

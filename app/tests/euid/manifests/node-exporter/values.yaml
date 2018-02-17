@@ -1,6 +1,6 @@
 image:
   repository: prom/node-exporter
-  tag: v0.14.0
+  tag: v0.15.2
   pullPolicy: IfNotPresent
 namespace: kube-system
 appPort: 9100

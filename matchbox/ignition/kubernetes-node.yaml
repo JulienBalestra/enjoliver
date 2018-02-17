@@ -585,7 +585,7 @@ storage:
       filesystem: root
       contents:
         inline: |
-           export PATH=/opt/bin:$PATH
+           export PATH=/run/torcx/bin/:/opt/bin:$PATH
            export PRIVATE_IPV4={{.network.ip_or_fqdn}}
 
     - path: /etc/modules-load.d/network.conf

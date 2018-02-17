@@ -1,6 +1,6 @@
 image:
   repository: gcr.io/google_containers/heapster-amd64
-  tag: v1.4.3
+  tag: v1.5.1
   pullPolicy: IfNotPresent
 namespace: kube-system
 appPort: 8082

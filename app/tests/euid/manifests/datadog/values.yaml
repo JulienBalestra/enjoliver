@@ -1,5 +1,5 @@
 image:
-  repository: datadog/docker-dd-agent
-  tag: latest
+  repository: datadog/agent-dev
+  tag: master
   pullPolicy: IfNotPresent
 namespace: default

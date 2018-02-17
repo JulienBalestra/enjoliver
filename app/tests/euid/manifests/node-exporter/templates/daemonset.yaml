@@ -21,12 +21,29 @@ spec:
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         command:
         - /bin/node_exporter
-        - -collector.procfs
-        - /host/proc
-        - -collector.sysfs
-        - /host/sys
-        - -collectors.enabled
-        - "systemd,conntrack,diskstats,entropy,edac,filefd,filesystem,hwmon,loadavg,mdadm,meminfo,netdev,netstat,sockstat,stat,time,uname,vmstat"
+        - --path.procfs=/host/proc
+        - --path.sysfs=/host/sys
+        - --collector.arp
+        - --collector.bcache
+        - --collector.conntrack
+        - --collector.cpu
+        - --collector.diskstats
+        - --collector.edac
+        - --collector.filefd
+        - --collector.filesystem
+        - --collector.loadavg
+        - --collector.meminfo
+        - --collector.netdev
+        - --collector.netstat
+        - --collector.sockstat
+        - --collector.stat
+        - --collector.systemd
+        - --collector.tcpstat
+        - --collector.textfile
+        - --collector.time
+        - --collector.uname
+        - --collector.vmstat
+        - --collector.xfs
 
         volumeMounts:
           - name: proc

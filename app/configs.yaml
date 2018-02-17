@@ -69,8 +69,8 @@ range_nb_ips: 253
 sub_ips: 256
 
 lldp_image_url: ""
-hyperkube_image_url: "gcr.io/google_containers/hyperkube:v1.7.8"
-cephtools_image_url: 'enjoliver.local/ceph-tools:latest'
+hyperkube_image_url: "gcr.io/google_containers/hyperkube:v1.9.3"
+cephtools_image_url: ""
 
 etc_hosts: ['172.20.0.1 enjoliver.local']
 
